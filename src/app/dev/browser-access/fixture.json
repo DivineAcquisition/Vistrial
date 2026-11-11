@@ -1,0 +1,630 @@
+{
+ "overview": {
+  "dryRunOnly": true,
+  "goals": [
+   {
+    "key": "headline",
+    "label": "Update the headline on a draft funnel page, then publish it",
+    "summary": "Two things are read, three changes each wait for your approval, and publishing waits for a separate one."
+   },
+   {
+    "key": "pipeline",
+    "label": "Move new applicants to Qualified and tidy the list",
+    "summary": "The list is read, one move waits for approval, and the two risky steps the task would like to take each need a separate one."
+   },
+   {
+    "key": "wander",
+    "label": "Check the funnel's payment settings (a task that tries to leave the site)",
+    "summary": "Shows a hard stop: the task tries to follow a link to another site and is blocked."
+   }
+  ],
+  "role": "owner",
+  "rules": {
+   "approvalHours": 24,
+   "never": [
+    "The step would leave the site this session was approved for, so it was not taken.",
+    "The step would type into a password, card or code field. The agent never does that.",
+    "The step's address is not a secure web address, so it was not taken."
+   ],
+   "restricted": [
+    {
+     "confirm": "PAY",
+     "key": "payment",
+     "words": "It spends money or changes how you pay."
+    },
+    {
+     "confirm": "SECURITY",
+     "key": "security",
+     "words": "It changes a password, a login or a security setting."
+    },
+    {
+     "confirm": "DELETE",
+     "key": "delete",
+     "words": "It deletes something."
+    },
+    {
+     "confirm": "SEND",
+     "key": "message",
+     "words": "It sends a message to a person."
+    },
+    {
+     "confirm": "PUBLISH",
+     "key": "publish",
+     "words": "It publishes something where others can see it."
+    }
+   ],
+   "sessionDays": 7
+  },
+  "sessions": [
+   {
+    "createdAt": 1794331548875,
+    "expiresAt": 1794936348875,
+    "id": "00000000000010044browserSessions",
+    "lastUsedAt": 1794331548875,
+    "revokedAt": null,
+    "signedInAt": 1794331548875,
+    "site": "demo-crm",
+    "siteName": "Practice CRM (dry run)",
+    "state": "active"
+   }
+  ],
+  "sites": [
+   {
+    "changes": [
+     "Edit a funnel page's headline and button",
+     "Move a lead between stages"
+    ],
+    "key": "demo-crm",
+    "mode": "demo",
+    "name": "Practice CRM (dry run)",
+    "note": "A made-up CRM for trying the approval steps. Nothing real is opened or changed.",
+    "reads": [
+     "Pipeline and lead lists",
+     "A funnel page's settings"
+    ]
+   },
+   {
+    "changes": [],
+    "key": "meta",
+    "mode": "api",
+    "name": "Meta (Ads Manager, Business Suite)",
+    "note": "Already connected through the Marketing API (read-only). Meta's terms forbid automated access without permission and sharing account access, so a browser is not used.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "google-ads",
+    "mode": "api",
+    "name": "Google Ads",
+    "note": "Use the Google Ads API. Google's terms forbid automated access against its machine-readable rules, and its sign-in resists automated browsers.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "ga4",
+    "mode": "api",
+    "name": "Google Analytics",
+    "note": "Use the Analytics Data API.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "google-business",
+    "mode": "api",
+    "name": "Google Business Profile",
+    "note": "Use the Business Profile APIs (approval from Google is required).",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "linkedin",
+    "mode": "never",
+    "name": "LinkedIn",
+    "note": "LinkedIn's user agreement forbids bots and sharing log-in sessions. Vistrial does not automate LinkedIn accounts. Its Marketing API is the only route.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "tiktok-ads",
+    "mode": "api",
+    "name": "TikTok Ads Manager",
+    "note": "Use the TikTok API for Business. TikTok's terms forbid automated scripts.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "shopify",
+    "mode": "api",
+    "name": "Shopify",
+    "note": "Use the Admin API with a staff or app grant. Shopify's terms forbid automated access to the admin.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "hubspot",
+    "mode": "api",
+    "name": "HubSpot",
+    "note": "Use HubSpot's APIs. Its acceptable use policy forbids access other than through its interface or APIs.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "stripe",
+    "mode": "api",
+    "name": "Stripe",
+    "note": "Use Stripe's API with a restricted key. A browser agent is never used on a payments account.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "calendly",
+    "mode": "api",
+    "name": "Calendly",
+    "note": "Use Calendly's API. Its terms tie credentials to one authorised user.",
+    "reads": []
+   },
+   {
+    "changes": [],
+    "key": "webflow",
+    "mode": "api",
+    "name": "Webflow",
+    "note": "Use the Webflow Data API for pages and CMS items.",
+    "reads": []
+   },
+   {
+    "changes": [
+     "Edit a draft page's copy and sections"
+    ],
+    "key": "highlevel",
+    "mode": "browser",
+    "name": "HighLevel (GoHighLevel)",
+    "note": "Its API covers contacts and pipelines but not building funnel pages. No clause against automation was found in its terms, but accounts are non-transferable. A browser would be for page building only, if the owner decides to allow it.",
+    "reads": [
+     "Funnel and page lists",
+     "A page's sections and settings"
+    ]
+   },
+   {
+    "changes": [
+     "Edit a draft page's copy and sections"
+    ],
+    "key": "clickfunnels",
+    "mode": "browser",
+    "name": "ClickFunnels",
+    "note": "Page building has no adequate API. Its terms forbid scraping and lending account access, so this is a moderate risk the owner must decide on.",
+    "reads": [
+     "Funnel and page lists"
+    ]
+   },
+   {
+    "changes": [
+     "Edit a draft page"
+    ],
+    "key": "wordpress",
+    "mode": "browser",
+    "name": "WordPress (the customer's own site)",
+    "note": "A self-hosted site is the customer's own. The REST API covers posts and pages; page builders often need the admin screens.",
+    "reads": [
+     "Pages and their content"
+    ]
+   }
+  ],
+  "tasks": [
+   {
+    "createdAt": 1794331548875,
+    "finishedAt": 1794331548875,
+    "goal": "Check the funnel's payment settings (a task that tries to leave the site)",
+    "id": "00000000000000010093browserTasks",
+    "sessionId": "00000000000010044browserSessions",
+    "status": "stopped",
+    "steps": 2,
+    "stopReason": "blocked",
+    "stopWords": "A step was blocked by the rules, so the task stopped."
+   },
+   {
+    "createdAt": 1794331548875,
+    "finishedAt": null,
+    "goal": "Update the headline on a draft funnel page, then publish it",
+    "id": "00000000000000010072browserTasks",
+    "sessionId": "00000000000010044browserSessions",
+    "status": "waitingApproval",
+    "steps": 6,
+    "stopReason": null,
+    "stopWords": null
+   },
+   {
+    "createdAt": 1794331548875,
+    "finishedAt": 1794331548875,
+    "goal": "Update the headline on a draft funnel page, then publish it",
+    "id": "00000000000000010047browserTasks",
+    "sessionId": "00000000000010044browserSessions",
+    "status": "done",
+    "steps": 6,
+    "stopReason": null,
+    "stopWords": null
+   }
+  ]
+ },
+ "done": {
+  "dryRun": true,
+  "siteName": "Practice CRM (dry run)",
+  "steps": [
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": null,
+    "id": "00000000000000010049browserSteps",
+    "index": 0,
+    "kind": "read",
+    "restricted": null,
+    "screenshot": "https://some-deployment.convex.cloud/api/storage/8sPIqIst4b610UzDimSe53t+9NInFkLBB+x6GebqgIk=",
+    "status": "done",
+    "target": "the Funnels list",
+    "url": "https://app.practice-crm.vistrial.example/funnels",
+    "value": null,
+    "verb": "open",
+    "why": "To find the Booked Calendar funnel."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": null,
+    "id": "00000000000000010051browserSteps",
+    "index": 1,
+    "kind": "read",
+    "restricted": null,
+    "screenshot": "https://some-deployment.convex.cloud/api/storage/YO1455GWbYFWVjlLOnp0a838IrVW8d0ewxt4HdT7EmA=",
+    "status": "done",
+    "target": "the Booked Calendar landing page's current headline and button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing",
+    "value": null,
+    "verb": "read",
+    "why": "To see what the page says now, before changing anything."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": "Alpha-manager",
+    "id": "00000000000000010053browserSteps",
+    "index": 2,
+    "kind": "change",
+    "restricted": null,
+    "screenshot": "https://some-deployment.convex.cloud/api/storage/TuaozsyWaqPMQRLQFmem7uRvIkbvpKMx9WtS+/VyQNU=",
+    "status": "done",
+    "target": "the Edit draft button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing",
+    "value": null,
+    "verb": "click",
+    "why": "Opens the draft for editing. The live page is not touched."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": "Alpha-manager",
+    "id": "00000000000000010060browserSteps",
+    "index": 3,
+    "kind": "change",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Headline field",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing/edit",
+    "value": "Fill your calendar with sales calls from people who can afford you",
+    "verb": "type",
+    "why": "The headline from the brief you approved: the outcome in the reader's words."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": "Alpha-owner",
+    "id": "00000000000000010064browserSteps",
+    "index": 4,
+    "kind": "change",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Save draft button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing/edit",
+    "value": null,
+    "verb": "click",
+    "why": "Saves the draft. It stays a draft."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": "Alpha-owner",
+    "id": "00000000000000010068browserSteps",
+    "index": 5,
+    "kind": "restricted",
+    "restricted": {
+     "confirm": "PUBLISH",
+     "reason": "publish",
+     "words": "It publishes something where others can see it."
+    },
+    "screenshot": null,
+    "status": "done",
+    "target": "the Publish button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing/edit",
+    "value": null,
+    "verb": "click",
+    "why": "Makes the new headline live for visitors."
+   }
+  ],
+  "task": {
+   "createdAt": 1794331548875,
+   "finishedAt": 1794331548875,
+   "goal": "Update the headline on a draft funnel page, then publish it",
+   "id": "00000000000000010047browserTasks",
+   "sessionId": "00000000000010044browserSessions",
+   "status": "done",
+   "steps": 6,
+   "stopReason": null,
+   "stopWords": null
+  }
+ },
+ "change": {
+  "dryRun": true,
+  "siteName": "Practice CRM (dry run)",
+  "steps": [
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": null,
+    "id": "00000000000000010074browserSteps",
+    "index": 0,
+    "kind": "read",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Funnels list",
+    "url": "https://app.practice-crm.vistrial.example/funnels",
+    "value": null,
+    "verb": "open",
+    "why": "To find the Booked Calendar funnel."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": null,
+    "id": "00000000000000010076browserSteps",
+    "index": 1,
+    "kind": "read",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Booked Calendar landing page's current headline and button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing",
+    "value": null,
+    "verb": "read",
+    "why": "To see what the page says now, before changing anything."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": true,
+    "decidedAt": null,
+    "decidedBy": null,
+    "id": "00000000000000010078browserSteps",
+    "index": 2,
+    "kind": "change",
+    "restricted": null,
+    "screenshot": null,
+    "status": "proposed",
+    "target": "the Edit draft button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing",
+    "value": null,
+    "verb": "click",
+    "why": "Opens the draft for editing. The live page is not touched."
+   }
+  ],
+  "task": {
+   "createdAt": 1794331548875,
+   "finishedAt": null,
+   "goal": "Update the headline on a draft funnel page, then publish it",
+   "id": "00000000000000010072browserTasks",
+   "sessionId": "00000000000010044browserSessions",
+   "status": "waitingApproval",
+   "steps": 3,
+   "stopReason": null,
+   "stopWords": null
+  }
+ },
+ "restricted": {
+  "dryRun": true,
+  "siteName": "Practice CRM (dry run)",
+  "steps": [
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": null,
+    "id": "00000000000000010074browserSteps",
+    "index": 0,
+    "kind": "read",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Funnels list",
+    "url": "https://app.practice-crm.vistrial.example/funnels",
+    "value": null,
+    "verb": "open",
+    "why": "To find the Booked Calendar funnel."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": null,
+    "id": "00000000000000010076browserSteps",
+    "index": 1,
+    "kind": "read",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Booked Calendar landing page's current headline and button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing",
+    "value": null,
+    "verb": "read",
+    "why": "To see what the page says now, before changing anything."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": "Alpha-owner",
+    "id": "00000000000000010078browserSteps",
+    "index": 2,
+    "kind": "change",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Edit draft button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing",
+    "value": null,
+    "verb": "click",
+    "why": "Opens the draft for editing. The live page is not touched."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": "Alpha-owner",
+    "id": "00000000000000010082browserSteps",
+    "index": 3,
+    "kind": "change",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Headline field",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing/edit",
+    "value": "Fill your calendar with sales calls from people who can afford you",
+    "verb": "type",
+    "why": "The headline from the brief you approved: the outcome in the reader's words."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": "Alpha-owner",
+    "id": "00000000000000010086browserSteps",
+    "index": 4,
+    "kind": "change",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Save draft button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing/edit",
+    "value": null,
+    "verb": "click",
+    "why": "Saves the draft. It stays a draft."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": true,
+    "decidedAt": null,
+    "decidedBy": null,
+    "id": "00000000000000010090browserSteps",
+    "index": 5,
+    "kind": "restricted",
+    "restricted": {
+     "confirm": "PUBLISH",
+     "reason": "publish",
+     "words": "It publishes something where others can see it."
+    },
+    "screenshot": null,
+    "status": "proposed",
+    "target": "the Publish button",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing/edit",
+    "value": null,
+    "verb": "click",
+    "why": "Makes the new headline live for visitors."
+   }
+  ],
+  "task": {
+   "createdAt": 1794331548875,
+   "finishedAt": null,
+   "goal": "Update the headline on a draft funnel page, then publish it",
+   "id": "00000000000000010072browserTasks",
+   "sessionId": "00000000000010044browserSessions",
+   "status": "waitingApproval",
+   "steps": 6,
+   "stopReason": null,
+   "stopWords": null
+  }
+ },
+ "blocked": {
+  "dryRun": true,
+  "siteName": "Practice CRM (dry run)",
+  "steps": [
+   {
+    "at": 1794331548875,
+    "blocked": null,
+    "canDecide": false,
+    "decidedAt": 1794331548875,
+    "decidedBy": null,
+    "id": "00000000000000010095browserSteps",
+    "index": 0,
+    "kind": "read",
+    "restricted": null,
+    "screenshot": null,
+    "status": "done",
+    "target": "the Funnel settings page",
+    "url": "https://app.practice-crm.vistrial.example/funnels/booked-calendar/settings",
+    "value": null,
+    "verb": "open",
+    "why": "To see which payment provider is linked."
+   },
+   {
+    "at": 1794331548875,
+    "blocked": "The step would leave the site this session was approved for, so it was not taken.",
+    "canDecide": false,
+    "decidedAt": null,
+    "decidedBy": null,
+    "id": "00000000000000010097browserSteps",
+    "index": 1,
+    "kind": "read",
+    "restricted": null,
+    "screenshot": null,
+    "status": "blocked",
+    "target": "the payment provider's dashboard",
+    "url": "https://dashboard.payments.example.com/account",
+    "value": null,
+    "verb": "open",
+    "why": "To read the payout schedule."
+   }
+  ],
+  "task": {
+   "createdAt": 1794331548875,
+   "finishedAt": 1794331548875,
+   "goal": "Check the funnel's payment settings (a task that tries to leave the site)",
+   "id": "00000000000000010093browserTasks",
+   "sessionId": "00000000000010044browserSessions",
+   "status": "stopped",
+   "steps": 2,
+   "stopReason": "blocked",
+   "stopWords": "A step was blocked by the rules, so the task stopped."
+  }
+ }
+}

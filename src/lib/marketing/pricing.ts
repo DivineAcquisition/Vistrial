@@ -14,12 +14,10 @@ export const PRICING_DISPLAY = {
     name: "Private Access",
     price: "$179 per month, with $150 of credits included.",
     includes: [
-      "Your first organization, private to your team",
+      "Your own private workspace",
       "Growth Architect: market research, offer analysis, growth diagnosis, ad sets, and landing page teardowns",
       "$150 of credits each month. Each piece of work shows its cost, and every run has a cost limit.",
       "Credit packs when you need more. Included credits reset each month.",
-      "Each additional organization: $99 a month, and $50 more credits in your shared balance",
-      "Unlimited clients inside each organization",
     ],
     why: "We bring on a limited number of teams at a time so each one is set up properly. Request access and a person on our team will review it.",
     billingNote: "Nothing is charged on this site. Billing starts inside the app, after your team is approved.",

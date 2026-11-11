@@ -76,7 +76,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Each account has an Owner, who is responsible for the account and every organization in it. Organizations use roles (Owner, Admin, Member, Viewer), and what each person can see and approve depends on their role and on the clients they are assigned to. Vistrial staff roles exist for support and administration.",
+          text: "Each workspace has an Owner, who is responsible for the workspace. Workspaces use roles, and what each person can see and approve depends on their role. Vistrial staff roles exist for support and administration.",
         },
         { kind: "p", text: "You are responsible for:" },
         {
@@ -234,7 +234,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Plans and credits. The Growth plan is $179 per month and includes $150 of credits each month. The plan covers one organization. Each additional organization you add to your account is $99 per month and adds $50 of credits each month. All organizations on your account share one credit balance. An additional organization is charged from the day you add it, pro-rated for the rest of that billing period, and then with each renewal until you remove it. We do not currently charge for or limit the clients you add inside an organization; if that changes we will tell you before it applies to you. Credits pay for the AI work agents do: each piece of work is charged from your balance at the price shown in the product before it runs. Included credits reset each month and do not carry over. You can buy extra credit packs of $10, $25 or $50; credits from packs do not expire while your workspace is active. Custom plans are agreed with us. A new workspace gets one free research session before a plan is needed.",
+          text: "Plans and credits. The Growth plan is $179 per month and includes $150 of credits each month. Credits pay for the AI work agents do: each piece of work is charged from your balance at the price shown in the product before it runs. Included credits reset each month and do not carry over. You can buy extra credit packs of $10, $25 or $50; credits from packs do not expire while your workspace is active. Custom plans are agreed with us. A new workspace gets one free research session before a plan is needed.",
         },
         {
           kind: "p",

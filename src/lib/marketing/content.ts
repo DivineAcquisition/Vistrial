@@ -479,7 +479,7 @@ export const FORMS = {
   sections: {
     you: "About you",
     business: "Your business",
-    selling: "How you sell today",
+    selling: "How you grow today",
     more: "Anything else",
     need: "What you need",
   },

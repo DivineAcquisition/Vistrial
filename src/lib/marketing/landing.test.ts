@@ -112,9 +112,7 @@ describe("the landing page follows the owner's framework", () => {
   it("shows only real screens, and keeps the planned slots off", () => {
     for (const picture of PICTURES.filter((entry) => entry.on)) {
       expect(picture.alt.length, picture.id).toBeGreaterThan(40);
-      for (const theme of ["light", "dark"]) {
-        expect(existsSync(join(process.cwd(), "public/marketing/product", `${picture.file}-${theme}.png`)), `${picture.id} ${theme}`).toBe(true);
-      }
+      expect(existsSync(join(process.cwd(), "public/marketing/product", `${picture.file}.png`)), picture.id).toBe(true);
     }
     const planned = PICTURES.filter((entry) => entry.place === "planned");
     expect(planned.map((entry) => entry.id)).toEqual(["tasks-board", "briefing-post", "organizations-clients"]);

@@ -276,7 +276,7 @@ export const LANDING_FOOTER = {
 
 /**
  * Product pictures. Every picture that is on is a real screen from the app, cut from a dev story
- * with sample data by scripts/capture-landing-pictures.cjs. A planned slot stays off until its
+ * with sample data by scripts/capture-landing-pictures.cjs, in the white theme only. A planned slot stays off until its
  * screen exists on main: turn it on by adding the story to that script and a file here.
  * Never fill a slot with a mock-up.
  */

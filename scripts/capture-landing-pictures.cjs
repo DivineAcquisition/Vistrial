@@ -2,7 +2,7 @@
  * Takes the product pictures on the public landing page from the dev stories, so every picture is a
  * real screen with sample data. Run `npm run dev`, then `node scripts/capture-landing-pictures.cjs`.
  * Playwright is not a project dependency: use a machine that has it (for example `npx -p playwright node ...`).
- * Each picture is cut from one text marker to another, in the light and the dark theme.
+ * Each picture is cut from one text marker to another, in the white theme: the public site is white only.
  * To fill a planned slot (see PICTURES in src/lib/marketing/landing.ts), add its story here.
  */
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- a plain Node script; Playwright is not a project dependency.
@@ -23,7 +23,7 @@ const SHOTS = [
 
 (async () => {
   const browser = await chromium.launch();
-  for (const theme of ["light", "dark"]) {
+  for (const theme of ["light"]) {
     const context = await browser.newContext({ viewport: { width: WIDTH, height: 1000 }, deviceScaleFactor: 2, reducedMotion: "reduce" });
     const page = await context.newPage();
     for (const shot of SHOTS) {
@@ -43,11 +43,11 @@ const SHOTS = [
       const y = Math.max(0, top.y - 14);
       const bottom = shot.toEdge === "top" ? end.y - 14 : end.y + end.height + 14;
       await page.screenshot({
-        path: `${OUT}/${shot.name}-${theme}.png`,
+        path: `${OUT}/${shot.name}.png`,
         fullPage: true,
         clip: { x: Math.max(0, column.x - 8), y, width: Math.min(WIDTH, column.width + 16), height: bottom - y },
       });
-      console.log(`${shot.name}-${theme}`, Math.round(column.width + 16), Math.round(bottom - y));
+      console.log(shot.name, Math.round(column.width + 16), Math.round(bottom - y));
     }
     await context.close();
   }

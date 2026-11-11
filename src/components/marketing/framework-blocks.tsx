@@ -22,8 +22,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * The building blocks of the framework page. Each block has one job, named in
- * docs/rebuild/landing-page-framework.md. Colours come from the marketing tokens, so every block
- * reads the same on the white site and on the dark theme.
+ * docs/rebuild/landing-page-framework.md. Colours come from the marketing tokens. The public site is
+ * white only, so nothing here has a dark variant.
  */
 
 const eyebrow = "text-[11px] font-semibold tracking-[0.14em] text-brand-200 uppercase";
@@ -212,9 +212,8 @@ export function ProductPicture({
         <span className="size-2 rounded-full bg-brand-400" />
       </div>
       <div className={cn("relative overflow-hidden", crop)}>
-        {/* The same screen in each theme. Only one is shown, and the other carries no alt text. On a phone the picture is shown larger and cut at the right edge, so its words stay readable. */}
-        <Image src={`/marketing/product/${picture.file}-light.png`} alt={picture.alt} {...shared} className="h-auto w-[200%] max-w-none sm:w-full dark:hidden" />
-        <Image src={`/marketing/product/${picture.file}-dark.png`} alt="" aria-hidden {...shared} className="hidden h-auto w-[200%] max-w-none sm:w-full dark:block" />
+        {/* On a phone the picture is shown larger and cut at the right edge, so its words stay readable. */}
+        <Image src={`/marketing/product/${picture.file}.png`} alt={picture.alt} {...shared} className="h-auto w-[200%] max-w-none sm:w-full" />
         {crop ? <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" /> : null}
       </div>
       <figcaption className="mt-auto flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-border px-4 py-3">
@@ -251,7 +250,7 @@ export function OfferBox() {
           </ul>
           <p className="mt-7 border-l-2 border-brand-500 pl-4 font-heading text-lg leading-snug tracking-tight text-strong">{OFFER.effort}</p>
         </div>
-        {/* The price panel is the page's one inverted surface: ink on white, and white on ink in the dark theme. */}
+        {/* The price panel is the page's one inverted surface: white type on ink. */}
         <div className="flex flex-col justify-between gap-8 bg-strong p-6 text-background sm:p-9">
           <div>
             <p className="flex items-baseline gap-2">

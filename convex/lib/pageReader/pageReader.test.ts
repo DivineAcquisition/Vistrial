@@ -387,7 +387,7 @@ describe("the hosted browser", () => {
 
   it("asks for a full-page screenshot at the width given, as our own user agent, with no stealth options", () => {
     const body = cloudflareBody("https://example.com/", { width: 390, height: 844, mobile: true }, { timeoutMs: 45_000, userAgent: USER_AGENT, wantHtml: false });
-    expect(body).toMatchObject({ url: "https://example.com/", formats: ["screenshot"], userAgent: USER_AGENT, viewport: { width: 390, isMobile: true }, screenshotOptions: { fullPage: true } });
+    expect(body).toMatchObject({ url: "https://example.com/", formats: ["content", "screenshot"], userAgent: USER_AGENT, viewport: { width: 390, isMobile: true }, screenshotOptions: { fullPage: true } });
     expect(Object.keys(body)).not.toEqual(expect.arrayContaining(["cookies", "authenticate", "proxy", "stealth"]));
     expect(body.rejectRequestPattern.length).toBeGreaterThan(0);
   });
@@ -412,5 +412,38 @@ describe("the hosted browser", () => {
     const failing = cloudflareRenderer(setting, async () => ({ status: 403, ok: false, json: async () => ({ errors: [{ message: "token secret-token rejected" }] }) }));
     const error = await failing.render("https://example.com/", { width: 1280, height: 800, mobile: false }, { timeoutMs: 1000, userAgent: USER_AGENT, wantHtml: true }).catch((caught: Error) => caught);
     expect((error as Error).message).toBe("render_403");
+  });
+
+  it("waits as long as the browser service asks when rate limited, then asks once more", async () => {
+    const setting = (name: string) => ({ CLOUDFLARE_ACCOUNT_ID: "acct1", CLOUDFLARE_BROWSER_TOKEN: "secret-token" })[name];
+    const view = { width: 390, height: 844, mobile: true };
+    const options = { timeoutMs: 1000, userAgent: USER_AGENT, wantHtml: false };
+    const ok = { status: 200, ok: true, json: async () => ({ success: true, result: { content: "<h1>Phone</h1>", screenshot: btoa("img") } }) };
+    const limited = (retryAfter: string | null) => ({ status: 429, ok: false, headers: { get: () => retryAfter }, json: async () => ({}) });
+
+    const waits: number[] = [];
+    let calls = 0;
+    const renderer = cloudflareRenderer(setting, async () => ((calls += 1), calls === 1 ? limited("7") : ok), async (ms) => void waits.push(ms));
+    const drawn = await renderer.render("https://example.com/", view, options);
+    expect(new TextDecoder().decode(drawn.screenshot!)).toBe("img");
+    // Only the picture was wanted: the HTML Cloudflare sends with it is not passed on.
+    expect(drawn.html).toBeNull();
+    expect(waits).toEqual([7000]);
+    expect(calls).toBe(2);
+
+    // No wait named: ten seconds. A long one is capped. A second refusal is final.
+    const waits2: number[] = [];
+    let calls2 = 0;
+    const stuck = cloudflareRenderer(setting, async () => ((calls2 += 1), limited(calls2 === 1 ? null : "600")), async (ms) => void waits2.push(ms));
+    const error = await stuck.render("https://example.com/", view, options).catch((caught: Error) => caught);
+    expect((error as Error).message).toBe("render_429");
+    expect(waits2).toEqual([10_000]);
+    expect(calls2).toBe(2);
+
+    const waits3: number[] = [];
+    let calls3 = 0;
+    const capped = cloudflareRenderer(setting, async () => ((calls3 += 1), calls3 === 1 ? limited("600") : ok), async (ms) => void waits3.push(ms));
+    await capped.render("https://example.com/", view, options);
+    expect(waits3).toEqual([20_000]);
   });
 });

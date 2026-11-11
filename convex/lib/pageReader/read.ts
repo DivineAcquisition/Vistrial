@@ -261,8 +261,11 @@ export async function readPage(rawUrl: string, env: ReadEnv): Promise<PageResult
           }
         }
         if (drawn.screenshot?.byteLength) driver = "browser";
-      } catch {
-        // The plain read stands. A page without a screenshot says so in its driver.
+      } catch (problem) {
+        // The plain read stands. A page without a screenshot says so in its driver. The reason is logged as a
+        // code only (`render_429`, `TimeoutError`): never the service's own words, which could echo the request.
+        const code = problem instanceof Error ? (/^render_\w+$/.test(problem.message) ? problem.message : problem.name) : "unknown";
+        console.warn(`page reader: ${name} render did not finish (${code})`);
       }
     }
   }

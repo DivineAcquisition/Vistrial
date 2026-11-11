@@ -9,7 +9,21 @@
 import type { Rendered, Renderer } from "./read";
 
 type Setting = (name: string) => string | undefined;
-type Fetch = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal }) => Promise<{ status: number; ok: boolean; json(): Promise<unknown> }>;
+type Fetch = (url: string, init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal }) => Promise<{ status: number; ok: boolean; headers?: { get(name: string): string | null }; json(): Promise<unknown> }>;
+type Wait = (ms: number) => Promise<void>;
+
+/**
+ * The hosted browser's own rate limit (on Cloudflare's free plan, one request every ten seconds). A page
+ * needs two renders, desktop then phone, so the second is often told to wait. It is asked once more after
+ * the wait the service names, never sooner and never more than once.
+ */
+const RATE_WAIT_MS = { fallback: 10_000, most: 20_000 } as const;
+
+function rateWaitMs(header: string | null | undefined) {
+  const seconds = Number(header);
+  if (!header || !Number.isFinite(seconds) || seconds <= 0) return RATE_WAIT_MS.fallback;
+  return Math.min(RATE_WAIT_MS.most, Math.ceil(seconds) * 1000);
+}
 
 /** The settings the owner adds to turn the hosted browser on. Neither is ever returned, logged or saved. */
 export const BROWSER_SETTINGS = ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_BROWSER_TOKEN"] as const;
@@ -38,7 +52,9 @@ function bytes(base64: string): Uint8Array {
 export function cloudflareBody(url: string, view: { width: number; height: number; mobile: boolean }, options: { timeoutMs: number; userAgent: string; wantHtml: boolean }) {
   return {
     url,
-    formats: options.wantHtml ? ["content", "screenshot"] : ["screenshot"],
+    // Cloudflare refuses a request for fewer than two formats (400), so the HTML is always asked for and
+    // dropped below when the caller only wants the picture.
+    formats: ["content", "screenshot"],
     viewport: { width: view.width, height: view.height, deviceScaleFactor: 1, isMobile: view.mobile, hasTouch: view.mobile },
     userAgent: options.userAgent,
     gotoOptions: { waitUntil: "networkidle2", timeout: Math.min(30_000, options.timeoutMs) },
@@ -49,27 +65,35 @@ export function cloudflareBody(url: string, view: { width: number; height: numbe
   };
 }
 
-export function cloudflareRenderer(setting: Setting, fetcher: Fetch): Renderer {
+export function cloudflareRenderer(setting: Setting, fetcher: Fetch, wait: Wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))): Renderer {
   return {
     name: "cloudflare",
     async render(url, view, options): Promise<Rendered> {
       const account = setting("CLOUDFLARE_ACCOUNT_ID");
       const token = setting("CLOUDFLARE_BROWSER_TOKEN");
       if (!account || !token) throw new Error("not_configured");
+      let waited = false;
       for (const path of PATHS) {
-        const response = await fetcher(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/${path}/snapshot`, {
-          method: "POST",
-          headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-          body: JSON.stringify(cloudflareBody(url, view, options)),
-          signal: AbortSignal.timeout(options.timeoutMs),
-        });
+        const ask = () =>
+          fetcher(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}/${path}/snapshot`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+            body: JSON.stringify(cloudflareBody(url, view, options)),
+            signal: AbortSignal.timeout(options.timeoutMs),
+          });
+        let response = await ask();
+        if (response.status === 429 && !waited) {
+          waited = true;
+          await wait(rateWaitMs(response.headers?.get("retry-after")));
+          response = await ask();
+        }
         if (response.status === 404 && path !== PATHS[PATHS.length - 1]) continue;
         // Codes only. Cloudflare's error text is never kept: it could echo the request.
         if (!response.ok) throw new Error(`render_${response.status}`);
         const body = (await response.json()) as { success?: boolean; result?: { content?: unknown; screenshot?: unknown }; meta?: { finalUrl?: unknown } } | null;
         if (!body?.success || !body.result) throw new Error("render_failed");
         return {
-          html: typeof body.result.content === "string" ? body.result.content : null,
+          html: options.wantHtml && typeof body.result.content === "string" ? body.result.content : null,
           screenshot: typeof body.result.screenshot === "string" && body.result.screenshot ? bytes(body.result.screenshot) : null,
           finalUrl: typeof body.meta?.finalUrl === "string" ? body.meta.finalUrl : null,
         };

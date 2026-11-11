@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
+import { addIntegrationRoutes } from "./integrationHttp";
 import { redirectUri } from "./metaAds";
 import { graphVersion } from "./lib/metaGraph";
 
@@ -73,5 +74,8 @@ http.route({
     return back(state.returnOrigin, "connected", state.returnPath);
   }),
 });
+
+// Sign-in returns and webhooks for the other connections (Google, calendars, note takers).
+addIntegrationRoutes(http);
 
 export default http;

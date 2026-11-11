@@ -1617,6 +1617,73 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_workspace_task", ["workspaceId", "browserTaskId", "index"]),
 
+  /**
+   * A workspace's read-only connection to one outside account besides Meta (Google products, calendars,
+   * note takers). One row per workspace and provider. The tokens stay on the server: no public function
+   * returns them. Disconnecting deletes the row and every saved read.
+   */
+  integrationConnections: defineTable({
+    workspaceId: v.id("workspaces"),
+    /** A key from convex/lib/integrations/providers.ts. */
+    provider: v.string(),
+    status: v.union(v.literal("connected"), v.literal("needsReconnect")),
+    accessToken: v.string(),
+    refreshToken: v.optional(v.string()),
+    tokenExpiresAt: v.optional(v.number()),
+    scopes: v.array(v.string()),
+    /** The provider's own id for the account, and the name shown for it (an email or a display name). */
+    accountId: v.string(),
+    accountLabel: v.string(),
+    connectedBy: v.string(),
+    connectedAt: v.number(),
+    /** Agents granted use of this connection. Missing means the Growth Architect only. */
+    agents: v.optional(v.array(v.string())),
+    lastSyncAt: v.optional(v.number()),
+    lastSyncCode: v.optional(v.string()),
+    /** Set while a token renewal is in flight, so two reads do not spend a one-use renewal token twice. */
+    refreshingSince: v.optional(v.number()),
+    /** The unguessable part of this connection's webhook address, and its own signing secret when the provider issues one per subscription. */
+    hookId: v.optional(v.string()),
+    hookSecret: v.optional(v.string()),
+  })
+    .index("by_workspace_provider", ["workspaceId", "provider"])
+    .index("by_hook", ["hookId"]),
+
+  /** One sign-in attempt: one use, ten minutes, bound to the workspace, the Owner and the provider. */
+  integrationOauthStates: defineTable({
+    workspaceId: v.id("workspaces"),
+    userId: v.string(),
+    provider: v.string(),
+    nonce: v.string(),
+    /** PKCE: kept here and sent only to the provider's token address. */
+    codeVerifier: v.optional(v.string()),
+    returnOrigin: v.optional(v.string()),
+    returnPath: v.optional(v.string()),
+    createdAt: v.number(),
+    usedAt: v.optional(v.number()),
+  }).index("by_nonce", ["nonce"]),
+
+  /** What was last read through a connection, already reduced to what Vistrial keeps. Deleted on disconnect. */
+  integrationSnapshots: defineTable({
+    workspaceId: v.id("workspaces"),
+    provider: v.string(),
+    /** What the read is, such as "bookings". */
+    kind: v.string(),
+    syncedAt: v.number(),
+    data: v.any(),
+  }).index("by_workspace_provider", ["workspaceId", "provider", "kind"]),
+
+  /** Webhook deliveries that passed their signature check: which, when and what kind. Never the body. */
+  integrationWebhookEvents: defineTable({
+    workspaceId: v.id("workspaces"),
+    provider: v.string(),
+    deliveryId: v.string(),
+    eventType: v.string(),
+    receivedAt: v.number(),
+  })
+    .index("by_provider_delivery", ["provider", "deliveryId"])
+    .index("by_workspace_provider", ["workspaceId", "provider", "receivedAt"]),
+
   platformControls: defineTable({
     key: v.literal("platform"),
     halted: v.boolean(),

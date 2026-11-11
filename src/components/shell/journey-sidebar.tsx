@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "@/components/icons";
 import { GlyphMark } from "@/components/live/agent-identity";
+import { ClientPicker } from "@/components/shell/client-picker";
 import { OrganizationSwitcher } from "@/components/shell/organization-switcher";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Dialog, DialogPopup, DialogTitle } from "@/components/ui/dialog";
@@ -355,7 +356,12 @@ export function JourneySidebarView({
   return (
     <nav aria-label="Workspace" className="flex h-full min-h-0 flex-col">
       <div className="grid gap-1 px-3 pt-3">
-        {scope ?? <OrganizationSwitcher name={overview?.workspaceName ?? "Your business"} onNavigate={onNavigate} />}
+        {scope ?? (
+          <>
+            <OrganizationSwitcher name={overview?.workspaceName ?? "Your business"} onNavigate={onNavigate} />
+            <ClientPicker organizationName={overview?.workspaceName ?? "Your business"} onNavigate={onNavigate} />
+          </>
+        )}
       </div>
 
       <ul className="grid gap-0.5 border-b border-border px-3 pt-2 pb-3" aria-label="Always here">

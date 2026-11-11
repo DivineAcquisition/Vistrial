@@ -89,6 +89,39 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_account_user", ["accountId", "userId"]),
 
+  /**
+   * Someone an organization serves. A business client has a company profile, a brand kit, offers and ad
+   * results; a person client has their goals, where they are now, and notes. Clients do not log in.
+   * Work with no client is the organization's own.
+   */
+  clients: defineTable({
+    workspaceId: v.id("workspaces"),
+    type: v.union(v.literal("business"), v.literal("person")),
+    name: v.string(),
+    /** Lower case, single spaces: so the same client is not added twice. */
+    normalizedName: v.string(),
+    status: v.union(v.literal("active"), v.literal("archived")),
+    archivedAt: v.optional(v.number()),
+    business: v.optional(
+      v.object({ website: v.string(), industry: v.string(), offer: v.string(), audience: v.string(), geography: v.string(), notes: v.string() }),
+    ),
+    person: v.optional(v.object({ goals: v.string(), currentState: v.string(), notes: v.string() })),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_workspace", ["workspaceId", "status", "updatedAt"]),
+
+  /** A Member or Viewer may see this client. Owners and Admins see every client and need no row. */
+  clientAssignments: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.id("clients"),
+    memberId: v.id("members"),
+    assignedBy: v.string(),
+    assignedAt: v.number(),
+  })
+    .index("by_workspace_member", ["workspaceId", "memberId"])
+    .index("by_workspace_client", ["workspaceId", "clientId"]),
+
   /** An organization: one of the account owner's own businesses. */
   workspaces: defineTable({
     name: v.string(),
@@ -112,6 +145,11 @@ export default defineSchema({
     email: v.optional(v.string()),
     /** When an owner removed this member. The row stays (inactive) for the audit trail. */
     removedAt: v.optional(v.number()),
+    /**
+     * For a Member or Viewer: may they see the organization's own work (records with no client)?
+     * Missing means yes, so nobody lost sight of anything when clients arrived. Owners and Admins always may.
+     */
+    ownWork: v.optional(v.boolean()),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_user", ["userId"])
@@ -686,6 +724,8 @@ export default defineSchema({
 
   agentRuns: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     agentSlug: v.string(),
     skillSlug: v.string(),
     status: v.union(
@@ -760,6 +800,8 @@ export default defineSchema({
 
   assets: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     kind: v.union(
       v.literal("researchReport"),
       v.literal("marketReport"),
@@ -886,6 +928,8 @@ export default defineSchema({
   /** One piece of market research: what to find out, and where to look. */
   researchProjects: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     title: v.string(),
     objective: v.string(),
     market: v.string(),
@@ -990,6 +1034,8 @@ export default defineSchema({
    */
   decisions: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     projectId: v.id("researchProjects"),
     runId: v.id("agentRuns"),
     assetId: v.optional(v.id("assets")),
@@ -1044,6 +1090,8 @@ export default defineSchema({
   /** One offer the business sells, shown as an offer card. Its content lives in versions. */
   offerCards: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     name: v.string(),
     currentVersion: v.number(),
     archived: v.optional(v.boolean()),
@@ -1103,6 +1151,8 @@ export default defineSchema({
    */
   brandKits: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     kind: v.union(v.literal("own"), v.literal("client")),
     name: v.string(),
     currentVersion: v.number(),
@@ -1110,7 +1160,10 @@ export default defineSchema({
     createdBy: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_workspace", ["workspaceId", "updatedAt"]),
+  })
+    .index("by_workspace", ["workspaceId", "updatedAt"])
+    /** Lets the client backfill find client kits that are not linked to a client yet. */
+    .index("by_kind_client", ["kind", "clientId"]),
 
   /** One version of a brand kit. Never overwritten: a change is a new version. */
   brandKitVersions: defineTable({
@@ -1250,6 +1303,8 @@ export default defineSchema({
    */
   creativeRequests: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     kitId: v.id("brandKits"),
     /** The kit version read when the request was made, so the creative says which one it used. */
     kitVersion: v.number(),
@@ -1289,6 +1344,8 @@ export default defineSchema({
 
   resultUploads: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     fileName: v.string(),
     /** Where the figures come from, in the person's words ("Google Ads", "Jobber bookings"). */
     label: v.string(),
@@ -1321,6 +1378,8 @@ export default defineSchema({
 
   metaConnections: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     /** "oauth" from Facebook Login; "serverToken" for the operator's own token in development. */
     source: v.union(v.literal("oauth"), v.literal("serverToken")),
     accessToken: v.string(),
@@ -1433,6 +1492,8 @@ export default defineSchema({
    */
   intakes: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     agentSlug: v.string(),
     createdBy: v.string(),
     status: v.union(v.literal("chatting"), v.literal("thinking"), v.literal("ready"), v.literal("started"), v.literal("abandoned")),
@@ -1581,6 +1642,8 @@ export default defineSchema({
    */
   teardownRequests: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     projectId: v.id("researchProjects"),
     industry: v.string(),
     ownUrl: v.optional(v.string()),
@@ -1678,6 +1741,8 @@ export default defineSchema({
    */
   integrationConnections: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     /** A key from convex/lib/integrations/providers.ts. */
     provider: v.string(),
     status: v.union(v.literal("connected"), v.literal("needsReconnect")),
@@ -1733,6 +1798,8 @@ export default defineSchema({
    */
   callTranscripts: defineTable({
     workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
     title: v.string(),
     /** The tool it came from, in the person's words. */
     tool: v.string(),

@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientScope } from "@/components/shell/shell-context";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
@@ -413,7 +414,8 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
 
 /** The Diagnostics tab fed by Convex. */
 export function DiagnosticsTab({ workspaceId, base, editor }: { workspaceId: Id<"workspaces">; base: string; editor: boolean }) {
-  const tab = useQuery(api.workTabs.tab, { workspaceId, skillSlug: "growth-diagnostics" });
+  const { scope } = useClientScope();
+  const tab = useQuery(api.workTabs.tab, { workspaceId, scope, skillSlug: "growth-diagnostics" });
   const data = useQuery(api.workTabs.diagnostics, { workspaceId });
   const setGoal = useMutation(api.goals.set);
   const { byIndex, actions } = useItemDecisions(workspaceId, (data?.diagnosis?.assetId ?? null) as Id<"assets"> | null);

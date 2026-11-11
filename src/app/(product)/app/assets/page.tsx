@@ -5,7 +5,7 @@ import { usePaginatedQuery } from "convex/react";
 import { useState } from "react";
 
 import { AssetRow, type AssetRowView } from "@/components/assets/asset-row";
-import { useWorkspaceShell, type WorkspaceShell } from "@/components/shell/shell-context";
+import { useWorkspaceShell, type WorkspaceShell, scopeOf } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -43,7 +43,7 @@ function Library({ shell }: { shell: WorkspaceShell }) {
   const [kind, setKind] = useState("");
   const { results, status: loadStatus, loadMore } = usePaginatedQuery(
     api.assets.list,
-    { workspaceId: shell.workspaceId, status, kind: kind ? (kind as Kind) : undefined },
+    { workspaceId: shell.workspaceId, scope: scopeOf(shell).scope, status, kind: kind ? (kind as Kind) : undefined },
     { initialNumItems: 20 },
   );
   return (

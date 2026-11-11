@@ -106,6 +106,7 @@ function intakeView(row: Doc<"intakes">) {
     pendingRemember: row.pendingRemember,
     platformNote: row.platformNote ?? null,
     projectId: row.projectId ?? null,
+    clientId: row.clientId ?? null,
     mode: row.mode ?? "thorough",
     researchCapCents: (row.mode ?? "thorough") === "fast" ? 150 : 300,
     createdAt: row.createdAt,
@@ -172,13 +173,15 @@ type ResearchChoices = { mode?: "thorough" | "fast"; platforms?: string[]; links
  */
 export async function beginResearch(
   ctx: MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } },
-  input: ResearchChoices & { text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"] },
+  input: ResearchChoices & { text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"]; clientId?: Id<"clients"> },
 ) {
   await assertCanSpend(ctx, ctx.workspaceId);
   const text = clean(input.text, 1000);
   if (!text) throw userError("Say what you want to find out.");
   const now = Date.now();
-  let slots = prefill(emptySlots(), await memoryFor(ctx, ctx.workspaceId));
+  // What Vistrial remembers is about the organization's own business, so it is not assumed for a client.
+  const clientId = input.row?.clientId ?? input.clientId;
+  let slots = clientId ? emptySlots() : prefill(emptySlots(), await memoryFor(ctx, ctx.workspaceId));
   slots = withChoices(slots, input.platforms, input.links);
   const fields = {
     ...(input.mode ? { mode: input.mode } : {}),
@@ -196,7 +199,7 @@ export async function beginResearch(
     intakeId = input.row._id;
     await ctx.db.patch(intakeId, { ...fields, skillSlug: undefined });
   } else {
-    intakeId = await ctx.db.insert("intakes", { workspaceId: ctx.workspaceId, agentSlug: GROWTH_ARCHITECT, createdBy: ctx.identity.subject, ...(input.context ? { context: input.context } : {}), createdAt: now, ...fields });
+    intakeId = await ctx.db.insert("intakes", { workspaceId: ctx.workspaceId, ...(clientId ? { clientId } : {}), agentSlug: GROWTH_ARCHITECT, createdBy: ctx.identity.subject, ...(input.context ? { context: input.context } : {}), createdAt: now, ...fields });
     await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
   }
   const known = (["market", "geography", "competitors"] as const)
@@ -290,7 +293,8 @@ export const remember = workspaceMutation({
     const item = row.pendingRemember.find((entry) => entry.factKey === args.factKey);
     if (!item) return null;
     const now = await nextAt(ctx, row._id);
-    if (args.yes) {
+    // Memory is about the organization's own business. An answer about a client is kept for this session only.
+    if (args.yes && !row.clientId) {
       await writeFact(ctx, {
         workspaceId: ctx.workspaceId,
         factKey: item.factKey,

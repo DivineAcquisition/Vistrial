@@ -105,7 +105,7 @@ export async function gatherFirstParty(ctx: MutationCtx, run: Pick<Doc<"agentRun
   const uploads = (await saveUploadSourcesFor(ctx, { workspaceId: run.workspaceId, projectId: project._id, runId: run._id, agentSlug: run.agentSlug }))
     .filter((row) => row.upload.summary)
     .map((row) => ({ upload: row.upload, sourceId: row.sourceId as string }));
-  const now = await currentFigures(ctx, run.workspaceId);
+  const now = await currentFigures(ctx, run.workspaceId, project.clientId);
   const decisions: DecisionInput[] = [];
   for (const decision of await decisionsForContext(ctx, run.workspaceId)) {
     // A recorded outcome is measured against its own after-figures; an open one against today's.

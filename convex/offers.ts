@@ -4,6 +4,7 @@
  * own words. An analysis may add a version only from what the business stated, never from a competitor.
  */
 
+import { clientForNew, requireClientIn } from "./lib/clients";
 import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
@@ -49,6 +50,8 @@ export function versionFields(content: OfferContent) {
 export async function ownCard(ctx: QueryCtx, workspaceId: Id<"workspaces">, cardId: Id<"offerCards">) {
   const card = await ctx.db.get(cardId);
   if (!card || card.workspaceId !== workspaceId) notFound();
+  // A client's offer is only there for the people who may see that client.
+  requireClientIn(ctx, card.clientId);
   return card;
 }
 
@@ -73,7 +76,7 @@ export const list = workspaceQuery({
       .order("desc")
       .take(30);
     const out = [];
-    for (const card of cards) {
+    for (const card of ctx.clients.filter(cards)) {
       if (card.archived) continue;
       const versions = await versionsOf(ctx, ctx.workspaceId, card._id);
       const current = versions.find((row) => row.version === card.currentVersion);
@@ -168,8 +171,8 @@ const contentArgs = {
  * and what is wrong comes back in words for the person. Owners, Admins and Members.
  */
 export const saveVersion = workspaceMutation({
-  args: { cardId: v.optional(v.id("offerCards")), ...contentArgs, origin: v.optional(v.union(v.literal("person"), v.literal("chat"))), note: v.optional(v.string()), copyOf: v.optional(v.id("offerCards")) },
-  handler: async (ctx, { cardId, origin, note, copyOf, ...raw }) => {
+  args: { cardId: v.optional(v.id("offerCards")), ...contentArgs, origin: v.optional(v.union(v.literal("person"), v.literal("chat"))), note: v.optional(v.string()), copyOf: v.optional(v.id("offerCards")), clientId: v.optional(v.id("clients")) },
+  handler: async (ctx, { cardId, origin, note, copyOf, clientId, ...raw }) => {
     requireWork(ctx.member.role);
     const input = raw as OfferInput;
     const problem = offerProblem(input);
@@ -192,7 +195,9 @@ export const saveVersion = workspaceMutation({
       return { cardId: card._id, version, added: true };
     }
     const source = copyOf ? await ownCard(ctx, ctx.workspaceId, copyOf) : null;
-    const id = await ctx.db.insert("offerCards", { workspaceId: ctx.workspaceId, name: content.name, currentVersion: 1, ...(source ? { copiedFrom: source._id } : {}), createdBy: ctx.identity.subject, createdAt: now, updatedAt: now });
+    // A new card is for the client named, or for the one the card it copies is for.
+    const forClient = await clientForNew(ctx, clientId ?? source?.clientId);
+    const id = await ctx.db.insert("offerCards", { workspaceId: ctx.workspaceId, ...forClient, name: content.name, currentVersion: 1, ...(source ? { copiedFrom: source._id } : {}), createdBy: ctx.identity.subject, createdAt: now, updatedAt: now });
     await ctx.db.insert("offerCardVersions", { workspaceId: ctx.workspaceId, cardId: id, version: 1, ...fields, ...(source && !fields.note ? { note: `Copied from ${source.name}`.slice(0, MAX.note) } : {}) });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "offer.created", subject: id });
     return { cardId: id, version: 1, added: true };

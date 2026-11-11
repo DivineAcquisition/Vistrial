@@ -147,6 +147,7 @@ export const start = workspaceMutation({
     }
     const requestId = await ctx.db.insert("creativeRequests", {
       workspaceId: ctx.workspaceId,
+      ...(kit.clientId ? { clientId: kit.clientId } : {}),
       kitId: kit._id,
       kitVersion: kit.currentVersion,
       ...(args.sourceRefId ? { sourceRefId: args.sourceRefId } : {}),
@@ -157,7 +158,7 @@ export const start = workspaceMutation({
       createdBy: ctx.identity.subject,
       createdAt: Date.now(),
     });
-    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, inputRef: requestId });
+    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, inputRef: requestId, clientId: kit.clientId });
     await ctx.db.patch(requestId, { runId });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "creative.started", subject: requestId });
     return { requestId, runId };

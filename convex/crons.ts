@@ -19,6 +19,12 @@ crons.interval("finish agent rename", { minutes: 10 }, internal.agentsMigration.
 crons.interval("finish accounts and roles", { minutes: 10 }, internal.organizationsMigration.backfillIfNeeded, {});
 
 /**
+ * Turns each brand kit that was made "for a client" into a real client and links the two, on any
+ * deployment that still has an unlinked one. A no-op once it is done.
+ */
+crons.interval("link client brand kits", { minutes: 10 }, internal.clientsMigration.backfillIfNeeded, {});
+
+/**
  * Fills any kind of model work that has no route with the defaults (research and write on Opus, classify
  * and summarize on Sonnet). It never changes a route that exists, so a Platform Admin's choice stands, and
  * a deployment works without anyone running platform:ensureDefaultRoutes by hand.

@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { ChatComposer } from "@/components/chat/chat-composer";
 import { useChatExtras } from "@/components/chat/use-chat-extras";
-import { useWorkspaceShell } from "@/components/shell/shell-context";
+import { useWorkspaceShell, useClientScope } from "@/components/shell/shell-context";
 import { api } from "../../../convex/_generated/api";
 import { showError } from "@/lib/errors/show-error";
 
@@ -26,6 +26,7 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
   const shell = useWorkspaceShell();
   const router = useRouter();
   const send = useMutation(api.agentChat.send);
+  const { clientId } = useClientScope();
   const [agentSlug, setAgentSlug] = useState(defaultAgent);
   const [problem, setProblem] = useState("");
   const extras = useChatExtras(shell!.workspaceId, shell ? canWork(shell.role) : false, shell ? isAdmin(shell.role) : false);
@@ -58,6 +59,8 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
               mode: extras.mode,
               ...(extras.sources ? { platforms: extras.sources } : {}),
               ...(extras.links.length ? { links: extras.links } : {}),
+              // A new conversation is about whoever the picker is on.
+              ...(clientId ? { clientId } : {}),
             });
             if (route === "market-intelligence") await extras.attachTo({ intakeId });
             extras.reset();

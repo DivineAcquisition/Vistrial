@@ -5,13 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { BillingView, type BillingData } from "@/components/billing/billing-view";
+import { AddOrganizationDialog, useAddOrganization } from "@/components/shell/organization-switcher";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { EmptyState } from "@/components/ui/empty-state";
 
 import { api } from "../../../convex/_generated/api";
 import { showError } from "@/lib/errors/show-error";
 
-/** Workspace → Billing, fed by Convex. Owners buy and manage; everyone sees the balance. */
+/** Billing for the account, fed by Convex. Owners buy and manage; everyone sees the shared balance. */
 export function BillingScreen() {
   const shell = useWorkspaceShell();
   const data = useQuery(api.billing.overview, shell ? { workspaceId: shell.workspaceId } : "skip");
@@ -24,13 +25,22 @@ export function BillingScreen() {
   const paid = params.get("paid");
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [adding, setAdding] = useState(false);
+  const addOrganization = useAddOrganization();
 
   // Coming back from checkout, or opening the page: read the latest balance from Autumn.
   useEffect(() => {
     if (!shell || !data?.on) return;
     void refresh({ workspaceId: shell.workspaceId }).catch(() => undefined);
   }, [shell, data?.on, paid, refresh]);
-  const paidNotice = paid === "plan" ? "Thanks. Your plan is on and its credits are added." : paid ? "Thanks. Your credits are added." : "";
+  const paidNotice =
+    paid === "plan"
+      ? "Thanks. Your plan is on and its credits are added."
+      : paid === "organization"
+        ? "Thanks. Your new organization is being added; it appears in the organization menu in a moment."
+        : paid
+          ? "Thanks. Your credits are added."
+          : "";
 
   if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   if (data === undefined) return <p className="text-sm text-muted-foreground">Loading billing.</p>;
@@ -50,16 +60,20 @@ export function BillingScreen() {
   const origin = typeof window === "undefined" ? undefined : window.location.origin;
 
   return (
-    <BillingView
-      data={data as BillingData}
-      busy={busy}
-      notice={notice || paidNotice}
-      actions={{
-        subscribe: () => void go("plan", () => subscribe({ workspaceId: shell.workspaceId, returnOrigin: origin })),
-        topUp: (amountCents) => void go(`topup:${amountCents}`, () => topUp({ workspaceId: shell.workspaceId, amountCents, returnOrigin: origin })),
-        autoRefill: (enabled) => void go("refill", async () => (await setAutoRefill({ workspaceId: shell.workspaceId, enabled }), null)),
-        portal: () => void go("portal", () => portal({ workspaceId: shell.workspaceId, returnOrigin: origin })),
-      }}
-    />
+    <>
+      <BillingView
+        data={data as BillingData}
+        busy={busy}
+        notice={notice || paidNotice}
+        actions={{
+          subscribe: () => void go("plan", () => subscribe({ workspaceId: shell.workspaceId, returnOrigin: origin })),
+          topUp: (amountCents) => void go(`topup:${amountCents}`, () => topUp({ workspaceId: shell.workspaceId, amountCents, returnOrigin: origin })),
+          autoRefill: (enabled) => void go("refill", async () => (await setAutoRefill({ workspaceId: shell.workspaceId, enabled }), null)),
+          portal: () => void go("portal", () => portal({ workspaceId: shell.workspaceId, returnOrigin: origin })),
+          addOrganization: () => setAdding(true),
+        }}
+      />
+      <AddOrganizationDialog open={adding} onOpenChange={setAdding} account={shell.account ?? null} onAdd={addOrganization} />
+    </>
   );
 }

@@ -12,9 +12,12 @@ import { userError } from "./errors";
 export const CREDITS_FEATURE = () => process.env.AUTUMN_FEATURE_ID || "credits";
 export const PLAN_ID = () => process.env.AUTUMN_PLAN_ID || "growth";
 export const TOPUP_ID = () => process.env.AUTUMN_TOPUP_ID || "topup";
+export const EXTRA_ORG_ID = () => process.env.AUTUMN_EXTRA_ORG_ID || "extra_org";
 
 /** The owner's choices: $179 a month with $150 of credits, packs of $10, $25 or $50, refill $10 under $2. */
 export const PLAN = { name: "Growth", priceCents: 17900, includedCents: 15000 } as const;
+/** Each organization after the first: $99 a month, and $50 more credits in the account's shared balance. */
+export const EXTRA_ORG = { priceCents: 9900, includedCents: 5000 } as const;
 export const TOPUP_PACKS_CENTS = [1000, 2500, 5000] as const;
 export const AUTO_REFILL = { thresholdCents: 200, amountCents: 1000, maxPerMonth: 4 } as const;
 
@@ -40,6 +43,28 @@ export function billingOn(): boolean {
   return Boolean(autumnKey());
 }
 
+/**
+ * Whether an Owner may buy another organization here. On by default in Stripe test mode and off where
+ * real money is charged, until BILLING_EXTRA_ORGS=on is set (docs/rebuild/organizations-and-clients.md, 6.4).
+ */
+export function extraOrgsOpen(): boolean {
+  const flag = process.env.BILLING_EXTRA_ORGS?.trim().toLowerCase();
+  if (flag === "on") return true;
+  if (flag === "off") return false;
+  return autumnMode() === "test";
+}
+
+/**
+ * How many extra organizations a customer is paying for, from the add-on's subscription as Autumn reports
+ * it. The add-on is bought as a quantity of credits (5,000 per organization); a plain count is read too.
+ */
+export function extraUnitsFrom(subscriptions: { planId?: string; status?: string; quantity?: number }[] | undefined): number {
+  const row = (subscriptions ?? []).find((entry) => entry.planId === EXTRA_ORG_ID() && planActive({ planId: PLAN_ID(), planStatus: entry.status }));
+  if (!row) return 0;
+  const quantity = Math.max(0, Math.round(row.quantity ?? 1));
+  return quantity >= EXTRA_ORG.includedCents ? Math.round(quantity / EXTRA_ORG.includedCents) : Math.max(1, quantity);
+}
+
 /** The Growth plan is paid for: Autumn lists it and has not ended it. */
 export function planActive(account: { planId?: string | null; planStatus?: string | null } | null | undefined): boolean {
   if (!account?.planId || account.planId !== PLAN_ID()) return false;
@@ -50,16 +75,39 @@ export function priceFor(costCents: number, factor = markup()): number {
   return costCents > 0 ? Math.ceil(costCents * factor) : 0;
 }
 
+/**
+ * Who is billed for an organization: its account, and the customer id Autumn knows it by. A workspace
+ * the accounts backfill has not reached yet is its own account, billed under its own id as it always was.
+ */
+export async function billingOwner(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
+  const workspace = await ctx.db.get(workspaceId);
+  const account = workspace?.accountId ? await ctx.db.get(workspace.accountId) : null;
+  if (!account) return { account: null, customerId: workspaceId as string, firstWorkspaceId: workspaceId };
+  // The customer id of an account is its first organization's id, which is also where its mirror row began.
+  const first = ctx.db.normalizeId("workspaces", account.billingCustomerId);
+  return { account, customerId: account.billingCustomerId, firstWorkspaceId: first ?? workspaceId };
+}
+
+/** The credit balance an organization spends from: one row per account, shared by all its organizations. */
 export async function accountFor(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
+  const owner = await billingOwner(ctx, workspaceId);
+  if (owner.account) {
+    const shared = await ctx.db
+      .query("billingAccounts")
+      .withIndex("by_account", (q) => q.eq("accountId", owner.account!._id))
+      .first();
+    if (shared) return shared;
+  }
+  // Not stamped with its account yet: the row is still keyed by the account's first organization.
   return ctx.db
     .query("billingAccounts")
-    .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", owner.firstWorkspaceId))
     .unique();
 }
 
 export const OUT_OF_CREDITS = "Your credit balance is empty. An owner can add credits in Billing to start new work.";
 
-/** Throws when billing is on and this workspace has no credit left. Call before starting new work. */
+/** Throws when billing is on and this organization's account has no credit left. Call before starting new work. */
 export async function assertCanSpend(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
   if (!billingOn()) return;
   const account = await accountFor(ctx, workspaceId);
@@ -77,8 +125,12 @@ export async function chargeUsage(
   if (args.costCents <= 0) return null;
   const factor = markup();
   const priceCents = priceFor(args.costCents, factor);
+  // Work for a client is marked with it, so what a client costs to serve can be added up later.
+  const runId = ctx.db.normalizeId("agentRuns", args.ref);
+  const run = runId ? await ctx.db.get(runId) : null;
   const ledgerId = await ctx.db.insert("billingLedger", {
     workspaceId: args.workspaceId,
+    ...(run?.clientId && run.workspaceId === args.workspaceId ? { clientId: run.clientId } : {}),
     source: args.source,
     ref: args.ref,
     costCents: args.costCents,

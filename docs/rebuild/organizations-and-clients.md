@@ -370,6 +370,19 @@ The Autumn customer id is the workspace id. `billingAccounts` mirrors one balanc
 - **Archiving an organization** lowers the quantity from the next renewal. *Not built in PR 4*: it is
   stated in the dialog as "contact us", and listed in the PR under what does not work yet.
 
+**As built (PR 4).** Three things are simpler than first drawn:
+
+- No backfill touches billing. `accountFor` finds the mirror by account, and otherwise by the account's
+  first organization (its billing customer id), which is where the row already is. The row is stamped with
+  its `accountId` the next time Autumn is read. `billingLedger` did not need an `accountId`: "what each
+  organization used" is read per organization from the index that exists. It did gain `clientId`.
+- The organization being paid for is held on `accounts.pendingOrganization` and created by `saveAccount`
+  when Autumn reports more paid extra organizations than exist. Returning from checkout calls `refresh`,
+  which is that read.
+- `organizations.create` (no charge) only works where billing is off. Where billing is on, the only way
+  to add an organization is `billingActions.addOrganization`, which takes the price the Owner agreed to
+  and refuses if it is not the current one.
+
 ### 6.3 Switches
 
 | Variable | Default | Meaning |

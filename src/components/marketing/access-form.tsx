@@ -19,12 +19,13 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   BUSINESS_TYPES,
-  CALLS_PER_WEEK,
-  CRMS,
+  AD_SPEND,
+  CHANNELS,
+  CLIENT_COUNTS,
   CUSTOM_TEAM_SIZES,
-  DEAL_VALUES,
-  LEAD_SOURCES,
-  LEADS_PER_MONTH,
+  FIGURES,
+  FIRST_WANTS,
+  OFFER_PRICES,
   TEAM_SIZES,
 } from "@/lib/access-requests/options";
 import { trackMarketingEvent } from "@/components/marketing/track";
@@ -182,35 +183,34 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
                   <FieldMessage message={error?.business_type_other} />
                 </Field>
               </FieldPair>
-              <Choice name="team_size" label="People who handle leads" options={TEAM_SIZES} required error={error?.team_size} />
+              <FieldPair>
+                <Choice name="team_size" label="People on your team" options={TEAM_SIZES} required error={error?.team_size} />
+                <Choice name="client_count" label="Who you would use Vistrial for" options={CLIENT_COUNTS} required error={error?.client_count} />
+              </FieldPair>
             </FormSection>
 
             <FormSection step={3} title={FORMS.sections.selling}>
               <fieldset>
-                <legend className="text-sm font-medium text-card-foreground">Where your lead data lives today</legend>
+                <legend className="text-sm font-medium text-card-foreground">Where your customers come from today</legend>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {LEAD_SOURCES.map((source) => (
-                    <label key={source.value} className={publicChipClass}>
-                      <input type="checkbox" name="lead_sources" value={source.value} className={cn(checkboxClass, publicCheckClass)} />
-                      {source.label}
+                  {CHANNELS.map((channel) => (
+                    <label key={channel.value} className={publicChipClass}>
+                      <input type="checkbox" name="channels" value={channel.value} className={cn(checkboxClass, publicCheckClass)} />
+                      {channel.label}
                     </label>
                   ))}
                 </div>
               </fieldset>
-              <Field label="If other, where" name="lead_sources_other" htmlFor="lead_sources_other">
-                <Input className={publicFieldClass} id="lead_sources_other" name="lead_sources_other" type="text" maxLength={120} />
+              <Field label="If other, where" name="channels_other" htmlFor="channels_other">
+                <Input className={publicFieldClass} id="channels_other" name="channels_other" type="text" maxLength={120} />
               </Field>
               <FieldPair>
-                <Choice name="crm" label="Which CRM you use" options={CRMS} error={error?.crm} />
-                <Field label="If another CRM, which one" name="crm_other" htmlFor="crm_other">
-                  <Input className={publicFieldClass} id="crm_other" name="crm_other" type="text" maxLength={120} aria-invalid={error?.crm_other ? true : undefined} />
-                  <FieldMessage message={error?.crm_other} />
-                </Field>
+                <Choice name="ad_spend" label="Ad spend each month, yours or your clients'" options={AD_SPEND} required error={error?.ad_spend} />
+                <Choice name="offer_price" label="Price of your main offer" options={OFFER_PRICES} required error={error?.offer_price} />
               </FieldPair>
-              <Choice name="deal_value" label="Average value of a closed deal" options={DEAL_VALUES} required error={error?.deal_value} />
               <FieldPair>
-                <Choice name="calls_per_week" label="Sales calls or consultations each week" options={CALLS_PER_WEEK} required error={error?.calls_per_week} />
-                <Choice name="leads_per_month" label="New leads each month" options={LEADS_PER_MONTH} required error={error?.leads_per_month} />
+                <Choice name="first_want" label="What you want first" options={FIRST_WANTS} required error={error?.first_want} />
+                <Choice name="figures" label="Your own figures you could share" options={FIGURES} error={error?.figures} />
               </FieldPair>
             </FormSection>
 

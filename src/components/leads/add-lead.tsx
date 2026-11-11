@@ -16,7 +16,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 export function AddLead() {
   const ready = useConvexReady();
   const shell = useWorkspaceShell();
-  if (!ready || !shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
+  if (!ready || !shell) return <p className="text-sm text-muted-foreground">Sign in to open your organization.</p>;
   return <LiveAdd workspaceId={shell.workspaceId} />;
 }
 

@@ -122,7 +122,7 @@ export function BillingView({
               {busy === "plan" ? "Opening checkout…" : `Start the ${data.plan.name} plan`}
             </Button>
           ) : null}
-          {!data.canManage ? <p className="text-xs text-muted-foreground">The workspace Owner manages billing.</p> : null}
+          {!data.canManage ? <p className="text-xs text-muted-foreground">The account Owner manages billing.</p> : null}
         </Panel>
       </div>
 

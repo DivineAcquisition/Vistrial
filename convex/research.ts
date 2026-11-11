@@ -1,3 +1,4 @@
+import { requireWork } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
@@ -5,7 +6,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { platform, projectStatus, type Platform } from "./lib/researchShapes";
 import { canonicalUrl, parsePublicUrl, sourceRefView } from "./lib/sourceRefs";
 
@@ -89,11 +90,11 @@ function projectView(row: Doc<"researchProjects">) {
   };
 }
 
-/** Owner or Manager. Scoped against the latest confirmed profile, when there is one. */
+/** Owner, Admin or Member. Scoped against the latest confirmed profile, when there is one. */
 export const createProject = workspaceMutation({
   args: scopeArgs,
   handler: async (ctx, input) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const scope = cleanScope(input);
     const profile = await ctx.db
       .query("profileVersions")
@@ -126,7 +127,7 @@ export const createProject = workspaceMutation({
 export const updateProject = workspaceMutation({
   args: { projectId: v.id("researchProjects"), ...scopeArgs },
   handler: async (ctx, { projectId, ...input }) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const project = await ownProject(ctx, ctx.workspaceId, projectId);
     if (project.status !== "draft") throw userError("This project has already run. Start a new one to change its scope.");
     await ctx.db.patch(project._id, { ...cleanScope(input), updatedAt: Date.now() });
@@ -137,7 +138,7 @@ export const updateProject = workspaceMutation({
 export const archiveProject = workspaceMutation({
   args: { projectId: v.id("researchProjects") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const project = await ownProject(ctx, ctx.workspaceId, args.projectId);
     const latest = project.latestRunId ? await ctx.db.get(project.latestRunId) : null;
     if (project.status === "running" || (latest && ["queued", "running", "waiting"].includes(latest.status))) {

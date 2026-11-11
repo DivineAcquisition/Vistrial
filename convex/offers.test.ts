@@ -3,7 +3,7 @@
  *
  * The offer builder's server side: creating an offer, saving versions and comparing them, starting from the
  * profile or a copy, "Analyse this offer", validation in words a person can act on, roles (Owners and
- * Managers edit, Reps read) and that one workspace never reads or writes another's offers.
+ * Admins edit, Viewers read) and that one workspace never reads or writes another's offers.
  */
 import { convexTest } from "convex-test";
 import { ConvexError } from "convex/values";
@@ -28,10 +28,10 @@ async function seed(t: Tester, name: string) {
   const workspaceId = await owner.mutation(api.workspace.create, { name });
   await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: AGENT, state: "on" });
   await t.run(async (ctx) => {
-    await ctx.db.insert("members", { workspaceId, userId: `${name}-rep`, role: "rep", displayName: "Rep", active: true });
-    await ctx.db.insert("members", { workspaceId, userId: `${name}-manager`, role: "manager", displayName: "Manager", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: `${name}-viewer`, role: "viewer", displayName: "Viewer", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: `${name}-admin`, role: "admin", displayName: "Admin", active: true });
   });
-  return { owner, rep: t.withIdentity(person(`${name}-rep`)), manager: t.withIdentity(person(`${name}-manager`)), workspaceId };
+  return { owner, viewer: t.withIdentity(person(`${name}-viewer`)), admin: t.withIdentity(person(`${name}-admin`)), workspaceId };
 }
 
 /** An agency's offer as the builder sends it. */
@@ -169,7 +169,7 @@ describe("offer builder (server)", () => {
     const a = await seed(t, "Northlight");
     const first = await a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer });
     vi.advanceTimersByTime(1000);
-    const second = await a.manager.mutation(api.offers.saveVersion, {
+    const second = await a.admin.mutation(api.offers.saveVersion, {
       workspaceId: a.workspaceId,
       cardId: first.cardId,
       ...retainer,
@@ -196,7 +196,7 @@ describe("offer builder (server)", () => {
     const a = await seed(t, "Northlight");
     const first = await a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer });
     await a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId: first.cardId, ...retainer, outcome: "30 booked sales calls every month", guaranteeType: "moneyBack", guarantee: "Your first month back if we miss it." });
-    const compared = await a.rep.query(api.offers.compare, { workspaceId: a.workspaceId, cardId: first.cardId, from: 1, to: 2 });
+    const compared = await a.viewer.query(api.offers.compare, { workspaceId: a.workspaceId, cardId: first.cardId, from: 1, to: 2 });
     expect(compared.changes.filter((row) => row.changed).map((row) => row.field)).toEqual(["outcome", "guaranteeType", "guarantee"]);
     expect(compared.changes.find((row) => row.field === "guaranteeType")).toMatchObject({ before: "Results guarantee", after: "Money-back guarantee" });
     expect(compared).toMatchObject({ from: { version: 1 }, to: { version: 2 } });
@@ -210,7 +210,7 @@ describe("offer builder (server)", () => {
     await t.run((ctx) =>
       ctx.db.insert("profileVersions", { workspaceId: a.workspaceId, version: 1, offer: "Paid ads management for home-service brands", priceNotes: "$1,500/mo plus ad spend", audience: "Roofers and HVAC companies", geography: "Texas", channels: "Referrals, cold email", brandVoice: "", competitors: [], status: "confirmed" }),
     );
-    const starter = await a.rep.query(api.offers.starter, { workspaceId: a.workspaceId });
+    const starter = await a.viewer.query(api.offers.starter, { workspaceId: a.workspaceId });
     expect(starter.profile).toMatchObject({ confirmed: true, offer: { name: "Paid ads management for home-service brands", price: "$1,500/mo", targetCustomer: "Roofers and HVAC companies", channel: "Referrals" } });
 
     const original = await a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer });
@@ -240,24 +240,24 @@ describe("offer builder (server)", () => {
     await expect(a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer, name: "" })).rejects.toMatchObject({ data: { code: "invalid", message: "Give the offer a name." } });
   });
 
-  it("Owners and Managers edit; Reps read", async () => {
+  it("Owners and Admins edit; Viewers read", async () => {
     const t = makeTester();
     const a = await seed(t, "Northlight");
     await approveReport(t, a.workspaceId);
-    await expect(a.rep.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer })).rejects.toMatchObject({ data: { code: "not_allowed" } });
-    const saved = await a.manager.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer });
-    await expect(a.rep.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId: saved.cardId, ...retainer, cta: "Call now" })).rejects.toMatchObject({ data: { code: "not_allowed" } });
-    await expect(a.rep.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer, copyOf: saved.cardId })).rejects.toMatchObject({ data: { code: "not_allowed" } });
-    await expect(a.rep.mutation(api.offerRuns.analyse, { workspaceId: a.workspaceId, cardId: saved.cardId })).rejects.toMatchObject({ data: { code: "not_allowed" } });
-    await expect(a.rep.mutation(api.offers.archive, { workspaceId: a.workspaceId, cardId: saved.cardId })).rejects.toMatchObject({ data: { code: "not_allowed" } });
-    // A Rep reads the offer, its versions and the comparison.
-    expect((await a.rep.query(api.offers.list, { workspaceId: a.workspaceId })).map((row) => row.id)).toEqual([saved.cardId]);
-    expect((await a.rep.query(api.offers.get, { workspaceId: a.workspaceId, cardId: saved.cardId })).versions).toHaveLength(1);
-    // Nothing a Rep tried was stored or started.
+    await expect(a.viewer.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer })).rejects.toMatchObject({ data: { code: "not_allowed" } });
+    const saved = await a.admin.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer });
+    await expect(a.viewer.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId: saved.cardId, ...retainer, cta: "Call now" })).rejects.toMatchObject({ data: { code: "not_allowed" } });
+    await expect(a.viewer.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...retainer, copyOf: saved.cardId })).rejects.toMatchObject({ data: { code: "not_allowed" } });
+    await expect(a.viewer.mutation(api.offerRuns.analyse, { workspaceId: a.workspaceId, cardId: saved.cardId })).rejects.toMatchObject({ data: { code: "not_allowed" } });
+    await expect(a.viewer.mutation(api.offers.archive, { workspaceId: a.workspaceId, cardId: saved.cardId })).rejects.toMatchObject({ data: { code: "not_allowed" } });
+    // A Viewer reads the offer, its versions and the comparison.
+    expect((await a.viewer.query(api.offers.list, { workspaceId: a.workspaceId })).map((row) => row.id)).toEqual([saved.cardId]);
+    expect((await a.viewer.query(api.offers.get, { workspaceId: a.workspaceId, cardId: saved.cardId })).versions).toHaveLength(1);
+    // Nothing a Viewer tried was stored or started.
     expect(await t.run((ctx) => ctx.db.query("offerCardVersions").collect())).toHaveLength(1);
     expect(await t.run((ctx) => ctx.db.query("agentRuns").collect())).toHaveLength(0);
-    // Owners and Managers can both put an offer away.
-    await a.manager.mutation(api.offers.archive, { workspaceId: a.workspaceId, cardId: saved.cardId });
+    // Owners and Admins can both put an offer away.
+    await a.admin.mutation(api.offers.archive, { workspaceId: a.workspaceId, cardId: saved.cardId });
     expect(await a.owner.query(api.offers.list, { workspaceId: a.workspaceId })).toEqual([]);
     expect(await problemOf(a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId: saved.cardId, ...retainer, cta: "Call now" }))).toMatch(/put away/);
   });

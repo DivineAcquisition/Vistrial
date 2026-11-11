@@ -51,7 +51,7 @@ function Accept({ token }: { token: string }) {
   const [working, setWorking] = useState(false);
   return (
     <>
-      <p className="text-sm text-muted-foreground">You were invited to a workspace. Joining gives you the role the owner chose.</p>
+      <p className="text-sm text-muted-foreground">You were invited to an organization. Joining gives you the role the owner chose.</p>
       <Button
         loading={working}
         loadingLabel="Joining"

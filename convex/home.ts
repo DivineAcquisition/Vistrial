@@ -4,6 +4,7 @@
  * Read-only, and every read stays inside the caller's workspace.
  */
 
+import { canWork, isAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -183,9 +184,9 @@ export const overview = workspaceQuery({
     const known = await knowledge(ctx);
     return {
       workspaceName: workspace?.name ?? "Your business",
-      role: ctx.member.role,
-      /** Reps can see what is waiting, but an owner or manager answers and approves. */
-      actionable: ctx.member.role !== "rep",
+      role: ctx.role,
+      /** A Viewer can see what is waiting; everyone else can answer. Approving is for Owners and Admins. */
+      actionable: canWork(ctx.member.role),
       waiting: {
         total: asked.length + due.length + reports.length,
         questions: asked.length,
@@ -317,7 +318,7 @@ export const evidence = workspaceQuery({
       }
     }
     sources.sort((a, b) => b.observedAt - a.observedAt);
-    const seesFigures = ctx.member.role !== "rep";
+    const seesFigures = isAdmin(ctx.member.role);
     return {
       sources: sources.slice(0, 300),
       sourceCount: sources.length,

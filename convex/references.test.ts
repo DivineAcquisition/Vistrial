@@ -246,7 +246,7 @@ describe("adding a reference", () => {
     expect(failed.costCents).toBe(1);
   });
 
-  it("is closed to Reps and to other workspaces, and holds to a daily limit", async () => {
+  it("is closed to Viewers and to other workspaces, and holds to a daily limit", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
@@ -258,12 +258,12 @@ describe("adding a reference", () => {
     expect(await message(b.owner.mutation(api.references.remove, { workspaceId: b.workspaceId, referenceId }))).toBe(NOT_FOUND);
     expect(await b.owner.query(api.references.list, { workspaceId: b.workspaceId })).toEqual([]);
 
-    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "rep@example.com", role: "rep" });
-    const rep = t.withIdentity({ ...person("rep"), email: "rep@example.com" });
-    await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
-    expect(await message(rep.mutation(api.references.add, { workspaceId: a.workspaceId, url }))).toBe(NOT_ALLOWED);
-    expect(await message(rep.mutation(api.references.uploadUrl, { workspaceId: a.workspaceId }))).toBe(NOT_ALLOWED);
-    expect(await rep.query(api.references.list, { workspaceId: a.workspaceId })).toHaveLength(1);
+    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "viewer@example.com", role: "viewer" });
+    const viewer = t.withIdentity({ ...person("viewer"), email: "viewer@example.com" });
+    await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
+    expect(await message(viewer.mutation(api.references.add, { workspaceId: a.workspaceId, url }))).toBe(NOT_ALLOWED);
+    expect(await message(viewer.mutation(api.references.uploadUrl, { workspaceId: a.workspaceId }))).toBe(NOT_ALLOWED);
+    expect(await viewer.query(api.references.list, { workspaceId: a.workspaceId })).toHaveLength(1);
 
     for (let i = 1; i < 20; i += 1) await a.owner.mutation(api.references.add, { workspaceId: a.workspaceId, url });
     expect(await message(a.owner.mutation(api.references.add, { workspaceId: a.workspaceId, url }))).toContain("20 references a day");

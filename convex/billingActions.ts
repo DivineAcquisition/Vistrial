@@ -3,6 +3,7 @@
  * Everything that talks to Autumn. The workspace is the customer. Owners buy and manage; charges are sent
  * from the ledger in the background and retried hourly.
  */
+import { isOwner } from "./lib/roles";
 import { Autumn } from "autumn-js";
 import { v } from "convex/values";
 
@@ -10,7 +11,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { AUTO_REFILL, CREDITS_FEATURE, PLAN, PLAN_ID, TOPUP_ID, TOPUP_PACKS_CENTS, autumnKey, autumnMode, billingOn } from "./lib/billing";
-import { memberAction } from "./lib/builders";
+import { memberAction, viewerAction } from "./lib/builders";
 import { notAllowed, notFound, userError } from "./lib/errors";
 
 function client() {
@@ -29,7 +30,7 @@ function safeReturn(origin: string | undefined, path: string) {
 async function requireRole(ctx: ActionCtx, workspaceId: Id<"workspaces">, userId: string, ownerOnly: boolean) {
   const role = await ctx.runQuery(internal.metaAds.roleOf, { workspaceId, userId });
   if (!role) notFound();
-  if (ownerOnly && role !== "owner") notAllowed();
+  if (ownerOnly && !isOwner(role)) notAllowed();
 }
 
 type CustomerShape = {
@@ -93,7 +94,7 @@ export const retryUnsynced = internalAction({
 
 // ---------------------------------------------------------------------------------- owner actions
 
-export const refresh = memberAction({
+export const refresh = viewerAction({
   args: { reason: v.optional(v.string()) },
   handler: async (ctx): Promise<null> => {
     await requireRole(ctx, ctx.workspaceId, ctx.userId, false);

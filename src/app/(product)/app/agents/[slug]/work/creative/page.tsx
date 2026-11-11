@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -15,7 +16,7 @@ function Creative() {
   const agent = shell.agents.find((row) => row.slug === params.slug);
   return (
     <WorkGate agent={agent}>
-      <CreativeTab workspaceId={shell.workspaceId} base={`/app/agents/${params.slug}`} editor={shell.role !== "rep" && agent?.state !== "off"} source={query.get("source")} />
+      <CreativeTab workspaceId={shell.workspaceId} base={`/app/agents/${params.slug}`} editor={canWork(shell.role) && agent?.state !== "off"} source={query.get("source")} />
     </WorkGate>
   );
 }

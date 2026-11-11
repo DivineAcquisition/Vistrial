@@ -4,13 +4,14 @@
  * not. Growth Diagnostics reads the current goal and builds its 90-day roadmap toward it.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, userError } from "./lib/errors";
+import { userError } from "./lib/errors";
 
 export const MAX_GOAL = 200;
 
@@ -72,11 +73,11 @@ export const get = workspaceQuery({
   },
 });
 
-/** Sets the goal. A change is a new row, so earlier goals stay readable. Owners and Managers. */
+/** Sets the goal. A change is a new row, so earlier goals stay readable. Owners, Admins and Members. */
 export const set = workspaceMutation({
   args: { text: v.string() },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const text = args.text.replace(/\s+/g, " ").trim().slice(0, MAX_GOAL);
     if (text.length < 3) throw userError("Say what you want to reach, for example \"40 more bookings a month\".");
     const current = await currentGoal(ctx, ctx.workspaceId);

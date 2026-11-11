@@ -1,5 +1,6 @@
 "use client";
 
+import { isAdmin } from "@/lib/roles";
 import { useClerk } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -28,7 +29,7 @@ const AGENT = "growth-architect";
 
 export function SettingsScreen() {
   const shell = useWorkspaceShell();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   return <LiveSettings shell={shell} />;
 }
 
@@ -49,7 +50,7 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
   const clerk = useClerk();
   const section = parseSection(params.get("section"), shell.role);
   const workspaceId = shell.workspaceId;
-  const staffView = shell.role !== "rep";
+  const staffView = isAdmin(shell.role);
   const owner = shell.role === "owner";
 
   const me = useQuery(api.settings.me, { workspaceId });
@@ -117,8 +118,8 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
         data={people}
         grants={support?.grants ?? null}
         now={now}
-        onInvite={async (email, role) => {
-          const made = await attempt(invite({ workspaceId, email, role }));
+        onInvite={async (email, role, grants) => {
+          const made = await attempt(invite({ workspaceId, email, role, grants: grants.map((grant) => ({ workspaceId: grant.workspaceId as Id<"workspaces">, role: grant.role })) }));
           return made ? { link: `${window.location.origin}/join?token=${made.token}` } : null;
         }}
         onCancelInvite={(id) => attempt(cancelInvite({ workspaceId, invitationId: id as Id<"invitations"> }))}

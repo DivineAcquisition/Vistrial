@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { BrowserAccessView, type BrowserOverview, type BrowserTrail } from "@/components/connections/browser-access";
 import { drawStep } from "../../../../convex/lib/browserAgent/driver";
 
@@ -21,10 +22,10 @@ const pictured = (trail: BrowserTrail): BrowserTrail => ({
 
 /** Browser access with fixture data: the step waiting for approval, a restricted step, and the audit trail. */
 export function BrowserAccessStory({ state, theme }: { state: string; theme: string }) {
-  const role = state === "manager" ? "manager" : state === "rep" ? "rep" : "owner";
+  const role = state === "manager" ? "admin" : state === "rep" ? "viewer" : "owner";
   const base = state === "restricted" || state === "manager" ? data.restricted : state === "done" ? data.done : state === "blocked" ? data.blocked : data.change;
-  // A restricted step is the Owner's alone: a Manager sees it and cannot approve it.
-  const trail = role === "manager" ? { ...base, steps: base.steps.map((step) => (step.kind === "restricted" ? { ...step, canDecide: false } : step)) } : base;
+  // A restricted step is the Owner's alone: an Admin sees it and cannot approve it.
+  const trail = role === "admin" ? { ...base, steps: base.steps.map((step) => (step.kind === "restricted" ? { ...step, canDecide: false } : step)) } : base;
   const session = data.overview.sessions[0];
   const sessions = state === "none" ? [] : state === "signin" ? [{ ...session, state: "pendingSignIn" as const, signedInAt: null, expiresAt: null }] : data.overview.sessions;
   const tasks = state === "none" || state === "signin" ? [] : data.overview.tasks.filter((task) => task.id === trail.task.id || task.status !== "waitingApproval").map((task) => (task.id === trail.task.id ? trail.task : task));
@@ -34,7 +35,7 @@ export function BrowserAccessStory({ state, theme }: { state: string; theme: str
       <StoryTheme theme={theme} />
       <main className="min-h-dvh bg-background px-4 py-6 sm:px-8">
         <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-4">
-          <BrowserAccessView overview={overview} trail={state === "none" || state === "signin" || role === "rep" ? null : pictured(trail)} onOpenTask={() => undefined} actions={{ connect: noop, completeSignIn: noop, revoke: noop, startTask: noop, decide: noop, stop: noop }} />
+          <BrowserAccessView overview={overview} trail={state === "none" || state === "signin" || !canWork(role) ? null : pictured(trail)} onOpenTask={() => undefined} actions={{ connect: noop, completeSignIn: noop, revoke: noop, startTask: noop, decide: noop, stop: noop }} />
         </div>
       </main>
     </>

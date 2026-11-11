@@ -31,27 +31,27 @@ async function workspace() {
   await t.mutation(internal.seed.agents, {});
   const owner = t.withIdentity(person("owner", "owner@example.com"));
   const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
-  const inviteA = await owner.mutation(api.workspace.invite, { workspaceId, email: "a@example.com", role: "rep" });
-  const inviteB = await owner.mutation(api.workspace.invite, { workspaceId, email: "b@example.com", role: "rep" });
-  const inviteM = await owner.mutation(api.workspace.invite, { workspaceId, email: "m@example.com", role: "manager" });
-  const repA = t.withIdentity(person("rep-a", "a@example.com"));
-  const repB = t.withIdentity(person("rep-b", "b@example.com"));
-  const manager = t.withIdentity(person("manager", "m@example.com"));
+  const inviteA = await owner.mutation(api.workspace.invite, { workspaceId, email: "a@example.com", role: "member" });
+  const inviteB = await owner.mutation(api.workspace.invite, { workspaceId, email: "b@example.com", role: "member" });
+  const inviteM = await owner.mutation(api.workspace.invite, { workspaceId, email: "m@example.com", role: "admin" });
+  const repA = t.withIdentity(person("viewer-a", "a@example.com"));
+  const repB = t.withIdentity(person("viewer-b", "b@example.com"));
+  const admin = t.withIdentity(person("admin", "m@example.com"));
   await repA.mutation(api.workspace.acceptInvite, { token: inviteA.token });
   await repB.mutation(api.workspace.acceptInvite, { token: inviteB.token });
-  await manager.mutation(api.workspace.acceptInvite, { token: inviteM.token });
+  await admin.mutation(api.workspace.acceptInvite, { token: inviteM.token });
   const members = await t.run(async (ctx) =>
     ctx.db.query("members").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).take(10),
   );
   return {
     t,
     owner,
-    manager,
+    admin,
     repA,
     repB,
     workspaceId,
-    repAId: members.find((row) => row.userId === "rep-a")!._id,
-    repBId: members.find((row) => row.userId === "rep-b")!._id,
+    repAId: members.find((row) => row.userId === "viewer-a")!._id,
+    repBId: members.find((row) => row.userId === "viewer-b")!._id,
     ownerId: members.find((row) => row.userId === "owner")!._id,
   };
 }
@@ -211,8 +211,8 @@ describe("data spine", () => {
     expect(later).toBeTruthy();
   });
 
-  it("keeps a Rep out of another Rep's records and out of clearing an opt-out", async () => {
-    const { t, owner, manager, repA, repB, workspaceId, repBId } = await workspace();
+  it("keeps a Member out of another Member's records and out of clearing an opt-out", async () => {
+    const { t, owner, admin, repA, repB, workspaceId, repBId } = await workspace();
     const leadId = await owner.mutation(api.leads.create, {
       workspaceId,
       displayName: "Owned by B",
@@ -298,7 +298,7 @@ describe("data spine", () => {
       }),
     ).rejects.toThrow("Not allowed.");
     await expect(
-      manager.mutation(api.people.setConsent, {
+      admin.mutation(api.people.setConsent, {
         workspaceId,
         personId: lead!.personId!,
         channel: "email",
@@ -306,7 +306,7 @@ describe("data spine", () => {
         doNotContact: false,
       }),
     ).rejects.toThrow("A reason is required.");
-    await manager.mutation(api.people.setConsent, {
+    await admin.mutation(api.people.setConsent, {
       workspaceId,
       personId: lead!.personId!,
       channel: "email",

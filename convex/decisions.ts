@@ -8,6 +8,7 @@
  * public function reads that table.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -41,7 +42,7 @@ function clip(text: string, max: number) {
 }
 
 function requireEditor(role: Doc<"members">["role"]) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 /**
@@ -276,7 +277,7 @@ async function itemOf(ctx: QueryCtx, asset: Doc<"assets">, index: number): Promi
 
 /**
  * "We'll try this" on an offer change or a roadmap step: the same outcome loop as a report opportunity,
- * with the check-in date and today's figures. Rejected work cannot be tried. Owners and managers.
+ * with the check-in date and today's figures. Rejected work cannot be tried. Owners, Admins and Members.
  */
 export const planItem = workspaceMutation({
   args: { assetId: v.id("assets"), index: v.number(), checkInDays: v.number() },
@@ -338,7 +339,7 @@ export const due = workspaceQuery({
   },
 });
 
-/** "We'll try this": records the decision, its check-in date, and today's figures. Owners and managers. */
+/** "We'll try this": records the decision, its check-in date, and today's figures. Owners, Admins and Members. */
 export const plan = workspaceMutation({
   args: { projectId: v.id("researchProjects"), opportunityIndex: v.number(), checkInDays: v.number() },
   handler: async (ctx, args) => {
@@ -383,7 +384,7 @@ export const plan = workspaceMutation({
   },
 });
 
-/** Moves a check-in date. Owners and managers. */
+/** Moves a check-in date. Owners, Admins and Members. */
 export const reschedule = workspaceMutation({
   args: { decisionId: v.id("decisions"), checkInDays: v.number() },
   handler: async (ctx, args) => {
@@ -418,7 +419,7 @@ export const recordOutcome = workspaceMutation({
   },
 });
 
-/** Removes a decision and its learning row. Owners and managers. */
+/** Removes a decision and its learning row. Owners, Admins and Members. */
 export const remove = workspaceMutation({
   args: { decisionId: v.id("decisions") },
   handler: async (ctx, args) => {

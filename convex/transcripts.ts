@@ -5,14 +5,15 @@
  * recorded lawfully; that confirmation is stored with it.
  */
 
+import { canWork, isAdmin, requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
-import { ownerMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { adminMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
+import { notFound, userError } from "./lib/errors";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { cleanTranscript, TRANSCRIPT_REFUSAL_WORDS } from "./lib/transcriptText";
 
@@ -33,7 +34,7 @@ function clip(text: string, max: number) {
 }
 
 function requireEditor(role: Doc<"members">["role"]) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 /** Where the transcript can be read in the product. Used as the source link. */
@@ -47,7 +48,7 @@ async function own(ctx: Pick<QueryCtx, "db">, workspaceId: Id<"workspaces">, id:
   return row;
 }
 
-/** Adds a transcript from pasted text or a text file's contents. Owners and managers. */
+/** Adds a transcript from pasted text or a text file's contents. Owners, Admins and Members. */
 export const add = workspaceMutation({
   args: {
     title: v.string(),
@@ -125,11 +126,11 @@ export const list = workspaceQuery({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .order("desc")
       .take(LIST_LIMIT);
-    return { canEdit: ctx.member.role !== "rep", canGrant: ctx.member.role === "owner", transcripts: rows.map(view) };
+    return { canEdit: canWork(ctx.member.role), canGrant: isAdmin(ctx.member.role), transcripts: rows.map(view) };
   },
 });
 
-/** One transcript's full text. Owners and managers. */
+/** One transcript's full text. Owners, Admins and Members. */
 export const read = workspaceQuery({
   args: { transcriptId: v.id("callTranscripts") },
   handler: async (ctx, args) => {
@@ -139,7 +140,7 @@ export const read = workspaceQuery({
   },
 });
 
-/** Deletes a transcript and its text. Owners and managers. */
+/** Deletes a transcript and its text. Owners, Admins and Members. */
 export const remove = workspaceMutation({
   args: { transcriptId: v.id("callTranscripts") },
   handler: async (ctx, args) => {
@@ -152,7 +153,7 @@ export const remove = workspaceMutation({
 });
 
 /** Grants or withdraws an agent's use of one transcript. Owner only. */
-export const setAgentAccess = ownerMutation({
+export const setAgentAccess = adminMutation({
   args: { transcriptId: v.id("callTranscripts"), agentSlug: v.string(), granted: v.boolean() },
   handler: async (ctx, args) => {
     const row = await own(ctx, ctx.workspaceId, args.transcriptId);

@@ -316,7 +316,7 @@ export type DiagnosticsTabProps = {
   base: string;
   editor: boolean;
   data: ConnectedData;
-  /** The Run diagnosis button. Owners and Managers. */
+  /** The Run diagnosis button. Owners, Admins and Members. */
   run: ReactNode;
   tab: TabData;
   goal: GoalView;

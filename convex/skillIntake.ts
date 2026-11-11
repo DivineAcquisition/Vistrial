@@ -5,6 +5,7 @@
  * is called while gathering, so the conversation itself costs nothing.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -13,7 +14,7 @@ import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { dayKey } from "./lib/caps";
 import { daySpend, loadCaps } from "./lib/capRows";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { liveFact, writeFact } from "./lib/facts";
 import { assertCanSpend } from "./lib/billing";
 import { currentGoal, readGoal, MAX_GOAL } from "./goals";
@@ -85,7 +86,7 @@ function clean(text: string, max = MAX_ANSWER) {
 }
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 /**
@@ -245,7 +246,7 @@ export async function beginSkill(
   return intakeId;
 }
 
-/** Starts a conversation for one skill from the person's first message. Owners and Managers. */
+/** Starts a conversation for one skill from the person's first message. Owners, Admins and Members. */
 export const create = workspaceMutation({
   args: { skillSlug: v.string(), text: v.string() },
   handler: async (ctx, args) => {
@@ -279,7 +280,7 @@ export const reply = workspaceMutation({
 
 /**
  * Start: saves what the person said (the goal, or the offer card version and the offer facts), then starts
- * the skill's run on the existing run path, with its caps and credit check. Owners and Managers.
+ * the skill's run on the existing run path, with its caps and credit check. Owners, Admins and Members.
  */
 export const start = workspaceMutation({
   args: { intakeId: v.id("intakes") },

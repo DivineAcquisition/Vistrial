@@ -10,9 +10,6 @@ import {
   BookOpen,
   Brain,
   ChevronRight,
-  Building2,
-  Check,
-  ChevronsUpDownIcon,
   Coins,
   FileSearch,
   Gauge,
@@ -21,14 +18,13 @@ import {
   Search,
   Settings,
   Users,
-  Wallet,
   type LucideIcon,
 } from "@/components/icons";
 import { GlyphMark } from "@/components/live/agent-identity";
+import { OrganizationSwitcher } from "@/components/shell/organization-switcher";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Dialog, DialogPopup, DialogTitle } from "@/components/ui/dialog";
 import { SearchInput } from "@/components/ui/input";
-import { Menu, MenuGroupLabel, MenuItem, MenuLinkItem, MenuPopup, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { Meter, MeterIndicator, MeterTrack } from "@/components/ui/meter";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { money } from "@/lib/research/words";
@@ -111,53 +107,6 @@ export type SidebarData = {
   overview: HomeOverview | undefined;
   credits: Credits | undefined;
 };
-
-/** The workspace name and a small menu. One business per person today; switching will live here. */
-function BusinessHeader({ name, onNavigate }: { name: string; onNavigate?: () => void }) {
-  const items: { href: string; label: string; icon: LucideIcon }[] = [
-    { href: "/app/settings", label: "Settings", icon: Settings },
-    { href: "/app/billing", label: "Billing", icon: Wallet },
-  ];
-  return (
-    <Menu>
-      <MenuTrigger
-        render={
-          <button
-            type="button"
-            className="flex w-full min-w-0 items-center gap-2.5 rounded-xl px-2 py-2 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        }
-      >
-        <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 font-heading text-sm text-primary">
-          {name.trim().charAt(0).toUpperCase() || "V"}
-        </span>
-        <span className="grid min-w-0 flex-1">
-          <span className="truncate font-heading text-sm text-foreground">{name}</span>
-          <span className="text-[11px] text-muted-foreground">Business menu</span>
-        </span>
-        <ChevronsUpDownIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-      </MenuTrigger>
-      <MenuPopup align="start" className="min-w-60">
-        <MenuGroupLabel>{name}</MenuGroupLabel>
-        {items.map((item) => (
-          <MenuLinkItem key={item.href} render={<Link href={item.href} onClick={onNavigate} />}>
-            <item.icon aria-hidden /> {item.label}
-          </MenuLinkItem>
-        ))}
-        <MenuSeparator />
-        <MenuItem disabled>
-          <Building2 aria-hidden />
-          <span className="grid">
-            <span className="flex items-center gap-1.5">
-              {name} <Check aria-hidden className="size-3.5 text-primary" />
-            </span>
-            <span className="text-xs text-muted-foreground">Switching businesses comes later</span>
-          </span>
-        </MenuItem>
-      </MenuPopup>
-    </Menu>
-  );
-}
 
 /** Search sessions and reports by title. The results come from a slot so stories can feed their own. */
 function SidebarSearch({ renderResults }: { renderResults: (text: string, close: () => void) => React.ReactNode }) {
@@ -366,11 +315,14 @@ export function JourneySidebarView({
   pathname,
   onNavigate,
   renderSearch,
+  scope,
 }: {
   agents: RailAgent[];
   data: SidebarData;
   pathname: string;
   onNavigate?: () => void;
+  /** What sits at the very top: which organization is open (and, under it, which client). Stories pass their own. */
+  scope?: React.ReactNode;
   renderSearch?: (text: string, close: () => void) => React.ReactNode;
 }) {
   const { overview, credits } = data;
@@ -403,7 +355,7 @@ export function JourneySidebarView({
   return (
     <nav aria-label="Workspace" className="flex h-full min-h-0 flex-col">
       <div className="grid gap-1 px-3 pt-3">
-        <BusinessHeader name={overview?.workspaceName ?? "Your business"} onNavigate={onNavigate} />
+        {scope ?? <OrganizationSwitcher name={overview?.workspaceName ?? "Your business"} onNavigate={onNavigate} />}
       </div>
 
       <ul className="grid gap-0.5 border-b border-border px-3 pt-2 pb-3" aria-label="Always here">

@@ -27,23 +27,23 @@ function person(subject: string, email: string, extra: Record<string, string | b
 async function seedPeople(t: ReturnType<typeof convexTest>) {
   const owner = t.withIdentity(person("owner", "owner@example.com"));
   const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
-  const managerInvite = await owner.mutation(api.workspace.invite, {
+  const adminInvite = await owner.mutation(api.workspace.invite, {
     workspaceId,
-    email: "manager@example.com",
-    role: "manager",
+    email: "admin@example.com",
+    role: "admin",
   });
-  const repInvite = await owner.mutation(api.workspace.invite, {
+  const viewerInvite = await owner.mutation(api.workspace.invite, {
     workspaceId,
-    email: "rep@example.com",
-    role: "rep",
+    email: "viewer@example.com",
+    role: "viewer",
   });
-  const manager = t.withIdentity(person("manager", "manager@example.com"));
-  const rep = t.withIdentity(person("rep", "rep@example.com"));
-  await manager.mutation(api.workspace.acceptInvite, { token: managerInvite.token });
-  await rep.mutation(api.workspace.acceptInvite, { token: repInvite.token });
+  const admin = t.withIdentity(person("admin", "admin@example.com"));
+  const viewer = t.withIdentity(person("viewer", "viewer@example.com"));
+  await admin.mutation(api.workspace.acceptInvite, { token: adminInvite.token });
+  await viewer.mutation(api.workspace.acceptInvite, { token: viewerInvite.token });
   // Runs only start while the agent is on.
   await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "on" });
-  return { owner, manager, rep, workspaceId };
+  return { owner, admin, viewer, workspaceId };
 }
 
 async function confirmProfile(owner: ReturnType<ReturnType<typeof convexTest>["withIdentity"]>, workspaceId: Id<"workspaces">) {
@@ -215,12 +215,12 @@ describe("step 4 runtime", () => {
 
   it("rejects a claim with no evidence and keeps logs free of text", async () => {
     const t = convexTest(schema, modules);
-    const { owner, manager, rep, workspaceId } = await seedPeople(t);
+    const { owner, admin, viewer, workspaceId } = await seedPeople(t);
     const other = t.withIdentity(person("other", "other@example.com"));
     const otherId = await other.mutation(api.workspace.create, { name: "Beta" });
     await confirmProfile(owner, workspaceId);
-    await expect(rep.mutation(api.profile.confirm, { workspaceId })).rejects.toThrow(NOT_ALLOWED);
-    expect((await rep.query(api.profile.get, { workspaceId })).confirmed?.offer).toBe("UNIQUE_OFFER_TOKEN");
+    await expect(viewer.mutation(api.profile.confirm, { workspaceId })).rejects.toThrow(NOT_ALLOWED);
+    expect((await viewer.query(api.profile.get, { workspaceId })).confirmed?.offer).toBe("UNIQUE_OFFER_TOKEN");
     await expect(owner.query(api.profile.get, { workspaceId: otherId })).rejects.toThrow(NOT_FOUND);
     await expect(other.query(api.runs.list, { workspaceId, agentSlug: "growth-architect" })).rejects.toThrow(NOT_FOUND);
     const staff = t.withIdentity(person("staff", "staff@example.com", { secondFactor: true }));
@@ -240,7 +240,7 @@ describe("step 4 runtime", () => {
     expect(logs).not.toContain(INJECTION_FIXTURE);
 
     await expect(
-      manager.mutation(api.assets.addVersion, {
+      admin.mutation(api.assets.addVersion, {
         workspaceId,
         assetId: (await t.run(async (ctx) => {
           return await ctx.db.insert("assets", {
@@ -281,8 +281,8 @@ describe("step 4 runtime", () => {
         computed: true,
       });
     });
-    await expect(rep.mutation(api.assets.approve, { workspaceId, assetId })).rejects.toThrow(NOT_ALLOWED);
-    await manager.mutation(api.assets.approve, { workspaceId, assetId });
+    await expect(viewer.mutation(api.assets.approve, { workspaceId, assetId })).rejects.toThrow(NOT_ALLOWED);
+    await admin.mutation(api.assets.approve, { workspaceId, assetId });
     expect((await owner.query(api.assets.get, { workspaceId, assetId })).status).toBe("approved");
     await expect(other.query(api.assets.get, { workspaceId, assetId })).rejects.toThrow(NOT_FOUND);
   });
@@ -335,7 +335,7 @@ describe("step 4 runtime", () => {
 
   it("refuses caps above the platform ceiling", async () => {
     const t = convexTest(schema, modules);
-    const { owner, rep, workspaceId } = await seedPeople(t);
+    const { owner, viewer, workspaceId } = await seedPeople(t);
     await expect(
       owner.mutation(api.controls.setCaps, {
         workspaceId,
@@ -347,7 +347,7 @@ describe("step 4 runtime", () => {
         maxDurationMs: 300000,
       }),
     ).rejects.toThrow("platform ceiling");
-    await expect(rep.mutation(api.runs.stop, { workspaceId, runId: "skip" as never })).rejects.toThrow();
+    await expect(viewer.mutation(api.runs.stop, { workspaceId, runId: "skip" as never })).rejects.toThrow();
   });
 
   it("records a model call that lands after a pause, then stops the run", async () => {
@@ -418,20 +418,20 @@ describe("step 4 runtime", () => {
     expect(list[0].id).toBe(last);
   });
 
-  it("lets only an Owner or Manager start a run", async () => {
+  it("lets only an Owner or Admin start a run", async () => {
     process.env.ALLOW_DEV_SKILLS = "true";
     const t = convexTest(schema, modules);
-    const { manager, rep, workspaceId } = await seedPeople(t);
+    const { admin, viewer, workspaceId } = await seedPeople(t);
     await expect(
-      rep.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" }),
+      viewer.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" }),
     ).rejects.toThrow(NOT_ALLOWED);
-    await manager.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+    await admin.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
   });
 
   it("fails the run when no profile is confirmed, and rejects a made-up source", async () => {
     process.env.ALLOW_DEV_SKILLS = "true";
     const t = convexTest(schema, modules);
-    const { owner, manager, workspaceId } = await seedPeople(t);
+    const { owner, admin, workspaceId } = await seedPeople(t);
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     expect(await finishRun(t, owner, workspaceId, runId)).toBe("failed");
     const run = await owner.query(api.runs.get, { workspaceId, runId });
@@ -447,7 +447,7 @@ describe("step 4 runtime", () => {
       }),
     );
     await expect(
-      manager.mutation(api.assets.addVersion, {
+      admin.mutation(api.assets.addVersion, {
         workspaceId,
         assetId,
         body: "A claim",
@@ -459,14 +459,14 @@ describe("step 4 runtime", () => {
   it("sends an edited approved asset back for approval", async () => {
     process.env.ALLOW_DEV_SKILLS = "true";
     const t = convexTest(schema, modules);
-    const { owner, manager, workspaceId } = await seedPeople(t);
+    const { owner, admin, workspaceId } = await seedPeople(t);
     await confirmProfile(owner, workspaceId);
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     await finishRun(t, owner, workspaceId, runId);
     const assets = await owner.query(api.assets.list, { workspaceId, paginationOpts: { numItems: 5, cursor: null } });
     const assetId = assets.page[0].id;
     await owner.mutation(api.assets.approve, { workspaceId, assetId });
-    await manager.mutation(api.assets.addVersion, {
+    await admin.mutation(api.assets.addVersion, {
       workspaceId,
       assetId,
       body: "Changed",
@@ -503,9 +503,9 @@ describe("step 4 runtime", () => {
     const route = { workKind: "write", provider: "fake", model: "x", fallbackProvider: "fake", fallbackModel: "x" };
     await expect(service.mutation(api.platform.setRoute, route)).rejects.toThrow(NOT_ALLOWED);
     await t.mutation(internal.staffAdmin.enroll, { userId: "admin", role: "platform_admin" });
-    const admin = t.withIdentity(person("admin", "admin@example.com", { secondFactor: true }));
-    await expect(admin.mutation(api.platform.setRoute, { ...route, workKind: "anything" })).rejects.toThrow("Unknown kind");
-    await expect(admin.mutation(api.platform.setRoute, { ...route, provider: "other" })).rejects.toThrow("Unknown provider");
+    const platformAdmin = t.withIdentity(person("admin", "admin@example.com", { secondFactor: true }));
+    await expect(platformAdmin.mutation(api.platform.setRoute, { ...route, workKind: "anything" })).rejects.toThrow("Unknown kind");
+    await expect(platformAdmin.mutation(api.platform.setRoute, { ...route, provider: "other" })).rejects.toThrow("Unknown provider");
   });
 
   it("returns artifact bodies only through the checked query", async () => {
@@ -530,7 +530,7 @@ describe("step 4 runtime", () => {
   it("refuses on the server to approve a version whose source is missing", async () => {
     process.env.ALLOW_DEV_SKILLS = "true";
     const t = convexTest(schema, modules);
-    const { owner, manager, workspaceId } = await seedPeople(t);
+    const { owner, admin, workspaceId } = await seedPeople(t);
     await confirmProfile(owner, workspaceId);
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
@@ -545,7 +545,7 @@ describe("step 4 runtime", () => {
       for (const row of rows) await ctx.db.delete(row._id);
     });
     // The screen would block this. Calling the mutation directly must be refused too.
-    await expect(manager.mutation(api.assets.approve, { workspaceId, assetId })).rejects.toThrow(MISSING_SOURCE);
+    await expect(admin.mutation(api.assets.approve, { workspaceId, assetId })).rejects.toThrow(MISSING_SOURCE);
     await expect(owner.mutation(api.assets.approve, { workspaceId, assetId })).rejects.toThrow(MISSING_SOURCE);
     expect((await owner.query(api.assets.get, { workspaceId, assetId })).status).toBe("draft");
 
@@ -582,7 +582,7 @@ describe("step 4 runtime", () => {
     await expect(owner.mutation(api.assets.approve, { workspaceId, assetId: crossId })).rejects.toThrow(MISSING_SOURCE);
 
     // Only the version being approved is checked: a fixed new version with a computed claim goes through.
-    await manager.mutation(api.assets.addVersion, {
+    await admin.mutation(api.assets.addVersion, {
       workspaceId,
       assetId,
       body: "Fixed",
@@ -671,18 +671,18 @@ describe("step 4 runtime", () => {
   it("does not start a run while the agent is off", async () => {
     process.env.ALLOW_DEV_SKILLS = "true";
     const t = convexTest(schema, modules);
-    const { owner, manager, workspaceId } = await seedPeople(t);
+    const { owner, admin, workspaceId } = await seedPeople(t);
     await confirmProfile(owner, workspaceId);
     await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "off" });
     await expect(
-      manager.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" }),
+      admin.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" }),
     ).rejects.toThrow("Turn on the Growth Architect first.");
     expect((await owner.query(api.runs.page, { workspaceId, paginationOpts: { numItems: 5, cursor: null } })).page).toHaveLength(0);
     await expect(
-      manager.mutation(api.runs.start, { workspaceId, agentSlug: "nobody", skillSlug: "test-echo" }),
+      admin.mutation(api.runs.start, { workspaceId, agentSlug: "nobody", skillSlug: "test-echo" }),
     ).rejects.toThrow(NOT_FOUND);
     await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "suggesting" });
-    const runId = await manager.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+    const runId = await admin.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
   });
 
@@ -723,12 +723,12 @@ describe("step 4 runtime", () => {
   it("lists only open runs in this workspace for the live panel", async () => {
     process.env.ALLOW_DEV_SKILLS = "true";
     const t = convexTest(schema, modules);
-    const { owner, rep, workspaceId } = await seedPeople(t);
+    const { owner, viewer, workspaceId } = await seedPeople(t);
     await confirmProfile(owner, workspaceId);
     const done = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     expect(await finishRun(t, owner, workspaceId, done)).toBe("completed");
     const open = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
-    const live = await rep.query(api.runs.open, { workspaceId });
+    const live = await viewer.query(api.runs.open, { workspaceId });
     expect(live.map((row) => [row.id, row.status])).toEqual([[open, "queued"]]);
     const other = t.withIdentity(person("other", "other@example.com"));
     const otherId = await other.mutation(api.workspace.create, { name: "Beta" });

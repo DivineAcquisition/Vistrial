@@ -26,9 +26,9 @@ type Tester = ReturnType<typeof convexTest>;
 async function seed(t: Tester) {
   const owner = t.withIdentity(person("owner", "owner@example.com"));
   const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
-  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: "manager@example.com", role: "manager" });
-  const manager = t.withIdentity(person("manager", "manager@example.com"));
-  await manager.mutation(api.workspace.acceptInvite, { token: invite.token });
+  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: "admin@example.com", role: "admin" });
+  const admin = t.withIdentity(person("admin", "admin@example.com"));
+  await admin.mutation(api.workspace.acceptInvite, { token: invite.token });
   await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "on" });
   await owner.mutation(api.profile.saveDraft, {
     workspaceId,
@@ -41,7 +41,7 @@ async function seed(t: Tester) {
     competitors: [],
   });
   await owner.mutation(api.profile.confirm, { workspaceId });
-  return { owner, manager, workspaceId };
+  return { owner, admin, workspaceId };
 }
 
 async function drain(t: Tester, caller: ReturnType<Tester["withIdentity"]>, workspaceId: Id<"workspaces">, runId: Id<"agentRuns">) {
@@ -66,10 +66,10 @@ describe("run and asset screens", () => {
 
   it("pages runs newest first and applies the filters", async () => {
     const t = convexTest(schema, modules);
-    const { owner, manager, workspaceId } = await seed(t);
+    const { owner, admin, workspaceId } = await seed(t);
     const first = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     await drain(t, owner, workspaceId, first);
-    const second = await manager.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+    const second = await admin.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
 
     const all = await owner.query(api.runs.page, { workspaceId, paginationOpts: { numItems: 10, cursor: null } });
     expect(all.page.map((row: { id: string }) => row.id)).toEqual([second, first]);
@@ -112,11 +112,11 @@ describe("run and asset screens", () => {
 
   it("reads each version with its claims and names their sources", async () => {
     const t = convexTest(schema, modules);
-    const { owner, manager, workspaceId } = await seed(t);
+    const { owner, admin, workspaceId } = await seed(t);
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     await drain(t, owner, workspaceId, runId);
     const [asset] = (await owner.query(api.runs.get, { workspaceId, runId })).assets;
-    await manager.mutation(api.assets.addVersion, {
+    await admin.mutation(api.assets.addVersion, {
       workspaceId,
       assetId: asset.id,
       body: "ok\nmore",

@@ -4,6 +4,7 @@
  * balance while it is being made, so two batches cannot spend the same credit.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -16,7 +17,7 @@ import { OUT_OF_CREDITS, accountFor, billingOn, chargeUsage, priceFor } from "./
 import { PLACEMENTS, type Placement } from "./lib/brandKits";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { CHECK_COST_CENTS, IMAGE_FAIL_WORDS, IMAGE_SIZE, LOOKS, LOOK_WORDS, MAX_IMAGES_PER_BATCH, MAX_IMAGES_PER_DAY, PLACEMENT_ASPECT, designedPrompt, imagePrompt, isLook, isPlacement, isTone, type Look, type Tone } from "./lib/creativeImages";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { designModel, imageCostCents, imageModel } from "./lib/gemini";
 import { devSkillsEnabled } from "./lib/registry";
 import { savedRecord } from "./lib/savedRecords";
@@ -138,7 +139,7 @@ async function assertRoom(ctx: MutationCtx, workspaceId: Id<"workspaces">, count
 /**
  * Makes the images a person confirmed: one per variation per placement, or one again (`only`). `confirmedCents`
  * is the total they were shown; if the price is no longer that, nothing is made and they are shown the new
- * one. An image already made for the same variation and placement is replaced. Owners and Managers.
+ * one. An image already made for the same variation and placement is replaced. Owners, Admins and Members.
  */
 export const generate = workspaceMutation({
   args: {
@@ -150,7 +151,7 @@ export const generate = workspaceMutation({
     only: v.optional(v.object({ variationKey: v.string(), placement: v.string() })),
   },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const { asset, creative } = await adSet(ctx, ctx.workspaceId, args.assetId);
     if (asset.status === "needsReview") throw userError("This ad set did not pass its checks. Fix it before spending on images.");
     if (asset.status === "rejected" || asset.status === "archived") throw userError("This ad set was rejected or put away.");

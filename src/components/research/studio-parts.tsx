@@ -28,7 +28,7 @@ const MISSING_WORDS: Record<string, string> = {
 
 /**
  * "Know what you know": everything the agent is working from, with where each item came from and when,
- * what is missing, and the assumptions it made. An Owner or Manager corrects a fact in place; the
+ * what is missing, and the assumptions it made. An Owner, Admin or Member corrects a fact in place; the
  * correction is a new verified fact, and the old one is kept.
  */
 export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id<"workspaces">; studio: Studio; canEdit: boolean }) {

@@ -24,7 +24,7 @@ export default function StaffPage() {
         <PageHeader
           eyebrow="Staff"
           title="Workspace access"
-          description="Platform admin and service team are not a workspace role. A second factor is required before a grant."
+          description="Platform admin and service team are not an organization role. A second factor is required before a grant."
         />
         <Link
           href="/admin/submissions"

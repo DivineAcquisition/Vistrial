@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import { CalendarClock, CheckCircle2, FlaskConical } from "lucide-react";
 import { useId, useState } from "react";
@@ -129,7 +130,7 @@ export function OpportunityDecision({
   const [notice, setNotice] = useState("");
   const [recording, setRecording] = useState(false);
   if (!ready || decisions === undefined || !shell) return null;
-  const canEdit = shell.role !== "rep";
+  const canEdit = canWork(shell.role);
   const decision = decisions.find((row) => row.opportunityIndex === index);
 
   if (!decision) {

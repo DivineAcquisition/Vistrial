@@ -32,7 +32,7 @@ export function BillingScreen() {
   }, [shell, data?.on, paid, refresh]);
   const paidNotice = paid === "plan" ? "Thanks. Your plan is on and its credits are added." : paid ? "Thanks. Your credits are added." : "";
 
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   if (data === undefined) return <p className="text-sm text-muted-foreground">Loading billing.</p>;
 
   const go = async (key: string, run: () => Promise<{ url: string | null } | null>) => {

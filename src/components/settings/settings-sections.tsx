@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork, isAdmin } from "@/lib/roles";
 import { useState, type ReactNode } from "react";
 
 import {
@@ -47,7 +48,7 @@ import { cn } from "@/lib/utils";
 /** Every action resolves when the server has the change, or rejects with the error to show. */
 type Act<A extends unknown[] = []> = (...args: A) => Promise<unknown>;
 
-const AFFECTS_ALL = "Affects everyone in this workspace. Recorded in the audit log.";
+const AFFECTS_ALL = "Affects everyone in this organization. Recorded in the audit log.";
 
 /* ------------------------------------------------------------- Business */
 
@@ -109,14 +110,14 @@ export function BusinessSection({
         : "Business profile: not written yet. Agents work from what you tell them in each chat.";
   return (
     <div className="grid gap-4">
-      <SectionTitle title="Business" description="Who the workspace is for. Agents read these when they research and write." />
+      <SectionTitle title="Business" description="Who the organization is for. Agents read these when they research and write." />
       <ReadOnlyNote role={role} />
       <StatusCard
         icon={Building2}
-        title="Workspace name"
+        title="Organization name"
         sentence={
           <>
-            Workspace name: <span className="text-foreground">{data.name}</span>. Shown to everyone in the workspace and on reports.
+            Organization name: <span className="text-foreground">{data.name}</span>. Shown to everyone in the organization and on reports.
           </>
         }
         affects={AFFECTS_ALL}
@@ -136,7 +137,7 @@ export function BusinessSection({
               void onRename(name).then(() => setEditing(false));
             }}
           >
-            <Input aria-label="Workspace name" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} className="sm:flex-1" />
+            <Input aria-label="Organization name" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} className="sm:flex-1" />
             <div className="flex gap-2">
               <Button type="submit" size="sm" disabled={!name.trim() || name.trim() === data.name}>
                 Save name
@@ -190,7 +191,7 @@ export function BusinessSection({
         affects="Every agent reads the confirmed profile. An edit opens a new draft and keeps the old one."
         footer={
           <Button size="sm" variant="outline" onClick={() => setShowProfile((open) => !open)} aria-expanded={showProfile}>
-            {showProfile ? "Hide profile" : role === "rep" ? "View profile" : "Open profile"}
+            {showProfile ? "Hide profile" : !canWork(role) ? "View profile" : "Open profile"}
           </Button>
         }
       >
@@ -215,13 +216,31 @@ export function BusinessSection({
 
 /* --------------------------------------------------------------- People */
 
+type GrantRole = Exclude<Role, "owner">;
+
 export type PeopleData = {
   canManage: boolean;
+  /** Only an Owner makes or changes an Owner. */
+  isOwner: boolean;
   me: string;
+  organizationName: string;
+  /** Other organizations of the account this person also runs, so one invite can open several. */
+  grantable: { workspaceId: string; name: string }[];
   members: { id: string; name: string; email: string | null; role: Role; joinedAt: number }[];
-  invites: { id: string; email: string; role: "manager" | "rep"; sentAt: number; expiresAt: number }[];
+  invites: { id: string; email: string; role: Role; organizations: { name: string; role: Role }[]; sentAt: number; expiresAt: number }[];
   supportAccess: boolean;
 };
+
+export type InviteGrant = { workspaceId: string; role: GrantRole };
+
+const ROLE_HELP: Record<Role, string> = {
+  owner: "Billing and everything, in every organization of the account.",
+  admin: "Runs the organization: approves, connects accounts, manages people.",
+  member: "Works with agents and tasks. Cannot approve spending or publishing.",
+  viewer: "Read-only.",
+};
+
+const GRANT_ROLES: GrantRole[] = ["admin", "member", "viewer"];
 
 export type SupportGrant = {
   id: string;
@@ -241,7 +260,7 @@ export function supportSentence(on: boolean, grants: SupportGrant[] | null) {
   const last = opened ? ` Last opened ${shortDate(opened.lastOpenedAt!)} by ${opened.who.toLowerCase().startsWith("vistrial") ? opened.who : `Vistrial ${opened.who}`}, reason logged.` : grants ? " Never opened." : "";
   return on
     ? `Support access: on. Vistrial support can ask for time-limited access, with a reason, to help you.${last}`
-    : `Support access: off. Vistrial staff cannot open this workspace.${last}`;
+    : `Support access: off. Vistrial staff cannot open this organization.${last}`;
 }
 
 export function PeopleSection({
@@ -261,29 +280,37 @@ export function PeopleSection({
   grants: SupportGrant[] | null;
   now: number;
   /** Resolves with the one-time link to hand over, or null when the invite was not made. */
-  onInvite: (email: string, role: "manager" | "rep") => Promise<{ link: string } | null>;
+  onInvite: (email: string, role: GrantRole, grants: InviteGrant[]) => Promise<{ link: string } | null>;
   onCancelInvite: Act<[string]>;
   onRole: Act<[string, Role]>;
   onRemove: Act<[string]>;
   onSupport: Act<[boolean]>;
 }) {
   const [email, setEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"manager" | "rep">("rep");
+  const [inviteRole, setInviteRole] = useState<GrantRole>("member");
+  /** The other organizations ticked for this invite, with the role in each. */
+  const [extra, setExtra] = useState<Record<string, GrantRole>>({});
   const [link, setLink] = useState<string | null>(null);
   const owners = data.members.filter((row) => row.role === "owner").length;
+  const here = data.organizationName || "this organization";
   return (
     <div className="grid gap-4">
-      <SectionTitle title="People" description="Who is in the workspace and what each person can do. Owners change everything; managers see most things; reps see their own work." />
+      <SectionTitle
+        title="People"
+        description={`Who is in ${here} and what each person can do here. A person can have a different role in each organization.`}
+      />
       <ReadOnlyNote role={role} />
       <StatusCard
         icon={Users}
         title="Members"
-        sentence={`${data.members.length} ${data.members.length === 1 ? "member" : "members"}: ${owners} ${owners === 1 ? "owner" : "owners"}. A workspace always keeps at least one owner.`}
+        sentence={`${data.members.length} ${data.members.length === 1 ? "person" : "people"}: ${owners} ${owners === 1 ? "owner" : "owners"}. An account always keeps at least one owner.`}
         affects={data.canManage ? "Role changes and removals take effect at once and are recorded in the audit log." : undefined}
       >
         <ul className="grid divide-y divide-border/70 rounded-xl border border-border">
           {data.members.map((member) => {
             const lastOwner = member.role === "owner" && owners === 1;
+            // An Admin runs the organization but never changes or removes an Owner.
+            const mayChange = data.canManage && (data.isOwner || member.role !== "owner");
             return (
               <li key={member.id} className="grid gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                 <div className="grid min-w-0">
@@ -296,32 +323,35 @@ export function PeopleSection({
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {data.canManage ? (
+                  {mayChange ? (
                     <select
                       aria-label={`Role for ${member.name}`}
                       className={cn(selectClass, "h-8 w-auto py-0 text-sm")}
                       value={member.role}
                       disabled={lastOwner}
-                      title={lastOwner ? "The only owner keeps the owner role" : undefined}
+                      title={lastOwner ? "The only owner keeps the owner role" : ROLE_HELP[member.role]}
                       onChange={(event) => void onRole(member.id, event.target.value as Role)}
                     >
-                      <option value="owner">Owner</option>
-                      <option value="manager">Manager</option>
-                      <option value="rep">Rep</option>
+                      {data.isOwner ? <option value="owner">Owner</option> : null}
+                      {GRANT_ROLES.map((value) => (
+                        <option key={value} value={value}>
+                          {ROLE_WORDS[value]}
+                        </option>
+                      ))}
                     </select>
                   ) : (
                     <StatusBadge label={ROLE_WORDS[member.role]} tone={member.role === "owner" ? "brand" : "neutral"} icon="idle" />
                   )}
-                  {data.canManage && !lastOwner ? (
+                  {mayChange && !lastOwner ? (
                     <ConfirmDialog
                       trigger={
                         <Button variant="ghost" size="icon-sm" aria-label={`Remove ${member.name}`}>
                           <Trash2 aria-hidden className="size-4" />
                         </Button>
                       }
-                      title={`Remove ${member.name}?`}
-                      description="They lose access to this workspace straight away. Their past work stays. You can invite them back later."
-                      confirmLabel="Remove member"
+                      title={`Remove ${member.name} from ${here}?`}
+                      description="They lose access to this organization straight away. Their past work stays, and any other organization they are in is not changed. You can invite them back later."
+                      confirmLabel="Remove"
                       onConfirm={async () => {
                         await onRemove(member.id);
                       }}
@@ -332,6 +362,14 @@ export function PeopleSection({
             );
           })}
         </ul>
+        <dl className="grid gap-x-4 gap-y-1 text-xs text-muted-foreground sm:grid-cols-[auto_minmax(0,1fr)]">
+          {(["owner", "admin", "member", "viewer"] as const).map((value) => (
+            <div key={value} className="contents">
+              <dt className="font-medium text-foreground">{ROLE_WORDS[value]}</dt>
+              <dd>{ROLE_HELP[value]}</dd>
+            </div>
+          ))}
+        </dl>
       </StatusCard>
 
       <StatusCard
@@ -342,7 +380,7 @@ export function PeopleSection({
             ? "No invites waiting. An invite link works for 7 days, for the email it was sent to."
             : `${data.invites.length} ${data.invites.length === 1 ? "invite is" : "invites are"} waiting to be accepted. Each link works for 7 days, for the email it was sent to.`
         }
-        affects={data.canManage ? "A new member can see the workspace as soon as they accept. Recorded in the audit log." : undefined}
+        affects={data.canManage ? "A new person can open each organization on their invite as soon as they accept. Recorded in the audit log." : undefined}
       >
         {data.invites.length > 0 ? (
           <ul className="grid divide-y divide-border/70 rounded-xl border border-border">
@@ -351,7 +389,10 @@ export function PeopleSection({
                 <span className="grid min-w-0">
                   <span className="truncate text-sm text-foreground">{row.email}</span>
                   <span className="text-xs text-muted-foreground">
-                    {ROLE_WORDS[row.role]} · sent {shortDate(row.sentAt)} · expires in {daysLeft(row.expiresAt, now)}
+                    {row.organizations.length > 1
+                      ? row.organizations.map((entry) => `${ROLE_WORDS[entry.role]} in ${entry.name}`).join(", ")
+                      : ROLE_WORDS[row.role]}{" "}
+                    · sent {shortDate(row.sentAt)} · expires in {daysLeft(row.expiresAt, now)}
                   </span>
                 </span>
                 {data.canManage ? (
@@ -376,31 +417,83 @@ export function PeopleSection({
         ) : null}
         {data.canManage ? (
           <form
-            className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end"
+            className="grid gap-3"
             onSubmit={(event) => {
               event.preventDefault();
-              void onInvite(email, inviteRole).then((result) => {
+              const chosen = Object.entries(extra).map(([workspaceId, grantRole]) => ({ workspaceId, role: grantRole }));
+              void onInvite(email, inviteRole, chosen).then((result) => {
                 if (result) {
                   setLink(result.link);
                   setEmail("");
+                  setExtra({});
                 }
               });
             }}
           >
-            <label className="grid gap-1.5 text-sm">
-              <span className={captionText}>Email</span>
-              <Input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@business.com" />
-            </label>
-            <label className="grid gap-1.5 text-sm">
-              <span className={captionText}>Role</span>
-              <select className={cn(selectClass, "w-full sm:w-36")} value={inviteRole} onChange={(event) => setInviteRole(event.target.value as "manager" | "rep")}>
-                <option value="manager">Manager</option>
-                <option value="rep">Rep</option>
-              </select>
-            </label>
-            <Button type="submit" disabled={!email.includes("@")}>
-              Create invite
-            </Button>
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <label className="grid gap-1.5 text-sm">
+                <span className={captionText}>Email</span>
+                <Input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@agency.com" />
+              </label>
+              <label className="grid gap-1.5 text-sm">
+                <span className={captionText}>Role in {here}</span>
+                <select className={cn(selectClass, "w-full sm:w-36")} value={inviteRole} onChange={(event) => setInviteRole(event.target.value as GrantRole)}>
+                  {GRANT_ROLES.map((value) => (
+                    <option key={value} value={value}>
+                      {ROLE_WORDS[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className={captionText}>{ROLE_HELP[inviteRole]}</p>
+            {data.grantable.length > 0 ? (
+              <fieldset className="grid gap-2 rounded-xl border border-border p-3">
+                <legend className="px-1 text-xs font-medium text-muted-foreground">Also give access to</legend>
+                {data.grantable.map((organization) => {
+                  const picked = extra[organization.workspaceId];
+                  return (
+                    <div key={organization.workspaceId} className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          className="size-4 shrink-0 accent-primary"
+                          checked={picked !== undefined}
+                          onChange={(event) =>
+                            setExtra((current) => {
+                              const next = { ...current };
+                              if (event.target.checked) next[organization.workspaceId] = inviteRole;
+                              else delete next[organization.workspaceId];
+                              return next;
+                            })
+                          }
+                        />
+                        <span className="truncate">{organization.name}</span>
+                      </label>
+                      {picked !== undefined ? (
+                        <select
+                          aria-label={`Role in ${organization.name}`}
+                          className={cn(selectClass, "h-8 w-auto py-0 text-sm")}
+                          value={picked}
+                          onChange={(event) => setExtra((current) => ({ ...current, [organization.workspaceId]: event.target.value as GrantRole }))}
+                        >
+                          {GRANT_ROLES.map((value) => (
+                            <option key={value} value={value}>
+                              {ROLE_WORDS[value]}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </fieldset>
+            ) : null}
+            <div>
+              <Button type="submit" disabled={!email.includes("@")}>
+                Create invite
+              </Button>
+            </div>
           </form>
         ) : null}
         {link ? (
@@ -416,13 +509,13 @@ export function PeopleSection({
         status={data.supportAccess ? "On" : "Off"}
         tone={data.supportAccess ? "good" : "neutral"}
         sentence={supportSentence(data.supportAccess, grants)}
-        affects={role === "owner" ? "Affects who outside your team can open this workspace. Turning it off ends any open access now. Recorded in the audit log." : undefined}
+        affects={role === "owner" ? "Affects who outside your team can open this organization. Turning it off ends any open access now. Recorded in the audit log." : undefined}
       >
         {role === "owner" ? (
           <Switch
             checked={data.supportAccess}
             onCheckedChange={(next) => void onSupport(next)}
-            label="Let Vistrial support open this workspace when they need to"
+            label="Let Vistrial support open this organization when they need to"
             description="Each opening needs a written reason, lasts at most 72 hours, and is logged below."
           />
         ) : null}
@@ -640,7 +733,7 @@ export function AgentsSection({
                 checked={agent.state !== "off"}
                 onCheckedChange={(next) => void onAgent(agent.slug, next)}
                 label={agent.state === "off" ? `Turn ${agent.name} on` : `${agent.name} is on`}
-                description="Affects everyone in this workspace."
+                description="Affects everyone in this organization."
               />
             ) : null}
           </StatusCard>
@@ -816,7 +909,7 @@ export function YouSection({
               description={row.description}
             />
           ))}
-          {data.role === "rep" ? null : (
+          {!isAdmin(data.role) ? null : (
             <Switch
               checked={data.notifications.email}
               onCheckedChange={(next) => void onNotice("email", next)}

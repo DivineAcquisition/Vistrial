@@ -5,6 +5,7 @@
  * never stuck. Nothing researches or spends on research until the person presses Start on the plan.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -12,7 +13,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { factsForRun, liveFact, writeFact } from "./lib/facts";
 import {
   ALL_PLATFORMS,
@@ -40,7 +41,7 @@ import { moveFilesToProject } from "./files";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 const str = { type: "string" };
@@ -160,7 +161,7 @@ async function memoryFor(ctx: { db: import("./_generated/server").QueryCtx["db"]
   };
 }
 
-/** Starts an intake from the person's first message. Owner or Manager. */
+/** Starts an intake from the person's first message. Owner, Admin or Member. */
 const modeArg = v.optional(v.union(v.literal("thorough"), v.literal("fast")));
 
 type ResearchChoices = { mode?: "thorough" | "fast"; platforms?: string[]; links?: string[] };

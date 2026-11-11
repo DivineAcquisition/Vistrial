@@ -542,7 +542,7 @@ export function MetaAdsView({ status, actions, returned, manageHref }: { status:
           {!status.configured ? (
             <Notice text="The Meta app is not set up on this deployment yet." tone="warning" />
           ) : manageHref ? (
-            <p className="text-sm text-muted-foreground">Not connected yet. Connections is where the workspace connects Meta ads and grants this agent its use.</p>
+            <p className="text-sm text-muted-foreground">Not connected yet. Connections is where the organization connects Meta ads and grants this agent its use.</p>
           ) : manage ? (
             <div className="flex flex-wrap items-center gap-3">
               <Button variant="gradient" onClick={() => void connect()} loading={working === "connect"}>
@@ -551,7 +551,7 @@ export function MetaAdsView({ status, actions, returned, manageHref }: { status:
               <span className="text-xs text-muted-foreground">You sign in on Meta&apos;s own page. Vistrial never sees your password.</span>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">An Owner connects Meta ads for this workspace.</p>
+            <p className="text-sm text-muted-foreground">An Owner connects Meta ads for this organization.</p>
           )}
         </div>
       ) : null}
@@ -629,7 +629,7 @@ export function MetaAdsView({ status, actions, returned, manageHref }: { status:
                 ) : null}
               </div>
               <CampaignTable campaigns={snapshot.campaigns} currency={currency} focus={focus} />
-              <p className="text-xs text-muted-foreground">These are your own results as Meta reports them. Vistrial only reads them, and only this workspace sees them.</p>
+              <p className="text-xs text-muted-foreground">These are your own results as Meta reports them. Vistrial only reads them, and only this organization sees them.</p>
             </div>
           ) : null}
 

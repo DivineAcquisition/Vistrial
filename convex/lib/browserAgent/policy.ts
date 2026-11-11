@@ -5,7 +5,7 @@
  * Three kinds of step:
  *   read        Looks at something. Logged with a screenshot. No approval.
  *   change      Changes something the customer could undo. Shown first (what will be clicked or typed, and
- *               where), and nothing happens until an Owner or Manager approves that one step.
+ *               where), and nothing happens until an Owner or Admin approves that one step.
  *   restricted  Payments, passwords and security settings, deleting, sending a message to a person,
  *               publishing. Never part of a plan's ordinary flow: an Owner must approve each one separately
  *               and type the word shown. Declined by default.

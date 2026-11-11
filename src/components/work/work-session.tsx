@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -29,7 +30,7 @@ export function WorkSession({ shell, slug, projectId, tab }: { shell: WorkspaceS
     <SessionThread
       workspaceId={shell.workspaceId}
       data={data}
-      editor={shell.role !== "rep"}
+      editor={canWork(shell.role)}
       agentName={agent?.name ?? "The agent"}
       base={`/app/agents/${slug}`}
       intakeMessages={intake?.messages ?? []}

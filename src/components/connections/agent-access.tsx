@@ -29,7 +29,7 @@ export function AgentAccess({ workspaceId, agentSlug }: { workspaceId: Id<"works
       <p className="flex items-start gap-2 text-sm text-muted-foreground">
         <Building2 aria-hidden className="mt-0.5 size-4 shrink-0" />
         <span>
-          This connection belongs to the workspace. Choose which agents may use it; an agent that is not granted never reads it.
+          This connection belongs to the organization. Choose which agents may use it; an agent that is not granted never reads it.
           {agentSlug && here ? ` ${here.name} is ${granted.has(agentSlug) ? "granted" : "not granted"}.` : ""}
         </span>
       </p>

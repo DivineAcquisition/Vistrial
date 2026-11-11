@@ -1,3 +1,4 @@
+import { isAdmin } from "./roles";
 import type { Doc, Id } from "../_generated/dataModel";
 
 export function leadOwnerId(lead: {
@@ -7,12 +8,12 @@ export function leadOwnerId(lead: {
   return lead.ownerMemberId ?? lead.assignedMemberId;
 }
 
-/** Reps only see leads they own. Everyone else in the workspace sees all. */
+/** Members and Viewers only see leads they own. Everyone else in the workspace sees all. */
 export function canSeeLead(
   member: Pick<Doc<"members">, "role" | "workspaceId" | "_id">,
   lead: { workspaceId: Id<"workspaces">; ownerMemberId?: Id<"members">; assignedMemberId?: Id<"members"> },
 ): boolean {
   if (lead.workspaceId !== member.workspaceId) return false;
-  if (member.role !== "rep") return true;
+  if (isAdmin(member.role)) return true;
   return leadOwnerId(lead) === member._id;
 }

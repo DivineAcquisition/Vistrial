@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { usePaginatedQuery } from "convex/react";
 import { useState } from "react";
 
@@ -127,7 +128,7 @@ function Runs({ shell }: { shell: WorkspaceShell }) {
             preview="rows"
             title={filtered ? "No runs match these filters." : "Every step the agents take will appear here."}
             detail={filtered ? undefined : "Each run lists its searches, sources, checks and cost, live as it works."}
-            action={filtered || shell.role === "rep" ? undefined : <StartSessionButton />}
+            action={filtered || !canWork(shell.role) ? undefined : <StartSessionButton />}
           />
         ) : null}
         <RunList runs={items} />
@@ -143,6 +144,6 @@ function Runs({ shell }: { shell: WorkspaceShell }) {
 
 export default function RunsPage() {
   const shell = useWorkspaceShell();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   return <Runs shell={shell} />;
 }

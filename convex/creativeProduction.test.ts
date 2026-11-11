@@ -265,7 +265,7 @@ describe("Creative Production", () => {
     expect(await message(a.owner.mutation(api.assets.approve, { workspaceId: a.workspaceId, assetId: set!.row.id }))).toContain("did not pass its checks");
   });
 
-  it("refuses to start without a starting point, for a Rep, from the business's own results, or across workspaces", async () => {
+  it("refuses to start without a starting point, for a Viewer, from the business's own results, or across workspaces", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
@@ -280,10 +280,10 @@ describe("Creative Production", () => {
     expect(await message(a.owner.mutation(api.creative.start, { ...base, offerCardId: b.offerCardId }))).toBe(NOT_FOUND);
     expect(await message(b.owner.query(api.creative.tab, { workspaceId: a.workspaceId }))).toBe(NOT_FOUND);
 
-    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "rep@example.com", role: "rep" });
-    const rep = t.withIdentity({ ...person("rep"), email: "rep@example.com" });
-    await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
-    expect(await message(rep.mutation(api.creative.start, { ...base, offerCardId: a.offerCardId }))).toBe(NOT_ALLOWED);
+    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "viewer@example.com", role: "viewer" });
+    const viewer = t.withIdentity({ ...person("viewer"), email: "viewer@example.com" });
+    await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
+    expect(await message(viewer.mutation(api.creative.start, { ...base, offerCardId: a.offerCardId }))).toBe(NOT_ALLOWED);
 
     // A put-away brand cannot be used; nothing above started a run.
     await a.owner.mutation(api.brandKits.archive, { workspaceId: a.workspaceId, kitId: a.kitId });
@@ -409,7 +409,7 @@ describe("Running an ad set", () => {
     expect((await a.owner.query(api.creative.view, { ...base, assetId }))?.test).toBeNull();
   });
 
-  it("keeps another brand's results out of the brief, reps read-only, and other workspaces out", async () => {
+  it("keeps another brand's results out of the brief, viewers read-only, and other workspaces out", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
@@ -418,17 +418,17 @@ describe("Running an ad set", () => {
     const assetId = await made(t, a);
     await a.owner.mutation(api.assets.approve, { ...base, assetId });
 
-    const invite = await a.owner.mutation(api.workspace.invite, { ...base, email: "rep@example.com", role: "rep" });
-    const rep = t.withIdentity({ ...person("rep"), email: "rep@example.com" });
-    await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
-    expect(await message(rep.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 14 }))).toBe(NOT_ALLOWED);
+    const invite = await a.owner.mutation(api.workspace.invite, { ...base, email: "viewer@example.com", role: "viewer" });
+    const viewer = t.withIdentity({ ...person("viewer"), email: "viewer@example.com" });
+    await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
+    expect(await message(viewer.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 14 }))).toBe(NOT_ALLOWED);
     expect(await message(b.owner.mutation(api.creativeTests.start, { workspaceId: b.workspaceId, assetId, checkInDays: 14 }))).toBe(NOT_FOUND);
 
     const testId = await a.owner.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 14 });
-    expect(await message(rep.mutation(api.creativeTests.recordOutcome, { ...base, testId, result: "better", note: "" }))).toBe(NOT_ALLOWED);
+    expect(await message(viewer.mutation(api.creativeTests.recordOutcome, { ...base, testId, result: "better", note: "" }))).toBe(NOT_ALLOWED);
     expect(await message(b.owner.mutation(api.creativeTests.recordOutcome, { workspaceId: b.workspaceId, testId, result: "better", note: "" }))).toBe(NOT_FOUND);
     expect(await message(b.owner.mutation(api.creativeTests.remove, { workspaceId: b.workspaceId, testId }))).toBe(NOT_FOUND);
-    expect((await rep.query(api.creative.view, { ...base, assetId }))?.test?.id).toBe(testId);
+    expect((await viewer.query(api.creative.view, { ...base, assetId }))?.test?.id).toBe(testId);
     await a.owner.mutation(api.creativeTests.recordOutcome, { ...base, testId, result: "same", note: "" });
 
     // A client's ad set is briefed with that client's results only.

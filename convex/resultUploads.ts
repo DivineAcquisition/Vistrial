@@ -5,6 +5,7 @@
  * evidence for the agents the upload is granted to.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 import Papa from "papaparse";
 
@@ -13,7 +14,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
-import { ownerMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
+import { adminMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notAllowed, notFound } from "./lib/errors";
 import { MAX_BYTES, summarizeResults, type ResultsSummary } from "./lib/resultsCsv";
 import { canonicalUrl } from "./lib/sourceRefs";
@@ -53,7 +54,7 @@ export function describeUpload(upload: Pick<Doc<"resultUploads">, "label" | "cur
 }
 
 function requireEditor(role: Doc<"members">["role"]) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 export const createUpload = workspaceMutation({
@@ -231,7 +232,7 @@ async function ownUpload(ctx: { db: { get: (id: Id<"resultUploads">) => Promise<
   return upload;
 }
 
-/** Deletes an upload's figures. Owners and managers. */
+/** Deletes an upload's figures. Owners, Admins and Members. */
 export const remove = workspaceMutation({
   args: { uploadId: v.id("resultUploads") },
   handler: async (ctx, args) => {
@@ -251,7 +252,7 @@ export const remove = workspaceMutation({
 });
 
 /** Grants or withdraws an agent's use of one upload's figures. Owner only. */
-export const setAgentAccess = ownerMutation({
+export const setAgentAccess = adminMutation({
   args: { uploadId: v.id("resultUploads"), agentSlug: v.string(), granted: v.boolean() },
   handler: async (ctx, args) => {
     const upload = await ownUpload(ctx, ctx.workspaceId, args.uploadId);

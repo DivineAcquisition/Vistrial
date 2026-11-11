@@ -18,7 +18,7 @@ async function seed() {
   // A workspace with Growth Architect on and a confirmed profile.
   const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
   const ids = await t.run(async (ctx) => {
-    await ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });
     const other = await ctx.db.insert("workspaces", { name: "Other", slug: "other", timezone: "UTC", status: "active", createdAt: 0 });
     await ctx.db.insert("members", { workspaceId: other, userId: "user_other", role: "owner", displayName: "Other", active: true });
     const projectId = await ctx.db.insert("researchProjects", {
@@ -190,24 +190,24 @@ describe("home", () => {
     expect((await owner.query(api.home.overview, { workspaceId })).knowledge.items.find((row) => row.key === "outcome")?.done).toBe(true);
   });
 
-  it("lists evidence across sessions; reps see sources but not money figures", async () => {
+  it("lists evidence across sessions; viewers see sources but not money figures", async () => {
     const { t, workspaceId } = await seed();
     const owner = await t.withIdentity(identity("user_owner")).query(api.home.evidence, { workspaceId });
     expect(owner.sourceCount).toBe(2);
     expect(owner.sources[0].projectTitle).toBe("Austin deep cleaning");
     expect(owner.seesFigures).toBe(true);
-    const rep = await t.withIdentity(identity("user_rep")).query(api.home.evidence, { workspaceId });
-    expect(rep.sourceCount).toBe(2);
-    expect(rep.seesFigures).toBe(false);
-    expect(rep.figures).toEqual([]);
+    const viewer = await t.withIdentity(identity("user_viewer")).query(api.home.evidence, { workspaceId });
+    expect(viewer.sourceCount).toBe(2);
+    expect(viewer.seesFigures).toBe(false);
+    expect(viewer.figures).toEqual([]);
   });
 
-  it("tells a rep the queue is for an owner or manager", async () => {
+  it("tells a viewer the queue is for an owner or admin", async () => {
     const { t, workspaceId } = await seed();
-    const rep = await t.withIdentity(identity("user_rep")).query(api.home.overview, { workspaceId });
-    expect(rep.role).toBe("rep");
-    expect(rep.actionable).toBe(false);
-    expect(rep.waiting.total).toBe(3);
+    const viewer = await t.withIdentity(identity("user_viewer")).query(api.home.overview, { workspaceId });
+    expect(viewer.role).toBe("viewer");
+    expect(viewer.actionable).toBe(false);
+    expect(viewer.waiting.total).toBe(3);
   });
 
   it("searches sessions and reports by title", async () => {

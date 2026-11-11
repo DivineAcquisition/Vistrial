@@ -258,7 +258,7 @@ export function BoardView({
           {canShare ? (
             <label className="flex items-center gap-2 text-sm text-muted-foreground">
               <Checkbox checked={shared} onCheckedChange={(checked) => setShared(checked === true)} />
-              Share new collections with the workspace
+              Share new collections with the organization
             </label>
           ) : null}
         </div>

@@ -1,3 +1,4 @@
+import { isAdmin, requireAdmin } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
@@ -5,11 +6,11 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { canSeeLead, leadOwnerId } from "./lib/canSeeLead";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { leadMutation, leadQuery } from "./lib/leadBuilders";
 import { normalizeEmail, normalizeFullName, toE164 } from "./lib/phones";
 import { defaultCountry, firstOpenStage } from "./lib/seedSpine";
-import { ownerMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
+import { adminMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
 import type { MemberAccess } from "./lib/builders";
 
 const leadStatus = v.union(v.literal("open"), v.literal("won"), v.literal("lost"), v.literal("closed"));
@@ -17,7 +18,7 @@ const leadStatus = v.union(v.literal("open"), v.literal("won"), v.literal("lost"
 type ReadCtx = QueryCtx & MemberAccess;
 
 function ownerFor(member: Doc<"members">, requested?: Id<"members">) {
-  if (member.role === "rep") return member._id;
+  if (!isAdmin(member.role)) return member._id;
   return requested;
 }
 
@@ -228,7 +229,7 @@ export const get = leadQuery({
 export const assign = leadMutation({
   args: { ownerMemberId: v.id("members") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     const assignee = await ctx.db.get(args.ownerMemberId);
     if (!assignee || assignee.workspaceId !== ctx.workspaceId || !assignee.active) notFound();
     await ctx.db.patch(ctx.lead._id, { ownerMemberId: assignee._id });
@@ -253,7 +254,7 @@ export const create = workspaceMutation({
     ownerMemberId: v.optional(v.id("members")),
   },
   handler: async (ctx, args) => {
-    const owner = ctx.member.role === "rep" ? ctx.member._id : args.ownerMemberId ?? ctx.member._id;
+    const owner = !isAdmin(ctx.member.role) ? ctx.member._id : args.ownerMemberId ?? ctx.member._id;
     const assignee = await ctx.db.get(owner);
     if (!assignee || assignee.workspaceId !== ctx.workspaceId || !assignee.active) notFound();
     const country = await defaultCountry(ctx, ctx.workspaceId);
@@ -460,7 +461,7 @@ export const stages = workspaceQuery({
   },
 });
 
-export const updateStage = ownerMutation({
+export const updateStage = adminMutation({
   args: { stageId: v.id("pipelineStages"), name: v.string(), meaning: v.string(), sort: v.number() },
   handler: async (ctx, args) => {
     const stage = await ctx.db.get(args.stageId);
@@ -482,7 +483,7 @@ export const country = workspaceQuery({
   handler: async (ctx) => defaultCountry(ctx, ctx.workspaceId),
 });
 
-export const setCountry = ownerMutation({
+export const setCountry = adminMutation({
   args: { country: v.string() },
   handler: async (ctx, args) => {
     const country = args.country.trim().toUpperCase();

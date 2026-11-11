@@ -43,7 +43,7 @@ describe("agent folders", () => {
     const t = convexTest(schema, modules);
     const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
     await t.run(async (ctx) => {
-      await ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true });
+      await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });
     });
     await t.mutation(internal.metaAds.saveConnection, {
       workspaceId,
@@ -59,6 +59,6 @@ describe("agent folders", () => {
     expect((await owner.query(api.agentFolder.tree, { workspaceId, agentSlug: "growth-architect" })).connections[0].state).toBe("on");
     await owner.mutation(api.metaAds.setAgentAccess, { workspaceId, agentSlug: "growth-architect", granted: false });
     expect((await owner.query(api.agentFolder.tree, { workspaceId, agentSlug: "growth-architect" })).connections[0].state).toBe("notGranted");
-    await expect(t.withIdentity(identity("user_rep")).mutation(api.metaAds.setAgentAccess, { workspaceId, agentSlug: "growth-architect", granted: true })).rejects.toThrow();
+    await expect(t.withIdentity(identity("user_viewer")).mutation(api.metaAds.setAgentAccess, { workspaceId, agentSlug: "growth-architect", granted: true })).rejects.toThrow();
   });
 });

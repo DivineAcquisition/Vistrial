@@ -205,7 +205,7 @@ function SessionView({ data, actions, startError }: { data: FreeSessionData; act
         <p>
           {data.freeAttempts < data.maxAttempts
             ? "Try once more: it starts fresh and is still free."
-            : "It stopped again before writing the report. You can still unlock Vistrial and run a new session from your workspace."}
+            : "It stopped again before writing the report. You can still unlock Vistrial and run a new session from your organization."}
         </p>
       </Hero>
     ) : (

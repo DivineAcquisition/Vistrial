@@ -14,7 +14,7 @@ export function DiagnosticsTabStory({ state, theme, view }: { state: string; the
   const editor = state !== "rep";
   const data = storyDiagnostics(state);
   return (
-    <StoryFrame tab="work/diagnostics" theme={theme} role={editor ? "owner" : "rep"}>
+    <StoryFrame tab="work/diagnostics" theme={theme} role={editor ? "owner" : "viewer"}>
       <DiagnosticsTabView
         base="/app/agents/growth-architect"
         editor={editor}

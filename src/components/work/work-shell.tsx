@@ -164,7 +164,7 @@ export function ResultsList({
   empty: string;
   extra?: (row: ResultRow) => ReactNode;
   openHref?: (row: ResultRow) => string;
-  /** "Refine in chat": opens the Chat tab with this result attached. Owners and Managers. */
+  /** "Refine in chat": opens the Chat tab with this result attached. Owners, Admins and Members. */
   refineHref?: (row: ResultRow) => string;
 }) {
   const waiting = results.filter((row) => row.status === "draft" || row.status === "needsReview").length;

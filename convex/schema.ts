@@ -25,7 +25,18 @@ const decisionFigures = v.object({
   revenue: v.optional(v.number()),
   capturedAt: v.number(),
 });
-const memberRole = v.union(v.literal("owner"), v.literal("manager"), v.literal("rep"));
+/**
+ * Owner, Admin, Member, Viewer. "manager" and "rep" are the words rows held before; they stay valid until
+ * organizationsMigration reports none left on every deployment. Read a role through roleOf (lib/roles.ts).
+ */
+const memberRole = v.union(
+  v.literal("owner"),
+  v.literal("admin"),
+  v.literal("member"),
+  v.literal("viewer"),
+  v.literal("manager"),
+  v.literal("rep"),
+);
 const consentState = v.union(v.literal("unknown"), v.literal("granted"), v.literal("revoked"));
 const identityKind = v.union(
   v.literal("email"),
@@ -43,18 +54,53 @@ const bookingStatus = v.union(
   v.literal("canceled"),
   v.literal("noShow"),
 );
-const inviteRole = v.union(v.literal("manager"), v.literal("rep"));
+const inviteRole = v.union(v.literal("admin"), v.literal("member"), v.literal("viewer"), v.literal("manager"), v.literal("rep"));
 const stage = v.union(v.literal("foundation"), v.literal("organization"), v.literal("execution"));
 const agentState = v.union(v.literal("off"), v.literal("suggesting"), v.literal("on"));
 
 export default defineSchema({
+  /**
+   * The paying customer: who is billed, and whose credits every organization under it spends. An
+   * organization is a row in `workspaces` (the table keeps its name; only the word on screen changed).
+   */
+  accounts: defineTable({
+    name: v.string(),
+    /**
+     * The customer id used with Autumn. For an account made from a workspace that existed before accounts
+     * did, this is that workspace's id, so the customer Autumn already holds is reused and nothing moves.
+     */
+    billingCustomerId: v.string(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }),
+
+  /** A person on an account. What they can open is a `members` row in each organization they were given. */
+  accountMembers: defineTable({
+    accountId: v.id("accounts"),
+    userId: v.string(),
+    /** "owner" manages billing and organizations, and is an Owner in every organization of the account. */
+    role: v.union(v.literal("owner"), v.literal("member")),
+    displayName: v.string(),
+    email: v.optional(v.string()),
+    active: v.boolean(),
+    removedAt: v.optional(v.number()),
+  })
+    .index("by_account", ["accountId"])
+    .index("by_user", ["userId"])
+    .index("by_account_user", ["accountId", "userId"]),
+
+  /** An organization: one of the account owner's own businesses. */
   workspaces: defineTable({
     name: v.string(),
     slug: v.string(),
     timezone: v.string(),
     status: v.union(v.literal("active"), v.literal("archived")),
     createdAt: v.number(),
-  }).index("by_slug", ["slug"]),
+    /** The account it belongs to. Missing only until organizationsMigration has reached the row. */
+    accountId: v.optional(v.id("accounts")),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_account", ["accountId"]),
 
   members: defineTable({
     workspaceId: v.id("workspaces"),
@@ -69,7 +115,9 @@ export default defineSchema({
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_user", ["userId"])
-    .index("by_workspace_user", ["workspaceId", "userId"]),
+    .index("by_workspace_user", ["workspaceId", "userId"])
+    /** Lets the role backfill see whether any old word is left without reading every member. */
+    .index("by_role", ["role"]),
 
   invitations: defineTable({
     workspaceId: v.id("workspaces"),
@@ -81,6 +129,12 @@ export default defineSchema({
     /** An owner withdrew the invite before it was used. A cancelled invite cannot be accepted. */
     canceledAt: v.optional(v.number()),
     invitedBy: v.optional(v.string()),
+    accountId: v.optional(v.id("accounts")),
+    /**
+     * Every organization the invite opens, with the role in each. `workspaceId` and `role` above are the
+     * first of them. Missing on an invite made before a person could be given several.
+     */
+    grants: v.optional(v.array(v.object({ workspaceId: v.id("workspaces"), role: inviteRole }))),
   })
     .index("by_token", ["tokenHash"])
     .index("by_workspace", ["workspaceId"]),

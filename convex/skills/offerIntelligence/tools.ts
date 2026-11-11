@@ -306,7 +306,7 @@ const save: MutationTool = async (ctx, run, steps) => {
     analysis ? renderAnalysis(analysis, context, checks, versionNotes) : `# Offer analysis\n\n## Needs review\n\n${versionNotes.map((note) => `- ${note}`).join("\n")}\n`;
   const droppedFirst = await writeVersion(ctx, run, assetId, 1, bodyFor(first, firstChecks, notes), analysisClaims(first, context, recordId), context);
   const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, bodyFor(second, finalChecks, []), analysisClaims(second, context, recordId), context) : [];
-  // Tells Owners and Managers by email that it waits for them. Scheduled, so a send failure never fails the run.
+  // Tells Owners and Admins by email that it waits for them. Scheduled, so a send failure never fails the run.
   await ctx.scheduler.runAfter(0, internal.emailReminders.sendReportReady, { assetId });
   return {
     resultId: assetId,

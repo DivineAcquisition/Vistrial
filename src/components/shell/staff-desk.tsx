@@ -31,7 +31,7 @@ export function StaffDesk() {
       <EmptyState
         kind="permission"
         title="No grant is open"
-        detail="A staff member sees a workspace only after a logged grant with a reason and an expiry. Without one, there is nothing here."
+        detail="A staff member sees an organization only after a logged grant with a reason and an expiry. Without one, there is nothing here."
       />
     );
   }

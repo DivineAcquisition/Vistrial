@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import { Brain, Trash2 } from "@/components/icons";
 import { useState } from "react";
@@ -28,13 +29,13 @@ export default function AgentMemory() {
   const remove = useMutation(api.facts.remove);
   const [notice, setNotice] = useState("");
   if (!shell) return null;
-  const canEdit = shell.role !== "rep";
+  const canEdit = canWork(shell.role);
   return (
     <div className="grid gap-4">
       <Panel className="flex items-start gap-3 p-4">
         <Brain aria-hidden className="mt-0.5 size-5 shrink-0 text-primary" />
         <p className="text-sm text-muted-foreground">
-          Shared across this workspace&apos;s agents. A fact an agent found is never treated as verified until a person confirms it. Remove anything that is wrong; the history is kept.
+          Shared across this organization&apos;s agents. A fact an agent found is never treated as verified until a person confirms it. Remove anything that is wrong; the history is kept.
         </p>
       </Panel>
       {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}

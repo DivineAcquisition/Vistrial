@@ -8,7 +8,7 @@ import { useState, type ReactNode } from "react";
 
 import { ChatComposer } from "@/components/chat/chat-composer";
 import { useChatExtras } from "@/components/chat/use-chat-extras";
-import { ArrowRight, CheckCircle2, FileSearch, Gauge, Lightbulb, LoaderCircle, MessageCircleQuestion, MessagesSquare, Paperclip, Plus, Square, Store, X, type LucideIcon } from "@/components/icons";
+import { ArrowRight, CheckCircle2, ChevronDown, FileSearch, Gauge, Lightbulb, LoaderCircle, MessageCircleQuestion, MessagesSquare, Paperclip, Plus, Square, Store, X, type LucideIcon } from "@/components/icons";
 import { IntakeChat } from "@/components/sessions/intake-chat";
 import { useWorkspaceShell, useClientScope } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
@@ -271,12 +271,25 @@ export function ConversationFrame({ chat, base, children }: { chat: Pick<ChatDet
   );
 }
 
-/** The Chat tab's two columns: past conversations and the open one beside it (below it on a phone). */
-export function ChatLayout({ list, children }: { list: ReactNode; children: ReactNode }) {
+/**
+ * The Chat tab: where a new session starts, with every previous chat in a dropdown above it. The open
+ * conversation, or the box for a new one, has the full width.
+ */
+export function ChatLayout({ list, count, children }: { list: ReactNode; count?: number; children: ReactNode }) {
   return (
-    <div className="grid min-w-0 gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
-      <div className="order-2 min-w-0 lg:order-1 lg:border-r lg:border-border lg:pr-4">{list}</div>
-      <div className="order-1 min-w-0 lg:order-2">{children}</div>
+    <div className="grid min-w-0 gap-4">
+      <details className="group min-w-0 rounded-xl border border-border bg-card">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 py-2.5 text-sm text-card-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center gap-2">
+            <MessagesSquare aria-hidden className="size-4 text-primary" />
+            Previous chats
+            {count !== undefined ? <span className="rounded-md bg-overlay/[0.06] px-1.5 text-xs text-muted-foreground tabular-nums">{count}</span> : null}
+          </span>
+          <ChevronDown aria-hidden className="size-4 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+        </summary>
+        <div className="max-h-[60dvh] overflow-y-auto border-t border-border p-3">{list}</div>
+      </details>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
@@ -400,7 +413,7 @@ export function AgentChat({
   const rows = useQuery(api.agentChat.list, { workspaceId, scope });
   const preset = isChatRoute(skill) ? skill : null;
   return (
-    <ChatLayout list={<ConversationList rows={rows} activeId={conversationId} base={base} canStart={editor} />}>
+    <ChatLayout count={rows?.length} list={<ConversationList rows={rows} activeId={conversationId} base={base} canStart={editor} />}>
       {conversationId ? (
         <LiveConversation workspaceId={workspaceId} base={base} slug={slug} agentName={agentName} intakeId={conversationId} editor={editor} />
       ) : (

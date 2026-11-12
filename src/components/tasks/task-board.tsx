@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 
 import { Check, ChevronDown, ExternalLink, NotebookPenIcon, Plus, Trash2 } from "@/components/icons";
+import { useChatPanel } from "@/components/chat/side-panel";
 import { MeasuredChanges, OutcomeForm, RESULT_WORDS } from "@/components/research/outcome-loop";
 import { useClientScope, useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
@@ -141,6 +142,7 @@ function Facts({ card }: { card: TaskCard }) {
 
 function Card({ card, column, board, actions, onEdit, onSkip }: { card: TaskCard; column: Column; board: Board; actions: BoardActions; onEdit: (card: TaskCard) => void; onSkip: (card: TaskCard) => void }) {
   const [busy, setBusy] = useState(false);
+  const panel = useChatPanel();
   const run = (work: Promise<unknown>) => {
     setBusy(true);
     void work.catch((problem: unknown) => showError(problem)).finally(() => setBusy(false));
@@ -199,6 +201,12 @@ function Card({ card, column, board, actions, onEdit, onSkip }: { card: TaskCard
             <span className="text-xs text-muted-foreground">An Owner or Admin approves or skips this.</span>
           </div>
         )
+      ) : null}
+
+      {panel && board.canWork ? (
+        <button type="button" onClick={() => panel.openAbout({ kind: "task", id: card.id, title: card.title })} className="justify-self-start text-xs text-muted-foreground underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+          Ask Vistrial about this
+        </button>
       ) : null}
 
       {card.decisionId && board.canWork ? <OutcomeForm onSubmit={(result, note) => actions.recordOutcome(card.decisionId!, result, note).then(() => undefined, (problem: unknown) => void showError(problem, "That did not save."))} /> : null}

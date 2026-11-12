@@ -6,6 +6,7 @@ import { useState } from "react";
 import { LayoutListIcon, MenuIcon } from "@/components/icons";
 
 import { ThemeToggle } from "@/components/app/theme-toggle";
+import { AskButton, ChatPanelProvider, LiveChatPanel, useChatPanel } from "@/components/chat/side-panel";
 import { JourneySidebar } from "@/components/shell/journey-sidebar";
 import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -22,7 +23,30 @@ function active(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function ProductShell({
+/**
+ * The column on the right: the live stream, or the chat panel in its place while the panel is open. The
+ * panel stays open as pages change; on a phone it is a full-height sheet.
+ */
+function RightColumn() {
+  const panel = useChatPanel();
+  if (panel?.open) return <LiveChatPanel />;
+  return (
+    <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block print:hidden">
+      <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Live</p>
+      <LiveAside />
+    </aside>
+  );
+}
+
+export function ProductShell(props: Parameters<typeof ProductShellInner>[0]) {
+  return (
+    <ChatPanelProvider>
+      <ProductShellInner {...props} />
+    </ChatPanelProvider>
+  );
+}
+
+function ProductShellInner({
   agents,
   children,
 }: {
@@ -59,6 +83,7 @@ export function ProductShell({
                   </span>
                 ))}
               </div>
+              <AskButton />
               <ThemeToggle />
             </div>
           </header>
@@ -67,10 +92,7 @@ export function ProductShell({
               <BalanceNotice />
               <PageEnter id={pathname}>{children}</PageEnter>
             </main>
-            <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block print:hidden">
-              <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Live</p>
-              <LiveAside />
-            </aside>
+            <RightColumn />
           </div>
         </div>
       </div>

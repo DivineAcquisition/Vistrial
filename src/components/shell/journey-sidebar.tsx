@@ -14,6 +14,7 @@ import {
   Gauge,
   Home,
   Kanban,
+  MessagesSquare,
   Newspaper,
   Search,
   Settings,
@@ -21,6 +22,7 @@ import {
   type LucideIcon,
 } from "@/components/icons";
 import { GlyphMark } from "@/components/live/agent-identity";
+import { LiveChatList } from "@/components/chat/chat-library";
 import { ClientPicker } from "@/components/shell/client-picker";
 import { OrganizationSwitcher } from "@/components/shell/organization-switcher";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
@@ -298,7 +300,7 @@ function AgentRow({
   );
 }
 
-/** Library holds what work produced. Chats (every chat session started) joins it in step 3. Memory is in Settings. */
+/** Library holds what work produced. Chats (every chat session started) sits above these, with a dropdown of the newest. Memory is in Settings. */
 const LIBRARY: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/app/research", label: "Sessions", icon: BookOpen },
   { href: "/app/evidence", label: "Evidence", icon: FileSearch },
@@ -319,6 +321,7 @@ export function JourneySidebarView({
   onNavigate,
   renderSearch,
   scope,
+  chatList,
 }: {
   agents: RailAgent[];
   data: SidebarData;
@@ -327,8 +330,11 @@ export function JourneySidebarView({
   /** What sits at the very top: which organization is open (and, under it, which client). Stories pass their own. */
   scope?: React.ReactNode;
   renderSearch?: (text: string, close: () => void) => React.ReactNode;
+  /** The newest chats, shown when Library > Chats is opened. Rendered only then, so a closed list reads nothing. */
+  chatList?: React.ReactNode;
 }) {
   const { overview, credits } = data;
+  const [chatsOpen, setChatsOpen] = useState(false);
   const liveSlugs = () => new Set(agents.filter((agent) => workTabsFor(agent).length > 0).map((agent) => agent.slug));
   const [openRows, setOpenRows] = useState<Set<string>>(() => (typeof window === "undefined" ? liveSlugs() : (readRows() ?? liveSlugs())));
   const toggleRow = (slug: string) =>
@@ -428,6 +434,33 @@ export function JourneySidebarView({
         <div className="mt-5 grid gap-1">
           <p className={heading}>Library</p>
           <ul className="grid gap-0.5">
+            <li>
+              <div className={cn("flex items-center gap-1 rounded-lg", isActive(pathname, "/app/chats") && "bg-accent")}>
+                <Link href="/app/chats" onClick={onNavigate} aria-current={isActive(pathname, "/app/chats") ? "page" : undefined} className={cn(row, "min-w-0 flex-1")}>
+                  <MessagesSquare aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">Chats</span>
+                </Link>
+                <button
+                  type="button"
+                  aria-expanded={chatsOpen}
+                  aria-controls="sidebar-chats"
+                  aria-label={chatsOpen ? "Hide recent chats" : "Show recent chats"}
+                  onClick={() => {
+                    setChatsOpen((open) => !open);
+                    // The list opens at the foot of the sidebar: bring it into view.
+                    requestAnimationFrame(() => document.getElementById("sidebar-chats")?.scrollIntoView({ block: "nearest" }));
+                  }}
+                  className="mr-1 flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-overlay/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <ChevronRight aria-hidden className={cn("size-3.5 transition-transform motion-reduce:transition-none", chatsOpen && "rotate-90")} />
+                </button>
+              </div>
+              {chatsOpen ? (
+                <div id="sidebar-chats" className="mt-0.5 ml-4 border-l border-border pl-2">
+                  {chatList ?? <LiveChatList onNavigate={onNavigate} />}
+                </div>
+              ) : null}
+            </li>
             {LIBRARY.map((item) => {
               const active = isActive(pathname, item.href);
               return (

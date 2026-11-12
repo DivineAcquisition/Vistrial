@@ -10,6 +10,8 @@ import { ShellProvider, type ScopeChoice, type ShellClient, type ShellOrganizati
 import type { Role } from "@/lib/roles";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { STORY_AGENTS, STORY_HITS, storyOverview } from "../journey-sidebar/fixtures";
+import { ChatListView } from "@/components/chat/chat-library";
+import { ChatPanelProvider } from "@/components/chat/side-panel";
 import { StoryTheme } from "../story-theme";
 
 /** The sample account every step 2 story uses: an agency, Northlight Growth, with business and person clients. */
@@ -45,13 +47,21 @@ export function StoryScope({ role = "owner", initial = "all" }: { role?: Role; i
   );
 }
 
+/** The newest chats, as the sidebar's Library > Chats dropdown shows them. */
+export const STORY_CHATS = [
+  { id: "i7" as Id<"intakes">, title: "Why did Aster's booked calls stop turning into clients?", client: "Aster Coaching" },
+  { id: "i6" as Id<"intakes">, title: "What do fractional CFO firms charge agencies?", client: "Ledgerline CFO" },
+  { id: "i5" as Id<"intakes">, title: "Is our growth retainer priced right?", client: null },
+];
+
 /** A step 2 screen inside the app's frame: the sidebar on the left (hidden on a phone, as in the app) and the page. */
-export function Step2Frame({ theme, role = "owner", path, state = "busy", children }: { theme: string; role?: Role; path: string; state?: string; children: ReactNode }) {
+export function Step2Frame({ theme, role = "owner", path, state = "busy", children, right }: { theme: string; role?: Role; path: string; state?: string; children: ReactNode; /** The column on the right: the side chat panel, in its stories. */ right?: ReactNode }) {
   const client = useMemo(() => new ConvexReactClient("https://story-fixture-123.convex.cloud"), []);
   const shell: WorkspaceShell = { workspaceId: "w1" as Id<"workspaces">, role, setupDone: true, agents: STORY_AGENTS, clients: STORY_CLIENTS, ownWork: true, choice: "all" };
   return (
     <ConvexProvider client={client}>
       <ShellProvider value={shell}>
+        <ChatPanelProvider initial={{ open: Boolean(right) }}>
         <StoryTheme theme={theme} />
         <div className="flex min-h-dvh min-w-0 overflow-x-hidden bg-background text-foreground">
           <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-border md:flex md:flex-col">
@@ -61,10 +71,13 @@ export function Step2Frame({ theme, role = "owner", path, state = "busy", childr
               pathname={path}
               scope={<StoryScope role={role} />}
               renderSearch={(text, close) => <SearchResults text={text} hits={STORY_HITS} close={close} />}
+              chatList={<ChatListView rows={STORY_CHATS} />}
             />
           </aside>
           <main className="min-w-0 flex-1 px-4 py-6 md:px-8">{children}</main>
+          {right}
         </div>
+        </ChatPanelProvider>
       </ShellProvider>
     </ConvexProvider>
   );

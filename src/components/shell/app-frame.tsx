@@ -72,7 +72,7 @@ function AuthedFrame({ children }: { children: React.ReactNode }) {
   if (!current) return <OnboardingFlow />;
   const organizations: ShellOrganization[] = mine.organizations.map((row) => ({ workspaceId: row.workspaceId, name: row.name, role: row.role, accountId: row.accountId }));
   const found = mine.accounts.find((row) => row.accountId === current.accountId);
-  const account: ShellAccount | null = found ? { accountId: found.accountId, name: found.name, owner: found.owner, canAdd: found.canAdd, addClosedReason: found.addClosedReason } : null;
+  const account: ShellAccount | null = found ? { accountId: found.accountId, name: found.name, owner: found.owner, canAdd: found.canAdd, addClosedReason: found.addClosedReason, addPrice: found.addPrice } : null;
   return (
     // Keyed by organization, so nothing loaded for one is ever shown under another.
     <WorkspaceFrame key={current.workspaceId} workspaceId={current.workspaceId} organizations={organizations} account={account} switchOrganization={switchOrganization}>

@@ -7,6 +7,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { writeAudit } from "./lib/audit";
 import { signedInMutation, signedInQuery } from "./lib/builders";
+import { EXTRA_ORG, billingOn } from "./lib/billing";
 import { notFound, userError } from "./lib/errors";
 import { createWorkspaceFor } from "./lib/newWorkspace";
 import { ADD_ORGANIZATION_CLOSED, MAX_ORGANIZATIONS, accountMember, addingOrganizationsOpen, organizationsOf } from "./lib/organizations";
@@ -64,6 +65,8 @@ export const mine = signedInQuery({
         /** Only an Owner adds an organization, and only where adding is switched on. */
         canAdd: row.role === "owner" && addingOrganizationsOpen() && count < MAX_ORGANIZATIONS,
         addClosedReason: row.role === "owner" && !addingOrganizationsOpen() ? ADD_ORGANIZATION_CLOSED : null,
+        /** What one more organization costs, to show and confirm before adding. Null where nothing is charged. */
+        addPrice: billingOn() ? { priceCents: EXTRA_ORG.priceCents, includedCents: EXTRA_ORG.includedCents } : null,
       });
     }
     return { organizations, accounts };
@@ -71,7 +74,8 @@ export const mine = signedInQuery({
 });
 
 /**
- * Adds another organization to an account. Owners of the account only. Every Owner of the account becomes
+ * Adds another organization to an account where nothing is charged for it (billing off: local and test
+ * deployments). Owners of the account only. Every Owner of the account becomes
  * an Owner in it; nobody else can open it until they are given a role there.
  */
 export const create = signedInMutation({
@@ -83,6 +87,9 @@ export const create = signedInMutation({
     if (!account || !me || !me.active) notFound();
     if (me.role !== "owner") throw userError("Only an Owner of the account can add an organization.", "not_allowed");
     if (!addingOrganizationsOpen()) throw userError(ADD_ORGANIZATION_CLOSED, "not_allowed");
+    // Where billing is on, an organization is paid for: it is added through billingActions.addOrganization,
+    // which shows the price and takes the Owner's confirmation. This path charges nothing, so it is closed.
+    if (billingOn()) throw userError("Add the organization from Billing, where its price is shown and confirmed.", "not_allowed");
     const name = args.name.trim().replace(/\s+/g, " ");
     if (!name) throw userError("Name the organization.");
     if (name.length > MAX_NAME) throw userError(`Keep the name under ${MAX_NAME} characters.`);

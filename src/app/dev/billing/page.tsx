@@ -4,9 +4,9 @@ import { BillingStory } from "./story";
 
 export const metadata = { title: "Billing story", robots: { index: false, follow: false } };
 
-/** ?state=active|low|empty|off opens a state directly, for screenshots. */
+/** ?state=active|low|empty|off|account|account-admin|account-closed opens a state directly, ?theme=light|dark. For screenshots. */
 export default async function BillingStoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (process.env.NODE_ENV === "production") notFound();
   const query = await searchParams;
-  return <BillingStory state={typeof query.state === "string" ? query.state : "active"} />;
+  return <BillingStory state={typeof query.state === "string" ? query.state : "active"} theme={typeof query.theme === "string" ? query.theme : "light"} />;
 }

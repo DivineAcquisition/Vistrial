@@ -166,6 +166,30 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId", "createdAt"])
     .index("by_status_expires", ["status", "expiresAt"]),
 
+  /**
+   * Material an Owner copied in from another organization of the same account, for this organization's
+   * agents to read. A snapshot: it never changes when the original does, it is read-only here, and
+   * removing it deletes only this copy. It is reference, never a fact about this business.
+   */
+  sharedReferences: defineTable({
+    workspaceId: v.id("workspaces"),
+    fromWorkspaceId: v.id("workspaces"),
+    /** The other organization's name on the day of the copy, shown as where this came from. */
+    fromName: v.string(),
+    sourceAssetId: v.id("assets"),
+    sourceVersion: v.number(),
+    kind: v.string(),
+    title: v.string(),
+    body: v.string(),
+    /** The original was longer than a copy may be, so this one stops early. */
+    cut: v.optional(v.boolean()),
+    copiedBy: v.string(),
+    copiedByName: v.string(),
+    copiedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId", "copiedAt"])
+    .index("by_workspace_source", ["workspaceId", "sourceAssetId"]),
+
   members: defineTable({
     workspaceId: v.id("workspaces"),
     userId: v.string(),

@@ -607,8 +607,8 @@ export const CLAIMS: Array<{ statement: string; support: string }> = [
     support: "convex/lib/audit.ts writes an audit row for approvals, decisions, connections, and staff access.",
   },
   {
-    statement: "Private Access is $179 per month with $150 of credits included. Included credits reset each month.",
-    support: "convex/lib/billing.ts PLAN: 17900 cents, 15000 cents included. The Terms of Service state the same price and that included credits do not carry over.",
+    statement: "Private Access is $179 per month with 15,000 credits included. Included credits reset each month.",
+    support: "convex/lib/billing.ts PLAN: 17900 cents, 15000 credits included (one credit is one cent of balance). The Terms of Service state the same price and that included credits do not carry over.",
   },
   {
     statement: "Nothing is charged on this site.",

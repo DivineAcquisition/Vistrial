@@ -234,7 +234,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Plans and credits. The Growth plan is $179 per month and includes $150 of credits each month. Credits pay for the AI work agents do: each piece of work is charged from your balance at the price shown in the product before it runs. Included credits reset each month and do not carry over. You can buy extra credit packs of $10, $25 or $50; credits from packs do not expire while your workspace is active. Custom plans are agreed with us. A new workspace gets one free research session before a plan is needed.",
+          text: "Plans and credits. The Growth plan is $179 per month and includes 15,000 credits each month. One credit is worth one US cent of AI work. Credits pay for the AI work agents do: each piece of work is charged from your balance at the price shown in the product before it runs. Included credits reset each month and do not carry over. You can buy extra credit packs of 1,000, 2,500 or 5,000 credits, for $10, $25 or $50; credits from packs do not expire while your workspace is active. Custom plans are agreed with us. A new workspace gets one free research session before a plan is needed.",
         },
         {
           kind: "p",

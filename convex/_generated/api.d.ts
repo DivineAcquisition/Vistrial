@@ -16,6 +16,7 @@ import type * as adapters_types from "../adapters/types.js";
 import type * as adapters_web from "../adapters/web.js";
 import type * as adapters_youtube from "../adapters/youtube.js";
 import type * as access from "../access.js";
+import type * as account from "../account.js";
 import type * as agentChat from "../agentChat.js";
 import type * as agentFolder from "../agentFolder.js";
 import type * as agentWaitlist from "../agentWaitlist.js";
@@ -203,6 +204,7 @@ declare const fullApi: ApiFromModules<{
   "adapters/web": typeof adapters_web;
   "adapters/youtube": typeof adapters_youtube;
   access: typeof access;
+  account: typeof account;
   agentChat: typeof agentChat;
   agentFolder: typeof agentFolder;
   agentWaitlist: typeof agentWaitlist;

@@ -72,6 +72,7 @@ import {
   List as PhList,
   ListChecks as PhListChecks,
   ListDashes as PhListDashes,
+  EnvelopeSimple as PhEnvelopeSimple,
   Lock as PhLock,
   MagnifyingGlass as PhMagnifyingGlass,
   MegaphoneSimple as PhMegaphone,
@@ -219,6 +220,7 @@ export const Loader2Icon = wrap(PhCircleNotch, "Loader2Icon", false);
 export const LoaderCircle = wrap(PhCircleNotch, "LoaderCircle", false);
 export const LoaderCircleIcon = wrap(PhCircleNotch, "LoaderCircleIcon", false);
 export const Lock = wrap(PhLock, "Lock", true);
+export const Mail = wrap(PhEnvelopeSimple, "Mail", true);
 export const MapPin = wrap(PhMapPin, "MapPin", true);
 export const Menu = wrap(PhList, "Menu", false);
 export const MenuIcon = wrap(PhList, "MenuIcon", false);

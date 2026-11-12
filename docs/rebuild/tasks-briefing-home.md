@@ -36,6 +36,13 @@ To three questions put in the part 6 pull request (#263). The owner's words are 
 3. **Trend posts: which sources, and how often?** "both and monthly will be the cadence": trade press and
    public social posts, once a month. Section 5.
 
+Later the same day, to the questions in parts 7 and 8 (#265, #266): "two social posts alone is fine, keep
+the rest (article would be fine has well)", so a trend post may rest on social posts alone, and reading
+full articles is welcome but not required; it is not built. On how an Inference ranks: "go base off your
+judgement thats optimal for the app", so it stays ranked by its low end. The caps (an Inference no larger
+than the monthly goal; 360 credits a month for trends): "yes". And on Home: "we need to center the chat box
+in home screen it cant be touching the top of the app".
+
 ## 2. Defaults chosen where the owner has not answered
 
 Each can be changed; they are listed again in the pull requests.
@@ -188,7 +195,9 @@ read is not read again, whatever came of it.
 
 - only links the search itself returned, each with a date of its own, no older than 45 days;
 - at least two, from different sites (subdomains and a platform's short links count as one site);
-- at least one that is not a social post. Social posts alone are never enough;
+- trade press and public social posts both count, and two social posts on different platforms are enough
+  (the owner, 2026-11-12: "two social posts alone is fine"). Such a post says it rests on social posts
+  alone, with no publication behind them;
 - words that report what was said. A promise is refused by the same check that guards tasks, and links
   written into the words are removed: the only links on a post are its sources.
 

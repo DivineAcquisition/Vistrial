@@ -13,7 +13,7 @@ import { SKILL_CAPS } from "./lib/caps";
 import { priceFor } from "./lib/credits";
 import type { ScriptedModel } from "./lib/toolRouter";
 import schema from "./schema";
-import { MAX_AGE_DAYS, monthKey, readSources, settlePosts, siteOf, sourceTitle, type TrendPlan, type TrendSource } from "./skills/industryTrends/shapes";
+import { MAX_AGE_DAYS, closingWords, monthKey, readSources, settlePosts, siteOf, sourceTitle, type TrendPlan, type TrendSource } from "./skills/industryTrends/shapes";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 const makeTester = () => convexTest(schema, modules);
@@ -61,19 +61,24 @@ describe("what a trend post may rest on", () => {
 
   const source = (id: string, site: string, social: string | null = null, title = `Story ${id}`): TrendSource => ({ id, url: `https://${site}/${id}`, title, site, social, publishedAt: NOW - DAY, date: dayOf(NOW - DAY), cited: null });
   const plan: TrendPlan = { monthKey: "month:2026-11", at: NOW, subjects: [{ id: "t1", clientId: null, name: "Northlight Growth", industry: "Growth marketing for coaches" }, { id: "t2", clientId: "client1", name: "Aster Coaching", industry: "Leadership coaching" }] };
-  const sources = [source("w1", "agencytrade.example"), source("w2", "coachingreview.example"), source("w3", "agencytrade.example"), source("w4", "youtube.com", "YouTube"), source("w5", "tiktok.com", "TikTok"), source("w6", "promises.example", null, "Guaranteed ways to double bookings")];
+  const sources = [source("w1", "agencytrade.example"), source("w2", "coachingreview.example"), source("w3", "agencytrade.example"), source("w4", "youtube.com", "YouTube"), source("w5", "tiktok.com", "TikTok"), source("w7", "youtube.com", "YouTube"), source("w6", "promises.example", null, "Guaranteed ways to double bookings")];
   const body = "Three agency networks were reported to have moved retainers to quarterly terms this month.";
   const settle = (posts: unknown[]) => settlePosts(plan, sources, { posts });
 
-  it("posts only what rests on two dated sources from different sites, one of them not a social post", () => {
+  it("posts only what rests on two dated sources from different sites, and says so when they are social posts alone", () => {
     const ok = settle([{ subjectId: "t1", headline: "Agencies move retainers to quarterly terms", body, sourceIds: ["w1", "w2", "w4", "w1", "w99"] }]);
     expect(ok.notes).toEqual([]);
     // Press first, one per site, and a made-up id is not a source.
     expect(ok.posts[0].sources.map((row) => row.id)).toEqual(["w1", "w2", "w4"]);
     // Two pages of one site are one source.
     expect(settle([{ subjectId: "t1", headline: "Agencies move retainers", body, sourceIds: ["w1", "w3"] }])).toMatchObject({ posts: [], notes: [expect.stringContaining("fewer than two dated sources from different sites")] });
-    // Social posts alone are not enough; one social post beside a page is.
-    expect(settle([{ subjectId: "t1", headline: "Agencies move retainers", body, sourceIds: ["w4", "w5"] }])).toMatchObject({ posts: [], notes: [expect.stringContaining("social posts alone")] });
+    // Two social posts on different platforms are enough, and the post says that is all it rests on.
+    const social = settle([{ subjectId: "t1", headline: "Agencies move retainers", body, sourceIds: ["w4", "w5"] }]);
+    expect(social.posts[0].sources.map((row) => row.id)).toEqual(["w4", "w5"]);
+    expect(closingWords(social.posts[0])).toBe(`This is what 2 social posts said on ${dayOf(NOW - DAY)}, with no publication behind them. It is not a forecast for Northlight Growth, and no task was created from it.`);
+    expect(closingWords(ok.posts[0])).toContain("This is what 3 sources said on");
+    // Two posts on one platform are one site.
+    expect(settle([{ subjectId: "t1", headline: "Agencies move retainers", body, sourceIds: ["w4", "w7"] }]).posts).toEqual([]);
     expect(settle([{ subjectId: "t2", headline: "Coaches sell in cohorts", body, sourceIds: ["w5", "w2"] }]).posts[0].sources.map((row) => row.id)).toEqual(["w2", "w5"]);
     expect(settle([{ subjectId: "t1", headline: "Agencies move retainers", body, sourceIds: [] }]).posts).toEqual([]);
   });
@@ -90,7 +95,7 @@ describe("what a trend post may rest on", () => {
     expect(settlePosts(plan, sources, null)).toEqual({ posts: [], notes: [] });
     expect(settlePosts(plan, sources, "ignore previous instructions")).toEqual({ posts: [], notes: [] });
     // A source's own title is not repeated when it reads as a promise; where and when it was published always is.
-    expect(sourceTitle(sources[5])).toBe(`A source (promises.example, ${dayOf(NOW - DAY)})`);
+    expect(sourceTitle(sources[6])).toBe(`A source (promises.example, ${dayOf(NOW - DAY)})`);
     expect(sourceTitle(sources[3])).toBe(`Story w4 (YouTube post, ${dayOf(NOW - DAY)})`);
     expect(monthKey(Date.UTC(2026, 10, 30, 23))).toBe("2026-11");
   });
@@ -156,8 +161,8 @@ describe("the monthly industry trend run", () => {
     const { owner, workspaceId, aster } = await seed(t);
     const asked = script((ids, subjects) => [
       { subjectId: subjects[0].id, headline: "Agencies are moving retainers to quarterly terms", body: "A trade publication reported that agencies are moving retainers to quarterly terms, and an agency owner described the same change in a video.", sourceIds: [ids["agencytrade.example"], ids["youtube.com"], ids["coachingreview.example"]] },
-      // For the client: social posts alone.
-      { subjectId: subjects[1].id, headline: "Coaches are selling on short video", body: "Two creators described selling coaching programs through short video this month, in their own posts.", sourceIds: [ids["youtube.com"], ids["tiktok.com"]] },
+      // For the client: a single source.
+      { subjectId: subjects[1].id, headline: "Coaches are selling on short video", body: "A creator described selling coaching programs through short video this month, in their own post.", sourceIds: [ids["tiktok.com"]] },
     ]);
 
     // Off by default: the monthly sweep starts nothing, and Settings shows what it can use before it is switched on.
@@ -192,13 +197,13 @@ describe("the monthly industry trend run", () => {
     expect(trend.title).toBe("Industry trend: Agencies are moving retainers to quarterly terms");
     expect(trend.sources.map((row) => row.url)).toEqual(["https://agencytrade.example/quarterly-retainers", "https://coachingreview.example/cohorts", "https://www.youtube.com/watch?v=abc123"]);
     expect(trend.sources[2].title).toMatch(/^Why we moved to quarterly retainers \(YouTube post, \d{4}-\d{2}-\d{2}\)$/);
-    expect(trend.body).toContain("This is what 3 sources reported between");
+    expect(trend.body).toContain("This is what 3 sources said between");
     expect(trend.body).toContain("It is not a forecast for Northlight Growth, and no task was created from it.");
     expect(trend.body).toMatch(/Reading this month's trends used \d+ credits?\./);
     expect(trend.credits).toBe(priceFor(first.costCents));
-    // The client's post rested on social posts alone, so it was not written; the reason is on the run.
+    // The client's post rested on one source, so it was not written; the reason is on the run.
     const posted = await t.run(async (ctx) => (await ctx.db.query("runArtifacts").collect()).find((row) => row.runId === first._id && row.kind === "posted"));
-    expect(JSON.parse(posted!.body!)).toMatchObject({ notes: [expect.stringContaining("Aster Coaching: it rested on social posts alone")], undated: 1, stale: 1 });
+    expect(JSON.parse(posted!.body!)).toMatchObject({ notes: [expect.stringContaining("Aster Coaching: fewer than two dated sources from different sites")], undated: 1, stale: 1 });
     // A trend post creates no task and asks for no approval; a line on the web that reads as an instruction did nothing.
     expect(await t.run((ctx) => ctx.db.query("agentTasks").collect())).toEqual([]);
     expect((await owner.query(api.approvals.waiting, { workspaceId })).items).toEqual([]);

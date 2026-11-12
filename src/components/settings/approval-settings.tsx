@@ -100,7 +100,7 @@ export function ApprovalSettingsView({
         <div className="grid min-w-0 flex-1 gap-1">
           <h3 className={title}>Industry trend posts</h3>
           <p className={text}>
-            Once a month Vistrial searches the web for what changed in your industry, and in the industries of up to three clients, and posts what was reported to the Briefing. A post needs at least two dated sources from different sites, linked on it. Trade press and public social posts both count, but never social posts alone. No task is created from a post.
+            Once a month Vistrial searches the web for what changed in your industry, and in the industries of up to three clients, and posts what was reported to the Briefing. A post needs at least two dated sources from different sites, linked on it. Trade press and public social posts both count. No task is created from a post.
           </p>
           <p className={text}>
             A month&apos;s reading uses at most {creditWords(data.trendCapCredits)} and says how many it used. {data.trendPosts ? "On." : "Off until you switch them on."}

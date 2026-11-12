@@ -95,7 +95,7 @@ export function storyFeed(state: string, kind: string | null): Feed {
       kind: "trend",
       kindLabel: "Industry trend",
       title: "Industry trend: Lead forms that ask a qualifying question first are being reported in some ad accounts",
-      body: "Two industry publications reported this month that a qualifying question now appears before the lead form in some ad accounts. An agency owner described seeing the same option in a video.\n\nThis is what 3 sources reported between 2026-10-21 and 2026-11-02. It is not a forecast for Northlight Growth, and no task was created from it.\n\nReading this month's trends used 96 credits, for all 2 of this month's posts.",
+      body: "Two industry publications reported this month that a qualifying question now appears before the lead form in some ad accounts. An agency owner described seeing the same option in a video.\n\nThis is what 3 sources said between 2026-10-21 and 2026-11-02. It is not a forecast for Northlight Growth, and no task was created from it.\n\nReading this month's trends used 96 credits, for all 2 of this month's posts.",
       at: NOW - 4 * DAY,
       credits: 96,
       sources: [
@@ -108,7 +108,7 @@ export function storyFeed(state: string, kind: string | null): Feed {
       kind: "trend",
       kindLabel: "Industry trend",
       title: "Industry trend for Aster Coaching: More leadership programs are being sold as cohorts",
-      body: "A coaching publication and a training-industry newsletter both reported more leadership programs moving from one-to-one work to cohorts with fixed start dates.\n\nThis is what 2 sources reported between 2026-10-18 and 2026-10-30. It is not a forecast for Aster Coaching, and no task was created from it.",
+      body: "A coaching publication and a training-industry newsletter both reported more leadership programs moving from one-to-one work to cohorts with fixed start dates.\n\nThis is what 2 sources said between 2026-10-18 and 2026-10-30. It is not a forecast for Aster Coaching, and no task was created from it.",
       client: "Aster Coaching",
       at: NOW - 4 * DAY,
       sources: [

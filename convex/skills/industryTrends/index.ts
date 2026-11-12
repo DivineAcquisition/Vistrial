@@ -20,7 +20,7 @@ function researchInput(plan: TrendPlan) {
   return [
     `Search the web for what changed in the last ${MAX_AGE_DAYS} days in each of the industries below. Search at most ${MAX_SEARCHES} times in all.`,
     "Look for changes that matter to someone selling in that industry: a platform or policy change, a shift in what buyers ask for, a new way competitors sell, a price or regulation change.",
-    "Prefer trade press and industry publications with a clear date. Public social posts count too, but a change needs at least one source that is not a social post.",
+    "Prefer trade press and industry publications with a clear date. Public social posts count too.",
     "Then say in a few short paragraphs what you found for each, naming each source and its date.",
     "",
     "The industries:",
@@ -32,7 +32,7 @@ function writeInput(plan: TrendPlan, sources: TrendSource[]) {
   return [
     "Write at most one post for each of the industries below, as JSON, only where the sources support one. No post is the right answer when they do not.",
     "For each post: subjectId; headline: the change, in under 100 characters; body: two or three plain sentences on what was reported and by whom; sourceIds: the ids of the sources below it rests on.",
-    "A post must rest on at least two of the sources below, from different sites, and at least one that is not a social post. Use only what the sources' titles and cited lines say. Do not write web addresses in the words.",
+    "A post must rest on at least two of the sources below, from different sites. Where a publication and a social post both report it, cite both. Use only what the sources' titles and cited lines say. Do not write web addresses in the words.",
     "Say what was reported. Do not say what it means the organization should do, and do not say what will happen.",
     "",
     "The industries:",

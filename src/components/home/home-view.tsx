@@ -162,7 +162,8 @@ export function HomeView({
 }) {
   return (
     <div className="mx-auto grid w-full max-w-5xl min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
-      <section aria-labelledby="home-heading" className="grid gap-4 pt-2 sm:pt-6">
+      {/* The chat box is the page's centre: it sits in the middle of the first screen, never against the top edge. */}
+      <section aria-labelledby="home-heading" className="mx-auto grid w-full max-w-3xl content-center gap-5 py-10 sm:min-h-[46svh] sm:py-16">
         <h1 id="home-heading" className="text-center font-heading text-2xl text-balance text-foreground sm:text-3xl">
           What should Vistrial work on?
         </h1>

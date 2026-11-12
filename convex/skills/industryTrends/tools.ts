@@ -104,7 +104,7 @@ const save: MutationTool = async (ctx, run, steps) => {
         ? "This month's reading did not finish, so there is nothing to report."
         : found.usable.length < 2
           ? `Nothing found this month had two dated sources from different sites within the last 45 days${found.undated + found.stale > 0 ? ` (${found.undated} had no date of their own, ${found.stale} were older)` : ""}.`
-          : "Nothing written from this month's sources met the rule: at least two dated sources from different sites, one of them not a social post, and no promise.";
+          : "Nothing written from this month's sources met the rule: at least two dated sources from different sites, and no promise.";
     await post(ctx, { workspaceId: run.workspaceId, kind: "trend", agentSlug: GROWTH_ARCHITECT, title: "No industry trend to report this month", body: [why, ...(used > 0 ? [`Reading used ${creditWords(used)}.`] : [])].join("\n\n"), credits: used, key: `trend:${plan.monthKey}:none` });
   }
   return { resultCode: posts.length ? "ok" : "nothing_posted", resultId: String(posts.length), artifact: record("posted", { posted, notes, undated: found.undated, stale: found.stale }) };

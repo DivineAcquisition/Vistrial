@@ -5,7 +5,8 @@
  *
  * What a post may rest on is decided here, in code, never by the model:
  *   - only links the search itself returned, each with its own date, no older than MAX_AGE_DAYS;
- *   - at least two of them, from different sites, and at least one that is not a social post;
+ *   - at least two of them, from different sites. Trade press and public social posts both count, and
+ *     two social posts on different platforms are enough (the owner's decision of 2026-11-12);
  *   - words that report what was said, never what will happen to this organization.
  * Vistrial opens no page for a trend post. It keeps what the search returned: the link, the title, the
  * date and the line that was cited. Nothing found on the web is ever followed as an instruction.
@@ -152,8 +153,7 @@ const BODY_MAX = 700;
 /**
  * What the model wrote, as it may be posted. One post per subject at most. A post is dropped, with the
  * reason kept, when it names no real subject, claims a result, or does not rest on at least two dated
- * sources from different sites of which one is not a social post. Links in the words are removed: the
- * only links on a post are its sources.
+ * sources from different sites. Links in the words are removed: the only links on a post are its sources.
  */
 export function settlePosts(plan: TrendPlan, sources: TrendSource[], value: unknown): { posts: SettledPost[]; notes: string[] } {
   const posts: SettledPost[] = [];
@@ -187,10 +187,6 @@ export function settlePosts(plan: TrendPlan, sources: TrendSource[], value: unkn
       notes.push(`${subject.name}: fewer than two dated sources from different sites stood behind it, so it was not posted.`);
       continue;
     }
-    if (kept.every((source) => source.social)) {
-      notes.push(`${subject.name}: it rested on social posts alone, so it was not posted.`);
-      continue;
-    }
     posts.push({ subject, headline, body, sources: kept });
   }
   return { posts, notes };
@@ -206,7 +202,8 @@ export function sourceTitle(source: TrendSource): string {
 export function closingWords(post: SettledPost): string {
   const dates = post.sources.map((source) => source.date).sort();
   const span = dates[0] === dates[dates.length - 1] ? `on ${dates[0]}` : `between ${dates[0]} and ${dates[dates.length - 1]}`;
-  return `This is what ${post.sources.length} sources reported ${span}. It is not a forecast for ${post.subject.name}, and no task was created from it.`;
+  const socialOnly = post.sources.every((source) => source.social);
+  return `This is what ${post.sources.length} ${socialOnly ? "social posts" : "sources"} said ${span}${socialOnly ? ", with no publication behind them" : ""}. It is not a forecast for ${post.subject.name}, and no task was created from it.`;
 }
 
 /** "2026-11": the month a time falls in, in UTC. */

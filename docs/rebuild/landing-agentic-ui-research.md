@@ -107,3 +107,59 @@ Same as `agentic-ui-research.md`, section 5, plus:
 - [assistant-ui chain-of-thought guide](https://www.assistant-ui.com/docs/guides/chain-of-thought)
 - [The anatomy of a high-converting AI SaaS landing page (DEV)](https://dev.to/thekitbase/the-anatomy-of-a-high-converting-ai-saas-landing-page-with-real-examples-5hj6)
 - [svgl](https://svgl.app) and [simple-icons](https://simpleicons.org) for the logos
+
+## 9. Second pass: guardrail and oversight patterns (2026-11-12)
+
+Asked for by the owner: make "Safe by design" more agentic, and find where else agentic pieces fit.
+
+### How this was researched, and what is not verified
+
+The 21st.dev catalog (searched through the connected tool; no component source or license was opened and nothing was installed), web search results on human-in-the-loop and guardrail interfaces, and this repo. The web results are mostly vendor blogs, so their figures are heuristics. The AI Elements component list comes from third-party mirrors, not Vercel's own docs.
+
+### What the sources agree on
+
+- An approval screen should show the resolved action in plain words: what will actually happen, not an internal name.
+- An audit trail should read as an accountability record a non-technical person can follow, with who, what and when.
+- A soft warning and a hard stop are different things and should look different.
+- A refusal is a trust signal. Show the action the agent did not take, and why.
+
+### What was built: Safety as a guarded run
+
+`src/components/marketing/guarded-run.tsx`. One sample Market Intelligence run plays when it scrolls into view. Nothing was installed; each pattern is rebuilt on our tokens.
+
+| Pattern | Seen in | What ours shows |
+|---|---|---|
+| Tool-call rows with states | 21st "AI Tool Call" (23789), "Tool Call Inspector" (27026) | Five steps going queued, running, done. One is refused: a page that asks for a login |
+| Budget guard | 21st "Budget Guard" (36075), "Cost Meter" (36488) | Spend against the run's limit, with the warning mark at 80 percent and the stop at the end. Both values come from `convex/lib/caps.ts` |
+| Tool approval | 21st "AI Tool Approval" (39558), "Tool Approval" (26580) | The existing hold-to-approve, now the last step of the run |
+| Audit log | 21st "Audit Log" (25163) | A short activity record that fills in as the run plays, and gains an "Approved" line when the visitor approves |
+| Guardrail checklist | Our own | The six safety statements, each lighting up when the run reaches it |
+
+### Where else these fit on the landing page
+
+Effort: S is under a day, M is one to two days. Each one must show something the product does today.
+
+| # | Area | Pattern | What it would show | Effort |
+|---|---|---|---|---|
+| 1 | How it works | Agent trace with a scrubber (21st "Agent Trace", 26968) | One research run as a timeline the visitor can drag through. Replaces five static cards | M |
+| 2 | Growth Architect skills | Plan with nested tasks (21st "AI Task List", 23793) | Pick a skill and see the plan it would run and what it hands back. Makes the five live skills feel like work, not a feature list | M |
+| 3 | The loop | Check-in card that plays through | "We'll try this", a check-in date, then before and after figures. The loop is named on the page but never shown | S |
+| 4 | Evidence | Refused and unavailable sources in the report | A "Not read" row in the sample report, like the one in the Safety run. Shows honesty inside the product's output | S |
+| 5 | Agents | Status orb beside the one live agent | Thinking, working, waiting on you. The six planned agents stay still and dimmed | S |
+| 6 | Pricing | Budget guard on the credits line | "$150 of credits" drawn as the same meter, with one sample run's cost taken from it | S |
+| 7 | Request form | "What happens next" as a run | The aside already lists steps. Give them the same queued, running, done states | S |
+
+Suggested order: 3, then 1, then 2. The loop is central to the product and has no visual yet.
+
+### Still to avoid
+
+Everything in section 5 still holds. Two more from this pass: do not show "always allow" on an approval (the product has no such setting), and do not show reasoning text streaming as if it were live.
+
+### Sources for this pass
+
+- [Human-in-the-loop AI agents (Dataiku)](https://www.dataiku.com/blog/human-in-the-loop-ai-agents)
+- [Agentic AI UX: human oversight and control patterns (UI/UX Atlas)](https://uiux-atlas.pages.dev/lessons/emerging/agentic-ai-ux-human-oversight-and-control-patterns)
+- [10 HITL tool approval patterns for AI agents (Kunal Ganglani)](https://www.kunalganglani.com/blog/tool-approval-patterns-ai-agents)
+- [Human in the loop (Understanding Data)](https://understandingdata.com/learn/agent-framework/human-in-the-loop/)
+- [AI Elements on 21st.dev](https://21st.dev/@vercel/library/ai-elements)
+- 21st.dev components: [Budget Guard](https://21st.dev/@astralyxdev/components/budget-guard), [AI Tool Approval](https://21st.dev/@kokonutd/components/ai-tool-approval), [Agent Trace](https://21st.dev/@n1m4mz/components/agent-trace), [Audit Log](https://21st.dev/@corr/components/audit-log), [AI Tool Call](https://21st.dev/@educalvolpz/components/ai-tool-call), [AI Task List](https://21st.dev/@educalvolpz/components/ai-task-list)

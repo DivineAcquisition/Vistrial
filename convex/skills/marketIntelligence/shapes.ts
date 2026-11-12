@@ -246,7 +246,7 @@ export type ContextRecord = {
   /** Declared gaps that block the run: the question keys still unanswered. */
   gaps: string[];
   /** Built in code, not by the model: what is known, with origin, status and date. */
-  known: { key: string; label: string; value: string; origin: "project" | "profile" | "fact" | "connection" | "outcome"; status: string; recordedAt: number }[];
+  known: { key: string; label: string; value: string; origin: "project" | "profile" | "fact" | "connection" | "outcome" | "reference"; status: string; recordedAt: number }[];
   /** What the brief lacks. A gap that blocks the run is asked; the rest become assumptions. */
   missing: { key: string; blocking: boolean }[];
   assumptions: string[];

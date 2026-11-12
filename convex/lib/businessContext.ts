@@ -12,6 +12,7 @@ import { describeUpload, saveUploadSourcesFor } from "../resultUploads";
 import { describeTranscript, saveTranscriptSourcesFor } from "../transcripts";
 import { saveFirstPartySources } from "../skills/marketIntelligence/firstParty";
 import { factsForRun } from "./facts";
+import { referencesKnown } from "./sharedReferences";
 
 /** Doctrine 3.3: a missing ad budget does not block the work. */
 export const NO_BUDGET_ASSUMPTION = "Budget not provided; recommendations do not depend on a budget figure.";
@@ -20,7 +21,7 @@ export type KnownItem = {
   key: string;
   label: string;
   value: string;
-  origin: "project" | "profile" | "fact" | "connection" | "outcome";
+  origin: "project" | "profile" | "fact" | "connection" | "outcome" | "reference";
   status: string;
   recordedAt: number;
 };
@@ -111,6 +112,9 @@ export async function readBusinessContext(
       known.push({ key: `transcript:${transcript._id}`, label: `Your call: ${transcript.title}`, value: describeTranscript(transcript), origin: "connection", status: "unverified", recordedAt: transcript.createdAt });
     }
   }
+  // Material an Owner copied in from another of their organizations. It describes a different business, so
+  // it is labelled as reference and never counted as this one's profile or facts. Work for a client leaves it out.
+  if (!forClient) known.push(...(await referencesKnown(ctx, run.workspaceId)));
   // What the business tried before, and what happened: outcomes first, then open check-ins.
   const decisions = (await decisionsForContext(ctx, run.workspaceId)).filter((row) => row.clientId === forClient?._id);
   for (const decision of decisions) {

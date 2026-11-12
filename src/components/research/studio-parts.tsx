@@ -310,7 +310,7 @@ export function BriefCard({ studio, capCents, reserveCents = 50 }: { studio: Stu
                   <li key={item.key} className="break-words">
                     <span className="text-card-foreground">{item.label}:</span> <span className="text-card-foreground">{item.value}</span>{" "}
                     <span className="text-xs text-muted-foreground">
-                      ({item.origin === "project" ? "this assignment" : item.origin === "profile" ? "business profile" : item.origin === "connection" ? (item.key.startsWith("upload:") ? "a results file you uploaded" : "your connected Meta ads") : item.origin === "outcome" ? "what you tried and reported" : `business fact, ${FACT_STATUS_WORDS[item.status]?.label.toLowerCase() ?? item.status}`}, {shortDate(item.recordedAt)})
+                      ({item.origin === "project" ? "this assignment" : item.origin === "profile" ? "business profile" : item.origin === "connection" ? (item.key.startsWith("upload:") ? "a results file you uploaded" : "your connected Meta ads") : item.origin === "outcome" ? "what you tried and reported" : item.origin === "reference" ? "reference from another of your organizations, not a fact about this business" : `business fact, ${FACT_STATUS_WORDS[item.status]?.label.toLowerCase() ?? item.status}`}, {shortDate(item.recordedAt)})
                     </span>
                   </li>
                 ))}

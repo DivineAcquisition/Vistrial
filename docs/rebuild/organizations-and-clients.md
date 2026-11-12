@@ -605,7 +605,7 @@ Attract | Convert | Keep tabs directly beneath it, unchanged, ready for step 2 t
 | 4 | `claude/orgs-foundation-4-billing` | `main` | Shared balance, the extra-organization fee, Billing page. No public wording. | Open (#251) |
 | 5 | `claude/orgs-foundation-5-credits` | PR 4's branch | Credits shown as credits, not dollars; public wording in its own commit. | Open (#253) |
 | 6 | `claude/orgs-foundation-6-decisions` | PR 5's branch | The owner's answers recorded here (section 10), and a test for decision 4. | Open |
-| 7 | `claude/orgs-foundation-7-archive` | PR 6's branch | Archiving an organization and exporting its data. Copying material to another organization is designed in section 11, not built. | Open |
+| 7 | `claude/orgs-foundation-7-archive` | PR 6's branch | Archiving an organization and exporting its data. Copying material to another organization followed in its own PR (section 11). | Open |
 
 Merge in order. Each is reviewable on its own diff against the one before.
 
@@ -628,7 +628,7 @@ change an Owner.
 add it as context for their other orgs". The $99 for an archived organization stops at the next renewal,
 with no credit for the part of the month already paid. Before or after archiving, the Owner can export the
 organization's data, and can copy chosen material into another organization of the same account for its
-agents to read. Archiving and export are built in PR 7. Copying is designed in section 11 and waits for four answers.
+agents to read. Archiving and export are built in PR 7. Copying was built afterwards with the proposed defaults (section 11).
 
 **10.4 One person, several organizations.** "yes 1 person can belong to 2 orgs if admin assign but of
 course their role can be edited". A person joins an organization only by an invitation from an Owner or
@@ -680,27 +680,32 @@ exported until it is added there. Never exported: connections and tokens, people
 the audit log, uploaded files themselves (logos, images, screenshots), anything of another organization.
 Keys that look like a credential, a stored file's id or a person's id are dropped at every depth.
 
-**Copying material into another organization ("add it as context").** Proposed, not built; it needs the
-owner's answers below.
+**Copying material into another organization ("add it as context").** Built, with the defaults proposed
+here, which the owner accepted on 2026-11-12 ("build the copy-as-context feature with your proposed
+defaults").
 
-- *What is copied*: an approved report or offer analysis the Owner picks, as a snapshot of its current
-  version's text. Not its sources, not its run, not the client it was for.
-- *Where it lands*: a new row in the receiving organization, kind "reference", labelled "From <organization>,
-  copied on <date> by <Owner>". Read-only there. Removing it deletes only the copy.
-- *How agents see it*: listed in the business context under its own heading, "Reference material from
-  another of your organizations (not facts about this business)", each item with its label, so an agent
-  can quote it but does not treat it as this organization's own figures or approved facts.
+- *What is copied*: an approved research report, market report or offer analysis the Owner picks, as a
+  snapshot of its current version's text (up to 60,000 characters; a longer one is shortened and says so).
+  Not its sources, not its run.
+- *Never work made for a client.* Someone in the receiving organization who was never assigned to that
+  client could otherwise read it. Only the organization's own work can be copied.
+- *Where it lands*: a row in `sharedReferences` in the receiving organization, labelled with the
+  organization it came from (its name on the day of the copy), who copied it and when. Read-only there. An
+  Owner or Admin can remove it; that deletes only the copy. An organization keeps up to 20.
+- *A snapshot, not a link.* A later version, a rename or an archive of the original changes nothing in
+  the copy.
+- *How agents see it*: `readBusinessContext` adds the five newest as known items with origin `reference`
+  and the label "Reference from another of your organizations (not a fact about this business): <title>,
+  from <organization>", with the first 1,500 characters. They are never counted as this business's profile
+  or facts, and work done for a client leaves them out.
+- *Who*: an Owner, between two organizations of the same account that they are an Owner of. The source
+  may be active or archived; the receiving one must be active. Another account's organization does not
+  exist to them. Recorded in both organizations' audit logs, by id only.
+- *Who can read it there*: anyone who may see the organization's own work. A person kept away from own
+  work does not see it.
 - *Deliberately not copied*: connections and tokens, people and their assignments, clients, brand kits,
   results files, call transcripts.
-- *Who*: an Owner of the account, between two organizations of the same account, from an active or an
-  archived one into an active one.
 
-Questions for the owner before it is built:
-
-1. **May work that was done for a client be copied?** A Member of the receiving organization who was never
-   assigned to that client would then be able to read it. The proposal says no: only the organization's
-   own work.
-2. **Which kinds**: reports and offer analyses only (the proposal), or also brand kits and transcripts?
-3. **A snapshot or a live link?** The proposal is a snapshot; a later version in the source does not change
-   the copy.
-4. **Should people in the receiving organization see where it came from**, by name? The proposal says yes.
+Not done: copied material is not in an organization's export (it belongs to another organization's work),
+and only Market Intelligence, Offer Intelligence and Creative Production read the business context today,
+so those are the skills that see it.

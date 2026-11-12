@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { JourneySidebarView, SearchResults } from "@/components/shell/journey-sidebar";
 import { ArchivedBanner, OrganizationDataView, type ExportRow } from "@/components/settings/organization-data";
+import { SharedReferencesView, type ReferenceItem, type ReferenceSource } from "@/components/settings/shared-references";
 import { OrganizationSwitcherView } from "@/components/shell/organization-switcher";
 import type { ShellAccount, ShellOrganization } from "@/components/shell/shell-context";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -45,6 +46,48 @@ const EXPORTS: ExportRow[] = [
 ];
 const FEE = "Its $99 a month stops at your next renewal. There is no refund or credit for the part of this month already paid, and the credits it added stay until then.";
 
+const REFERENCES: ReferenceItem[] = [
+  { id: "r2", title: "Market report: executive coaches in the UK", kind: "Market report", fromName: "Northlight Growth", copiedAt: NOW - DAY, copiedByName: "Nora Lindqvist", chars: 18400, cut: false },
+  { id: "r1", title: "Offer analysis: done-for-you lead generation retainer", kind: "Offer analysis", fromName: "The Retainer Playbook", copiedAt: NOW - 9 * DAY, copiedByName: "Nora Lindqvist", chars: 61000, cut: true },
+];
+const SOURCES: ReferenceSource[] = [
+  {
+    workspaceId: "w1",
+    name: "Northlight Growth",
+    archived: false,
+    items: [
+      { assetId: "a1", title: "Market report: executive coaches in the UK", kind: "Market report", createdAt: NOW - 12 * DAY, copied: true },
+      { assetId: "a2", title: "Market report: B2B consultants, paid social", kind: "Market report", createdAt: NOW - 20 * DAY, copied: false },
+      { assetId: "a3", title: "Offer analysis: growth audit", kind: "Offer analysis", createdAt: NOW - 31 * DAY, copied: false },
+    ],
+  },
+  { workspaceId: "w3", name: "The Retainer Playbook", archived: true, items: [] },
+];
+
+/** Settings, Business: material copied in from other organizations. ?state=references|references-pick|references-read|references-member. */
+function ReferencesStory({ state, theme }: { state: string; theme: string }) {
+  const member = state === "references-member";
+  return (
+    <div className="min-h-dvh bg-background p-4 text-foreground sm:p-8">
+      <StoryTheme theme={theme} />
+      <div className="mx-auto grid max-w-3xl gap-4">
+        <SharedReferencesView
+          name="Northlight Coaching"
+          data={{ items: REFERENCES, canCopy: !member, canRemove: !member, limit: 20 }}
+          sources={state === "references-pick" ? SOURCES : null}
+          body={state === "references-read" ? { id: "r2", text: "# Market report: executive coaches in the UK\n\nMost buyers find a coach through a referral or a podcast, not an ad. The three patterns that repeat across the sources are below.\n\n1. Programs are sold on a named outcome, not on hours.\n2. Price is shown only after a call.\n3. Proof is a client's own words, with their role." } : null}
+          problem={null}
+          busy={null}
+          onOpenSources={() => {}}
+          onCopy={() => {}}
+          onRemove={() => {}}
+          onRead={() => {}}
+        />
+      </div>
+    </div>
+  );
+}
+
 /** Settings, Business: export and archive, for an Owner. ?state=data|data-confirm|data-archived|data-first. */
 function DataStory({ state, theme }: { state: string; theme: string }) {
   const archived = state === "data-archived";
@@ -82,6 +125,7 @@ function DataStory({ state, theme }: { state: string; theme: string }) {
 /** The sidebar with the organization selector on top, fed by fixtures: one business, several, or a team member's view. */
 export function OrganizationsStory({ state, theme }: { state: string; theme: string }) {
   if (state.startsWith("data")) return <DataStory state={state} theme={theme} />;
+  if (state.startsWith("references")) return <ReferencesStory state={state} theme={theme} />;
   return <SidebarStory state={state} theme={theme} />;
 }
 

@@ -334,6 +334,7 @@ export function storyUndecidedChat(): ChatDetail {
   ];
   return {
     id: id("i1"),
+    page: null,
     route: null,
     checklist: false,
     title: "I want more clients",
@@ -362,7 +363,7 @@ export function storyFinishedChat(): { chat: ChatDetail; data: SkillChatData } {
     }),
   ];
   return {
-    chat: { id: id("i3"), route: "growth-diagnostics", checklist: true, title: "Why did we stop adding retained clients this quarter?", status: "started", mine: true, context: null, result: storyChats()[2].result, messages },
+    chat: { id: id("i3"), page: null, route: "growth-diagnostics", checklist: true, title: "Why did we stop adding retained clients this quarter?", status: "started", mine: true, context: null, result: storyChats()[2].result, messages },
     data: { intake: { id: id("i3"), skillSlug: "growth-diagnostics", status: "started", asking: null, answers: {}, runId: id("run9"), projectId: id("p9"), questions: [] }, messages },
   };
 }
@@ -371,7 +372,7 @@ export function storyFinishedChat(): { chat: ChatDetail; data: SkillChatData } {
 export function storyPlanChat(): { chat: ChatDetail; data: SkillChatData } {
   const data = storyOfferChat("full")!;
   return {
-    chat: { id: id("i2"), route: "offer-intelligence", checklist: true, title: "Is our $2,500/mo lead generation retainer strong enough?", status: "ready", mine: true, context: { kind: "offer", id: "c1", title: "Done-for-you lead generation retainer" }, result: null, messages: data.messages },
+    chat: { id: id("i2"), page: null, route: "offer-intelligence", checklist: true, title: "Is our $2,500/mo lead generation retainer strong enough?", status: "ready", mine: true, context: { kind: "offer", id: "c1", title: "Done-for-you lead generation retainer" }, result: null, messages: data.messages },
     data,
   };
 }

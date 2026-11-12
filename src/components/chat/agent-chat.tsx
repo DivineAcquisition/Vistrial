@@ -25,7 +25,10 @@ import { CHAT_ROUTES, isChatRoute, type ChatRoute } from "../../../convex/lib/ch
 
 export type ChatRow = FunctionReturnType<typeof api.agentChat.list>[number];
 export type ChatDetail = FunctionReturnType<typeof api.agentChat.get>;
-export type ChatContext = { kind: "asset" | "offer"; id: string; title: string };
+export type ChatContext = { kind: "asset" | "offer" | "task" | "project"; id: string; title: string };
+
+/** How an attached or open record is named beside its title. */
+export const CONTEXT_LABEL: Record<ChatContext["kind"], string> = { offer: "Offer attached:", asset: "Result attached:", task: "About this task:", project: "About this session:" };
 
 export const ROUTE_LOOK: Record<ChatRoute, { tab: string; skill: string; icon: LucideIcon; hint: string }> = {
   "market-intelligence": { tab: "Research", skill: "Market Intelligence", icon: FileSearch, hint: "What do you want to find out about your market?" },
@@ -108,7 +111,7 @@ export function ContextChip({ context, onClear }: { context: ChatContext; onClea
     <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary/[0.08] py-1 pr-1.5 pl-2.5 text-xs text-card-foreground">
       <Paperclip aria-hidden className="size-3.5 shrink-0 text-primary" />
       <span className="truncate">
-        <span className="text-muted-foreground">{context.kind === "offer" ? "Offer attached:" : "Result attached:"}</span> {context.title}
+        <span className="text-muted-foreground">{CONTEXT_LABEL[context.kind]}</span> {context.title}
       </span>
       {onClear ? (
         <button type="button" aria-label="Remove the attached item" onClick={onClear} className="flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-overlay/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">

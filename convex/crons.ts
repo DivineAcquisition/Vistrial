@@ -46,4 +46,10 @@ crons.interval("refresh calendar bookings", { hours: 6 }, internal.bookings.sync
 /** Removes export files a week after they were built. The record that an export was made stays. */
 crons.interval("remove old exports", { hours: 6 }, internal.exports.removeExpired, {});
 
+/**
+ * Puts drafts that were already waiting for review when approvals arrived into the approvals queue and the
+ * Briefing, once, on any deployment whose queue is still empty. A no-op after that.
+ */
+crons.interval("queue drafts already waiting", { minutes: 10 }, internal.approvals.backfillIfNeeded, {});
+
 export default crons;

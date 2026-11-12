@@ -19,7 +19,9 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { recordDecision } from "./lib/approvals";
 import { writeAudit } from "./lib/audit";
+import { askApproval } from "./lib/briefing";
 import { DRY_RUN_GOALS, drawStep, dryRunDriver } from "./lib/browserAgent/driver";
 import { APPROVAL_HOURS, BLOCKED_WORDS, CONFIRM_WORD, MAX_STEPS_PER_TASK, RESTRICTED_REASONS, SESSION_DAYS, SITES, blocked, classify, redact, siteFor, type Blocked, type RestrictedReason } from "./lib/browserAgent/policy";
 import { adminQuery, adminMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
@@ -143,8 +145,26 @@ export const completeSignIn = adminMutation({
 async function stopTask(ctx: MutationCtx, task: Doc<"browserTasks">, stopReason: string) {
   if (task.status === "done" || task.status === "stopped") return;
   const steps = await stepsOf(ctx, task);
-  for (const step of steps) if (step.status === "proposed") await ctx.db.patch(step._id, { status: stopReason === "approval_timed_out" ? "expired" : "declined", decidedAt: Date.now() });
+  for (const step of steps) {
+    if (step.status !== "proposed") continue;
+    const expired = stopReason === "approval_timed_out";
+    await ctx.db.patch(step._id, { status: expired ? "expired" : "declined", decidedAt: Date.now() });
+    // The wait ended without a person approving: the queue says so. A person's own decline is recorded by `decideStep`.
+    if (stopReason !== "declined") await recordDecision(ctx, { ...stepApproval(step), status: expired ? "expired" : "declined", actor: "system" });
+  }
   await ctx.db.patch(task._id, { status: "stopped", stopReason, finishedAt: Date.now() });
+}
+
+/** How a step in a connected account reads in the approvals queue. A restricted step is the Owner's alone. */
+export function stepApproval(step: Pick<Doc<"browserSteps">, "_id" | "workspaceId" | "kind" | "verb" | "target" | "why">) {
+  return {
+    workspaceId: step.workspaceId,
+    kind: "accountChange" as const,
+    subjectTable: "browserSteps",
+    subjectId: step._id as string,
+    summary: `${step.verb} ${step.target}: ${step.why}`,
+    ...(step.kind === "restricted" ? { ownerOnly: true } : {}),
+  };
 }
 
 /** Ends a session now. Every task on it stops and nothing waiting can be approved afterwards. Owners only. */
@@ -222,6 +242,7 @@ async function advance(ctx: MutationCtx, browserTaskId: Id<"browserTasks">) {
     }
     const stepId = await ctx.db.insert("browserSteps", { ...base, status: "proposed" });
     await ctx.db.patch(task._id, { status: "waitingApproval" });
+    await askApproval(ctx, { ...stepApproval({ ...base, _id: stepId }), requestedBy: "agent" }, { title: `Approve a change in ${site.name}`, body: `${base.verb} ${base.target}. ${base.why}` });
     await ctx.scheduler.runAfter(0, internal.browserAccess.capture, { stepId });
     await ctx.scheduler.runAfter(APPROVAL_HOURS * HOUR_MS, internal.browserAccess.expireApproval, { stepId });
     return;
@@ -246,44 +267,50 @@ export const startTask = workspaceMutation({
   },
 });
 
+type Decider = MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string }; member: { role: string } };
+
 /**
- * Approves or declines the one step a task is waiting on. A change: Owners and Admins. A restricted step:
- * Owners only, and approving needs the word shown for it, typed. Approval covers this step and no other.
- * Declining stops the task.
+ * Approves or declines the one step a task is waiting on, from any door (the connected-account page, the
+ * Briefing). A change: Owners and Admins. A restricted step: Owners only, and approving needs the word shown
+ * for it, typed. Approval covers this step and no other. Declining stops the task.
  */
+export async function decideStep(ctx: Decider, args: { stepId: Id<"browserSteps">; approve: boolean; confirmWord?: string }) {
+  requireAdmin(ctx.member.role);
+  const step = await ctx.db.get(args.stepId);
+  if (!step || step.workspaceId !== ctx.workspaceId) notFound();
+  const task = await ownTask(ctx, ctx.workspaceId, step.browserTaskId);
+  if (step.status !== "proposed" || task.status !== "waitingApproval") throw userError("This step is no longer waiting for a decision.");
+  const now = Date.now();
+  if (!args.approve) {
+    await ctx.db.patch(step._id, { status: "declined", decidedBy: ctx.identity.subject, decidedAt: now });
+    await stopTask(ctx, task, "declined");
+    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "browser.step.declined", subject: step._id });
+    await recordDecision(ctx, { ...stepApproval(step), status: "declined", actor: ctx.identity.subject });
+    return { status: "declined" as const };
+  }
+  if (step.kind === "restricted") {
+    if (!isOwner(ctx.member.role)) throw userError("Only an Owner can approve this kind of step.", "not_allowed");
+    const word = CONFIRM_WORD[(step.restrictedReason ?? "publish") as RestrictedReason];
+    if ((args.confirmWord ?? "").trim() !== word) throw userError(`Type ${word} to approve this step.`);
+  }
+  const session = await ctx.db.get(step.sessionId);
+  const state = session ? sessionState(session) : "revoked";
+  if (state !== "active") {
+    await stopTask(ctx, task, state === "expired" ? "expired" : "revoked");
+    throw userError(state === "expired" ? "The session expired before this was approved. Nothing was done." : "The session was ended before this was approved. Nothing was done.");
+  }
+  // The dry-run driver performs nothing. A real driver would act here, once, and report what happened.
+  await ctx.db.patch(step._id, { status: "done", decidedBy: ctx.identity.subject, decidedAt: now });
+  await ctx.db.patch(task._id, { status: "running" });
+  await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: step.kind === "restricted" ? "browser.step.approvedRestricted" : "browser.step.approved", subject: step._id });
+  await recordDecision(ctx, { ...stepApproval(step), status: "approved", actor: ctx.identity.subject });
+  await advance(ctx, task._id);
+  return { status: "approved" as const };
+}
+
 export const decide = workspaceMutation({
   args: { stepId: v.id("browserSteps"), approve: v.boolean(), confirmWord: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    requireAdmin(ctx.member.role);
-    const step = await ctx.db.get(args.stepId);
-    if (!step || step.workspaceId !== ctx.workspaceId) notFound();
-    const task = await ownTask(ctx, ctx.workspaceId, step.browserTaskId);
-    if (step.status !== "proposed" || task.status !== "waitingApproval") throw userError("This step is no longer waiting for a decision.");
-    const now = Date.now();
-    if (!args.approve) {
-      await ctx.db.patch(step._id, { status: "declined", decidedBy: ctx.identity.subject, decidedAt: now });
-      await stopTask(ctx, task, "declined");
-      await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "browser.step.declined", subject: step._id });
-      return { status: "declined" as const };
-    }
-    if (step.kind === "restricted") {
-      if (!isOwner(ctx.member.role)) throw userError("Only an Owner can approve this kind of step.", "not_allowed");
-      const word = CONFIRM_WORD[(step.restrictedReason ?? "publish") as RestrictedReason];
-      if ((args.confirmWord ?? "").trim() !== word) throw userError(`Type ${word} to approve this step.`);
-    }
-    const session = await ctx.db.get(step.sessionId);
-    const state = session ? sessionState(session) : "revoked";
-    if (state !== "active") {
-      await stopTask(ctx, task, state === "expired" ? "expired" : "revoked");
-      throw userError(state === "expired" ? "The session expired before this was approved. Nothing was done." : "The session was ended before this was approved. Nothing was done.");
-    }
-    // The dry-run driver performs nothing. A real driver would act here, once, and report what happened.
-    await ctx.db.patch(step._id, { status: "done", decidedBy: ctx.identity.subject, decidedAt: now });
-    await ctx.db.patch(task._id, { status: "running" });
-    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: step.kind === "restricted" ? "browser.step.approvedRestricted" : "browser.step.approved", subject: step._id });
-    await advance(ctx, task._id);
-    return { status: "approved" as const };
-  },
+  handler: async (ctx, args) => decideStep(ctx, args),
 });
 
 /** Stops a task. A step that was waiting is declined. Owners and Admins. */

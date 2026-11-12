@@ -77,7 +77,13 @@ async function agency(t: Tester) {
       await ctx.db.insert("offerCardVersions", { workspaceId, cardId, version: 1, name: `${word} offer`, price: "$900", included: [`${word} included`], guarantee: "", terms: "", targetCustomer: `${word} customers`, origin: "person", createdBy: "nora", createdAt: now });
       const intakeId = await ctx.db.insert("intakes", { workspaceId, ...forClient, agentSlug: "growth-architect", createdBy: "nora", status: "chatting", slots: { objective: `${word} chat` }, questionsAsked: 0, costCents: 0, capCents: 0, pendingRemember: [], createdAt: now, updatedAt: now });
       await ctx.db.insert("intakeMessages", { workspaceId, intakeId, role: "you", kind: "text", text: `${word} first message`, at: now });
-      return { projectId, runId, assetId, sourceRefId, decisionId, transcriptId, uploadId, cardId, intakeId };
+      // Step 2's records: a proposed task with its approval and Briefing post, and a note to self about the client.
+      const taskId = await ctx.db.insert("agentTasks", { workspaceId, ...forClient, title: `${word} task`, why: `${word} why`, proposedBy: { kind: "agent", agentSlug: "growth-architect", runId }, agentSlug: "growth-architect", work: { ask: `${word} ask`, skillSlug: "market-intelligence" }, status: "proposed", expectedReturn: { basis: "insufficient" }, creditCost: 900, evidence: [{ kind: "asset", refId: assetId, label: `${word} report` }, { kind: "sourceRef", refId: sourceRefId, label: `${word} source` }], createdAt: now, updatedAt: now });
+      const approvalId = await ctx.db.insert("approvals", { workspaceId, ...forClient, kind: "task", subjectTable: "agentTasks", subjectId: taskId, summary: `${word} task`, credits: 900, status: "waiting", requestedBy: "agent", requestedAt: now });
+      await ctx.db.patch(taskId, { approvalId });
+      const briefingId = await ctx.db.insert("briefingItems", { workspaceId, ...forClient, kind: "approval", agentSlug: "growth-architect", title: `Proposed: ${word} task`, body: `${word} why`, refTable: "agentTasks", refId: taskId, approvalId, at: now });
+      const noteId = await ctx.db.insert("personalNotes", { workspaceId, userId: "milo", ...forClient, body: `${word} note`, createdAt: now, updatedAt: now });
+      return { projectId, runId, assetId, sourceRefId, decisionId, transcriptId, uploadId, cardId, intakeId, taskId, approvalId, briefingId, noteId };
     });
   return { owner, admin, member, viewer, workspaceId, aster, harbor, idOf, own: await records(undefined, "Northlight"), a: await records(aster, "Aster"), b: await records(harbor, SECRET) };
 }
@@ -250,7 +256,7 @@ describe("a client the member is not assigned to", () => {
   it("never shows through any query, whatever ids are asked for", async () => {
     const t = newTest();
     const { workspaceId, harbor, b } = await agency(t);
-    const ids: Record<string, string> = { clients: harbor, researchProjects: b.projectId, agentRuns: b.runId, assets: b.assetId, sourceRefs: b.sourceRefId, decisions: b.decisionId, callTranscripts: b.transcriptId, resultUploads: b.uploadId, offerCards: b.cardId, intakes: b.intakeId };
+    const ids: Record<string, string> = { clients: harbor, researchProjects: b.projectId, agentRuns: b.runId, assets: b.assetId, sourceRefs: b.sourceRefId, decisions: b.decisionId, callTranscripts: b.transcriptId, resultUploads: b.uploadId, offerCards: b.cardId, intakes: b.intakeId, agentTasks: b.taskId, approvals: b.approvalId, briefingItems: b.briefingId, personalNotes: b.noteId };
     const hiddenIds = Object.values(ids);
     const queries = await publicFunctions("isQuery");
     expect(queries.length).toBeGreaterThan(100);
@@ -294,7 +300,7 @@ describe("a client the member is not assigned to", () => {
   it("cannot be changed through any mutation, whatever ids are given", async () => {
     const t = newTest();
     const { workspaceId, harbor, b } = await agency(t);
-    const ids: Record<string, string> = { clients: harbor, researchProjects: b.projectId, agentRuns: b.runId, assets: b.assetId, sourceRefs: b.sourceRefId, decisions: b.decisionId, callTranscripts: b.transcriptId, resultUploads: b.uploadId, offerCards: b.cardId, intakes: b.intakeId };
+    const ids: Record<string, string> = { clients: harbor, researchProjects: b.projectId, agentRuns: b.runId, assets: b.assetId, sourceRefs: b.sourceRefId, decisions: b.decisionId, callTranscripts: b.transcriptId, resultUploads: b.uploadId, offerCards: b.cardId, intakes: b.intakeId, agentTasks: b.taskId, approvals: b.approvalId, briefingItems: b.briefingId, personalNotes: b.noteId };
     const snapshot = () =>
       t.run(async (ctx) => {
         const rows: unknown[] = [];
@@ -304,7 +310,7 @@ describe("a client the member is not assigned to", () => {
         rows.push((await ctx.db.query("intakeMessages").collect()).filter((row) => row.intakeId === ids.intakes).length);
         rows.push((await ctx.db.query("assetVersions").collect()).filter((row) => row.assetId === ids.assets));
         rows.push((await ctx.db.query("sourceRefs").collect()).filter((row) => row.projectId === ids.researchProjects));
-        for (const table of ["decisions", "researchProjects", "agentRuns", "callTranscripts", "resultUploads", "offerCards", "intakes", "brandKits", "teardownRequests", "creativeRequests", "clientAssignments"] as const) {
+        for (const table of ["decisions", "researchProjects", "agentRuns", "callTranscripts", "resultUploads", "offerCards", "intakes", "brandKits", "teardownRequests", "creativeRequests", "clientAssignments", "agentTasks", "approvals", "briefingItems", "personalNotes"] as const) {
           rows.push((await ctx.db.query(table).collect()).filter((row) => row.clientId === harbor).length);
         }
         return JSON.stringify(rows);

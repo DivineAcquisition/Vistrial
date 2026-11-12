@@ -12,6 +12,7 @@ export const EXPORT_TABLES = [
   { table: "assets", file: "reports-and-assets" },
   { table: "offerCards", file: "offers" },
   { table: "decisions", file: "decisions" },
+  { table: "agentTasks", file: "tasks" },
   { table: "growthGoals", file: "goals" },
   { table: "resultUploads", file: "results" },
   { table: "callTranscripts", file: "transcripts" },

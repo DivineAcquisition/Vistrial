@@ -21,8 +21,11 @@ type Db = QueryCtx["db"];
 /** Tables that say which client they are for. A missing `clientId` means the organization itself. */
 const DIRECT: readonly TableNames[] = [
   "agentRuns",
+  "agentTasks",
+  "approvals",
   "assets",
   "brandKits",
+  "briefingItems",
   "callTranscripts",
   "clientAssignments",
   "creativeRequests",
@@ -31,6 +34,7 @@ const DIRECT: readonly TableNames[] = [
   "integrationConnections",
   "metaConnections",
   "offerCards",
+  "personalNotes",
   "researchProjects",
   "resultUploads",
   "teardownRequests",

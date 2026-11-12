@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { insertProposal } from "./agentTasks";
 import { learningSummary } from "./decisions";
 import { INJECTION_FIXTURE } from "./lib/registry";
 import type { ScriptedModel } from "./lib/toolRouter";
@@ -473,6 +474,63 @@ describe("outcome loop", () => {
     expect(brief).toContain("Tried: Action 2. Result: it helped (Jobber bookings spend -10%, Jobber bookings conversions +50%).");
     const contexts = (await t.run((ctx) => ctx.db.query("runArtifacts").collect())).filter((row) => row.kind === "context");
     expect(contexts.at(-1)?.body).toContain('"origin":"outcome"');
+  });
+
+  it("posts a finished run to the Briefing, queues its draft for approval, and measures an approved task through the same loop", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", ALPHA);
+    await results(t, a.workspaceId, 1000, 20);
+    script({ sources: PAGES });
+    const { runId, status } = await run(t, a.owner, a.workspaceId, a.projectId);
+    expect(status).toBe("completed");
+
+    // The run's ending is posted once, and its draft is waiting in the one approvals queue.
+    const report = (await reportAsset(a.owner, a.workspaceId))!;
+    const posts = await t.run((ctx) => ctx.db.query("briefingItems").collect());
+    expect(posts.map((row) => row.kind).sort()).toEqual(["draft", "finished"]);
+    expect(posts.find((row) => row.kind === "finished")).toMatchObject({ refTable: "assets", refId: report.id, agentSlug: AGENT, key: `finished:${runId}` });
+    const [waiting] = (await a.owner.query(api.approvals.waiting, { workspaceId: a.workspaceId })).items;
+    expect(waiting).toMatchObject({ kind: "publish", summary: report.title, href: `/app/assets/${report.id}` });
+
+    // The agent proposes trying the report's second opportunity. Its return is an estimate with its basis.
+    const taskId = await t.run((ctx) =>
+      insertProposal({ ...ctx, workspaceId: a.workspaceId } as never, {
+        workspaceId: a.workspaceId,
+        title: "Try the first-clean offer",
+        why: "Two competitors lead with it and your bookings are flat.",
+        proposedBy: { kind: "agent", agentSlug: AGENT, runId },
+        try: { kind: "opportunity", projectId: a.projectId, index: 1, checkInDays: 30 },
+        expectedReturn: { basis: "firstParty", low: 3, high: 8, metric: "bookings" },
+        evidence: [{ kind: "asset", refId: report.id, label: report.title }, { kind: "figure", label: "20 bookings from $1,000 last month (Jobber bookings)" }],
+      }),
+    );
+    const read = async () => {
+      const board = await a.owner.query(api.agentTasks.board, { workspaceId: a.workspaceId });
+      const column = board.columns.find((row) => row.cards.some((card) => card.id === taskId))!;
+      return { column: column.column, card: column.cards.find((card) => card.id === taskId)! };
+    };
+    const proposed = await read();
+    expect(proposed).toMatchObject({ column: "proposed", card: { by: "agent", type: "change", creditCost: 0, expectedReturn: { text: "3 to 8 more bookings a month", basis: "Your data" }, result: null } });
+    expect(proposed.card.evidence).toEqual([
+      { kind: "asset", label: report.title, href: `/app/assets/${report.id}`, external: false },
+      { kind: "figure", label: "20 bookings from $1,000 last month (Jobber bookings)", href: null, external: false },
+    ]);
+
+    // Approving it is the same "We'll try this" the report offers: one decision, with today's figures.
+    await a.owner.mutation(api.approvals.decide, { workspaceId: a.workspaceId, approvalId: proposed.card.approvalId!, approve: true });
+    const decisionId = await a.owner.mutation(api.decisions.plan, { workspaceId: a.workspaceId, projectId: a.projectId, opportunityIndex: 1, checkInDays: 30 });
+    expect((await t.run((ctx) => ctx.db.get(taskId)))!.decisionId).toBe(decisionId);
+    expect(await t.run(async (ctx) => (await ctx.db.query("decisions").collect()).length)).toBe(1);
+    expect(await read()).toMatchObject({ column: "approved", card: { result: null, decisionId: null } });
+
+    // When the check-in comes due the task asks for it; nothing is a Result until it was recorded.
+    vi.advanceTimersByTime(31 * 24 * 60 * 60 * 1000);
+    expect(await read()).toMatchObject({ column: "needsYou", card: { decisionId, result: null, note: "The check-in is due: say what happened." } });
+    await results(t, a.workspaceId, 900, 30);
+    await a.owner.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId, result: "better", note: "Bookings rose in week two." });
+    const measured = await read();
+    expect(measured.column).toBe("result");
+    expect(measured.card.result).toMatchObject({ result: "better", note: "Bookings rose in week two.", changes: [expect.objectContaining({ metric: "spend", percent: -10 }), expect.objectContaining({ metric: "conversions", percent: 50 })] });
   });
 
   it("writes internal learning with no workspace, place, amount or owner note, and deletes it with the decision", async () => {

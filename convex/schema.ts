@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 import { assetStatus } from "./lib/assetStatus";
 import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
+import { approvalKind, approvalStatus, briefingKind, expectedReturn, proposedBy, taskEvidence, taskStatus, taskTry, taskWork } from "./lib/taskShapes";
 import { availability, basis, classification, embed, platform, projectStatus, sourceKind, sourceState } from "./lib/researchShapes";
 
 const resultFigureFields = {
@@ -37,6 +38,8 @@ const memberRole = v.union(
   v.literal("manager"),
   v.literal("rep"),
 );
+/** One number Home showed a person: whose it is ("own" or a client id), what it counts, and its value then. */
+const homeFigure = v.object({ scope: v.string(), key: v.string(), label: v.string(), value: v.number(), unit: v.string() });
 const consentState = v.union(v.literal("unknown"), v.literal("granted"), v.literal("revoked"));
 const identityKind = v.union(
   v.literal("email"),
@@ -423,6 +426,15 @@ export default defineSchema({
     serviceTeamAccess: v.optional(v.boolean()),
     /** The research quality a new chat starts with. Missing means thorough. */
     defaultResearchMode: v.optional(v.union(v.literal("fast"), v.literal("thorough"))),
+    /**
+     * Agent work that may use more credits than this waits for an Owner or Admin. In credits. Missing means
+     * no limit of this kind: the agent caps alone apply. Set in Settings by an Owner or Admin.
+     */
+    spendApprovalCredits: v.optional(v.number()),
+    /** The weekly plan of proposed tasks and the weekly growth report. Missing means on. They use credits. */
+    weeklyPlan: v.optional(v.boolean()),
+    /** Posts about changes in the organization's industry, read from the web. Missing means off. They use credits. */
+    trendPosts: v.optional(v.boolean()),
   }).index("by_workspace", ["workspaceId"]),
 
   /** One member's own choices: theme and which in-app notices they want. Missing fields mean the default. */
@@ -1863,6 +1875,127 @@ export default defineSchema({
   })
     .index("by_provider_delivery", ["provider", "deliveryId"])
     .index("by_workspace_provider", ["workspaceId", "provider", "receivedAt"]),
+
+  /**
+   * Work an agent proposes and a person approves, with what it is expected to return, what it would cost in
+   * credits and the evidence behind it. Not the `tasks` table, which is a sales follow-up list tied to leads.
+   * A task is either work for an agent (`work`) or a change the organization makes itself (`try`).
+   */
+  agentTasks: defineTable({
+    workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
+    title: v.string(),
+    why: v.string(),
+    proposedBy,
+    /** The agent that would do the work. Missing for a change the organization makes itself. */
+    agentSlug: v.optional(v.string()),
+    work: v.optional(taskWork),
+    try: v.optional(taskTry),
+    status: taskStatus,
+    expectedReturn,
+    /** The most credits the work is expected to use, shown before approval. Zero when no agent does anything. */
+    creditCost: v.number(),
+    evidence: v.array(taskEvidence),
+    /** Which plan proposed it ("week:2026-W46") or the change that did ("change:<record id>"), so neither is proposed twice. */
+    planKey: v.optional(v.string()),
+    approvalId: v.optional(v.id("approvals")),
+    /** The conversation the agent's work started in, the run it became, and the decision its result is measured through. */
+    intakeId: v.optional(v.id("intakes")),
+    runId: v.optional(v.id("agentRuns")),
+    decisionId: v.optional(v.id("decisions")),
+    /** Why a person skipped it, in their words. */
+    skippedReason: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId", "createdAt"])
+    .index("by_workspace_status", ["workspaceId", "status", "updatedAt"])
+    .index("by_workspace_plan", ["workspaceId", "planKey"])
+    .index("by_workspace_run", ["workspaceId", "runId"])
+    .index("by_workspace_decision", ["workspaceId", "decisionId"]),
+
+  /** A note a person keeps for themselves on the Tasks board. Only its author reads it, whatever their role. */
+  personalNotes: defineTable({
+    workspaceId: v.id("workspaces"),
+    userId: v.string(),
+    clientId: v.optional(v.id("clients")),
+    body: v.string(),
+    done: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_workspace_user", ["workspaceId", "userId", "createdAt"]),
+
+  /**
+   * One decision about one thing, asked of an Owner or Admin: something going public, spending above the
+   * organization's limit, a change inside a connected account, housekeeping, or a task an agent wants to
+   * run. Asset review and browser steps keep their own rows and write one of these alongside, so there is
+   * one queue and one record of who decided and when. The rule is in lib/approvals.ts.
+   */
+  approvals: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    kind: approvalKind,
+    /** What is being decided: the table and id of the asset, browser step, agent task and so on. */
+    subjectTable: v.string(),
+    subjectId: v.string(),
+    summary: v.string(),
+    /** The credits at stake, for spending and for a task with a cost. */
+    credits: v.optional(v.number()),
+    /** Only an Owner may decide it (a restricted step in a connected account). */
+    ownerOnly: v.optional(v.boolean()),
+    agentSlug: v.optional(v.string()),
+    status: approvalStatus,
+    /** A person's user id, or "agent" when an agent's work asked. */
+    requestedBy: v.string(),
+    requestedAt: v.number(),
+    decidedBy: v.optional(v.string()),
+    decidedAt: v.optional(v.number()),
+    /** The run an approved spend was used for. One approval covers one run. */
+    usedByRun: v.optional(v.id("agentRuns")),
+  })
+    .index("by_workspace_status", ["workspaceId", "status", "requestedAt"])
+    .index("by_subject", ["workspaceId", "subjectTable", "subjectId"]),
+
+  /**
+   * The Briefing: a feed of what needs a decision, what finished, what changed and what to read. `ref` is
+   * the record a post is about; `key` stops the same alert or report being posted twice.
+   */
+  briefingItems: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    kind: briefingKind,
+    agentSlug: v.optional(v.string()),
+    title: v.string(),
+    body: v.optional(v.string()),
+    refTable: v.optional(v.string()),
+    refId: v.optional(v.string()),
+    approvalId: v.optional(v.id("approvals")),
+    /** Where a trend post was read. Shown as links; never followed as instructions. */
+    sources: v.optional(v.array(v.object({ title: v.string(), url: v.string() }))),
+    /** What writing the post used, in credits (the weekly report, a trend post). */
+    credits: v.optional(v.number()),
+    key: v.optional(v.string()),
+    at: v.number(),
+  })
+    .index("by_workspace_at", ["workspaceId", "at"])
+    .index("by_workspace_key", ["workspaceId", "key"])
+    .index("by_workspace_approval", ["workspaceId", "approvalId"]),
+
+  /**
+   * When a person last opened the Briefing and Home in an organization, and the figures Home showed them
+   * then, so "since you were last here" compares two readings and never a remembered one.
+   */
+  memberVisits: defineTable({
+    workspaceId: v.id("workspaces"),
+    userId: v.string(),
+    briefingSeenAt: v.optional(v.number()),
+    homeSeenAt: v.optional(v.number()),
+    /** The visit before this one: the moment "since you were last here" counts from. */
+    homePreviousAt: v.optional(v.number()),
+    homeFigures: v.optional(v.array(homeFigure)),
+    homePreviousFigures: v.optional(v.array(homeFigure)),
+  }).index("by_workspace_user", ["workspaceId", "userId"]),
 
   platformControls: defineTable({
     key: v.literal("platform"),

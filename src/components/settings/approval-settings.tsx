@@ -99,7 +99,12 @@ export function ApprovalSettingsView({
       <Panel className="flex flex-wrap items-start justify-between gap-3 p-4 sm:p-5">
         <div className="grid min-w-0 flex-1 gap-1">
           <h3 className={title}>Industry trend posts</h3>
-          <p className={text}>New trends and major changes in your industry from social media and the web, posted to the Briefing with their sources. They use credits. {data.trendPosts ? "On." : "Off until you switch them on."}</p>
+          <p className={text}>
+            Once a month Vistrial searches the web for what changed in your industry, and in the industries of up to three clients, and posts what was reported to the Briefing. A post needs at least two dated sources from different sites, linked on it. Trade press and public social posts both count, but never social posts alone. No task is created from a post.
+          </p>
+          <p className={text}>
+            A month&apos;s reading uses at most {creditWords(data.trendCapCredits)} and says how many it used. {data.trendPosts ? "On." : "Off until you switch them on."}
+          </p>
         </div>
         <Switch aria-label="Industry trend posts" checked={data.trendPosts} disabled={!data.canEdit} onCheckedChange={(on) => void onSwitch("trendPosts", on).catch((problem: unknown) => showError(problem))} />
       </Panel>

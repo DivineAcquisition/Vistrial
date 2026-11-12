@@ -135,7 +135,8 @@ export async function runChanged(ctx: MutationCtx, runId: Id<"agentRuns">) {
     return;
   }
   // The proposer's own runs speak through the tasks and the weekly report they write, not a post each.
-  if (run.skillSlug === "task-proposer") return;
+  // Trend runs speak through the posts they write.
+  if (run.skillSlug === "task-proposer" || run.skillSlug === "industry-trends") return;
   if (run.status === "completed") {
     const assets = await ctx.db
       .query("assets")

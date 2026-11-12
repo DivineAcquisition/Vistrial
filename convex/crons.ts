@@ -61,4 +61,10 @@ crons.interval("post Briefing alerts", { hours: 1 }, internal.briefing.sweep, {}
  */
 crons.interval("weekly plan", { hours: 6 }, internal.planner.weekly, {});
 
+/**
+ * Industry trend posts: one reading per organization per month, only where an Owner or Admin switched them
+ * on. Checked every six hours; a month already read is left alone.
+ */
+crons.interval("monthly industry trends", { hours: 6 }, internal.planner.monthly, {});
+
 export default crons;

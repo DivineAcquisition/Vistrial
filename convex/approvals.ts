@@ -16,6 +16,8 @@ import { APPROVAL_KIND_LABEL, NOT_WAITING_WORDS, SPEND_LIMIT_MAX, SPEND_LIMIT_MI
 import { writeAudit } from "./lib/audit";
 import { askApproval, askAssetReview, settingsOf } from "./lib/briefing";
 import { adminMutation, workspaceQuery } from "./lib/builders";
+import { SKILL_CAPS } from "./lib/caps";
+import { priceFor } from "./lib/credits";
 import { CONFIRM_WORD, RESTRICTED_REASONS, type RestrictedReason } from "./lib/browserAgent/policy";
 import { notFound, userError } from "./lib/errors";
 import { isAdmin } from "./lib/roles";
@@ -125,7 +127,14 @@ async function carryOut(ctx: Access, approval: Doc<"approvals">, args: { approve
 /** The organization's approval settings: the spending limit and the two switches. Everyone reads; Owners and Admins change. */
 export const settings = workspaceQuery({
   args: {},
-  handler: async (ctx) => ({ ...(await settingsOf(ctx, ctx.workspaceId)), canEdit: isAdmin(ctx.role), min: SPEND_LIMIT_MIN, max: SPEND_LIMIT_MAX }),
+  handler: async (ctx) => ({
+    ...(await settingsOf(ctx, ctx.workspaceId)),
+    canEdit: isAdmin(ctx.role),
+    min: SPEND_LIMIT_MIN,
+    max: SPEND_LIMIT_MAX,
+    /** The most one month of industry trend posts can use, in credits: shown before they are switched on. */
+    trendCapCredits: priceFor(SKILL_CAPS["industry-trends"].maxCostCentsPerRun),
+  }),
 });
 
 async function patchSettings(ctx: Access, patch: Partial<Doc<"workspaceSettings">>) {

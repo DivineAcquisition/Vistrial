@@ -54,6 +54,16 @@ export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
     maxSteps: 6,
     maxDurationMs: 300_000,
   },
+  /**
+   * Industry trend posts: one web search step (four searches at most) and one short write, once a month.
+   * The day cap equals the run cap, so a month's reading can never cost more than one run.
+   */
+  "industry-trends": {
+    maxCostCentsPerRun: 120,
+    maxCostCentsPerDay: 120,
+    maxSteps: 8,
+    maxDurationMs: 600_000,
+  },
   "growth-diagnostics": {
     maxCostCentsPerRun: 100,
     maxCostCentsPerDay: 1000,

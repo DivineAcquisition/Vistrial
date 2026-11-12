@@ -252,7 +252,7 @@ export function BriefingView({
           <EmptyState
             preview="rows"
             title="Industry trend posts are switched off."
-            detail="When they are on, Vistrial reads the web for changes in your industry and posts them here with their sources. They use credits. An Owner or Admin switches them on in Settings, Agents."
+            detail="When they are on, Vistrial searches the web once a month for changes in your industry and posts what was reported here, with its sources linked. They use credits, up to a cap shown in Settings. An Owner or Admin switches them on in Settings, Agents."
             action={
               <Link href="/app/settings?section=agents" className="text-sm font-medium text-primary underline-offset-2 hover:underline">
                 Open Settings

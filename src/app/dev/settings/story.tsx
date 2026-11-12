@@ -134,7 +134,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
     notifications: { checkInsDue: true, questionsWaiting: true, reportReady: false, email: true },
   });
 
-  const [approval, setApproval] = useState<ApprovalSettingsData>({ spendApprovalCredits: 500, weeklyPlan: true, trendPosts: false, canEdit: true, min: 1, max: 100_000 });
+  const [approval, setApproval] = useState<ApprovalSettingsData>({ spendApprovalCredits: 500, weeklyPlan: true, trendPosts: false, canEdit: true, min: 1, max: 100_000, trendCapCredits: 360 });
   const hrefFor = (next: SettingsSection) => `/dev/settings?section=${next}&role=${role}`;
   return (
     <main className="min-h-screen bg-background px-4 py-8 md:px-8">

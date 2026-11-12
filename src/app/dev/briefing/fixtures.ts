@@ -94,13 +94,26 @@ export function storyFeed(state: string, kind: string | null): Feed {
     item({
       kind: "trend",
       kindLabel: "Industry trend",
-      title: "Sample post: lead forms that ask a qualifying question first are being reported in some ad accounts",
-      body: "Two industry write-ups this week describe the option appearing in lead ads for some accounts. For an agency running lead ads for coaches, this may lower lead volume and raise the share that books. Nothing here has been tested on your accounts.",
+      title: "Industry trend: Lead forms that ask a qualifying question first are being reported in some ad accounts",
+      body: "Two industry publications reported this month that a qualifying question now appears before the lead form in some ad accounts. An agency owner described seeing the same option in a video.\n\nThis is what 3 sources reported between 2026-10-21 and 2026-11-02. It is not a forecast for Northlight Growth, and no task was created from it.\n\nReading this month's trends used 96 credits, for all 2 of this month's posts.",
       at: NOW - 4 * DAY,
-      credits: 36,
+      credits: 96,
       sources: [
-        { title: "Example Marketing Weekly: lead form changes", url: "https://example.com/weekly" },
-        { title: "Example Ads Journal: what a qualifying question means", url: "https://example.com/journal" },
+        { title: "Lead form changes this month (marketingweekly.example, 2026-10-21)", url: "https://example.com/weekly" },
+        { title: "What a qualifying question changes (adsjournal.example, 2026-10-29)", url: "https://example.com/journal" },
+        { title: "We saw the new lead form option (YouTube post, 2026-11-02)", url: "https://example.com/video" },
+      ],
+    }),
+    item({
+      kind: "trend",
+      kindLabel: "Industry trend",
+      title: "Industry trend for Aster Coaching: More leadership programs are being sold as cohorts",
+      body: "A coaching publication and a training-industry newsletter both reported more leadership programs moving from one-to-one work to cohorts with fixed start dates.\n\nThis is what 2 sources reported between 2026-10-18 and 2026-10-30. It is not a forecast for Aster Coaching, and no task was created from it.",
+      client: "Aster Coaching",
+      at: NOW - 4 * DAY,
+      sources: [
+        { title: "Cohorts replace one-to-one for new leaders (coachingreview.example, 2026-10-18)", url: "https://example.com/coaching" },
+        { title: "Fixed start dates return (trainingnote.example, 2026-10-30)", url: "https://example.com/training" },
       ],
     }),
     item({

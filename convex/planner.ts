@@ -1,5 +1,5 @@
 /**
- * When the task proposer runs. Weekly, for every organization that has the weekly plan on; and when
+ * When the planned work runs: the task proposer and the monthly industry trend reading. Weekly, for every organization that has the weekly plan on; and when
  * something real changes: a report is approved, a check-in comes back, results drop. Each start is an
  * ordinary run of the "task-proposer" skill, so the organization's pause, the skill's caps and the credit
  * balance all apply, and what it used is on the run and in the ledger like any other work.
@@ -16,6 +16,7 @@ import { GROWTH_ARCHITECT } from "./catalog";
 import { settingsOf } from "./lib/briefing";
 import { isOwner } from "./lib/roles";
 import { startRunFor } from "./runs";
+import { SKILL_SLUG as TRENDS_SKILL, monthKey } from "./skills/industryTrends/shapes";
 import { SKILL_SLUG } from "./skills/taskProposer/shapes";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -32,9 +33,24 @@ export function weekKey(time: number) {
   return `${thursday.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
-async function recentRuns(ctx: MutationCtx, workspaceId: Id<"workspaces">) {
+async function recentRuns(ctx: MutationCtx, workspaceId: Id<"workspaces">, skillSlug: string = SKILL_SLUG) {
   const runs = await ctx.db.query("agentRuns").withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", GROWTH_ARCHITECT)).order("desc").take(200);
-  return runs.filter((row) => row.skillSlug === SKILL_SLUG);
+  return runs.filter((row) => row.skillSlug === skillSlug);
+}
+
+/** Starts a planned run in the Owner's name. A refusal meant for a person (out of credits, the agent is off) is a reason not to run, not a failure. */
+async function startAsOwner(ctx: MutationCtx, workspaceId: Id<"workspaces">, skillSlug: string, inputRef: string): Promise<{ started: boolean; reason?: string }> {
+  const members = await ctx.db.query("members").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).take(200);
+  const owner = members.find((row) => row.active && isOwner(row.role));
+  if (!owner) return { started: false, reason: "no_owner" };
+  try {
+    await startRunFor(ctx, { workspaceId, userId: owner.userId, role: owner.role, agentSlug: GROWTH_ARCHITECT, skillSlug, inputRef });
+    return { started: true };
+  } catch (error) {
+    const data = (error as { data?: { code?: string } }).data;
+    if (data?.code) return { started: false, reason: data.code };
+    throw error;
+  }
 }
 
 /**
@@ -48,18 +64,7 @@ export async function startProposer(ctx: MutationCtx, workspaceId: Id<"workspace
   const runs = await recentRuns(ctx, workspaceId);
   if (runs.some((row) => row.inputRef === planKey)) return { started: false, reason: "already_started" };
   if (!planKey.startsWith("week:") && runs.filter((row) => !row.inputRef.startsWith("week:") && row.startedAt > Date.now() - DAY_MS).length >= MAX_CHANGE_RUNS_PER_DAY) return { started: false, reason: "daily_limit" };
-  const members = await ctx.db.query("members").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).take(200);
-  const owner = members.find((row) => row.active && isOwner(row.role));
-  if (!owner) return { started: false, reason: "no_owner" };
-  try {
-    await startRunFor(ctx, { workspaceId, userId: owner.userId, role: owner.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, inputRef: planKey });
-    return { started: true };
-  } catch (error) {
-    const data = (error as { data?: { code?: string } }).data;
-    // A refusal meant for a person (out of credits, the agent is off) is a reason not to plan, not a failure.
-    if (data?.code) return { started: false, reason: data.code };
-    throw error;
-  }
+  return startAsOwner(ctx, workspaceId, SKILL_SLUG, planKey);
 }
 
 /** Something real changed: a report was approved, a check-in came back, results dropped. Proposes on it, once. */
@@ -81,6 +86,30 @@ export const weekly = internalMutation({
       await startProposer(ctx, workspace._id, planKey);
     }
     if (!page.isDone) await ctx.scheduler.runAfter(0, internal.planner.weekly, { cursor: page.continueCursor });
+    return null;
+  },
+});
+
+/**
+ * Starts this month's industry trend reading for one organization, unless the switch is off or the month
+ * was already read. One run a month, whatever came of it: a month whose run found nothing is not retried.
+ */
+export async function startTrends(ctx: MutationCtx, workspaceId: Id<"workspaces">): Promise<{ started: boolean; reason?: string }> {
+  const workspace = await ctx.db.get(workspaceId);
+  if (!workspace || workspace.status !== "active") return { started: false, reason: "not_active" };
+  if (!(await settingsOf(ctx, workspaceId)).trendPosts) return { started: false, reason: "switched_off" };
+  const key = `month:${monthKey(Date.now())}`;
+  if ((await recentRuns(ctx, workspaceId, TRENDS_SKILL)).some((row) => row.inputRef === key)) return { started: false, reason: "already_started" };
+  return startAsOwner(ctx, workspaceId, TRENDS_SKILL, key);
+}
+
+/** Industry trend posts: one run per organization per month, where they are switched on. Run every few hours; a month already read is left alone. */
+export const monthly = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.query("workspaces").paginate({ numItems: PAGE, cursor: args.cursor ?? null });
+    for (const workspace of page.page) await startTrends(ctx, workspace._id);
+    if (!page.isDone) await ctx.scheduler.runAfter(0, internal.planner.monthly, { cursor: page.continueCursor });
     return null;
   },
 });

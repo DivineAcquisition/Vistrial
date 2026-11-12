@@ -165,31 +165,62 @@ organization's pause, the agent being off, an empty balance and the day's cap ea
 **Not built**: the proposer does not propose *agent work* (new research, a diagnosis); it only surfaces
 changes already written in approved reports. People propose agent work from the board.
 
-## 5. Industry trend posts: designed, not built
+## 5. Industry trend posts
 
-The switch (off by default), the Briefing kind, its filter, its empty state and the rule that a trend post
-is written only where the switch is on (`lib/briefing.ts`, tested) are built. **Nothing writes a trend post
-yet.** It was not built in this session because it cannot be checked honestly without real web reads, and
-no model or web call was made here. The design:
+Built in part 8, behind the switch (off by default). The owner's answer of 2026-11-12: "both and monthly
+will be the cadence", so trade press and public social posts both count, once a month.
 
-1. **A skill, `industry-trends`**, on the runtime, with its own caps (proposed: 40 cents of cost a run, one
-   run a week per organization, so at most about 120 credits a week) and its cost shown on every post.
-2. **What it reads.** The organization's confirmed profile gives the industry and channels. It searches
-   with the existing `web.search` tool and reads at most six pages with the existing page reader
-   (`page.read`), so the page reader's rules apply unchanged: public pages only, robots respected, the
-   budget shown first, no sign-in, nothing stored beyond the excerpt.
-3. **Untrusted content.** Everything read reaches the model only inside `wrapUntrusted` blocks, as research
-   sources do today. It is never followed as instructions; the skill declares no tool that writes anything
-   except the post.
-4. **What a post may say.** One change, in two or three sentences, each resting on at least two sources
-   from different sites, each no older than 14 days by its own date. Sources are linked on the post. It is
-   labelled as what was reported, never as what will happen to this organization, and the claim-wording
-   check that guards tasks runs on it. A change with one source, or none dated, is not posted.
-5. **What it never does.** It proposes no task and changes nothing. A person can turn a post into a task
-   with "Propose a task".
-6. **Open for the owner**: which sources count (trade press only, or social posts too: the owner said
-   "social media & the web", and social posts are much harder to verify); weekly or more often; and
-   whether trends are per organization or per client's industry.
+**The run.** `convex/skills/industryTrends` is a skill on the existing runtime with its own cap
+(`SKILL_CAPS["industry-trends"]`: 120 cents of cost a run and a day, which is 360 credits a month at the
+default markup). Settings shows that number beside the switch before it is switched on. `planner.monthly`
+(checked every six hours) starts one run per organization per month where the switch is on; a month already
+read is not read again, whatever came of it.
+
+1. *Read* (code): whose industries to search for. The organization itself, from its confirmed profile, and
+   up to three business clients that have an industry written down. With nothing to search for, no model
+   is called.
+2. *Search* (one model step): Claude's web search tool, four searches at most.
+3. *Write* (one model step): at most one post per industry, from the dated sources only.
+4. *Save* (code): `settlePosts` decides what stands, and each post that does is written to the Briefing
+   for the organization or for the client it is about.
+
+**What a post may rest on**, decided in code:
+
+- only links the search itself returned, each with a date of its own, no older than 45 days;
+- at least two, from different sites (subdomains and a platform's short links count as one site);
+- at least one that is not a social post. Social posts alone are never enough;
+- words that report what was said. A promise is refused by the same check that guards tasks, and links
+  written into the words are removed: the only links on a post are its sources.
+
+Every post ends, in code, with how many sources reported it and between which dates, that it is not a
+forecast, and that no task was created from it. The first post of the month carries what the reading used
+in credits. When nothing stands, one post says why and what was used, so credits are never spent silently.
+
+**Untrusted content.** The organization's own description and everything the search returned reach the
+model only inside `wrapUntrusted` blocks. The skill declares three tools: its own read, web search, and
+its own save. It creates no task, asks for no approval and changes nothing but its posts.
+
+**A change from the first design: Vistrial opens no page for a trend post.** The design proposed reading
+up to six pages with the page reader. The page reader is built around a teardown job a person plans and
+pays for page by page, and a short post that links its sources does not need full pages. So the run keeps
+only what the search returned (link, title, date, cited line). There is nothing for robots rules, rate
+limits or sign-in to apply to, because Vistrial fetches nothing itself.
+
+**Social posts: what can and cannot be read today.** Vistrial does not search inside any social platform
+for trends. A social post counts only when the web search itself returned it, with a date.
+
+| Platform | For trend posts today |
+|---|---|
+| YouTube, TikTok, Instagram, LinkedIn, X, Facebook, Reddit, Threads | Recognised as social posts when web search returns a public link to one. Only the link, title and date are used; the post or video itself is not opened, watched or transcribed. |
+| TikTok, Instagram | No search exists in Vistrial for either (research only accepts pasted links), so they appear only if web search happens to index a post. Expect few or none. |
+| YouTube | Research can search YouTube when a key is set, but the trend run does not use that search. |
+| Meta Ad Library | Not used for trends. |
+| Private, logged-in or paywalled content | Never. |
+
+**Not yet verified with a real web read.** Every test uses scripted search results. The first real run must
+check: (1) that search results carry a date (`page_age`) often enough for two dated sources to be common;
+(2) what a run costs against the 120 cent cap; (3) that the dates search reports are the publication dates;
+(4) the quality of what is written. If dates are rare, most months will post "No industry trend to report".
 
 ## 6. What is not built in this step
 

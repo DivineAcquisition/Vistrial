@@ -8,10 +8,10 @@ import { ChatComposer, type ComposerFile } from "@/components/chat/chat-composer
 import { StartChat } from "@/components/chat/start-chat";
 import { IntakeChatView, type IntakeView } from "@/components/sessions/intake-chat-view";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
-import { money } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { showError } from "@/lib/errors/show-error";
+import { useCredits } from "@/lib/credits";
 
 function titleFor(slots: IntakeView["intake"]["slots"]) {
   if (slots.market && slots.geography) return `${slots.market}, ${slots.geography}`.slice(0, 80);
@@ -34,6 +34,7 @@ export function IntakeChat({
   editor: boolean;
   initialText?: string;
 }) {
+  const credits = useCredits();
   const router = useRouter();
   const shell = useWorkspaceShell();
   const view = useQuery(api.intake.get, intakeId ? { workspaceId, intakeId } : "skip");
@@ -126,7 +127,7 @@ export function IntakeChat({
           onConnectMeta: () =>
             void startConnect({ workspaceId, returnOrigin: window.location.origin, returnPath: `${base}/work/chat?c=${intakeId}` }).then(({ url }) => window.location.assign(url)),
         }}
-        footnote={`Question ${Math.min(intake.questionsAsked, intake.maxQuestions)} of up to ${intake.maxQuestions} · this conversation ${money(intake.costCents)} of ${money(intake.capCents)}`}
+        footnote={`Question ${Math.min(intake.questionsAsked, intake.maxQuestions)} of up to ${intake.maxQuestions} · this conversation ${credits.cost(intake.costCents)} of ${credits.cost(intake.capCents)}`}
         onSubmit={async (text) => {
           setProblem("");
           try {
@@ -179,6 +180,8 @@ export function IntakeChat({
             competitors: slots.competitors.map((row) => (row.url ? { name: row.name, url: row.url } : { name: row.name })),
             platforms: slots.platforms as ("web" | "youtube" | "tiktok" | "instagram" | "metaAdLibrary")[],
             suppliedUrls: slots.links,
+            // The research is for whoever the conversation was started for.
+            ...(view?.intake.clientId ? { clientId: view.intake.clientId } : {}),
           });
           await startRun({ workspaceId, agentSlug, skillSlug: "market-intelligence", projectId, mode: intake.mode ?? "thorough" });
           await markStarted({ workspaceId, intakeId, projectId });

@@ -5,6 +5,7 @@
  * never stuck. Nothing researches or spends on research until the person presses Start on the plan.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -12,7 +13,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { factsForRun, liveFact, writeFact } from "./lib/facts";
 import {
   ALL_PLATFORMS,
@@ -40,7 +41,7 @@ import { moveFilesToProject } from "./files";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 const str = { type: "string" };
@@ -105,6 +106,7 @@ function intakeView(row: Doc<"intakes">) {
     pendingRemember: row.pendingRemember,
     platformNote: row.platformNote ?? null,
     projectId: row.projectId ?? null,
+    clientId: row.clientId ?? null,
     mode: row.mode ?? "thorough",
     researchCapCents: (row.mode ?? "thorough") === "fast" ? 150 : 300,
     createdAt: row.createdAt,
@@ -160,7 +162,7 @@ async function memoryFor(ctx: { db: import("./_generated/server").QueryCtx["db"]
   };
 }
 
-/** Starts an intake from the person's first message. Owner or Manager. */
+/** Starts an intake from the person's first message. Owner, Admin or Member. */
 const modeArg = v.optional(v.union(v.literal("thorough"), v.literal("fast")));
 
 type ResearchChoices = { mode?: "thorough" | "fast"; platforms?: string[]; links?: string[] };
@@ -171,13 +173,15 @@ type ResearchChoices = { mode?: "thorough" | "fast"; platforms?: string[]; links
  */
 export async function beginResearch(
   ctx: MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } },
-  input: ResearchChoices & { text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"] },
+  input: ResearchChoices & { text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"]; clientId?: Id<"clients"> },
 ) {
   await assertCanSpend(ctx, ctx.workspaceId);
   const text = clean(input.text, 1000);
   if (!text) throw userError("Say what you want to find out.");
   const now = Date.now();
-  let slots = prefill(emptySlots(), await memoryFor(ctx, ctx.workspaceId));
+  // What Vistrial remembers is about the organization's own business, so it is not assumed for a client.
+  const clientId = input.row?.clientId ?? input.clientId;
+  let slots = clientId ? emptySlots() : prefill(emptySlots(), await memoryFor(ctx, ctx.workspaceId));
   slots = withChoices(slots, input.platforms, input.links);
   const fields = {
     ...(input.mode ? { mode: input.mode } : {}),
@@ -195,7 +199,7 @@ export async function beginResearch(
     intakeId = input.row._id;
     await ctx.db.patch(intakeId, { ...fields, skillSlug: undefined });
   } else {
-    intakeId = await ctx.db.insert("intakes", { workspaceId: ctx.workspaceId, agentSlug: GROWTH_ARCHITECT, createdBy: ctx.identity.subject, ...(input.context ? { context: input.context } : {}), createdAt: now, ...fields });
+    intakeId = await ctx.db.insert("intakes", { workspaceId: ctx.workspaceId, ...(clientId ? { clientId } : {}), agentSlug: GROWTH_ARCHITECT, createdBy: ctx.identity.subject, ...(input.context ? { context: input.context } : {}), createdAt: now, ...fields });
     await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
   }
   const known = (["market", "geography", "competitors"] as const)
@@ -289,7 +293,8 @@ export const remember = workspaceMutation({
     const item = row.pendingRemember.find((entry) => entry.factKey === args.factKey);
     if (!item) return null;
     const now = await nextAt(ctx, row._id);
-    if (args.yes) {
+    // Memory is about the organization's own business. An answer about a client is kept for this session only.
+    if (args.yes && !row.clientId) {
       await writeFact(ctx, {
         workspaceId: ctx.workspaceId,
         factKey: item.factKey,

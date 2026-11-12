@@ -34,9 +34,9 @@ export function AgentFrame({ children }: { children: React.ReactNode }) {
   const params = useParams<{ slug: string }>();
   const pathname = usePathname();
   const shell = useWorkspaceShell();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   const agent = shell.agents.find((row) => row.slug === params.slug);
-  if (!agent) return <EmptyState kind="unconfigured" title="That agent is not in this workspace." />;
+  if (!agent) return <EmptyState kind="unconfigured" title="That agent is not in this organization." />;
   const base = `/app/agents/${agent.slug}`;
   const department = agent.department ? (DEPARTMENT_LABEL[agent.department as Department] ?? "Agent") : "Agent";
   const live = agent.status === "live";

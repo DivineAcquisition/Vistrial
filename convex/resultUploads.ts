@@ -5,6 +5,8 @@
  * evidence for the agents the upload is granted to.
  */
 
+import { clientForNew, requireClientIn } from "./lib/clients";
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 import Papa from "papaparse";
 
@@ -13,7 +15,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
-import { ownerMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
+import { adminMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notAllowed, notFound } from "./lib/errors";
 import { MAX_BYTES, summarizeResults, type ResultsSummary } from "./lib/resultsCsv";
 import { canonicalUrl } from "./lib/sourceRefs";
@@ -53,7 +55,7 @@ export function describeUpload(upload: Pick<Doc<"resultUploads">, "label" | "cur
 }
 
 function requireEditor(role: Doc<"members">["role"]) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 export const createUpload = workspaceMutation({
@@ -70,14 +72,18 @@ export const start = workspaceMutation({
     fileName: v.string(),
     label: v.string(),
     currency: v.string(),
+    /** The client whose results these are. Missing means the organization's own. */
+    clientId: v.optional(v.id("clients")),
   },
   handler: async (ctx, args) => {
     requireEditor(ctx.member.role);
+    const forClient = await clientForNew(ctx, args.clientId);
     const currency = args.currency.trim().toUpperCase();
     const label = clip(args.label, MAX_LABEL);
     if (!/^[A-Z]{3}$/.test(currency) || !label) notAllowed();
     const uploadId = await ctx.db.insert("resultUploads", {
       workspaceId: ctx.workspaceId,
+      ...forClient,
       fileName: clip(args.fileName, MAX_FILE_NAME) || "results.csv",
       label,
       currency,
@@ -194,6 +200,7 @@ export type UploadView = {
   code: string | null;
   ignoredColumns: string[];
   agents: string[];
+  clientId: Id<"clients"> | null;
   summary: ResultsSummary | null;
 };
 
@@ -204,6 +211,7 @@ function view(upload: Doc<"resultUploads">): UploadView {
     label: upload.label,
     currency: upload.currency,
     createdAt: upload.createdAt,
+    clientId: upload.clientId ?? null,
     status: upload.status,
     code: upload.code ?? null,
     ignoredColumns: upload.summary?.ignoredColumns ?? upload.ignoredColumns ?? [],
@@ -221,17 +229,19 @@ export const list = workspaceQuery({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .order("desc")
       .take(LIST_LIMIT);
-    return rows.map(view);
+    return ctx.clients.filter(rows).map(view);
   },
 });
 
 async function ownUpload(ctx: { db: { get: (id: Id<"resultUploads">) => Promise<Doc<"resultUploads"> | null> } }, workspaceId: Id<"workspaces">, uploadId: Id<"resultUploads">) {
   const upload = await ctx.db.get(uploadId);
   if (!upload || upload.workspaceId !== workspaceId) notFound();
+  // A client's results are only there for the people who may see that client.
+  requireClientIn(ctx, upload.clientId);
   return upload;
 }
 
-/** Deletes an upload's figures. Owners and managers. */
+/** Deletes an upload's figures. Owners, Admins and Members. */
 export const remove = workspaceMutation({
   args: { uploadId: v.id("resultUploads") },
   handler: async (ctx, args) => {
@@ -251,7 +261,7 @@ export const remove = workspaceMutation({
 });
 
 /** Grants or withdraws an agent's use of one upload's figures. Owner only. */
-export const setAgentAccess = ownerMutation({
+export const setAgentAccess = adminMutation({
   args: { uploadId: v.id("resultUploads"), agentSlug: v.string(), granted: v.boolean() },
   handler: async (ctx, args) => {
     const upload = await ownUpload(ctx, ctx.workspaceId, args.uploadId);
@@ -301,9 +311,12 @@ export async function saveUploadSourcesFor(
     .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
     .order("desc")
     .take(LIST_LIMIT);
+  // One client's results are never read into work done for another client, or for the organization itself.
+  const project = await ctx.db.get(args.projectId);
   const used: { upload: Doc<"resultUploads">; sourceId: Id<"sourceRefs"> }[] = [];
   for (const upload of rows) {
     if (upload.status !== "ready" || !uploadAgents(upload).includes(args.agentSlug)) continue;
+    if (upload.clientId !== project?.clientId) continue;
     const url = uploadUrl(upload._id);
     const canonical = canonicalUrl(url) ?? url;
     const existing = await ctx.db

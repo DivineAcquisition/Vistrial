@@ -1,3 +1,5 @@
+import { clientForNew, requireClientIn } from "./lib/clients";
+import { requireWork } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
@@ -5,7 +7,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { platform, projectStatus, type Platform } from "./lib/researchShapes";
 import { canonicalUrl, parsePublicUrl, sourceRefView } from "./lib/sourceRefs";
 
@@ -68,6 +70,8 @@ export function cleanScope(input: ScopeInput) {
 async function ownProject(ctx: QueryCtx, workspaceId: Id<"workspaces">, projectId: Id<"researchProjects">) {
   const project = await ctx.db.get(projectId);
   if (!project || project.workspaceId !== workspaceId) notFound();
+  // A project made for a client is only there for the people who may see that client.
+  requireClientIn(ctx, project.clientId);
   return project;
 }
 
@@ -84,16 +88,18 @@ function projectView(row: Doc<"researchProjects">) {
     status: row.status,
     latestRunId: row.latestRunId ?? null,
     profileVersionId: row.profileVersionId ?? null,
+    clientId: row.clientId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
 }
 
-/** Owner or Manager. Scoped against the latest confirmed profile, when there is one. */
+/** Owner, Admin or Member. Scoped against the latest confirmed profile, when there is one. */
 export const createProject = workspaceMutation({
-  args: scopeArgs,
-  handler: async (ctx, input) => {
-    if (ctx.member.role === "rep") notAllowed();
+  args: { ...scopeArgs, clientId: v.optional(v.id("clients")) },
+  handler: async (ctx, { clientId, ...input }) => {
+    requireWork(ctx.member.role);
+    const forClient = await clientForNew(ctx, clientId);
     const scope = cleanScope(input);
     const profile = await ctx.db
       .query("profileVersions")
@@ -103,6 +109,7 @@ export const createProject = workspaceMutation({
     const now = Date.now();
     const id = await ctx.db.insert("researchProjects", {
       workspaceId: ctx.workspaceId,
+      ...forClient,
       ...scope,
       status: "draft",
       profileVersionId: profile?._id,
@@ -126,7 +133,7 @@ export const createProject = workspaceMutation({
 export const updateProject = workspaceMutation({
   args: { projectId: v.id("researchProjects"), ...scopeArgs },
   handler: async (ctx, { projectId, ...input }) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const project = await ownProject(ctx, ctx.workspaceId, projectId);
     if (project.status !== "draft") throw userError("This project has already run. Start a new one to change its scope.");
     await ctx.db.patch(project._id, { ...cleanScope(input), updatedAt: Date.now() });
@@ -137,7 +144,7 @@ export const updateProject = workspaceMutation({
 export const archiveProject = workspaceMutation({
   args: { projectId: v.id("researchProjects") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const project = await ownProject(ctx, ctx.workspaceId, args.projectId);
     const latest = project.latestRunId ? await ctx.db.get(project.latestRunId) : null;
     if (project.status === "running" || (latest && ["queued", "running", "waiting"].includes(latest.status))) {
@@ -165,7 +172,7 @@ export const listProjects = workspaceQuery({
           .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", args.status!))
       : ctx.db.query("researchProjects").withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId));
     const page = await base.order("desc").paginate(args.paginationOpts);
-    return { ...page, page: page.page.map(projectView) };
+    return { ...page, page: ctx.clients.filter(page.page).map(projectView) };
   },
 });
 

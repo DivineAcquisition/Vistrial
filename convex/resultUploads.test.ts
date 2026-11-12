@@ -19,8 +19,9 @@ async function setUp() {
   const t = convexTest(schema, modules);
   const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
   await t.run(async (ctx) => {
-    await ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true });
-    await ctx.db.insert("members", { workspaceId, userId: "user_manager", role: "manager", displayName: "Manager", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_admin", role: "admin", displayName: "Admin", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_member", role: "member", displayName: "Member", active: true });
   });
   return { t, workspaceId };
 }
@@ -41,7 +42,7 @@ async function upload(t: Awaited<ReturnType<typeof setUp>>["t"], workspaceId: Id
 describe("results files", () => {
   it("keeps the totals, deletes the file, and shows on the agent's folder", async () => {
     const { t, workspaceId } = await setUp();
-    const { uploadId, storageId } = await upload(t, workspaceId, GOOGLE, "user_manager");
+    const { uploadId, storageId } = await upload(t, workspaceId, GOOGLE, "user_admin");
     const owner = t.withIdentity(identity("user_owner"));
     const [row] = await owner.query(api.resultUploads.list, { workspaceId });
     expect(row).toMatchObject({ id: uploadId, status: "ready", currency: "USD", label: "Google Ads", agents: ["growth-architect"] });
@@ -60,17 +61,17 @@ describe("results files", () => {
     expect(await t.run((ctx) => ctx.storage.get(storageId))).toBeNull();
   });
 
-  it("lets owners and managers upload, not reps; only owners grant agents", async () => {
+  it("lets everyone but a viewer upload; only owners and admins grant agents", async () => {
     const { t, workspaceId } = await setUp();
     const storageId = await t.run((ctx) => ctx.storage.store(new Blob([GOOGLE])));
-    const rep = t.withIdentity(identity("user_rep"));
-    await expect(rep.mutation(api.resultUploads.createUpload, { workspaceId })).rejects.toThrow();
+    const viewer = t.withIdentity(identity("user_viewer"));
+    await expect(viewer.mutation(api.resultUploads.createUpload, { workspaceId })).rejects.toThrow();
     await expect(
-      rep.mutation(api.resultUploads.start, { workspaceId, storageId, fileName: "a.csv", label: "Google Ads", currency: "USD" }),
+      viewer.mutation(api.resultUploads.start, { workspaceId, storageId, fileName: "a.csv", label: "Google Ads", currency: "USD" }),
     ).rejects.toThrow();
     const { uploadId } = await upload(t, workspaceId, GOOGLE);
     await expect(
-      t.withIdentity(identity("user_manager")).mutation(api.resultUploads.setAgentAccess, { workspaceId, uploadId, agentSlug: "growth-architect", granted: false }),
+      t.withIdentity(identity("user_member")).mutation(api.resultUploads.setAgentAccess, { workspaceId, uploadId, agentSlug: "growth-architect", granted: false }),
     ).rejects.toThrow();
     const owner = t.withIdentity(identity("user_owner"));
     await owner.mutation(api.resultUploads.setAgentAccess, { workspaceId, uploadId, agentSlug: "growth-architect", granted: false });

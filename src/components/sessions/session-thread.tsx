@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork, isAdmin } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import {
   BookOpenCheck,
@@ -38,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Tone } from "@/components/ui/tone";
-import { money, PLATFORM_LABEL } from "@/lib/research/words";
+import { PLATFORM_LABEL } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { SourceIcon } from "@/components/research/source-icon";
 import { api } from "../../../convex/_generated/api";
@@ -46,6 +47,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { Banner } from "@/components/ui/banner";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { showError } from "@/lib/errors/show-error";
+import { useCredits } from "@/lib/credits";
 
 export type ThreadData = {
   studio: Studio;
@@ -218,7 +220,7 @@ function Composer({
   ) : null;
 
   const box = !editor ? (
-    <ChatComposer disabled placeholder="You can follow this session. Owners and Managers decide on it." onSubmit={async () => undefined} />
+    <ChatComposer disabled placeholder="You can follow this session. Owners and Admins decide on it." onSubmit={async () => undefined} />
   ) : busy ? (
     <ChatComposer disabled placeholder="Working… you can ask follow-ups as soon as it finishes." onSubmit={async () => undefined} />
   ) : waitingAnswer && studio.run?.waitingFor ? (
@@ -248,11 +250,12 @@ function Composer({
 
 /** The chat box inside a session: follow-up questions about the report, with the quality mode and files. */
 function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspaceId: Id<"workspaces">; projectId: Id<"researchProjects">; base: string; hasReport: boolean }) {
+  const credits = useCredits();
   const router = useRouter();
   const ask = useMutation(api.followups.ask);
   const followups = useQuery(api.followups.list, { workspaceId, projectId });
   const shell = useWorkspaceShell();
-  const extras = useChatExtras(workspaceId, shell?.role !== "rep", shell?.role === "owner");
+  const extras = useChatExtras(workspaceId, shell ? canWork(shell.role) : false, shell ? isAdmin(shell.role) : false);
   const [notice, setNotice] = useState("");
   const busy = followups?.messages.some((row) => row.status === "thinking" || row.status === "running") ?? false;
   return (
@@ -265,8 +268,8 @@ function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspa
         connect={extras.composer.connect}
         footnote={
           notice ||
-          `Answers come from this session's sources and cost a few cents. New research is proposed first, with an estimate, and runs only when you tap Run.${
-            followups && followups.spentCents > 0 ? ` Follow-ups so far: ${money(followups.spentCents)}.` : ""
+          `Answers come from this session's sources and cost a few credits. New research is proposed first, with an estimate, and runs only when you tap Run.${
+            followups && followups.spentCents > 0 ? ` Follow-ups so far: ${credits.cost(followups.spentCents)}.` : ""
           }`
         }
         onSubmit={async (text) => {
@@ -321,6 +324,7 @@ export function FollowUpsView({
   onRun: (chatId: string) => void;
   onDecline: (chatId: string) => void;
 }) {
+  const credits = useCredits();
   if (messages.length === 0) return null;
   const data = { messages };
   return (
@@ -353,7 +357,7 @@ export function FollowUpsView({
                   </ul>
                 ) : null}
                 <p className="text-xs text-muted-foreground">
-                  Estimate {money(plan?.low ?? 0)}–{money(plan?.high ?? 0)}. New pages it finds join this session as sources.
+                  Estimate {credits.cost(plan?.low ?? 0)}–{credits.cost(plan?.high ?? 0)}. New pages it finds join this session as sources.
                 </p>
                 {row.status === "proposed" && editor ? (
                   <div className="flex flex-wrap gap-2">
@@ -392,7 +396,7 @@ export function FollowUpsView({
               ) : row.status === "done" ? (
                 <p className="text-xs text-muted-foreground">No source in this session answers it directly.</p>
               ) : null}
-              {row.costCents > 0 ? <p className="text-[11px] text-muted-foreground">{money(row.costCents)}</p> : null}
+              {row.costCents > 0 ? <p className="text-[11px] text-muted-foreground">{credits.cost(row.costCents)}</p> : null}
             </div>
           </AgentSaid>
         );
@@ -421,6 +425,7 @@ export function SessionThread({
   /** The chat that started this session, if it began as one. */
   intakeMessages?: { id: string; role: "you" | "agent"; kind: string; text: string }[];
 }) {
+  const credits = useCredits();
   const column = useFillViewport<HTMLElement>();
   const { studio } = data;
   const project = studio.project;
@@ -523,7 +528,7 @@ export function SessionThread({
                       <span className="text-card-foreground">Task brief</span>
                       <span>{knownCount} known</span>
                       <span className={missingCount ? "text-warning" : ""}>{missingCount} missing</span>
-                      <span>Budget {money(data.capCents)}</span>
+                      <span>Budget {credits.cost(data.capCents)}</span>
                       {brief ? <span>{brief.researchQuestions.length} questions</span> : null}
                     </span>
                   }
@@ -551,7 +556,7 @@ export function SessionThread({
                       <span className="text-card-foreground">{data.steps.length} steps</span>
                       <span>{data.steps.reduce((sum, step) => sum + (step.webSearches ?? 0), 0)} searches</span>
                       <span>{sourceList.length} sources kept</span>
-                      <span>{money(run.costCents)}</span>
+                      <span>{credits.cost(run.costCents)}</span>
                     </span>
                   }
                 >
@@ -621,7 +626,7 @@ export function SessionThread({
           {run ? <StageProgress steps={data.steps} open={data.open} /> : <p className="text-sm text-muted-foreground">Not started.</p>}
           {run ? (
             <p className="text-xs text-muted-foreground">
-              Spent {money(run.costCents)} of {money(data.capCents)}
+              Spent {credits.cost(run.costCents)} of {credits.cost(data.capCents)}
             </p>
           ) : null}
         </Panel>

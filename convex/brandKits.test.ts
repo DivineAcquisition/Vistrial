@@ -35,11 +35,11 @@ async function setup() {
   const other = t.withIdentity(person("owner-b", "owner-b@example.com"));
   const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
   const otherWorkspace = await other.mutation(api.workspace.create, { name: "Beta" });
-  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: "rep-a@example.com", role: "rep" });
-  const rep = t.withIdentity(person("rep-a", "rep-a@example.com"));
-  await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
+  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: "viewer-a@example.com", role: "viewer" });
+  const viewer = t.withIdentity(person("viewer-a", "viewer-a@example.com"));
+  await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
   const store = (type: string, bytes = 4) => t.run((ctx) => ctx.storage.store(new Blob([new Uint8Array(bytes)], { type })));
-  return { t, owner, other, rep, workspaceId, otherWorkspace, store };
+  return { t, owner, other, viewer, workspaceId, otherWorkspace, store };
 }
 
 describe("brand kit content", () => {
@@ -133,8 +133,8 @@ describe("brand kits", () => {
     void t;
   });
 
-  it("is closed to other workspaces, and Reps can read but not change", async () => {
-    const { owner, other, rep, workspaceId, otherWorkspace } = await setup();
+  it("is closed to other workspaces, and Viewers can read but not change", async () => {
+    const { owner, other, viewer, workspaceId, otherWorkspace } = await setup();
     const saved = await owner.mutation(api.brandKits.saveVersion, { workspaceId, kind: "own", name: "Alpha Agency" });
     const kitId = saved.kitId as Id<"brandKits">;
 
@@ -144,10 +144,10 @@ describe("brand kits", () => {
     expect(await message(other.mutation(api.brandKits.archive, { workspaceId: otherWorkspace, kitId }))).toBe(NOT_FOUND);
     expect(await other.query(api.brandKits.list, { workspaceId: otherWorkspace })).toEqual([]);
 
-    expect((await rep.query(api.brandKits.list, { workspaceId })).map((row) => row.name)).toEqual(["Alpha Agency"]);
-    expect(await message(rep.mutation(api.brandKits.saveVersion, { workspaceId, kitId, name: "Changed" }))).toBe(NOT_ALLOWED);
-    expect(await message(rep.mutation(api.brandKits.saveVersion, { workspaceId, kind: "client", name: "New" }))).toBe(NOT_ALLOWED);
-    expect(await message(rep.mutation(api.brandKits.archive, { workspaceId, kitId }))).toBe(NOT_ALLOWED);
-    expect(await message(rep.mutation(api.brandKits.logoUploadUrl, { workspaceId }))).toBe(NOT_ALLOWED);
+    expect((await viewer.query(api.brandKits.list, { workspaceId })).map((row) => row.name)).toEqual(["Alpha Agency"]);
+    expect(await message(viewer.mutation(api.brandKits.saveVersion, { workspaceId, kitId, name: "Changed" }))).toBe(NOT_ALLOWED);
+    expect(await message(viewer.mutation(api.brandKits.saveVersion, { workspaceId, kind: "client", name: "New" }))).toBe(NOT_ALLOWED);
+    expect(await message(viewer.mutation(api.brandKits.archive, { workspaceId, kitId }))).toBe(NOT_ALLOWED);
+    expect(await message(viewer.mutation(api.brandKits.logoUploadUrl, { workspaceId }))).toBe(NOT_ALLOWED);
   });
 });

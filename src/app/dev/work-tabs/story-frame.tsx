@@ -13,7 +13,7 @@ import { StoryTheme } from "../story-theme";
  * The agent's page as the app frames it, with no live data. Work tabs name themselves, so only the agent's
  * home passes `header`.
  */
-export function StoryFrame({ theme, role = "owner", header = false, children }: { tab?: string; theme: string; role?: "owner" | "rep"; header?: boolean; children: ReactNode }) {
+export function StoryFrame({ theme, role = "owner", header = false, children }: { tab?: string; theme: string; role?: "owner" | "viewer"; header?: boolean; children: ReactNode }) {
   const client = useMemo(() => new ConvexReactClient("https://story-fixture-123.convex.cloud"), []);
   const shell: WorkspaceShell = { workspaceId: "ws1" as Id<"workspaces">, role, setupDone: true, agents: STORY_AGENTS };
   return (

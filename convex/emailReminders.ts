@@ -1,12 +1,13 @@
 /**
- * Email reminders through Resend, for a workspace's Owners and Managers:
+ * Email reminders through Resend, for a workspace's Owners and Admins:
  * - a check-in is due (hourly cron; one email per person listing every check-in due, sent once per decision)
  * - a report is ready for review (scheduled by the save step of a run; one per report version)
  *
  * A send never throws into a run. With no RESEND_API_KEY it logs one line and sends nothing. Each attempt
- * writes an audit row with the recipient's user id and never the address. Removed members, Reps, people
+ * writes an audit row with the recipient's user id and never the address. Removed members, Members and Viewers, people
  * who switched the notice off, and paused or archived workspaces get nothing.
  */
+import { isAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -38,8 +39,8 @@ async function openWorkspace(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
 }
 
 /**
- * Who gets a notice by email: this workspace's active Owners and Managers with an address on file, unless
- * they switched that notice, or email, off. A missing preference means on. Reps never.
+ * Who gets a notice by email: this workspace's active Owners and Admins with an address on file, unless
+ * they switched that notice, or email, off. A missing preference means on. Members and Viewers never.
  */
 async function recipientsFor(ctx: QueryCtx, workspaceId: Id<"workspaces">, flag: NoticeFlag): Promise<Recipient[]> {
   const members = await ctx.db
@@ -49,7 +50,7 @@ async function recipientsFor(ctx: QueryCtx, workspaceId: Id<"workspaces">, flag:
   const out: Recipient[] = [];
   for (const member of members) {
     if (!member.active || member.removedAt !== undefined) continue;
-    if (member.role !== "owner" && member.role !== "manager") continue;
+    if (!isAdmin(member.role)) continue;
     const email = member.email?.trim();
     if (!email || !email.includes("@")) continue;
     const prefs = await ctx.db
@@ -148,7 +149,7 @@ export const recordCheckIns = internalMutation({
   },
 });
 
-/** Hourly: emails each Owner and Manager their due check-ins, one email per person and workspace. */
+/** Hourly: emails each Owner and Admin their due check-ins, one email per person and workspace. */
 export const sendCheckInsDue = internalAction({
   args: {},
   handler: async (ctx): Promise<null> => {
@@ -231,7 +232,7 @@ export const recordReport = internalMutation({
   },
 });
 
-/** Scheduled by a run's save step: tells Owners and Managers a report waits for them. Never throws. */
+/** Scheduled by a run's save step: tells Owners and Admins a report waits for them. Never throws. */
 export const sendReportReady = internalAction({
   args: { assetId: v.id("assets") },
   handler: async (ctx, args): Promise<null> => {

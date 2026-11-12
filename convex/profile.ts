@@ -1,14 +1,15 @@
+import { requireAdmin, requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 
 const competitor = v.object({ name: v.string(), url: v.string() });
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 function cleanCompetitors(rows: { name: string; url: string }[]) {
@@ -200,7 +201,7 @@ export const addExample = workspaceMutation({
 export const finishSetup = workspaceMutation({
   args: {},
   handler: async (ctx) => {
-    if (ctx.member.role !== "owner") notAllowed();
+    requireAdmin(ctx.member.role);
     const confirmed = await ctx.db
       .query("profileVersions")
       .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", "confirmed"))

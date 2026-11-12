@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork, type Role } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
@@ -24,7 +25,7 @@ const empty = {
 
 type Profile = NonNullable<FunctionReturnType<typeof api.profile.get>>;
 
-type EditorProps = { workspaceId: Id<"workspaces">; role: "owner" | "manager" | "rep" };
+type EditorProps = { workspaceId: Id<"workspaces">; role: Role };
 
 export function ProfileEditor({ workspaceId, role }: EditorProps) {
   const profile = useQuery(api.profile.get, { workspaceId });
@@ -57,7 +58,7 @@ function ProfileForm({ workspaceId, role, profile }: EditorProps & { profile: Pr
   const [competitors, setCompetitors] = useState<Competitor[]>(() => source?.competitors ?? []);
   const [example, setExample] = useState("");
   const [error, setError] = useState("");
-  const canEdit = role !== "rep";
+  const canEdit = canWork(role);
 
   const version = profile.draft?.version;
 

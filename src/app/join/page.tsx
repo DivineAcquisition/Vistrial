@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { JoinWorkspace } from "./join-workspace";
 
-export const metadata: Metadata = { title: "Join a workspace", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Join an organization", robots: { index: false, follow: false } };
 
 export default function JoinPage() {
   return (

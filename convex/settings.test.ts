@@ -10,20 +10,20 @@ const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 
 const identity = (subject: string) => ({ subject, issuer: "https://clerk.test", tokenIdentifier: `x|${subject}`, name: subject, email: `${subject}@example.com` });
 
-/** An owner, a manager and a rep in one workspace, joined through real invites. */
+/** An owner, a admin and a viewer in one workspace, joined through real invites. */
 async function team() {
   const t = newTest();
   const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
   const owner = t.withIdentity(identity("user_owner"));
-  const manager = t.withIdentity(identity("user_manager"));
-  const rep = t.withIdentity(identity("user_rep"));
-  const m = await owner.mutation(api.workspace.invite, { workspaceId, email: "user_manager@example.com", role: "manager" });
-  const r = await owner.mutation(api.workspace.invite, { workspaceId, email: "user_rep@example.com", role: "rep" });
-  await manager.mutation(api.workspace.acceptInvite, { token: m.token });
-  await rep.mutation(api.workspace.acceptInvite, { token: r.token });
+  const admin = t.withIdentity(identity("user_admin"));
+  const viewer = t.withIdentity(identity("user_viewer"));
+  const m = await owner.mutation(api.workspace.invite, { workspaceId, email: "user_admin@example.com", role: "admin" });
+  const r = await owner.mutation(api.workspace.invite, { workspaceId, email: "user_viewer@example.com", role: "viewer" });
+  await admin.mutation(api.workspace.acceptInvite, { token: m.token });
+  await viewer.mutation(api.workspace.acceptInvite, { token: r.token });
   const people = await owner.query(api.settings.people, { workspaceId });
   const idOf = (role: string) => people.members.find((row) => row.role === role)!.id;
-  return { t, workspaceId, owner, manager, rep, ownerId: idOf("owner"), managerId: idOf("manager"), repId: idOf("rep") };
+  return { t, workspaceId, owner, admin, viewer, ownerId: idOf("owner"), adminId: idOf("admin"), viewerId: idOf("viewer") };
 }
 
 const newTest = () => convexTest(schema, modules);
@@ -49,32 +49,36 @@ describe("settings: roles", () => {
     );
   });
 
-  it("lets a manager read the workspace sections but change none of them", async () => {
-    const { workspaceId, manager, repId } = await team();
-    expect((await manager.query(api.settings.business, { workspaceId })).canEdit).toBe(false);
-    expect((await manager.query(api.settings.people, { workspaceId })).canManage).toBe(false);
-    expect((await manager.query(api.settings.agentDefaults, { workspaceId })).canEdit).toBe(false);
-    await expect(manager.mutation(api.settings.renameWorkspace, { workspaceId, name: "Mine now" })).rejects.toThrow(/Not allowed/);
-    await expect(manager.mutation(api.settings.setCountry, { workspaceId, country: "CA" })).rejects.toThrow(/Not allowed/);
-    await expect(manager.mutation(api.settings.setDefaultResearchMode, { workspaceId, mode: "fast" })).rejects.toThrow(/Not allowed/);
-    await expect(manager.mutation(api.settings.setSupportAccess, { workspaceId, on: false })).rejects.toThrow(/Not allowed/);
-    await expect(manager.mutation(api.settings.setMemberRole, { workspaceId, memberId: repId, role: "manager" })).rejects.toThrow(/Not allowed/);
-    await expect(manager.mutation(api.settings.removeMember, { workspaceId, memberId: repId })).rejects.toThrow(/Not allowed/);
-    await expect(manager.mutation(api.workspace.invite, { workspaceId, email: "x@example.com", role: "rep" })).rejects.toThrow(/Not allowed/);
-    await expect(manager.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "off" })).rejects.toThrow(/Not allowed/);
+  it("lets an admin run the organization, but not touch an owner or Vistrial support access", async () => {
+    const { workspaceId, admin, ownerId, viewerId } = await team();
+    expect((await admin.query(api.settings.business, { workspaceId })).canEdit).toBe(true);
+    expect(await admin.query(api.settings.people, { workspaceId })).toMatchObject({ canManage: true, isOwner: false });
+    expect((await admin.query(api.settings.agentDefaults, { workspaceId })).canEdit).toBe(true);
+    await admin.mutation(api.settings.renameWorkspace, { workspaceId, name: "Northlight Growth" });
+    await admin.mutation(api.settings.setCountry, { workspaceId, country: "CA" });
+    await admin.mutation(api.settings.setDefaultResearchMode, { workspaceId, mode: "fast" });
+    await admin.mutation(api.settings.setMemberRole, { workspaceId, memberId: viewerId, role: "member" });
+    await expect(admin.mutation(api.settings.setSupportAccess, { workspaceId, on: false })).rejects.toThrow(/Not allowed/);
+    await expect(admin.query(api.settings.supportLog, { workspaceId })).rejects.toThrow(/Not allowed/);
+    await expect(admin.mutation(api.settings.setMemberRole, { workspaceId, memberId: viewerId, role: "owner" })).rejects.toThrow(/Only an Owner/);
+    await expect(admin.mutation(api.settings.setMemberRole, { workspaceId, memberId: ownerId, role: "member" })).rejects.toThrow(/Only an Owner/);
+    await expect(admin.mutation(api.settings.removeMember, { workspaceId, memberId: ownerId })).rejects.toThrow(/Only an Owner/);
+    await admin.mutation(api.settings.removeMember, { workspaceId, memberId: viewerId });
+    await admin.mutation(api.workspace.invite, { workspaceId, email: "x@example.com", role: "viewer" });
+    await admin.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "off" });
   });
 
-  it("keeps a rep to their own section, on the server", async () => {
-    const { workspaceId, rep } = await team();
-    await expect(rep.query(api.settings.business, { workspaceId })).rejects.toThrow(/Not allowed/);
-    await expect(rep.query(api.settings.people, { workspaceId })).rejects.toThrow(/Not allowed/);
-    await expect(rep.query(api.settings.agentDefaults, { workspaceId })).rejects.toThrow(/Not allowed/);
-    await expect(rep.query(api.settings.supportLog, { workspaceId })).rejects.toThrow(/Not allowed/);
-    await expect(rep.mutation(api.settings.renameWorkspace, { workspaceId, name: "Rep's" })).rejects.toThrow(/Not allowed/);
-    const me = await rep.query(api.settings.me, { workspaceId });
-    expect(me).toMatchObject({ role: "rep", email: "user_rep@example.com", defaultResearchMode: "thorough" });
-    await rep.mutation(api.settings.setMyPreferences, { workspaceId, theme: "dark", reportReady: false });
-    expect(await rep.query(api.settings.me, { workspaceId })).toMatchObject({
+  it("keeps a viewer to their own section, on the server", async () => {
+    const { workspaceId, viewer } = await team();
+    await expect(viewer.query(api.settings.business, { workspaceId })).rejects.toThrow(/Not allowed/);
+    await expect(viewer.query(api.settings.people, { workspaceId })).rejects.toThrow(/Not allowed/);
+    await expect(viewer.query(api.settings.agentDefaults, { workspaceId })).rejects.toThrow(/Not allowed/);
+    await expect(viewer.query(api.settings.supportLog, { workspaceId })).rejects.toThrow(/Not allowed/);
+    await expect(viewer.mutation(api.settings.renameWorkspace, { workspaceId, name: "Viewer's" })).rejects.toThrow(/Not allowed/);
+    const me = await viewer.query(api.settings.me, { workspaceId });
+    expect(me).toMatchObject({ role: "viewer", email: "user_viewer@example.com", defaultResearchMode: "thorough" });
+    await viewer.mutation(api.settings.setMyPreferences, { workspaceId, theme: "dark", reportReady: false });
+    expect(await viewer.query(api.settings.me, { workspaceId })).toMatchObject({
       theme: "dark",
       notifications: { checkInsDue: true, questionsWaiting: true, reportReady: false, email: true },
     });
@@ -84,42 +88,42 @@ describe("settings: roles", () => {
 describe("settings: owners", () => {
   it("never demotes or removes the last owner", async () => {
     const { workspaceId, owner, ownerId } = await team();
-    await expect(owner.mutation(api.settings.setMemberRole, { workspaceId, memberId: ownerId, role: "manager" })).rejects.toThrow(/at least one owner/);
+    await expect(owner.mutation(api.settings.setMemberRole, { workspaceId, memberId: ownerId, role: "admin" })).rejects.toThrow(/at least one owner/);
     await expect(owner.mutation(api.settings.removeMember, { workspaceId, memberId: ownerId })).rejects.toThrow(/at least one owner/);
   });
 
   it("lets an owner step down once another owner exists", async () => {
-    const { t, workspaceId, owner, manager, ownerId, managerId } = await team();
-    await owner.mutation(api.settings.setMemberRole, { workspaceId, memberId: managerId, role: "owner" });
-    await owner.mutation(api.settings.setMemberRole, { workspaceId, memberId: ownerId, role: "manager" });
-    const people = await manager.query(api.settings.people, { workspaceId });
+    const { t, workspaceId, owner, admin, ownerId, adminId } = await team();
+    await owner.mutation(api.settings.setMemberRole, { workspaceId, memberId: adminId, role: "owner" });
+    await owner.mutation(api.settings.setMemberRole, { workspaceId, memberId: ownerId, role: "admin" });
+    const people = await admin.query(api.settings.people, { workspaceId });
     expect(people.canManage).toBe(true);
     expect(people.members.filter((row) => row.role === "owner")).toHaveLength(1);
-    await expect(manager.mutation(api.settings.removeMember, { workspaceId, memberId: managerId })).rejects.toThrow(/at least one owner/);
+    await expect(admin.mutation(api.settings.removeMember, { workspaceId, memberId: adminId })).rejects.toThrow(/at least one owner/);
     expect((await auditActions(t, workspaceId)).filter((a) => a === "member.role_changed")).toHaveLength(2);
   });
 
   it("removes a member, who then loses access, and audits it", async () => {
-    const { t, workspaceId, owner, rep, repId } = await team();
-    await owner.mutation(api.settings.removeMember, { workspaceId, memberId: repId });
-    await expect(rep.query(api.settings.me, { workspaceId })).rejects.toThrow();
+    const { t, workspaceId, owner, viewer, viewerId } = await team();
+    await owner.mutation(api.settings.removeMember, { workspaceId, memberId: viewerId });
+    await expect(viewer.query(api.settings.me, { workspaceId })).rejects.toThrow();
     const people = await owner.query(api.settings.people, { workspaceId });
-    expect(people.members.map((row) => row.role)).toEqual(["owner", "manager"]);
+    expect(people.members.map((row) => row.role)).toEqual(["owner", "admin"]);
     expect(await auditActions(t, workspaceId)).toContain("member.removed");
     // Invited back, the same row returns, so the workspace never holds two rows for one person.
-    const again = await owner.mutation(api.workspace.invite, { workspaceId, email: "user_rep@example.com", role: "rep" });
-    await rep.mutation(api.workspace.acceptInvite, { token: again.token });
-    expect((await rep.query(api.settings.me, { workspaceId })).memberId).toBe(repId);
+    const again = await owner.mutation(api.workspace.invite, { workspaceId, email: "user_viewer@example.com", role: "viewer" });
+    await viewer.mutation(api.workspace.acceptInvite, { token: again.token });
+    expect((await viewer.query(api.settings.me, { workspaceId })).memberId).toBe(viewerId);
   });
 });
 
 describe("settings: invites", () => {
   it("shows pending invites, lets an owner cancel one, and refuses the cancelled link", async () => {
-    const { t, workspaceId, owner, manager } = await team();
-    const sent = await owner.mutation(api.workspace.invite, { workspaceId, email: "New@Example.com", role: "rep" });
+    const { t, workspaceId, owner, viewer } = await team();
+    const sent = await owner.mutation(api.workspace.invite, { workspaceId, email: "New@Example.com", role: "viewer" });
     let people = await owner.query(api.settings.people, { workspaceId });
-    expect(people.invites).toEqual([expect.objectContaining({ email: "new@example.com", role: "rep" })]);
-    await expect(manager.mutation(api.settings.cancelInvite, { workspaceId, invitationId: sent.invitationId })).rejects.toThrow(/Not allowed/);
+    expect(people.invites).toEqual([expect.objectContaining({ email: "new@example.com", role: "viewer" })]);
+    await expect(viewer.mutation(api.settings.cancelInvite, { workspaceId, invitationId: sent.invitationId })).rejects.toThrow(/Not allowed/);
     await owner.mutation(api.settings.cancelInvite, { workspaceId, invitationId: sent.invitationId });
     people = await owner.query(api.settings.people, { workspaceId });
     expect(people.invites).toEqual([]);
@@ -131,8 +135,35 @@ describe("settings: invites", () => {
   it("accepts an invite into the right role and keeps the email for the member list", async () => {
     const { workspaceId, owner } = await team();
     const people = await owner.query(api.settings.people, { workspaceId });
-    expect(people.members.find((row) => row.role === "rep")).toMatchObject({ email: "user_rep@example.com", name: "user_rep" });
+    expect(people.members.find((row) => row.role === "viewer")).toMatchObject({ email: "user_viewer@example.com", name: "user_viewer" });
     expect(people.invites).toEqual([]);
+  });
+});
+
+describe("settings: one person in several organizations (the owner's decision of 2026-11-11)", () => {
+  it("lets an Admin invite, and keeps the person's role in each organization separate, across two accounts", async () => {
+    const { t, workspaceId, admin, owner } = await team();
+    // A second agency, a different account, invites the same person.
+    const otherId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_other_owner" });
+    const otherOwner = t.withIdentity(identity("user_other_owner"));
+    const person = t.withIdentity(identity("user_freelancer"));
+    const fromAdmin = await admin.mutation(api.workspace.invite, { workspaceId, email: "user_freelancer@example.com", role: "viewer" });
+    const fromOther = await otherOwner.mutation(api.workspace.invite, { workspaceId: otherId, email: "user_freelancer@example.com", role: "admin" });
+    await person.mutation(api.workspace.acceptInvite, { token: fromAdmin.token });
+    await person.mutation(api.workspace.acceptInvite, { token: fromOther.token });
+
+    const roleIn = async (as: typeof owner, id: Id<"workspaces">) => (await as.query(api.settings.people, { workspaceId: id })).members.find((row) => row.email === "user_freelancer@example.com");
+    expect((await roleIn(owner, workspaceId))?.role).toBe("viewer");
+    expect((await roleIn(otherOwner, otherId))?.role).toBe("admin");
+
+    // Their role is edited in one organization; the other is untouched.
+    await admin.mutation(api.settings.setMemberRole, { workspaceId, memberId: (await roleIn(owner, workspaceId))!.id, role: "member" });
+    expect((await roleIn(owner, workspaceId))?.role).toBe("member");
+    expect((await roleIn(otherOwner, otherId))?.role).toBe("admin");
+
+    // Being an Admin in one account gives nothing in the other, and an Admin cannot invite an Owner.
+    await expect(person.mutation(api.settings.renameWorkspace, { workspaceId, name: "Mine now" })).rejects.toThrow(/Not allowed/);
+    await expect(admin.mutation(api.workspace.invite, { workspaceId, email: "x@example.com", role: "owner" as never })).rejects.toThrow();
   });
 });
 
@@ -149,15 +180,15 @@ describe("settings: Vistrial support access", () => {
   }
 
   it("shows the grant log to owners only", async () => {
-    const { workspaceId, owner, manager, rep } = await withGrant();
+    const { workspaceId, owner, admin, viewer } = await withGrant();
     const log = await owner.query(api.settings.supportLog, { workspaceId });
     expect(log.on).toBe(true);
     expect(log.grants).toEqual([
       expect.objectContaining({ who: "Vistrial support", staffRef: "abc123", reason: "Customer asked for help with a report", open: true, opens: 1 }),
     ]);
-    await expect(manager.query(api.settings.supportLog, { workspaceId })).rejects.toThrow(/Not allowed/);
-    await expect(rep.query(api.settings.supportLog, { workspaceId })).rejects.toThrow(/Not allowed/);
-    expect((await manager.query(api.settings.people, { workspaceId })).supportAccess).toBe(true);
+    await expect(admin.query(api.settings.supportLog, { workspaceId })).rejects.toThrow(/Not allowed/);
+    await expect(viewer.query(api.settings.supportLog, { workspaceId })).rejects.toThrow(/Not allowed/);
+    expect((await admin.query(api.settings.people, { workspaceId })).supportAccess).toBe(true);
   });
 
   it("turning it off ends open grants and blocks new ones; turning it on allows them again", async () => {
@@ -179,20 +210,20 @@ describe("settings: Vistrial support access", () => {
 
 describe("settings: defaults and preferences", () => {
   it("stores the default research quality for every member's chat box", async () => {
-    const { workspaceId, owner, rep } = await team();
-    expect((await rep.query(api.settings.me, { workspaceId })).defaultResearchMode).toBe("thorough");
+    const { workspaceId, owner, viewer } = await team();
+    expect((await viewer.query(api.settings.me, { workspaceId })).defaultResearchMode).toBe("thorough");
     await owner.mutation(api.settings.setDefaultResearchMode, { workspaceId, mode: "fast" });
-    expect((await rep.query(api.settings.me, { workspaceId })).defaultResearchMode).toBe("fast");
+    expect((await viewer.query(api.settings.me, { workspaceId })).defaultResearchMode).toBe("fast");
     expect((await owner.query(api.settings.agentDefaults, { workspaceId })).defaultResearchMode).toBe("fast");
   });
 
   it("keeps notification choices per member", async () => {
-    const { workspaceId, owner, manager } = await team();
+    const { workspaceId, owner, admin } = await team();
     await owner.mutation(api.settings.setMyPreferences, { workspaceId, checkInsDue: false, theme: "system" });
     expect((await owner.query(api.settings.me, { workspaceId })).notifications.checkInsDue).toBe(false);
     expect((await owner.query(api.settings.me, { workspaceId })).theme).toBe("system");
-    expect((await manager.query(api.settings.me, { workspaceId })).notifications.checkInsDue).toBe(true);
-    expect((await manager.query(api.settings.me, { workspaceId })).theme).toBeNull();
+    expect((await admin.query(api.settings.me, { workspaceId })).notifications.checkInsDue).toBe(true);
+    expect((await admin.query(api.settings.me, { workspaceId })).theme).toBeNull();
     await owner.mutation(api.settings.setMyPreferences, { workspaceId, questionsWaiting: false });
     expect((await owner.query(api.settings.me, { workspaceId })).notifications).toEqual({ checkInsDue: false, questionsWaiting: false, reportReady: true, email: true });
   });
@@ -200,16 +231,16 @@ describe("settings: defaults and preferences", () => {
 
 describe("settings: isolation", () => {
   it("never reads or changes another workspace", async () => {
-    const { t, workspaceId, owner, repId } = await team();
+    const { t, workspaceId, owner, viewerId } = await team();
     const otherId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_other" });
     const other = t.withIdentity(identity("user_other"));
     await expect(other.query(api.settings.people, { workspaceId })).rejects.toThrow(/Not found/);
     await expect(other.query(api.settings.supportLog, { workspaceId })).rejects.toThrow(/Not found/);
     await expect(other.mutation(api.settings.renameWorkspace, { workspaceId, name: "Taken" })).rejects.toThrow(/Not found/);
     // An owner of one workspace cannot reach a member or invite of another through their own.
-    await expect(other.mutation(api.settings.removeMember, { workspaceId: otherId, memberId: repId })).rejects.toThrow(/Not found/);
-    await expect(other.mutation(api.settings.setMemberRole, { workspaceId: otherId, memberId: repId, role: "owner" })).rejects.toThrow(/Not found/);
-    const sent = await owner.mutation(api.workspace.invite, { workspaceId, email: "z@example.com", role: "rep" });
+    await expect(other.mutation(api.settings.removeMember, { workspaceId: otherId, memberId: viewerId })).rejects.toThrow(/Not found/);
+    await expect(other.mutation(api.settings.setMemberRole, { workspaceId: otherId, memberId: viewerId, role: "owner" })).rejects.toThrow(/Not found/);
+    const sent = await owner.mutation(api.workspace.invite, { workspaceId, email: "z@example.com", role: "viewer" });
     await expect(other.mutation(api.settings.cancelInvite, { workspaceId: otherId, invitationId: sent.invitationId })).rejects.toThrow(/Not found/);
     expect((await owner.query(api.settings.people, { workspaceId })).invites).toHaveLength(1);
     expect((await other.query(api.settings.people, { workspaceId: otherId })).members).toHaveLength(1);

@@ -10,7 +10,7 @@ import { ChatComposer } from "@/components/chat/chat-composer";
 import { useChatExtras } from "@/components/chat/use-chat-extras";
 import { ArrowRight, CheckCircle2, FileSearch, Gauge, Lightbulb, LoaderCircle, MessageCircleQuestion, MessagesSquare, Paperclip, Plus, Square, Store, X, type LucideIcon } from "@/components/icons";
 import { IntakeChat } from "@/components/sessions/intake-chat";
-import { useWorkspaceShell } from "@/components/shell/shell-context";
+import { useWorkspaceShell, useClientScope } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -286,6 +286,7 @@ function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, contex
   const router = useRouter();
   const shell = useWorkspaceShell();
   const send = useMutation(api.agentChat.send);
+  const { clientId } = useClientScope();
   const extras = useChatExtras(workspaceId, editor, shell?.role === "owner");
   const [route, setRoute] = useState<ChatRoute | null>(preset);
   const [attached, setAttached] = useState<ChatContext | null>(context);
@@ -305,7 +306,7 @@ function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, contex
             key={starter}
             size="hero"
             autoFocus={editor}
-            placeholder={!editor ? "Owners and Managers start work. You can read every conversation." : route ? ROUTE_LOOK[route].hint : "Ask about your market, your offer or your growth…"}
+            placeholder={!editor ? "Owners, Admins and Members start work. You can read every conversation." : route ? ROUTE_LOOK[route].hint : "Ask about your market, your offer or your growth…"}
             initialText={starter || ask}
             disabled={!editor}
             {...(research ? extras.composer : {})}
@@ -315,6 +316,7 @@ function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, contex
               try {
                 const result = await send({
                   workspaceId,
+                  ...(clientId ? { clientId } : {}),
                   text,
                   ...(route ? { skill: route } : {}),
                   ...(attached ? { context: { kind: attached.kind, id: attached.id } } : {}),
@@ -391,7 +393,8 @@ export function AgentChat({
   ask?: string;
   context: ChatContext | null;
 }) {
-  const rows = useQuery(api.agentChat.list, { workspaceId });
+  const { scope } = useClientScope();
+  const rows = useQuery(api.agentChat.list, { workspaceId, scope });
   const preset = isChatRoute(skill) ? skill : null;
   return (
     <ChatLayout list={<ConversationList rows={rows} activeId={conversationId} base={base} canStart={editor} />}>

@@ -50,13 +50,13 @@ const scope = {
   suppliedUrls: ["https://www.tiktok.com/@shop/video/1?utm_source=x", "https://tiktok.com/@shop/video/1/"],
 };
 
-/** A workspace with an Owner and a Rep, a project, a run, an artifact, one source and its status. */
+/** A workspace with an Owner and a Viewer, a project, a run, an artifact, one source and its status. */
 async function seed(t: Tester, name: string) {
   const owner = t.withIdentity(person(`${name}-owner`));
   const workspaceId = await owner.mutation(api.workspace.create, { name });
-  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: `${name}-rep@example.com`, role: "rep" });
-  const rep = t.withIdentity(person(`${name}-rep`));
-  await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
+  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: `${name}-viewer@example.com`, role: "viewer" });
+  const viewer = t.withIdentity(person(`${name}-viewer`));
+  await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
   const projectId = await owner.mutation(api.research.createProject, { workspaceId, ...scope });
   const ids = await t.run(async (ctx) => {
     const runId = await ctx.db.insert("agentRuns", {
@@ -113,7 +113,7 @@ async function seed(t: Tester, name: string) {
     });
     return { runId, artifactId, sourceRefId: ref.id };
   });
-  return { owner, rep, workspaceId, projectId, ...ids };
+  return { owner, viewer, workspaceId, projectId, ...ids };
 }
 
 /** Every public research and collection function, called on `target`'s records by `caller` in `callerWs`. */
@@ -206,11 +206,11 @@ describe("research projects, sources and collections", () => {
     expect(await message(t.run(async (ctx) => setSourceStatus(ctx as unknown as MutationCtx, { ...status, projectId: a.projectId })))).toBe(NOT_FOUND);
   });
 
-  it("creates a project for an Owner or Manager only, checks its scope, and locks it once it runs", async () => {
+  it("creates a project for an Owner or Admin only, checks its scope, and locks it once it runs", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
-    expect(await message(a.rep.mutation(api.research.createProject, { workspaceId: a.workspaceId, ...scope }))).toBe(NOT_ALLOWED);
-    expect(await message(a.rep.mutation(api.research.archiveProject, { workspaceId: a.workspaceId, projectId: a.projectId }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.mutation(api.research.createProject, { workspaceId: a.workspaceId, ...scope }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.mutation(api.research.archiveProject, { workspaceId: a.workspaceId, projectId: a.projectId }))).toBe(NOT_ALLOWED);
     const bad = (patch: Partial<typeof scope>) => message(a.owner.mutation(api.research.createProject, { workspaceId: a.workspaceId, ...scope, ...patch }));
     expect(await bad({ title: " " })).toContain("name");
     expect(await bad({ platforms: [] })).toBe("Pick at least one place to look.");
@@ -218,7 +218,7 @@ describe("research projects, sources and collections", () => {
     expect(await bad({ suppliedUrls: ["https://user:pass@example.com/"] })).toBe("One of the links is not a public web address.");
     expect(await bad({ competitors: [{ name: "X", url: "ftp://x.example.com" }] })).toBe("The link for X is not a public web address.");
 
-    const project = await a.rep.query(api.research.getProject, { workspaceId: a.workspaceId, projectId: a.projectId });
+    const project = await a.viewer.query(api.research.getProject, { workspaceId: a.workspaceId, projectId: a.projectId });
     // The same TikTok link pasted twice, once with tracking, is kept once.
     expect(project.suppliedUrls).toEqual(["https://www.tiktok.com/@shop/video/1?utm_source=x"]);
     expect(project.sourceCounts).toEqual({ web: 1, youtube: 0 });
@@ -254,13 +254,13 @@ describe("research projects, sources and collections", () => {
       }),
     );
     expect(again).toEqual({ id: a.sourceRefId, created: false });
-    const web = await a.rep.query(api.research.listSourceRefs, { workspaceId: a.workspaceId, projectId: a.projectId, platform: "web", paginationOpts: page });
+    const web = await a.viewer.query(api.research.listSourceRefs, { workspaceId: a.workspaceId, projectId: a.projectId, platform: "web", paginationOpts: page });
     expect(web.page).toHaveLength(1);
     expect(web.page[0]).toMatchObject({ canonicalUrl: "https://alpha.example.com/offer", publisher: "Alpha Cleaning", excerpt: "First deep clean $199." });
     expect(Object.keys(web.page[0])).not.toContain("artifactId");
-    const none = await a.rep.query(api.research.listSourceRefs, { workspaceId: a.workspaceId, projectId: a.projectId, platform: "tiktok", paginationOpts: page });
+    const none = await a.viewer.query(api.research.listSourceRefs, { workspaceId: a.workspaceId, projectId: a.projectId, platform: "tiktok", paginationOpts: page });
     expect(none.page).toEqual([]);
-    expect((await a.rep.query(api.research.getSourceRef, { workspaceId: a.workspaceId, sourceRefId: a.sourceRefId })).title).toBe("Offer page");
+    expect((await a.viewer.query(api.research.getSourceRef, { workspaceId: a.workspaceId, sourceRefId: a.sourceRefId })).title).toBe("Offer page");
 
     const long = await t.run(async (ctx) =>
       saveSourceRef(ctx as unknown as MutationCtx, {
@@ -276,22 +276,22 @@ describe("research projects, sources and collections", () => {
         excerpt: "word ".repeat(200),
       }),
     );
-    const stored = await a.rep.query(api.research.getSourceRef, { workspaceId: a.workspaceId, sourceRefId: long.id });
+    const stored = await a.viewer.query(api.research.getSourceRef, { workspaceId: a.workspaceId, sourceRefId: long.id });
     expect(stored.excerpt!.length).toBeLessThanOrEqual(MAX_EXCERPT);
   });
 
-  it("keeps a personal collection to its owner, and lets only an Owner or Manager change a workspace collection", async () => {
+  it("keeps a personal collection to its owner, and lets only an Owner or Admin change a workspace collection", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
-    const mine = await a.rep.mutation(api.collections.create, { workspaceId: a.workspaceId, name: "My hooks", shared: false, projectId: a.projectId });
-    await a.rep.mutation(api.collections.addItem, { workspaceId: a.workspaceId, collectionId: mine, sourceRefId: a.sourceRefId, note: "Good opener" });
+    const mine = await a.viewer.mutation(api.collections.create, { workspaceId: a.workspaceId, name: "My hooks", shared: false, projectId: a.projectId });
+    await a.viewer.mutation(api.collections.addItem, { workspaceId: a.workspaceId, collectionId: mine, sourceRefId: a.sourceRefId, note: "Good opener" });
     // Saving again changes nothing.
-    await a.rep.mutation(api.collections.addItem, { workspaceId: a.workspaceId, collectionId: mine, sourceRefId: a.sourceRefId });
-    const items = await a.rep.query(api.collections.items, { workspaceId: a.workspaceId, collectionId: mine });
+    await a.viewer.mutation(api.collections.addItem, { workspaceId: a.workspaceId, collectionId: mine, sourceRefId: a.sourceRefId });
+    const items = await a.viewer.query(api.collections.items, { workspaceId: a.workspaceId, collectionId: mine });
     expect(items.items.map((row) => [row.source.title, row.note])).toEqual([["Offer page", "Good opener"]]);
     expect(items.collection).toMatchObject({ shared: false, items: 1, projectId: a.projectId });
 
-    // The Owner of the same workspace cannot see or change the Rep's personal collection.
+    // The Owner of the same workspace cannot see or change the Viewer's personal collection.
     for (const call of [
       () => a.owner.query(api.collections.items, { workspaceId: a.workspaceId, collectionId: mine }),
       () => a.owner.mutation(api.collections.rename, { workspaceId: a.workspaceId, collectionId: mine, name: "x" }),
@@ -303,26 +303,26 @@ describe("research projects, sources and collections", () => {
     }
     expect(await a.owner.query(api.collections.list, { workspaceId: a.workspaceId })).toEqual([]);
 
-    // A Rep reads a workspace collection but cannot make or change one.
-    expect(await message(a.rep.mutation(api.collections.create, { workspaceId: a.workspaceId, name: "Team", shared: true }))).toBe(NOT_ALLOWED);
+    // A Viewer reads a workspace collection but cannot make or change one.
+    expect(await message(a.viewer.mutation(api.collections.create, { workspaceId: a.workspaceId, name: "Team", shared: true }))).toBe(NOT_ALLOWED);
     const team = await a.owner.mutation(api.collections.create, { workspaceId: a.workspaceId, name: "Team", shared: true });
-    expect(await message(a.rep.mutation(api.collections.addItem, { workspaceId: a.workspaceId, collectionId: team, sourceRefId: a.sourceRefId }))).toBe(NOT_ALLOWED);
-    expect(await message(a.rep.mutation(api.collections.rename, { workspaceId: a.workspaceId, collectionId: team, name: "x" }))).toBe(NOT_ALLOWED);
-    expect(await message(a.rep.mutation(api.collections.remove, { workspaceId: a.workspaceId, collectionId: team }))).toBe(NOT_ALLOWED);
-    expect((await a.rep.query(api.collections.items, { workspaceId: a.workspaceId, collectionId: team })).items).toEqual([]);
-    expect((await a.rep.query(api.collections.list, { workspaceId: a.workspaceId })).map((row) => row.name).sort()).toEqual(["My hooks", "Team"]);
-    expect((await a.rep.query(api.collections.list, { workspaceId: a.workspaceId, projectId: a.projectId })).map((row) => row.name)).toEqual(["My hooks"]);
+    expect(await message(a.viewer.mutation(api.collections.addItem, { workspaceId: a.workspaceId, collectionId: team, sourceRefId: a.sourceRefId }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.mutation(api.collections.rename, { workspaceId: a.workspaceId, collectionId: team, name: "x" }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.mutation(api.collections.remove, { workspaceId: a.workspaceId, collectionId: team }))).toBe(NOT_ALLOWED);
+    expect((await a.viewer.query(api.collections.items, { workspaceId: a.workspaceId, collectionId: team })).items).toEqual([]);
+    expect((await a.viewer.query(api.collections.list, { workspaceId: a.workspaceId })).map((row) => row.name).sort()).toEqual(["My hooks", "Team"]);
+    expect((await a.viewer.query(api.collections.list, { workspaceId: a.workspaceId, projectId: a.projectId })).map((row) => row.name)).toEqual(["My hooks"]);
 
     // Removing a collection removes its items, not the source.
-    await a.rep.mutation(api.collections.removeItem, { workspaceId: a.workspaceId, collectionId: mine, sourceRefId: a.sourceRefId });
-    expect((await a.rep.query(api.collections.items, { workspaceId: a.workspaceId, collectionId: mine })).items).toEqual([]);
+    await a.viewer.mutation(api.collections.removeItem, { workspaceId: a.workspaceId, collectionId: mine, sourceRefId: a.sourceRefId });
+    expect((await a.viewer.query(api.collections.items, { workspaceId: a.workspaceId, collectionId: mine })).items).toEqual([]);
     await a.owner.mutation(api.collections.addItem, { workspaceId: a.workspaceId, collectionId: team, sourceRefId: a.sourceRefId });
     await a.owner.mutation(api.collections.remove, { workspaceId: a.workspaceId, collectionId: team });
     const leftover = await t.run(async (ctx) =>
       ctx.db.query("collectionItems").withIndex("by_workspace_ref", (q) => q.eq("workspaceId", a.workspaceId).eq("sourceRefId", a.sourceRefId)).take(5),
     );
     expect(leftover).toEqual([]);
-    expect((await a.rep.query(api.research.getSourceRef, { workspaceId: a.workspaceId, sourceRefId: a.sourceRefId })).id).toBe(a.sourceRefId);
+    expect((await a.viewer.query(api.research.getSourceRef, { workspaceId: a.workspaceId, sourceRefId: a.sourceRefId })).id).toBe(a.sourceRefId);
   });
 
   it("turns links into one public form and keeps excerpts short", () => {

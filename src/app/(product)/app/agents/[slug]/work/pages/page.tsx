@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -15,7 +16,7 @@ function Pages() {
   const agent = shell.agents.find((row) => row.slug === params.slug);
   return (
     <WorkGate agent={agent}>
-      <PagesTab workspaceId={shell.workspaceId} base={`/app/agents/${params.slug}`} editor={shell.role !== "rep" && agent?.state !== "off"} initial={query.get("teardown")} />
+      <PagesTab workspaceId={shell.workspaceId} base={`/app/agents/${params.slug}`} editor={canWork(shell.role) && agent?.state !== "off"} initial={query.get("teardown")} />
     </WorkGate>
   );
 }

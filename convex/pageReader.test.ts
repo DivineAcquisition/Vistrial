@@ -180,26 +180,26 @@ describe("the page reader", () => {
     expect(ledger.map((row) => [row.costCents, row.priceCents])).toEqual([[0.5, 2]]);
   });
 
-  it("lets Owners and Managers act and Reps read, and never crosses workspaces", async () => {
+  it("lets Owners and Admins act and Viewers read, and never crosses workspaces", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
     web();
-    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "rep@example.com", role: "rep" });
-    const rep = t.withIdentity({ ...person("rep"), email: "rep@example.com" });
-    await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
-    const managerInvite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "manager@example.com", role: "manager" });
-    const manager = t.withIdentity({ ...person("manager"), email: "manager@example.com" });
-    await manager.mutation(api.workspace.acceptInvite, { token: managerInvite.token });
+    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "viewer@example.com", role: "viewer" });
+    const viewer = t.withIdentity({ ...person("viewer"), email: "viewer@example.com" });
+    await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
+    const adminInvite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "admin@example.com", role: "admin" });
+    const admin = t.withIdentity({ ...person("admin"), email: "admin@example.com" });
+    await admin.mutation(api.workspace.acceptInvite, { token: adminInvite.token });
 
-    expect(await message(rep.mutation(api.pageReader.start, { workspaceId: a.workspaceId, urls: [SAMPLE_PAGE_URL], confirmedCents: 1 }))).toBe(NOT_ALLOWED);
-    expect((await rep.query(api.pageReader.quote, { workspaceId: a.workspaceId, urls: [SAMPLE_PAGE_URL] })).canStart).toBe(false);
-    const started = await manager.mutation(api.pageReader.start, { workspaceId: a.workspaceId, urls: [SAMPLE_PAGE_URL], confirmedCents: 1 });
+    expect(await message(viewer.mutation(api.pageReader.start, { workspaceId: a.workspaceId, urls: [SAMPLE_PAGE_URL], confirmedCents: 1 }))).toBe(NOT_ALLOWED);
+    expect((await viewer.query(api.pageReader.quote, { workspaceId: a.workspaceId, urls: [SAMPLE_PAGE_URL] })).canStart).toBe(false);
+    const started = await admin.mutation(api.pageReader.start, { workspaceId: a.workspaceId, urls: [SAMPLE_PAGE_URL], confirmedCents: 1 });
     await settle(t);
-    const job = await rep.query(api.pageReader.job, { workspaceId: a.workspaceId, jobId: started.jobId });
+    const job = await viewer.query(api.pageReader.job, { workspaceId: a.workspaceId, jobId: started.jobId });
     expect(job.pages[0].status).toBe("read");
-    expect((await rep.query(api.pageReader.page, { workspaceId: a.workspaceId, readId: job.pages[0].id })).title).toContain("Northlight");
-    expect(await message(rep.mutation(api.pageReader.stop, { workspaceId: a.workspaceId, jobId: started.jobId }))).toBe(NOT_ALLOWED);
+    expect((await viewer.query(api.pageReader.page, { workspaceId: a.workspaceId, readId: job.pages[0].id })).title).toContain("Northlight");
+    expect(await message(viewer.mutation(api.pageReader.stop, { workspaceId: a.workspaceId, jobId: started.jobId }))).toBe(NOT_ALLOWED);
 
     // Beta cannot see Alpha's job or page, by its own workspace or by naming Alpha's.
     expect(await message(b.owner.query(api.pageReader.job, { workspaceId: b.workspaceId, jobId: started.jobId }))).toBe(NOT_FOUND);

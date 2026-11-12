@@ -456,13 +456,13 @@ describe("Offer Intelligence", () => {
     await expect(a.owner.query(api.assets.get, { workspaceId: a.workspaceId, assetId: asset!.id })).rejects.toThrow();
   });
 
-  it("lets owners start it and refuses reps", async () => {
+  it("lets owners start it and refuses viewers", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     await marketReport(t, a.workspaceId, a.projectId, "approved");
-    await t.run((ctx) => ctx.db.insert("members", { workspaceId: a.workspaceId, userId: "Alpha-rep", role: "rep", displayName: "Rep", active: true }));
-    const rep = t.withIdentity(person("Alpha-rep"));
-    await expect(rep.mutation(api.runs.start, { workspaceId: a.workspaceId, agentSlug: AGENT, skillSlug: OI })).rejects.toThrow();
+    await t.run((ctx) => ctx.db.insert("members", { workspaceId: a.workspaceId, userId: "Alpha-viewer", role: "viewer", displayName: "Viewer", active: true }));
+    const viewer = t.withIdentity(person("Alpha-viewer"));
+    await expect(viewer.mutation(api.runs.start, { workspaceId: a.workspaceId, agentSlug: AGENT, skillSlug: OI })).rejects.toThrow();
     // A stranger is not a member at all.
     const stranger = t.withIdentity(person("stranger"));
     await expect(stranger.mutation(api.runs.start, { workspaceId: a.workspaceId, agentSlug: AGENT, skillSlug: OI })).rejects.toThrow();

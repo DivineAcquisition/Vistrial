@@ -158,16 +158,16 @@ describe("intake conversation", () => {
     expect(view.intake.status).toBe("ready");
   });
 
-  it("keeps each workspace's intake to itself, and a Rep cannot start one", async () => {
+  it("keeps each workspace's intake to itself, and a Viewer cannot start one", async () => {
     const t = makeTester();
     const { workspaceId, owner } = await setup(t, false);
     await t.run(async (ctx) => {
-      await ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true });
+      await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });
       const other = await ctx.db.insert("workspaces", { name: "Other", slug: "other", timezone: "UTC", status: "active", createdAt: 0 });
       await ctx.db.insert("members", { workspaceId: other, userId: "user_other", role: "owner", displayName: "Other", active: true });
     });
     const intakeId = await owner.mutation(api.intake.create, { workspaceId, agentSlug: "growth-architect", text: "Pricing" });
     await expect(t.withIdentity(identity("user_other")).query(api.intake.get, { workspaceId, intakeId })).rejects.toThrow();
-    await expect(t.withIdentity(identity("user_rep")).mutation(api.intake.create, { workspaceId, agentSlug: "growth-architect", text: "x" })).rejects.toThrow();
+    await expect(t.withIdentity(identity("user_viewer")).mutation(api.intake.create, { workspaceId, agentSlug: "growth-architect", text: "x" })).rejects.toThrow();
   });
 });

@@ -1,15 +1,25 @@
 import { v } from "convex/values";
 
 import { currentAgentSlug } from "./catalog";
-import { signedInMutation, signedInQuery, workspaceQuery, ownerMutation } from "./lib/builders";
+import type { Id } from "./_generated/dataModel";
+import { signedInMutation, signedInQuery, workspaceQuery, adminMutation } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { activeMembership } from "./lib/access";
-import { notFound, userError } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
+import { upsertAccountMember, upsertMember } from "./lib/organizations";
+import { ROLE_ORDER, grantableRoleValidator, isAdmin, roleOf } from "./lib/roles";
 import { ensureAgents } from "./lib/agents";
 import { hashToken, randomToken } from "./lib/token";
 import { createWorkspaceFor } from "./lib/newWorkspace";
 
 const INVITE_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_GRANTS = 25;
+
+/** The role an invite or a role change may give, in the new words. Never Owner. */
+function grantable(role: string): "admin" | "member" | "viewer" {
+  const next = roleOf(role);
+  return next === "owner" ? "admin" : next;
+}
 
 export const syncCatalog = signedInMutation({
   args: {},
@@ -30,7 +40,7 @@ export const mine = signedInQuery({
       .unique();
     return {
       workspaceId: member.workspaceId,
-      role: member.role,
+      role: roleOf(member.role),
       setupDone: settings?.setupDone ?? false,
     };
   },
@@ -69,7 +79,7 @@ export const shell = workspaceQuery({
       skillsByAgent.set(skill.agentSlug, list);
     }
     return {
-      role: ctx.member.role,
+      role: ctx.role,
       setupDone: settings?.setupDone ?? false,
       departments: departments
         .map((row) => ({ slug: row.slug, name: row.name, sort: row.sort }))
@@ -103,7 +113,7 @@ export const shell = workspaceQuery({
   },
 });
 
-export const markSetupDone = ownerMutation({
+export const markSetupDone = adminMutation({
   args: { setupDone: v.boolean() },
   handler: async (ctx, args) => {
     const settings = await ctx.db
@@ -124,7 +134,7 @@ export const markSetupDone = ownerMutation({
   },
 });
 
-export const setAgentState = ownerMutation({
+export const setAgentState = adminMutation({
   args: {
     slug: v.string(),
     state: v.union(v.literal("off"), v.literal("suggesting"), v.literal("on")),
@@ -173,30 +183,57 @@ export const setAgentState = ownerMutation({
   },
 });
 
-export const invite = ownerMutation({
+export const invite = adminMutation({
   args: {
     email: v.string(),
-    role: v.union(v.literal("manager"), v.literal("rep")),
+    /** The role in this organization. "manager" and "rep" are accepted from a tab opened before the roles changed. */
+    role: grantableRoleValidator,
+    /** Other organizations of the same account to open with the same invite, each with its own role. */
+    grants: v.optional(v.array(v.object({ workspaceId: v.id("workspaces"), role: grantableRoleValidator }))),
   },
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
     if (!email.includes("@")) throw userError("Enter an email.");
+    const here = await ctx.db.get(ctx.workspaceId);
+    if (!here) notFound();
+    const grants: { workspaceId: Id<"workspaces">; role: "admin" | "member" | "viewer" }[] = [{ workspaceId: ctx.workspaceId, role: grantable(args.role) }];
+    for (const grant of args.grants ?? []) {
+      if (grants.some((row) => row.workspaceId === grant.workspaceId)) continue;
+      const other = await ctx.db.get(grant.workspaceId);
+      // Another organization can only be added by someone who runs it too, and only inside the same account.
+      const mine = other
+        ? await ctx.db
+            .query("members")
+            .withIndex("by_workspace_user", (q) => q.eq("workspaceId", other._id).eq("userId", ctx.identity.subject))
+            .unique()
+        : null;
+      if (!other || other.status !== "active" || !mine?.active) notFound();
+      if (!here.accountId || other.accountId !== here.accountId) notFound();
+      if (!isAdmin(mine.role)) notAllowed();
+      grants.push({ workspaceId: other._id, role: grantable(grant.role) });
+    }
+    if (grants.length > MAX_GRANTS) throw userError(`An invite can open ${MAX_GRANTS} organizations at most.`);
     const token = randomToken();
     const invitationId = await ctx.db.insert("invitations", {
       workspaceId: ctx.workspaceId,
       email,
-      role: args.role,
+      role: grants[0].role,
       tokenHash: await hashToken(token),
       expiresAt: Date.now() + INVITE_MS,
       invitedBy: ctx.identity.subject,
+      ...(here.accountId ? { accountId: here.accountId } : {}),
+      grants,
     });
-    await writeAudit(ctx, {
-      workspaceId: ctx.workspaceId,
-      actorType: "user",
-      actorId: ctx.identity.subject,
-      action: "invite.created",
-      subject: invitationId,
-    });
+    for (const grant of grants) {
+      await writeAudit(ctx, {
+        workspaceId: grant.workspaceId,
+        actorType: "user",
+        actorId: ctx.identity.subject,
+        action: "invite.created",
+        subject: invitationId,
+        count: ROLE_ORDER[grant.role],
+      });
+    }
     return { invitationId, token };
   },
 });
@@ -214,37 +251,23 @@ export const acceptInvite = signedInMutation({
     if (inviteRow.canceledAt !== undefined) throw userError("This invite was cancelled. Ask the owner for a new one.");
     if (inviteRow.expiresAt <= Date.now()) throw userError("This invite has expired.");
     if (!ctx.email || ctx.email !== inviteRow.email) throw userError("This invite is for a different email.");
-    if (await activeMembership(ctx, ctx.userId)) throw userError("You already belong to a workspace.");
-    // Someone removed earlier and invited back keeps one row, so the workspace never has two for them.
-    const earlier = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_user", (q) => q.eq("workspaceId", inviteRow.workspaceId).eq("userId", ctx.userId))
-      .unique();
-    const memberId = earlier
-      ? (await ctx.db.patch(earlier._id, {
-          role: inviteRow.role,
-          displayName: ctx.name,
-          email: ctx.email,
-          active: true,
-          removedAt: undefined,
-        }),
-        earlier._id)
-      : await ctx.db.insert("members", {
-          workspaceId: inviteRow.workspaceId,
-          userId: ctx.userId,
-          role: inviteRow.role,
-          displayName: ctx.name,
-          email: ctx.email,
-          active: true,
-        });
+    // An invite made before a person could be given several organizations opens the one it names.
+    const grants = inviteRow.grants ?? [{ workspaceId: inviteRow.workspaceId, role: inviteRow.role }];
+    let first: Id<"members"> | null = null;
+    for (const grant of grants) {
+      const workspace = await ctx.db.get(grant.workspaceId);
+      // An organization archived since the invite was sent is skipped; the rest still open.
+      if (!workspace || workspace.status !== "active") continue;
+      // Someone removed earlier and invited back keeps one row, so an organization never has two for them.
+      const memberId = await upsertMember(ctx, { workspaceId: workspace._id, userId: ctx.userId, role: grantable(grant.role), displayName: ctx.name, email: ctx.email });
+      if (workspace.accountId) {
+        await upsertAccountMember(ctx, { accountId: workspace.accountId, userId: ctx.userId, role: "member", displayName: ctx.name, email: ctx.email });
+      }
+      await writeAudit(ctx, { workspaceId: workspace._id, actorType: "user", actorId: ctx.userId, action: "invite.accepted", subject: memberId });
+      first ??= memberId;
+    }
+    if (!first) throw userError("This invite no longer opens anything. Ask for a new one.");
     await ctx.db.patch(inviteRow._id, { acceptedAt: Date.now() });
-    await writeAudit(ctx, {
-      workspaceId: inviteRow.workspaceId,
-      actorType: "user",
-      actorId: ctx.userId,
-      action: "invite.accepted",
-      subject: memberId,
-    });
-    return memberId;
+    return first;
   },
 });

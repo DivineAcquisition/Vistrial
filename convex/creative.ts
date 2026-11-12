@@ -4,6 +4,7 @@
  * here publishes: a creative is a draft a person approves.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -14,7 +15,7 @@ import { testFor, testStates } from "./creativeTests";
 import { writeAudit } from "./lib/audit";
 import { brandGaps } from "./lib/brandKits";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { savedRecord } from "./lib/savedRecords";
 import { startRunFor } from "./runs";
 import { DIALS, DIAL_WORDS, PHASE, SKILL_SLUG, type CreativeRecord } from "./skills/creativeProduction/shapes";
@@ -108,7 +109,7 @@ export const options = workspaceQuery({
 /**
  * "Make our version": starts Creative Production for one brand, from a reference ad on the research board,
  * a saved offer, or both. The reference's structure is modelled at the closeness chosen; its wording, footage,
- * faces, voice, music and logos are never reused. Owners and Managers.
+ * faces, voice, music and logos are never reused. Owners, Admins and Members.
  */
 export const start = workspaceMutation({
   args: {
@@ -121,7 +122,7 @@ export const start = workspaceMutation({
     note: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     if (!args.sourceRefId && !args.referenceId && !args.offerCardId) throw userError("Choose a reference ad or a saved offer to start from.");
     if (args.sourceRefId && args.referenceId) throw userError("Choose one reference ad.");
     const dial = DIALS.find((row) => row === (args.dial ?? "structure"));
@@ -146,6 +147,7 @@ export const start = workspaceMutation({
     }
     const requestId = await ctx.db.insert("creativeRequests", {
       workspaceId: ctx.workspaceId,
+      ...(kit.clientId ? { clientId: kit.clientId } : {}),
       kitId: kit._id,
       kitVersion: kit.currentVersion,
       ...(args.sourceRefId ? { sourceRefId: args.sourceRefId } : {}),
@@ -156,7 +158,7 @@ export const start = workspaceMutation({
       createdBy: ctx.identity.subject,
       createdAt: Date.now(),
     });
-    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, inputRef: requestId });
+    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, inputRef: requestId, clientId: kit.clientId });
     await ctx.db.patch(requestId, { runId });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "creative.started", subject: requestId });
     return { requestId, runId };

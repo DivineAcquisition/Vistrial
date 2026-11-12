@@ -8,7 +8,6 @@ import { Check, Download, FileImage, LoaderCircle, Sparkles } from "@/components
 import { Button } from "@/components/ui/button";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { showError } from "@/lib/errors/show-error";
-import { money } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -17,6 +16,7 @@ import type { Look, Tone } from "../../../convex/lib/creativeImages";
 
 import type { CreativeImageList, CreativeImageQuote } from "./types";
 import { SectionTitle } from "./work-shell";
+import { useCredits } from "@/lib/credits";
 
 type VariationCopy = { key: string; headline: string; cta: string };
 type ImageRow = CreativeImageList["images"][number];
@@ -81,6 +81,7 @@ function Composed({ image, copy, brand, placement, node }: { image: ImageRow; co
 }
 
 function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { image: ImageRow; copy: VariationCopy; brand: Brand; placement: Placement; editor: boolean; eachCents: number; onRetake: () => Promise<void> }) {
+  const credits = useCredits();
   const node = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState<"save" | "retake" | null>(null);
   const [asking, setAsking] = useState(false);
@@ -145,7 +146,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
           asking ? (
             <>
               <Button size="sm" variant="outline" disabled={busy !== null} onClick={retake}>
-                {busy === "retake" ? "Starting…" : `Spend ${money(eachCents)}`}
+                {busy === "retake" ? "Starting…" : `Spend ${credits.words(eachCents)}`}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>
                 Keep
@@ -153,7 +154,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
             </>
           ) : (
             <Button size="sm" variant="ghost" onClick={() => setAsking(true)}>
-              Try again · {money(eachCents)}
+              Try again · {credits.words(eachCents)}
             </Button>
           )
         ) : null}
@@ -164,6 +165,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
 
 /** Images for an ad set: choose the placements, see the price, confirm, then the finished ads. */
 export function CreativeImagesView({ editor, variations, placements, onPlacements, look, onLook, tone, onTone, quote, list, onGenerate, onRetake }: CreativeImagesProps) {
+  const credits = useCredits();
   const [confirming, setConfirming] = useState(false);
   const [starting, setStarting] = useState(false);
   const [problem, setProblem] = useState("");
@@ -197,7 +199,7 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                     setConfirming(false);
                     onLook(value as Look);
                   }}
-                  options={quote.looks.map((row) => ({ value: row.value, label: `${row.label} · ${money(row.eachCents)}` }))}
+                  options={quote.looks.map((row) => ({ value: row.value, label: `${row.label} · ${credits.words(row.eachCents)}` }))}
                 />
                 {look === "designed" ? (
                   <SegmentedRadioGroup
@@ -242,13 +244,13 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
           {placements.length > 0 && quote && quote.count > 0 ? (
             <>
               <p className="text-sm text-card-foreground">
-                {quote.count} image{quote.count === 1 ? "" : "s"}: {quote.variations} variations × {quote.placements.length} placement{quote.placements.length === 1 ? "" : "s"}. <span className="font-medium">{money(quote.totalCents)} of credits</span>{" "}
-                <span className="text-muted-foreground">({money(quote.eachCents)} each, charged only for images that are delivered)</span>
+                {quote.count} image{quote.count === 1 ? "" : "s"}: {quote.variations} variations × {quote.placements.length} placement{quote.placements.length === 1 ? "" : "s"}. <span className="font-medium">{credits.words(quote.totalCents)} of credits</span>{" "}
+                <span className="text-muted-foreground">({credits.words(quote.eachCents)} each, charged only for images that are delivered)</span>
               </p>
               {quote.blocked ? <p className="text-sm text-warning">{quote.blocked}</p> : null}
               {!quote.blocked && !quote.canAfford ? (
                 <p className="text-sm text-warning">
-                  Your balance does not cover this{quote.availableCents !== null ? ` (${money(Math.max(0, quote.availableCents))} available)` : ""}. Choose fewer placements, or{" "}
+                  Your balance does not cover this{quote.availableCents !== null ? ` (${credits.words(Math.max(0, quote.availableCents))} available)` : ""}. Choose fewer placements, or{" "}
                   <Link href="/app/billing" className="underline underline-offset-4">
                     add credits
                   </Link>
@@ -264,7 +266,7 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                 {confirming ? (
                   <>
                     <Button size="sm" disabled={starting} onClick={start}>
-                      {starting ? "Starting…" : `Spend ${money(quote.totalCents)} and make them`}
+                      {starting ? "Starting…" : `Spend ${credits.words(quote.totalCents)} and make them`}
                     </Button>
                     <Button size="sm" variant="ghost" disabled={starting} onClick={() => setConfirming(false)}>
                       Cancel

@@ -501,7 +501,7 @@ describe("outcome loop", () => {
     expect(await t.run((ctx) => ctx.db.query("learningSignals").collect())).toEqual([]);
   });
 
-  it("keeps decisions to their workspace, lets reps only read, and refuses opportunities the report does not have", async () => {
+  it("keeps decisions to their workspace, lets viewers only read, and refuses opportunities the report does not have", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha", ALPHA);
     const b = await seed(t, "Beta", BETA);
@@ -516,10 +516,10 @@ describe("outcome loop", () => {
     await expect(b.owner.query(api.decisions.forProject, { workspaceId: b.workspaceId, projectId: a.projectId })).rejects.toThrow();
 
     await t.run(async (ctx) => {
-      await ctx.db.insert("members", { workspaceId: a.workspaceId, userId: "Alpha-rep", role: "rep", displayName: "Rep", active: true });
+      await ctx.db.insert("members", { workspaceId: a.workspaceId, userId: "Alpha-viewer", role: "viewer", displayName: "Viewer", active: true });
     });
-    const rep = t.withIdentity(person("Alpha-rep"));
-    expect(await rep.query(api.decisions.forProject, { workspaceId: a.workspaceId, projectId: a.projectId })).toHaveLength(1);
-    await expect(rep.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId, result: "better", note: "" })).rejects.toThrow();
+    const viewer = t.withIdentity(person("Alpha-viewer"));
+    expect(await viewer.query(api.decisions.forProject, { workspaceId: a.workspaceId, projectId: a.projectId })).toHaveLength(1);
+    await expect(viewer.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId, result: "better", note: "" })).rejects.toThrow();
   });
 });

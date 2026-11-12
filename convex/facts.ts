@@ -1,12 +1,13 @@
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { FACT_TEXT, cleanFactKey, factView, isLive, liveFact, writeFact } from "./lib/facts";
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 /** The workspace's current facts, newest first. Every member can read them. */
@@ -57,7 +58,7 @@ export const record = workspaceMutation({
   },
 });
 
-/** Only an Owner or Manager verifies or disputes a fact. An agent never verifies its own. */
+/** Only an Owner, Admin or Member verifies or disputes a fact. An agent never verifies its own. */
 export const setStatus = workspaceMutation({
   args: { factId: v.id("businessFacts"), status: v.union(v.literal("verified"), v.literal("disputed")) },
   handler: async (ctx, args) => {

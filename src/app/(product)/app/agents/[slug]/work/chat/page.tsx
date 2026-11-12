@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -21,7 +22,7 @@ function Chat() {
         base={`/app/agents/${params.slug}`}
         slug={params.slug}
         agentName={agent?.name ?? "Growth Architect"}
-        editor={shell.role !== "rep" && agent?.state !== "off"}
+        editor={canWork(shell.role) && agent?.state !== "off"}
         conversationId={(query.get("c") ?? query.get("intake")) as Id<"intakes"> | null}
         skill={query.get("skill")}
         ask={query.get("ask") ?? query.get("objective") ?? undefined}

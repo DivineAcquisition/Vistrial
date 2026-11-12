@@ -35,22 +35,54 @@ export type BusinessContext = {
   assumptions: string[];
 };
 
+/** A client's profile as known items: a business's company details, or a person's goals and where they are now. */
+export function clientKnown(client: Doc<"clients">): KnownItem[] {
+  const fields: [string, string, string | undefined][] =
+    client.type === "business"
+      ? [
+          ["name", "Client", client.name],
+          ["website", "Website", client.business?.website],
+          ["industry", "Industry", client.business?.industry],
+          ["offer", "Offer", client.business?.offer],
+          ["audience", "Audience", client.business?.audience],
+          ["geography", "Where they sell", client.business?.geography],
+          ["notes", "Notes", client.business?.notes],
+        ]
+      : [
+          ["name", "Client", client.name],
+          ["goals", "Their goals", client.person?.goals],
+          ["currentState", "Where they are now", client.person?.currentState],
+          ["notes", "Notes", client.person?.notes],
+        ];
+  return fields
+    .filter(([, , value]) => (value ?? "").trim())
+    .map(([key, label, value]) => ({ key: `client.${key}`, label, value: (value ?? "").trim(), origin: "profile" as const, status: "confirmed", recordedAt: client.updatedAt }));
+}
+
 /**
  * Reads the business context for a run. When `project` is given, the business's own results are saved on it
  * as `customerData` sources, so the asset can cite them as "Your data".
  */
 export async function readBusinessContext(
   ctx: MutationCtx,
-  run: Pick<Doc<"agentRuns">, "_id" | "workspaceId" | "agentSlug">,
+  run: Pick<Doc<"agentRuns">, "_id" | "workspaceId" | "agentSlug"> & { clientId?: Doc<"agentRuns">["clientId"] },
   project: Doc<"researchProjects"> | null,
 ): Promise<BusinessContext> {
-  const profile = await ctx.db
-    .query("profileVersions")
-    .withIndex("by_workspace_status", (q) => q.eq("workspaceId", run.workspaceId).eq("status", "confirmed"))
-    .order("desc")
-    .first();
-  const facts = await factsForRun(ctx, run.workspaceId);
+  // Work done for a client is about the client: its profile, its results, what was tried for it. The
+  // organization's own profile and facts describe a different business and are left out.
+  const clientId = project ? project.clientId : run.clientId;
+  const client = clientId ? await ctx.db.get(clientId) : null;
+  const forClient = client && client.workspaceId === run.workspaceId ? client : null;
+  const profile = forClient
+    ? null
+    : await ctx.db
+        .query("profileVersions")
+        .withIndex("by_workspace_status", (q) => q.eq("workspaceId", run.workspaceId).eq("status", "confirmed"))
+        .order("desc")
+        .first();
+  const facts = forClient ? [] : await factsForRun(ctx, run.workspaceId);
   const known: KnownItem[] = [];
+  if (forClient) known.push(...clientKnown(forClient));
   if (profile) {
     const fields = [
       ["offer", "Offer", profile.offer],
@@ -66,7 +98,7 @@ export async function readBusinessContext(
   for (const fact of facts) known.push({ key: `fact:${fact._id}`, label: fact.factKey, value: fact.value, origin: "fact", status: fact.status, recordedAt: fact.recordedAt });
   if (project) {
     // The business's own ad results, when its Meta connection is granted to this agent.
-    const firstParty = await saveFirstPartySources(ctx, run.workspaceId, project, run._id);
+    const firstParty = forClient ? null : await saveFirstPartySources(ctx, run.workspaceId, project, run._id);
     if (firstParty) known.push({ key: "connection:meta", label: firstParty.label, value: firstParty.value, origin: "connection", status: "verified", recordedAt: firstParty.recordedAt });
     // Results files the business uploaded and granted to this agent: totals only.
     const uploads = await saveUploadSourcesFor(ctx, { workspaceId: run.workspaceId, projectId: project._id, runId: run._id, agentSlug: run.agentSlug });
@@ -80,7 +112,7 @@ export async function readBusinessContext(
     }
   }
   // What the business tried before, and what happened: outcomes first, then open check-ins.
-  const decisions = await decisionsForContext(ctx, run.workspaceId);
+  const decisions = (await decisionsForContext(ctx, run.workspaceId)).filter((row) => row.clientId === forClient?._id);
   for (const decision of decisions) {
     known.push({
       key: `decision:${decision._id}`,
@@ -98,7 +130,10 @@ export async function readBusinessContext(
     missing.push({ key: "adBudget", blocking: false });
     assumptions.push(NO_BUDGET_ASSUMPTION);
   }
-  if (!profile) {
+  if (forClient && !known.some((row) => row.origin === "profile")) {
+    missing.push({ key: "clientProfile", blocking: false });
+    assumptions.push("This client's profile is empty, so relevance is judged from the assignment alone.");
+  } else if (!profile && !forClient) {
     missing.push({ key: "businessProfile", blocking: false });
     assumptions.push("No confirmed business profile, so relevance is judged from the assignment alone.");
   }

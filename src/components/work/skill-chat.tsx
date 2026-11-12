@@ -8,12 +8,12 @@ import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { Brain, Rocket, Wallet } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { showError } from "@/lib/errors/show-error";
-import { money } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 import type { SkillChatData } from "./types";
+import { useCredits } from "@/lib/credits";
 
 type PlanData = { name: string; steps: string[]; reads: string; capCents: number; dayLeftCents: number };
 type Known = { key: string; value: string }[];
@@ -42,6 +42,7 @@ export function SkillChatView({
   onStart: () => Promise<void>;
   onReset: () => void;
 }) {
+  const credits = useCredits();
   const [starting, setStarting] = useState(false);
   const [problem, setProblem] = useState("");
   const messages = data?.messages ?? [];
@@ -93,9 +94,9 @@ export function SkillChatView({
                   <p className="text-xs text-muted-foreground">{plan.reads}</p>
                   <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1 text-card-foreground">
-                      <Wallet aria-hidden className="size-3.5 text-primary" /> Up to {money(plan.capCents)} for this run
+                      <Wallet aria-hidden className="size-3.5 text-primary" /> Up to {credits.cost(plan.capCents)} for this run
                     </span>
-                    <span>{money(plan.dayLeftCents)} left in today&apos;s budget for this skill</span>
+                    <span>{credits.cost(plan.dayLeftCents)} left in today&apos;s budget for this skill</span>
                   </p>
                   {editor && ready && row.id === last?.id ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -181,7 +182,7 @@ export function SkillChatView({
         <div className={cn(ready && "opacity-90")}>
           <ChatComposer
             size="compact"
-            placeholder={!editor ? "Owners and Managers start work." : ready ? "Change an answer…" : last?.kind === "route" ? "Say which, or tap a choice…" : messages.length ? "Answer, or tap a choice…" : placeholder}
+            placeholder={!editor ? "Owners, Admins and Members start work." : ready ? "Change an answer…" : last?.kind === "route" ? "Say which, or tap a choice…" : messages.length ? "Answer, or tap a choice…" : placeholder}
             disabled={!editor}
             initialText={initialText}
             onSubmit={async (text) => {

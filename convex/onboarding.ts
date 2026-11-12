@@ -4,6 +4,7 @@
  * business profile and memory, so it is never asked again. The wizard creates the workspace, then the free
  * research session, paying, and the guided chat follow.
  */
+import { isOwner } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -404,7 +405,7 @@ export const startFree = signedInMutation({
       .withIndex("by_user", (q) => q.eq("userId", ctx.userId))
       .filter((q) => q.and(q.eq(q.field("workspaceId"), row.workspaceId), q.eq(q.field("active"), true)))
       .first();
-    if (!member || member.role !== "owner") throw userError("Only the workspace owner can start the free session.", "not_allowed");
+    if (!member || !isOwner(member.role)) throw userError("Only the workspace owner can start the free session.", "not_allowed");
 
     const previous = row.freeRunId ? await ctx.db.get(row.freeRunId) : null;
     if (previous && row.freeProjectId) {

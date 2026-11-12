@@ -5,6 +5,7 @@
  * is called while gathering, so the conversation itself costs nothing.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -13,7 +14,7 @@ import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { dayKey } from "./lib/caps";
 import { daySpend, loadCaps } from "./lib/capRows";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { liveFact, writeFact } from "./lib/facts";
 import { assertCanSpend } from "./lib/billing";
 import { currentGoal, readGoal, MAX_GOAL } from "./goals";
@@ -85,7 +86,7 @@ function clean(text: string, max = MAX_ANSWER) {
 }
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 /**
@@ -195,13 +196,15 @@ async function answersFromCard(ctx: QueryCtx, workspaceId: Id<"workspaces">, car
  */
 export async function beginSkill(
   ctx: MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } },
-  input: { skill: ChatSkill; text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"] },
+  input: { skill: ChatSkill; text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"]; clientId?: Id<"clients"> },
 ) {
   const { skill } = input;
   const text = clean(input.text, 1000);
   if (!text) throw userError("Say what you want to work on.");
   const now = Date.now();
-  const answers = await known(ctx, ctx.workspaceId, skill);
+  // What is on record is about the organization's own business, so nothing is pre-answered for a client.
+  const clientId = input.row?.clientId ?? input.clientId;
+  const answers = clientId ? {} : await known(ctx, ctx.workspaceId, skill);
   // A first message that states a goal with a number is the goal; it replaces the one on record.
   if (skill === "growth-diagnostics" && readGoal(text).target !== undefined) answers.goal = clean(text, MAX_GOAL);
   const context = input.context ?? input.row?.context;
@@ -213,6 +216,7 @@ export async function beginSkill(
   } else {
     intakeId = await ctx.db.insert("intakes", {
       workspaceId: ctx.workspaceId,
+      ...(clientId ? { clientId } : {}),
       agentSlug: GROWTH_ARCHITECT,
       skillSlug: skill,
       answers,
@@ -245,7 +249,7 @@ export async function beginSkill(
   return intakeId;
 }
 
-/** Starts a conversation for one skill from the person's first message. Owners and Managers. */
+/** Starts a conversation for one skill from the person's first message. Owners, Admins and Members. */
 export const create = workspaceMutation({
   args: { skillSlug: v.string(), text: v.string() },
   handler: async (ctx, args) => {
@@ -279,7 +283,7 @@ export const reply = workspaceMutation({
 
 /**
  * Start: saves what the person said (the goal, or the offer card version and the offer facts), then starts
- * the skill's run on the existing run path, with its caps and credit check. Owners and Managers.
+ * the skill's run on the existing run path, with its caps and credit check. Owners, Admins and Members.
  */
 export const start = workspaceMutation({
   args: { intakeId: v.id("intakes") },
@@ -291,17 +295,20 @@ export const start = workspaceMutation({
     await assertCanSpend(ctx, ctx.workspaceId);
     const answers = row.answers ?? {};
     const skill = row.skillSlug;
-    const base = { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: skill };
+    const forClient = row.clientId ? { clientId: row.clientId } : {};
+    const base = { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: skill, ...forClient };
     let projectId: Id<"researchProjects"> | undefined;
     if (skill === "growth-diagnostics") {
       const goal = clean(answers.goal ?? "", MAX_GOAL);
       const current = await currentGoal(ctx, ctx.workspaceId);
-      if (goal && current?.text !== goal) {
+      // The organization's goal on record is its own; a client's goal stays with the client's work.
+      if (!row.clientId && goal && current?.text !== goal) {
         await ctx.db.insert("growthGoals", { workspaceId: ctx.workspaceId, text: goal, ...readGoal(goal), setBy: ctx.identity.subject, setAt: Date.now() });
       }
       const now = Date.now();
       projectId = await ctx.db.insert("researchProjects", {
         workspaceId: ctx.workspaceId,
+        ...forClient,
         title: `Growth diagnosis, ${new Date(now).toISOString().slice(0, 10)}`,
         objective: goal ? `Where does growth stall, and how do we reach: ${goal}?` : "Where does growth stall, from our own data?",
         market: "",
@@ -314,6 +321,8 @@ export const start = workspaceMutation({
         createdAt: now,
         updatedAt: now,
       });
+    } else if (row.clientId) {
+      // A client's offer is not a fact about the organization, and does not become one of its offer cards here.
     } else {
       const person = { workspaceId: ctx.workspaceId, sourceType: "owner" as const, recordedBy: ctx.identity.subject, verifiedBy: ctx.identity.subject };
       const details = [answers.offer, answers.included].filter(Boolean).join(". ");

@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useParams } from "next/navigation";
 
 import { useWorkspaceShell } from "@/components/shell/shell-context";
@@ -14,7 +15,7 @@ export default function BrandsPage() {
   const agent = shell.agents.find((row) => row.slug === params.slug);
   return (
     <WorkGate agent={agent}>
-      <BrandsTab workspaceId={shell.workspaceId} editor={shell.role !== "rep" && agent?.state !== "off"} />
+      <BrandsTab workspaceId={shell.workspaceId} editor={canWork(shell.role) && agent?.state !== "off"} />
     </WorkGate>
   );
 }

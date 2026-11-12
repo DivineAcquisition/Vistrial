@@ -259,9 +259,12 @@ export function AgentFlow() {
 const HOLD_MS = 1200;
 
 /** `children` gets whether the draft is approved, so the card's own status can follow it. */
-export function HoldToApprove({ children }: { children?: (approved: boolean) => ReactNode }) {
+export function HoldToApprove({ children, onChange }: { children?: (approved: boolean) => ReactNode; onChange?: (approved: boolean) => void }) {
   const [progress, setProgress] = useState(0);
   const [approved, setApproved] = useState(false);
+  useEffect(() => {
+    onChange?.(approved);
+  }, [approved, onChange]);
   const frame = useRef<number | null>(null);
   const started = useRef<number | null>(null);
 

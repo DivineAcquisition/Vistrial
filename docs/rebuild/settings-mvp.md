@@ -87,3 +87,9 @@ They are not shown, not even as "coming soon".
 - Server: `convex/settings.ts`, tests in `convex/settings.test.ts`; small changes in `convex/workspace.ts`.
 - Screen: `src/components/settings/*`, page `src/app/(product)/app/settings/page.tsx`, invite page `src/app/join`.
 - Story: `/dev/settings?section=…&role=owner|manager|rep&support=off`. Screenshots in `docs/screenshots/settings`.
+
+## Superseded: roles
+
+The Owner / Manager / Rep table above is history. Roles are now Owner / Admin / Member / Viewer, a person can hold a
+different one in each organization, and Settings > People invites to several organizations at once. See
+`docs/rebuild/organizations-and-clients.md`, section 4.

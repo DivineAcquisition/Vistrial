@@ -105,9 +105,9 @@ function script(plan: Plan) {
 async function seed(t: Tester, name: string, opts: { profile?: boolean; market?: string; geography?: string } = {}) {
   const owner = t.withIdentity(person(`${name}-owner`));
   const workspaceId = await owner.mutation(api.workspace.create, { name });
-  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: `${name}-rep@example.com`, role: "rep" });
-  const rep = t.withIdentity(person(`${name}-rep`));
-  await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
+  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: `${name}-viewer@example.com`, role: "viewer" });
+  const viewer = t.withIdentity(person(`${name}-viewer`));
+  await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
   await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: AGENT, state: "on" });
   if (opts.profile !== false) {
     await owner.mutation(api.profile.saveDraft, { workspaceId, offer: "Deep cleaning", priceNotes: "$200", audience: "Homeowners", geography: "Austin, TX", channels: "Meta", brandVoice: "Plain", competitors: [] });
@@ -130,7 +130,7 @@ async function seed(t: Tester, name: string, opts: { profile?: boolean; market?:
       if (!row) await ctx.db.insert("modelRoutes", { workKind, provider: "fake", model: "fake-scripted", fallbackProvider: "fake", fallbackModel: "fake-scripted" });
     }
   });
-  return { owner, rep, workspaceId, projectId, factId };
+  return { owner, viewer, workspaceId, projectId, factId };
 }
 
 /** One scheduled round: each step schedules the next, so this runs one step. */
@@ -331,13 +331,13 @@ describe("Market Intelligence (2.11)", () => {
     expect(await message(start(a.owner, a.workspaceId, a.projectId))).toBe("accepted");
   });
 
-  it("refuses to start without a project, on another workspace's project, or by a Rep", async () => {
+  it("refuses to start without a project, on another workspace's project, or by a Viewer", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
     expect(await message(start(a.owner, a.workspaceId))).toContain("Choose a research project");
     expect(await message(start(b.owner, b.workspaceId, a.projectId))).toBe(NOT_FOUND);
-    expect(await message(start(a.rep, a.workspaceId, a.projectId))).toBe(NOT_ALLOWED);
+    expect(await message(start(a.viewer, a.workspaceId, a.projectId))).toBe(NOT_ALLOWED);
   });
 });
 
@@ -362,8 +362,8 @@ describe("ask, wait, resume (2.19)", () => {
     expect(run!.costCents).toBe(0);
     // Waiting blocks a second run on the project.
     expect(await message(start(a.owner, a.workspaceId, a.projectId))).toContain("waiting for an answer");
-    // Only an Owner or Manager answers, and only the current question.
-    expect(await message(a.rep.mutation(api.runs.answer, { workspaceId: a.workspaceId, runId, questionId: run!.waitingFor!.questionId, answer: "Deep cleaning" }))).toBe(NOT_ALLOWED);
+    // Only an Owner or Admin answers, and only the current question.
+    expect(await message(a.viewer.mutation(api.runs.answer, { workspaceId: a.workspaceId, runId, questionId: run!.waitingFor!.questionId, answer: "Deep cleaning" }))).toBe(NOT_ALLOWED);
     expect(await message(a.owner.mutation(api.runs.answer, { workspaceId: a.workspaceId, runId, questionId: "old", answer: "Deep cleaning" }))).toContain("already been answered");
     await a.owner.mutation(api.runs.answer, { workspaceId: a.workspaceId, runId, questionId: run!.waitingFor!.questionId, answer: "Deep cleaning" });
     expect(await a.owner.query(api.facts.get, { workspaceId: a.workspaceId, factKey: "researchMarket" })).toMatchObject({ value: "Deep cleaning", status: "verified", sourceType: "owner" });

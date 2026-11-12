@@ -1,12 +1,13 @@
 "use client";
 
+import { canWork, isAdmin } from "@/lib/roles";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { ChatComposer } from "@/components/chat/chat-composer";
 import { useChatExtras } from "@/components/chat/use-chat-extras";
-import { useWorkspaceShell } from "@/components/shell/shell-context";
+import { useWorkspaceShell, useClientScope } from "@/components/shell/shell-context";
 import { api } from "../../../convex/_generated/api";
 import { showError } from "@/lib/errors/show-error";
 
@@ -25,19 +26,20 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
   const shell = useWorkspaceShell();
   const router = useRouter();
   const send = useMutation(api.agentChat.send);
+  const { clientId } = useClientScope();
   const [agentSlug, setAgentSlug] = useState(defaultAgent);
   const [problem, setProblem] = useState("");
-  const extras = useChatExtras(shell!.workspaceId, shell?.role !== "rep", shell?.role === "owner");
+  const extras = useChatExtras(shell!.workspaceId, shell ? canWork(shell.role) : false, shell ? isAdmin(shell.role) : false);
   if (!shell) return null;
   const options = shell.agents.map((row) => ({ slug: row.slug, name: row.name, live: row.status === "live" && row.slug === "growth-architect" }));
   const chosen = options.find((row) => row.slug === agentSlug && row.live) ? agentSlug : "growth-architect";
-  const canStart = shell.role !== "rep";
+  const canStart = canWork(shell.role);
 
   return (
     <div className="grid gap-1">
       <ChatComposer
         size={size}
-        placeholder={canStart ? placeholder : "Owners and Managers start sessions."}
+        placeholder={canStart ? placeholder : "Owners, Admins and Members start sessions."}
         initialText={initialText}
         disabled={!canStart}
         agent={{ value: chosen, options, onChange: setAgentSlug }}
@@ -57,6 +59,8 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
               mode: extras.mode,
               ...(extras.sources ? { platforms: extras.sources } : {}),
               ...(extras.links.length ? { links: extras.links } : {}),
+              // A new conversation is about whoever the picker is on.
+              ...(clientId ? { clientId } : {}),
             });
             if (route === "market-intelligence") await extras.attachTo({ intakeId });
             extras.reset();

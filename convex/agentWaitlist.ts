@@ -5,7 +5,7 @@
 import { v } from "convex/values";
 
 import { CATALOG } from "./catalog";
-import { workspaceMutation, workspaceQuery } from "./lib/builders";
+import { selfMutation, workspaceQuery } from "./lib/builders";
 import { userError } from "./lib/errors";
 
 function plannedSlug(slug: string) {
@@ -25,7 +25,7 @@ export const mine = workspaceQuery({
   },
 });
 
-export const toggle = workspaceMutation({
+export const toggle = selfMutation({
   args: { agentSlug: v.string() },
   handler: async (ctx, args) => {
     const agentSlug = plannedSlug(args.agentSlug);

@@ -6,6 +6,8 @@
  * three the person wants; it never picks one silently. A conversation is an `intakes` row, as before.
  */
 
+import { clientForNew } from "./lib/clients";
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -14,7 +16,7 @@ import { GROWTH_ARCHITECT } from "./catalog";
 import { beginResearch, replyResearch } from "./intake";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { ROUTE_CHOICES, ROUTE_QUESTION, UNDECIDED, isChatRoute, routeChoice, routeIntent, type ChatRoute } from "./lib/chatRouting";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { SKILL_TAB } from "./lib/workTabs";
 import { beginSkill, isChatSkill, replySkill, type ChatSkill } from "./skillIntake";
 
@@ -85,16 +87,16 @@ type Access = MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject
 type Choices = { mode?: "thorough" | "fast"; platforms?: string[]; links?: string[] };
 
 /** Hands a conversation to its skill. `row` is an undecided conversation being routed. */
-async function begin(ctx: Access, route: ChatRoute, input: Choices & { text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"] }) {
+async function begin(ctx: Access, route: ChatRoute, input: Choices & { text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"]; clientId?: Id<"clients"> }) {
   if (route === "market-intelligence") return beginResearch(ctx, input);
-  return beginSkill(ctx, { skill: route as ChatSkill, text: input.text, row: input.row, context: input.context });
+  return beginSkill(ctx, { skill: route as ChatSkill, text: input.text, row: input.row, context: input.context, clientId: input.clientId });
 }
 
 /**
  * One message in the agent chat. Without `intakeId` it starts a conversation: on the skill named by `skill`
  * (a preset such as "New research"), otherwise on the skill the text is clearly about, otherwise it asks
  * which. With `intakeId` it answers: the routing question, or the skill's own next question.
- * Owners and Managers.
+ * Owners, Admins and Members.
  */
 export const send = workspaceMutation({
   args: {
@@ -106,9 +108,11 @@ export const send = workspaceMutation({
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
     platforms: v.optional(v.array(v.string())),
     links: v.optional(v.array(v.string())),
+    /** The client a new conversation is about. Fixed when it starts; missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
   },
   handler: async (ctx, args): Promise<{ intakeId: Id<"intakes">; route: ChatRoute | null }> => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const text = clean(args.text);
     if (!text) throw userError("Type what you want to work on.");
     const choices = { mode: args.mode, platforms: args.platforms, links: args.links };
@@ -143,14 +147,16 @@ export const send = workspaceMutation({
     if (args.skill !== undefined && !isChatRoute(args.skill)) throw userError("That skill has no chat yet.");
     const context = args.context ? await readContext(ctx, args.context) : undefined;
     const route = (args.skill as ChatRoute | undefined) ?? routeIntent(text);
+    const forClient = await clientForNew(ctx, args.clientId);
     if (route) {
-      const intakeId = await begin(ctx, route, { text, context, ...choices });
+      const intakeId = await begin(ctx, route, { text, context, ...choices, ...forClient });
       return { intakeId, route };
     }
     const now = Date.now();
     const intakeId = await ctx.db.insert("intakes", {
       workspaceId: ctx.workspaceId,
       agentSlug: GROWTH_ARCHITECT,
+      ...forClient,
       skillSlug: UNDECIDED,
       ...(context ? { context } : {}),
       createdBy: ctx.identity.subject,
@@ -170,11 +176,11 @@ export const send = workspaceMutation({
   },
 });
 
-/** Sets a conversation aside. Work it already started keeps running. Owners and Managers. */
+/** Sets a conversation aside. Work it already started keeps running. Owners, Admins and Members. */
 export const close = workspaceMutation({
   args: { intakeId: v.id("intakes") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const row = await ownIntake(ctx, args.intakeId);
     if (row.status !== "started") await ctx.db.patch(row._id, { status: "abandoned", updatedAt: Date.now() });
     return null;
@@ -218,7 +224,7 @@ export const list = workspaceQuery({
       .order("desc")
       .take(40);
     const out = [];
-    for (const row of rows) {
+    for (const row of ctx.clients.filter(rows)) {
       if (row.status === "abandoned" || row.agentSlug !== GROWTH_ARCHITECT) continue;
       const route = routeOf(row);
       out.push({

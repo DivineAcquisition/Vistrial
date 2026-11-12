@@ -20,12 +20,13 @@ import { AssetStatusBadge } from "@/components/runs/run-parts";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { money, shortDate } from "@/lib/research/words";
+import { shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { TAB_SKILL, type WorkTab } from "../../../convex/lib/workTabs";
 
 import { ReviewBar } from "./review-bar";
 import type { FinishedRun, ResultRow, ReviewActions, RunningRun, SuggestionRow } from "./types";
+import { useCredits } from "@/lib/credits";
 
 /** Plain words for a step's phase, as the live feed shows it. */
 const PHASE_WORDS: Record<string, string> = {
@@ -87,6 +88,7 @@ export function WorkHero({ icon: Icon, eyebrow, title, promise, action, children
 
 /** Live progress for this skill's runs. Each opens its full step list. */
 export function RunningNow({ running, finished, sessionHref }: { running: RunningRun[]; finished: FinishedRun[]; sessionHref?: (projectId: string) => string }) {
+  const credits = useCredits();
   return (
     <section id="running" className="grid scroll-mt-24 gap-3" aria-label="Running now">
       <SectionTitle icon={LoaderCircle}>Running now</SectionTitle>
@@ -109,7 +111,7 @@ export function RunningNow({ running, finished, sessionHref }: { running: Runnin
                       )}
                       <span className="truncate">{waiting ? "Waiting for your answer" : phaseWords(run.phase)}</span>
                     </span>
-                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{money(run.costCents)}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{credits.cost(run.costCents)}</span>
                   </span>
                   {run.question ? <span className="line-clamp-2 text-xs text-card-foreground">&ldquo;{run.question}&rdquo;</span> : null}
                   <span aria-hidden className="h-1 overflow-hidden rounded-full bg-muted">
@@ -133,7 +135,7 @@ export function RunningNow({ running, finished, sessionHref }: { running: Runnin
                 <Link href={`/app/runs/${run.id}`} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-muted">
                   <span className="text-card-foreground">{shortDate(run.startedAt)}</span>
                   <span className="text-muted-foreground">
-                    {run.status === "completed" ? "Finished" : run.status === "failed" ? "Failed" : "Stopped"} · {money(run.costCents)}
+                    {run.status === "completed" ? "Finished" : run.status === "failed" ? "Failed" : "Stopped"} · {credits.cost(run.costCents)}
                   </span>
                 </Link>
               </li>
@@ -164,7 +166,7 @@ export function ResultsList({
   empty: string;
   extra?: (row: ResultRow) => ReactNode;
   openHref?: (row: ResultRow) => string;
-  /** "Refine in chat": opens the Chat tab with this result attached. Owners and Managers. */
+  /** "Refine in chat": opens the Chat tab with this result attached. Owners, Admins and Members. */
   refineHref?: (row: ResultRow) => string;
 }) {
   const waiting = results.filter((row) => row.status === "draft" || row.status === "needsReview").length;

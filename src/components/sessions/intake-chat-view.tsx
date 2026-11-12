@@ -23,11 +23,11 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
-import { money } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { SourceIcon } from "@/components/research/source-icon";
 import { Banner } from "@/components/ui/banner";
 import { showError } from "@/lib/errors/show-error";
+import { useCredits } from "@/lib/credits";
 
 export type IntakeSlots = {
   objective: string;
@@ -148,6 +148,7 @@ function Thinking() {
 
 /** The plan: what will be researched, with what is known, found and assumed, and the costs. */
 function PlanCard({ view, actions, editor }: { view: IntakeView; actions: IntakeActions; editor: boolean }) {
+  const credits = useCredits();
   const { intake } = view;
   const slots = intake.slots;
   const [adding, setAdding] = useState("");
@@ -274,8 +275,8 @@ function PlanCard({ view, actions, editor }: { view: IntakeView; actions: Intake
         <span className="flex items-start gap-2 text-xs text-muted-foreground">
           <Wallet aria-hidden className="mt-0.5 size-3.5 shrink-0" />
           <span>
-            {intake.mode === "fast" ? "Fast (Sonnet 5.5)" : "Thorough (Opus 5.5)"}. This conversation: {money(intake.costCents)} of {money(intake.capCents)}. Research: up to{" "}
-            {money(intake.researchCapCents ?? 300)}, with 50¢ held back to check and fix the report once.
+            {intake.mode === "fast" ? "Fast (Sonnet 5.5)" : "Thorough (Opus 5.5)"}. This conversation: {credits.cost(intake.costCents)} of {credits.cost(intake.capCents)}. Research: up to{" "}
+            {credits.cost(intake.researchCapCents ?? 300)}, with {credits.cost(50)} held back to check and fix the report once.
           </span>
         </span>
         {intake.status === "ready" && editor ? (
@@ -322,6 +323,7 @@ export function IntakeChatView({
   /** The shared chat box, used in place of the plain one. */
   composer?: React.ReactNode;
 }) {
+  const credits = useCredits();
   const [text, setText] = useState(initialText);
   const [sending, setSending] = useState(false);
   const end = useRef<HTMLDivElement>(null);
@@ -498,13 +500,13 @@ export function IntakeChatView({
           </div>
           <p className="px-1 text-[11px] text-muted-foreground">
             {view
-              ? `Question ${Math.min(view.intake.questionsAsked, view.intake.maxQuestions)} of up to ${view.intake.maxQuestions} · this conversation ${money(view.intake.costCents)} of ${money(view.intake.capCents)}`
+              ? `Question ${Math.min(view.intake.questionsAsked, view.intake.maxQuestions)} of up to ${view.intake.maxQuestions} · this conversation ${credits.cost(view.intake.costCents)} of ${credits.cost(view.intake.capCents)}`
               : "Nothing runs or spends until you press Start research on the plan."}
           </p>
         </form>
       ) : !editor ? (
         <p className="sticky bottom-20 z-10 mt-auto rounded-2xl border border-border bg-card px-4 py-3 text-center text-sm text-muted-foreground md:bottom-4">
-          Owners and Managers start sessions. You can follow the ones they run.
+          Owners, Admins and Members start sessions. You can follow the ones they run.
         </p>
       ) : null}
     </div>

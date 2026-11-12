@@ -6,6 +6,7 @@
  * disconnecting deletes the tokens and every saved read.
  */
 
+import { isAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -13,7 +14,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
-import { ownerMutation, workspaceQuery } from "./lib/builders";
+import { adminMutation, workspaceQuery } from "./lib/builders";
 import { notFound, userError } from "./lib/errors";
 import { authorizeUrl, codeChallenge, codeVerifier, isNonce, randomHex } from "./lib/integrations/oauth";
 import {
@@ -83,9 +84,9 @@ export const list = workspaceQuery({
       .take(50);
     const byProvider = new Map(rows.map((row) => [row.provider, row]));
     return {
-      canManage: ctx.member.role === "owner",
-      // Owners and Managers may ask for a fresh read of a connection that supports one.
-      canRefresh: ctx.member.role !== "rep",
+      canManage: isAdmin(ctx.member.role),
+      // Owners and Admins may ask for a fresh read of a connection that supports one.
+      canRefresh: isAdmin(ctx.member.role),
       providers: providerList().map((row) => {
         const connection = byProvider.get(row.key);
         return {
@@ -115,7 +116,7 @@ export const list = workspaceQuery({
 // ---------- Sign-in ----------
 
 /** Starts a provider's sign-in for this workspace. Owner only. Returns the address to open. */
-export const startConnect = ownerMutation({
+export const startConnect = adminMutation({
   args: { provider: v.string(), returnOrigin: v.optional(v.string()), returnPath: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ url: string }> => {
     const row = provider(args.provider);
@@ -166,7 +167,7 @@ export const consumeState = internalMutation({
       .query("members")
       .withIndex("by_workspace_user", (q) => q.eq("workspaceId", row.workspaceId).eq("userId", row.userId))
       .unique();
-    if (!member?.active || member.role !== "owner") return null;
+    if (!member?.active || !isAdmin(member.role)) return null;
     return {
       workspaceId: row.workspaceId,
       userId: row.userId,
@@ -212,7 +213,7 @@ export const saveConnection = internalMutation({
 });
 
 /** Grants or withdraws an agent's use of a connection. Owner only. */
-export const setAgentAccess = ownerMutation({
+export const setAgentAccess = adminMutation({
   args: { provider: v.string(), agentSlug: v.string(), granted: v.boolean() },
   handler: async (ctx, args) => {
     provider(args.provider);

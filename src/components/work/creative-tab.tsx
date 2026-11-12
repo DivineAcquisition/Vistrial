@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientScope } from "@/components/shell/shell-context";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
@@ -12,7 +13,7 @@ import { Panel } from "@/components/ui/panel";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { Textarea } from "@/components/ui/textarea";
 import { showError } from "@/lib/errors/show-error";
-import { PLATFORM_LABEL, money, shortDate } from "@/lib/research/words";
+import { PLATFORM_LABEL, shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -25,6 +26,7 @@ import { ReviewBar } from "./review-bar";
 import type { AddedReference, CreativeOptions, CreativeTabData, CreativeView, ReviewActions } from "./types";
 import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
+import { useCredits } from "@/lib/credits";
 
 export type CreativeStart = { kitId: string; sourceRefId: string | null; referenceId: string | null; offerCardId: string | null; dial: string; note: string };
 
@@ -581,6 +583,7 @@ function AdSet({ view, editor, review, images, test }: { view: CreativeView; edi
 
 /** The Creative workspace: the ask, what is running, and the ad sets with the one chosen opened. */
 export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, review, initialSource, initialForm, images, test }: CreativeTabProps) {
+  const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialForm || initialSource));
   return (
     <div className="grid min-w-0 gap-5">
@@ -611,7 +614,7 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
                     <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin text-primary motion-reduce:animate-none" />
                     <span className="truncate">{run.words}</span>
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{money(run.costCents)}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{credits.cost(run.costCents)}</span>
                 </Link>
               </li>
             ))}
@@ -676,7 +679,8 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
 /** The Creative tab fed by Convex. `source` (from "Make our version") opens the form on that reference. */
 export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId: Id<"workspaces">; base: string; editor: boolean; source?: string | null }) {
   const options = useQuery(api.creative.options, { workspaceId, ...(source ? { sourceRefId: source as Id<"sourceRefs"> } : {}) });
-  const tab = useQuery(api.creative.tab, { workspaceId });
+  const { scope } = useClientScope();
+  const tab = useQuery(api.creative.tab, { workspaceId, scope });
   const [assetId, setAssetId] = useState<string | null>(null);
   const chosen = (tab?.results.some((row) => row.id === assetId) ? assetId : (tab?.results[0]?.id ?? null)) as Id<"assets"> | null;
   const view = useQuery(api.creative.view, chosen ? { workspaceId, assetId: chosen } : "skip");

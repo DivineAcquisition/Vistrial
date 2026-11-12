@@ -38,13 +38,13 @@ async function message(run: Promise<unknown>) {
 async function seed(t: Tester, name: string) {
   const owner = t.withIdentity(person(`${name}-owner`));
   const workspaceId = await owner.mutation(api.workspace.create, { name });
-  const join = async (role: "manager" | "rep") => {
+  const join = async (role: "admin" | "member" | "viewer") => {
     const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: `${name}-${role}@example.com`, role });
     const member = t.withIdentity({ ...person(`${name}-${role}`), email: `${name}-${role}@example.com` });
     await member.mutation(api.workspace.acceptInvite, { token: invite.token });
     return member;
   };
-  return { owner, workspaceId, manager: await join("manager"), rep: await join("rep") };
+  return { owner, workspaceId, admin: await join("admin"), member: await join("member"), viewer: await join("viewer") };
 }
 
 async function signedIn(a: { owner: Caller; workspaceId: Id<"workspaces"> }) {
@@ -125,10 +125,10 @@ describe("browser access with approval (dry run)", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it("lets only an Owner start, sign in and end a session, and only for the practice site", async () => {
+  it("lets only an Owner or Admin start, sign in and end a session, and only for the practice site", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
-    for (const caller of [a.manager, a.rep]) expect(await message(caller.mutation(api.browserAccess.connect, { workspaceId: a.workspaceId, site: "demo-crm" }))).toBe(NOT_ALLOWED);
+    for (const caller of [a.member, a.viewer]) expect(await message(caller.mutation(api.browserAccess.connect, { workspaceId: a.workspaceId, site: "demo-crm" }))).toBe(NOT_ALLOWED);
     expect(await message(a.owner.mutation(api.browserAccess.connect, { workspaceId: a.workspaceId, site: "meta" }))).toContain("official API, not a browser");
     expect(await message(a.owner.mutation(api.browserAccess.connect, { workspaceId: a.workspaceId, site: "linkedin" }))).toContain("Vistrial does not automate LinkedIn");
     expect(await message(a.owner.mutation(api.browserAccess.connect, { workspaceId: a.workspaceId, site: "highlevel" }))).toContain("not available yet");
@@ -137,11 +137,11 @@ describe("browser access with approval (dry run)", () => {
     const sessionId = await a.owner.mutation(api.browserAccess.connect, { workspaceId: a.workspaceId, site: "demo-crm" });
     // Asking again returns the same session: there is one per site.
     expect(await a.owner.mutation(api.browserAccess.connect, { workspaceId: a.workspaceId, site: "demo-crm" })).toBe(sessionId);
-    expect(await message(a.manager.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId, goalKey: "headline" }))).toBe("This session is not signed in.");
-    expect(await message(a.manager.mutation(api.browserAccess.completeSignIn, { workspaceId: a.workspaceId, sessionId }))).toBe(NOT_ALLOWED);
+    expect(await message(a.admin.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId, goalKey: "headline" }))).toBe("This session is not signed in.");
+    expect(await message(a.member.mutation(api.browserAccess.completeSignIn, { workspaceId: a.workspaceId, sessionId }))).toBe(NOT_ALLOWED);
     await a.owner.mutation(api.browserAccess.completeSignIn, { workspaceId: a.workspaceId, sessionId });
 
-    const overview = await a.rep.query(api.browserAccess.overview, { workspaceId: a.workspaceId });
+    const overview = await a.viewer.query(api.browserAccess.overview, { workspaceId: a.workspaceId });
     expect(overview.sessions).toMatchObject([{ site: "demo-crm", state: "active" }]);
     expect(overview.dryRunOnly).toBe(true);
     // The session row holds no credential of any kind.
@@ -149,18 +149,18 @@ describe("browser access with approval (dry run)", () => {
     expect(Object.keys(row).sort()).toEqual(["_creationTime", "_id", "createdAt", "createdBy", "driver", "expiresAt", "signedInAt", "site", "status", "workspaceId"]);
     expect(row.expiresAt! - row.signedInAt!).toBe(7 * 24 * 60 * 60 * 1000);
 
-    expect(await message(a.manager.mutation(api.browserAccess.revoke, { workspaceId: a.workspaceId, sessionId }))).toBe(NOT_ALLOWED);
+    expect(await message(a.member.mutation(api.browserAccess.revoke, { workspaceId: a.workspaceId, sessionId }))).toBe(NOT_ALLOWED);
   });
 
   it("logs reads, waits before every change, and wants a typed word from an Owner before publishing", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const sessionId = await signedIn(a);
-    expect(await message(a.rep.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId, goalKey: "headline" }))).toBe(NOT_ALLOWED);
-    const browserTaskId = await a.manager.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId, goalKey: "headline" });
+    expect(await message(a.viewer.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId, goalKey: "headline" }))).toBe(NOT_ALLOWED);
+    const browserTaskId = await a.admin.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId, goalKey: "headline" });
     await settle(t);
 
-    const read = () => a.manager.query(api.browserAccess.trail, { workspaceId: a.workspaceId, browserTaskId });
+    const read = () => a.admin.query(api.browserAccess.trail, { workspaceId: a.workspaceId, browserTaskId });
     let trail = await read();
     // Two reads were done and logged; the first change is shown and nothing after it has been proposed.
     expect(trail.task.status).toBe("waitingApproval");
@@ -172,22 +172,22 @@ describe("browser access with approval (dry run)", () => {
     expect(trail.steps.every((row) => row.screenshot)).toBe(true);
     expect(trail.steps[2]).toMatchObject({ url: "https://app.practice-crm.vistrial.example/funnels/booked-calendar/landing", decidedBy: null, canDecide: true });
 
-    expect(await message(a.rep.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[2].id, approve: true }))).toBe(NOT_ALLOWED);
-    expect(await message(a.rep.query(api.browserAccess.trail, { workspaceId: a.workspaceId, browserTaskId }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[2].id, approve: true }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.query(api.browserAccess.trail, { workspaceId: a.workspaceId, browserTaskId }))).toBe(NOT_ALLOWED);
     // Each approval covers one step: after it, the next change waits again.
-    await a.manager.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[2].id, approve: true });
+    await a.admin.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[2].id, approve: true });
     trail = await read();
-    expect(trail.steps[2]).toMatchObject({ status: "done", decidedBy: "Alpha-manager" });
+    expect(trail.steps[2]).toMatchObject({ status: "done", decidedBy: "Alpha-admin" });
     expect(trail.steps[3]).toMatchObject({ kind: "change", status: "proposed", verb: "type", target: "the Headline field", value: "Fill your calendar with sales calls from people who can afford you" });
-    expect(await message(a.manager.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[2].id, approve: true }))).toBe("This step is no longer waiting for a decision.");
-    await a.manager.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[3].id, approve: true });
+    expect(await message(a.admin.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[2].id, approve: true }))).toBe("This step is no longer waiting for a decision.");
+    await a.admin.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[3].id, approve: true });
     await a.owner.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: (await read()).steps[4].id, approve: true });
 
     // Publishing was proposed by the driver as an ordinary change. The rules made it restricted.
     trail = await read();
     const publish = trail.steps[5];
     expect(publish).toMatchObject({ kind: "restricted", status: "proposed", target: "the Publish button", canDecide: false, restricted: { reason: "publish", confirm: "PUBLISH", words: "It publishes something where others can see it." } });
-    expect(await message(a.manager.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: publish.id, approve: true, confirmWord: "PUBLISH" }))).toBe("Only an Owner can approve this kind of step.");
+    expect(await message(a.admin.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: publish.id, approve: true, confirmWord: "PUBLISH" }))).toBe("Only an Owner can approve this kind of step.");
     expect(await message(a.owner.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: publish.id, approve: true }))).toBe("Type PUBLISH to approve this step.");
     expect(await message(a.owner.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: publish.id, approve: true, confirmWord: "publish" }))).toBe("Type PUBLISH to approve this step.");
     expect((await read()).steps[5].status).toBe("proposed");
@@ -219,14 +219,14 @@ describe("browser access with approval (dry run)", () => {
     const sessionId = await signedIn(a);
     const browserTaskId = await a.owner.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId, goalKey: "pipeline" });
     const read = () => a.owner.query(api.browserAccess.trail, { workspaceId: a.workspaceId, browserTaskId });
-    await a.manager.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: (await read()).steps[2].id, approve: true });
+    await a.admin.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: (await read()).steps[2].id, approve: true });
     // The driver called "Send follow-up email" a read. It was not done: it is restricted and waits for the Owner.
     let trail = await read();
     expect(trail.steps[3]).toMatchObject({ kind: "restricted", status: "proposed", restricted: { reason: "message", confirm: "SEND" } });
-    await a.manager.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[3].id, approve: false });
+    await a.admin.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: trail.steps[3].id, approve: false });
     trail = await read();
     expect(trail.task).toMatchObject({ status: "stopped", stopReason: "declined", stopWords: "A step was declined, so the task stopped." });
-    expect(trail.steps[3]).toMatchObject({ status: "declined", decidedBy: "Alpha-manager" });
+    expect(trail.steps[3]).toMatchObject({ status: "declined", decidedBy: "Alpha-admin" });
     // The delete step that would have followed was never proposed.
     expect(trail.steps).toHaveLength(4);
   });
@@ -272,13 +272,13 @@ describe("browser access with approval (dry run)", () => {
     // Revoking stops a waiting task at once.
     const fresh = await signedIn(a);
     expect(fresh).not.toBe(sessionId);
-    const browserTaskId = await a.manager.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId: fresh, goalKey: "headline" });
+    const browserTaskId = await a.admin.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId: fresh, goalKey: "headline" });
     const before = await a.owner.query(api.browserAccess.trail, { workspaceId: a.workspaceId, browserTaskId });
     await a.owner.mutation(api.browserAccess.revoke, { workspaceId: a.workspaceId, sessionId: fresh });
     const after = await a.owner.query(api.browserAccess.trail, { workspaceId: a.workspaceId, browserTaskId });
     expect(after.task).toMatchObject({ status: "stopped", stopReason: "revoked" });
     expect(await message(a.owner.mutation(api.browserAccess.decide, { workspaceId: a.workspaceId, stepId: before.steps[2].id, approve: true }))).toBe("This step is no longer waiting for a decision.");
-    expect(await message(a.manager.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId: fresh, goalKey: "headline" }))).toBe("This session is not signed in.");
+    expect(await message(a.admin.mutation(api.browserAccess.startTask, { workspaceId: a.workspaceId, sessionId: fresh, goalKey: "headline" }))).toBe("This session is not signed in.");
     expect(DRY_RUN_GOALS.map((goal) => goal.key)).toEqual(["headline", "pipeline", "wander"]);
   });
 

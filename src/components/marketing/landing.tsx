@@ -17,7 +17,7 @@ import {
   SolutionGrid,
   WithWithout,
 } from "@/components/marketing/framework-blocks";
-import { AssetApprovalExample } from "@/components/marketing/growth-visuals";
+import { GuardedRun } from "@/components/marketing/guarded-run";
 import { APPROVAL, PROOF, SAFETY, SECTIONS, SITE_DESCRIPTION } from "@/lib/marketing/content";
 import {
   COMPARE,
@@ -127,22 +127,19 @@ export function LandingPage() {
         <div className="mt-12 grid gap-5">
           <LoopDiagram />
           <div className="grid items-start gap-5 lg:grid-cols-2">
-            {loopPictures.slice(0, 1).map((picture) => (
+            {loopPictures.map((picture) => (
               <ProductPicture key={picture.id} picture={picture} />
             ))}
-            <div className="grid gap-5">
-              {loopPictures.slice(1).map((picture) => (
-                <ProductPicture key={picture.id} picture={picture} />
-              ))}
-              <div className="rounded-xl border border-border bg-muted p-5 sm:p-6">
-                <h3 className="font-heading text-xl tracking-tight text-strong">{APPROVAL.introTitle}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{APPROVAL.introBody}</p>
-                <div className="mt-5">
-                  <AssetApprovalExample />
-                </div>
-              </div>
-            </div>
           </div>
+        </div>
+        {/* The safety behaviors, shown working in one sample run. It ends on the hold-to-approve step. */}
+        <div className="mt-12">
+          <h3 className="font-heading text-2xl tracking-tight text-strong">{SAFETY.headline}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{SAFETY.lead}</p>
+          <div className="mt-6">
+            <GuardedRun />
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">{APPROVAL.introBody}</p>
         </div>
       </Section>
 

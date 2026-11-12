@@ -141,7 +141,7 @@ function AddTranscript({ onAdd }: { onAdd: (input: NewTranscript) => Promise<str
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <ShieldCheck aria-hidden className="size-3.5" /> Kept for this workspace only, until you delete it.
+          <ShieldCheck aria-hidden className="size-3.5" /> Kept for this organization only, until you delete it.
         </p>
         <Button type="submit" size="sm" disabled={!ready}>
           {busy ? "Adding" : "Add transcript"}
@@ -177,7 +177,7 @@ export function TranscriptsView({
         <AddTranscript onAdd={onAdd} />
       ) : (
         <p className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
-          An Owner or Manager can add call transcripts from any note taker.
+          An Owner, Admin or Member can add call transcripts from any note taker.
         </p>
       )}
       {transcripts.map((row) => {

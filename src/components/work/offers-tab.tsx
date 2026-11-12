@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientScope } from "@/components/shell/shell-context";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -410,8 +411,9 @@ export function OffersTabView(props: OffersTabProps) {
 
 /** The Offers tab fed by Convex. `analysisId` (from a chat's result link) opens on that analysis. */
 export function OffersTab({ workspaceId, base, editor, analysisId: linked }: { workspaceId: Id<"workspaces">; base: string; editor: boolean; analysisId?: string | null }) {
-  const tab = useQuery(api.workTabs.tab, { workspaceId, skillSlug: "offer-intelligence" });
-  const cards = useQuery(api.offers.list, { workspaceId });
+  const { scope, clientId } = useClientScope();
+  const tab = useQuery(api.workTabs.tab, { workspaceId, scope, skillSlug: "offer-intelligence" });
+  const cards = useQuery(api.offers.list, { workspaceId, scope });
   const starter = useQuery(api.offers.starter, { workspaceId });
   const [cardId, setCardId] = useState<string | null>(null);
   const chosenCard = (cardId ?? cards?.[0]?.id ?? null) as Id<"offerCards"> | null;
@@ -441,7 +443,7 @@ export function OffersTab({ workspaceId, base, editor, analysisId: linked }: { w
         setAnalysisId(null);
       }}
       onSaveCard={async (id, offer, note, copyOf) => {
-        const result = await save({ workspaceId, ...(id ? { cardId: id as Id<"offerCards"> } : {}), ...offer, note, ...(copyOf && !id ? { copyOf: copyOf as Id<"offerCards"> } : {}) });
+        const result = await save({ workspaceId, ...(id ? { cardId: id as Id<"offerCards"> } : {}), ...offer, note, ...(copyOf && !id ? { copyOf: copyOf as Id<"offerCards"> } : {}), ...(!id && !copyOf && clientId ? { clientId } : {}) });
         setCardId(result.cardId);
       }}
       onAnalyse={async (id) => {

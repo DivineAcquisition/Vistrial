@@ -47,14 +47,15 @@ async function setup() {
   const t = convexTest(schema, modules);
   const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
   const otherWorkspace = await t.run(async (ctx) => {
-    await ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true });
-    await ctx.db.insert("members", { workspaceId, userId: "user_manager", role: "manager", displayName: "Manager", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_admin", role: "admin", displayName: "Admin", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_member", role: "member", displayName: "Member", active: true });
     const other = await ctx.db.insert("workspaces", { name: "Other agency", slug: "other", timezone: "UTC", status: "active", createdAt: 0 });
     await ctx.db.insert("members", { workspaceId: other, userId: "user_other", role: "owner", displayName: "Other", active: true });
     return other;
   });
   const as = (subject: string) => t.withIdentity({ subject, issuer: "https://clerk.test", tokenIdentifier: `x|${subject}`, name: subject, email: `${subject}@example.com` });
-  return { t, workspaceId, otherWorkspace, owner: as("user_owner"), manager: as("user_manager"), rep: as("user_rep"), stranger: as("user_other") };
+  return { t, workspaceId, otherWorkspace, owner: as("user_owner"), admin: as("user_admin"), member: as("user_member"), viewer: as("user_viewer"), stranger: as("user_other") };
 }
 
 async function connect(t: ReturnType<typeof convexTest>, workspaceId: Id<"workspaces">, provider = "google_calendar", extra: Record<string, unknown> = {}) {
@@ -91,8 +92,8 @@ function fakeProvider(answers: Record<string, (call: Call) => { status?: number;
 
 describe("connections: what screens read", () => {
   it("shows every provider as not set up while the deployment has no settings, in three groups", async () => {
-    const { workspaceId, rep } = await setup();
-    const result = await rep.query(api.integrations.list, { workspaceId });
+    const { workspaceId, viewer } = await setup();
+    const result = await viewer.query(api.integrations.list, { workspaceId });
     expect(result).toMatchObject({ canManage: false, canRefresh: false });
     expect(result.providers.map((row) => row.key)).toEqual([
       "google_ads",
@@ -123,9 +124,9 @@ describe("connections: what screens read", () => {
   });
 
   it("never returns a token, and keeps each workspace's connections to itself", async () => {
-    const { t, workspaceId, otherWorkspace, rep, stranger } = await setup();
+    const { t, workspaceId, otherWorkspace, viewer, stranger } = await setup();
     await connect(t, workspaceId);
-    const mine = await rep.query(api.integrations.list, { workspaceId });
+    const mine = await viewer.query(api.integrations.list, { workspaceId });
     expect(JSON.stringify(mine)).not.toMatch(/SECRET-ACCESS|SECRET-REFRESH/);
     expect(mine.providers.find((row) => row.key === "google_calendar")?.connection).toMatchObject({
       status: "connected",
@@ -139,12 +140,12 @@ describe("connections: what screens read", () => {
 });
 
 describe("connections: sign-in", () => {
-  it("lets only an Owner start, and only for a provider that is set up and built", async () => {
-    const { workspaceId, owner, manager, rep, stranger } = await setup();
+  it("lets only an Owner or Admin start, and only for a provider that is set up and built", async () => {
+    const { workspaceId, owner, member, viewer, stranger } = await setup();
     await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow(/not set up on Vistrial yet/);
     setGoogle();
-    await expect(rep.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
-    await expect(manager.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
+    await expect(viewer.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
+    await expect(member.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(stranger.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "google_ads" })).rejects.toThrow(/cannot be connected yet/);
     await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "nope" })).rejects.toThrow(/does not exist/);
@@ -250,7 +251,7 @@ describe("connections: sign-in", () => {
     expect(row).toMatchObject({ provider: "calendly", accountId: "https://api.calendly.com/users/U1", accountLabel: "dana@northpeak.agency", scopes: ["users:read", "scheduled_events:read"] });
   });
 
-  it("saves nothing when the person cancels, unticks the permission, uses another provider's address, or is no longer an Owner", async () => {
+  it("saves nothing when the person cancels, unticks the permission, uses another provider's address, or is no longer an Owner or Admin", async () => {
     const { t, workspaceId, owner } = await setup();
     setGoogle();
     setCalendly();
@@ -275,7 +276,7 @@ describe("connections: sign-in", () => {
     const state = await start();
     await t.run(async (ctx) => {
       const member = await ctx.db.query("members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", workspaceId).eq("userId", "user_owner")).unique();
-      await ctx.db.patch(member!._id, { role: "manager" });
+      await ctx.db.patch(member!._id, { role: "member" });
     });
     const demoted = await t.fetch(`/integrations/google/callback?state=${state}&code=c`);
     expect(demoted.headers.get("Location")).toContain("outcome=expired");
@@ -365,8 +366,8 @@ describe("connections: keeping a token fresh", () => {
 });
 
 describe("connections: disconnect", () => {
-  it("lets only an Owner disconnect, deletes the tokens and every saved read, and asks the provider to cancel the token", async () => {
-    const { t, workspaceId, otherWorkspace, owner, manager, rep, stranger } = await setup();
+  it("lets only an Owner or Admin disconnect, deletes the tokens and every saved read, and asks the provider to cancel the token", async () => {
+    const { t, workspaceId, otherWorkspace, owner, member, viewer, stranger } = await setup();
     setGoogle();
     await connect(t, workspaceId);
     await connect(t, workspaceId, "calendly");
@@ -376,8 +377,8 @@ describe("connections: disconnect", () => {
     await t.mutation(internal.integrations.saveSnapshot, { workspaceId: otherWorkspace, provider: "google_calendar", kind: "bookings", data: { weeks: [] } });
     const calls = fakeProvider({ "https://oauth2.googleapis.com/revoke": () => ({}) });
 
-    await expect(rep.action(api.integrationActions.disconnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
-    await expect(manager.action(api.integrationActions.disconnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
+    await expect(viewer.action(api.integrationActions.disconnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
+    await expect(member.action(api.integrationActions.disconnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(stranger.action(api.integrationActions.disconnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     expect(calls).toHaveLength(0);
 
@@ -427,10 +428,10 @@ describe("connections: disconnect", () => {
 });
 
 describe("connections: agent access", () => {
-  it("lets only an Owner grant or withdraw an agent", async () => {
-    const { t, workspaceId, owner, manager } = await setup();
+  it("lets only an Owner or Admin grant or withdraw an agent", async () => {
+    const { t, workspaceId, owner, member } = await setup();
     await connect(t, workspaceId);
-    await expect(manager.mutation(api.integrations.setAgentAccess, { workspaceId, provider: "google_calendar", agentSlug: "growth-architect", granted: false })).rejects.toThrow();
+    await expect(member.mutation(api.integrations.setAgentAccess, { workspaceId, provider: "google_calendar", agentSlug: "growth-architect", granted: false })).rejects.toThrow();
     await owner.mutation(api.integrations.setAgentAccess, { workspaceId, provider: "google_calendar", agentSlug: "growth-architect", granted: false });
     const shown = await owner.query(api.integrations.list, { workspaceId });
     expect(shown.providers.find((row) => row.key === "google_calendar")?.connection?.agents).toEqual([]);

@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientScope } from "@/components/shell/shell-context";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
@@ -13,7 +14,7 @@ import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { showError } from "@/lib/errors/show-error";
-import { money, shortDate } from "@/lib/research/words";
+import { shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -23,6 +24,7 @@ import { TryThis, useItemDecisions, type TryActions } from "./try-this";
 import type { ItemDecision, PagesQuote, PagesTabData, ReviewActions, TeardownPageView, TeardownView } from "./types";
 import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
+import { useCredits } from "@/lib/credits";
 
 export type TeardownAsk = { industry: string; ownUrl: string; urls: string[]; find: boolean; note: string };
 
@@ -79,6 +81,7 @@ function Honest({ words }: { words: string }) {
 
 /** The ask: industry, your page, other pages, and whether to look for more. The plan and budget sit under it. */
 function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial: TeardownAsk; quote: PagesQuote | null; onAskChange: (ask: TeardownAsk | null) => void; onStart: PagesTabProps["onStart"]; onClose: () => void }) {
+  const credits = useCredits();
   const [industry, setIndustry] = useState(initial.industry);
   const [ownUrl, setOwnUrl] = useState(initial.ownUrl);
   const [others, setOthers] = useState(initial.urls.join("\n"));
@@ -174,11 +177,11 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
               {quote.tooMany ? <p className="text-sm text-destructive">Up to {quote.limits.pages} pages in one teardown. Remove some links.</p> : null}
               <div className="grid gap-1 rounded-lg bg-muted/50 px-3 py-2">
                 <p className="text-sm text-card-foreground">
-                  Budget: at most <span className="font-semibold">{money(quote.maxCents)}</span> of credits
+                  Budget: at most <span className="font-semibold">{credits.words(quote.maxCents)}</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  The run stops at this cap and you pay only for what it uses. Opening {quote.maxPages === 1 ? "the page" : `the ${quote.maxPages} pages`} is at most {money(quote.readingCents)} of it; the rest is reading them against the framework.
-                  {quote.availableCents !== null && !quote.coversMax ? ` Your balance is ${money(quote.availableCents)}, so the run stops early if it runs out.` : ""}
+                  The run stops at this cap and you pay only for what it uses. Opening {quote.maxPages === 1 ? "the page" : `the ${quote.maxPages} pages`} is at most {credits.words(quote.readingCents)} of it; the rest is reading them against the framework.
+                  {quote.availableCents !== null && !quote.coversMax ? ` Your balance is ${credits.words(quote.availableCents)}, so the run stops early if it runs out.` : ""}
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -189,13 +192,13 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
                 <div className="flex flex-wrap items-center gap-2">
                   <Button type="button" disabled={!quote.ready || busy} onClick={() => void start()}>
                     {busy ? <LoaderCircle aria-hidden className="size-4 animate-spin" /> : <Search aria-hidden className="size-4" />}
-                    {busy ? "Starting…" : `Start teardown · up to ${money(quote.maxCents)}`}
+                    {busy ? "Starting…" : `Start teardown · up to ${credits.words(quote.maxCents)}`}
                   </Button>
                   {!quote.ready && !quote.industry ? <span className="text-xs text-muted-foreground">Name the industry first.</span> : null}
                   {!quote.ready && quote.industry && quote.maxPages === 0 ? <span className="text-xs text-muted-foreground">Add a page, or tick the box to find some.</span> : null}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">An Owner or Manager can start a teardown.</p>
+                <p className="text-sm text-muted-foreground">An Owner, Admin or Member can start a teardown.</p>
               )}
               {problem ? <p className="text-sm text-destructive">{problem}</p> : null}
             </>
@@ -578,6 +581,7 @@ function Teardown({ view, page, editor, onSelectPage, decisions, tryActions, rev
 
 /** The Pages workspace, drawn from data so the screen and its story are the same component. */
 export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, view, page, onSelect, onSelectPage, decisions, tryActions, review, briefJson, initialAsk }: PagesTabProps) {
+  const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialAsk));
   const close = () => {
     setForm(false);
@@ -616,7 +620,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
                       {run.words}
                     </span>
                   </span>
-                  <span className="text-xs text-muted-foreground">{money(run.priceCents)} so far</span>
+                  <span className="text-xs text-muted-foreground">{credits.words(run.priceCents)} so far</span>
                 </Link>
               </li>
             ))}
@@ -644,7 +648,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
         <Panel className="grid gap-2 p-4 text-sm sm:p-6">
           <p className="text-card-foreground">No teardowns yet.</p>
           <p className="text-muted-foreground">
-            Give Vistrial your landing page and a few others in your industry, or let it find some. It opens each public page the way a visitor would and matches every section to the job it should do. {editor ? "" : "An Owner or Manager can start one."}
+            Give Vistrial your landing page and a few others in your industry, or let it find some. It opens each public page the way a visitor would and matches every section to the job it should do. {editor ? "" : "An Owner, Admin or Member can start one."}
           </p>
         </Panel>
       ) : null}
@@ -689,7 +693,8 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
 
 /** The Pages workspace with live data. */
 export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: Id<"workspaces">; base: string; editor: boolean; initial?: string | null }) {
-  const tab = useQuery(api.landingTeardown.tab, { workspaceId });
+  const { scope, clientId } = useClientScope();
+  const tab = useQuery(api.landingTeardown.tab, { workspaceId, scope });
   const [selected, setSelected] = useState<string | null>(initial ?? null);
   const [pageId, setPageId] = useState<string | null>(null);
   const [ask, setAsk] = useState<TeardownAsk | null>(null);
@@ -713,7 +718,7 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
       quote={quote ?? null}
       onAskChange={setAsk}
       onStart={async (next, confirmedCents) => {
-        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents });
+        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents, clientId });
       }}
       view={view ?? null}
       page={page ?? null}

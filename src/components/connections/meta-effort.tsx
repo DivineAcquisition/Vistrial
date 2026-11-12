@@ -55,7 +55,7 @@ const STEP_WORDS: Record<string, { icon: LucideIcon; doing: string; done: string
   results: { icon: BarChart3, doing: "Reading results for every campaign", done: "Read results for every campaign", unit: "result rows" },
   campaigns: { icon: ListChecks, doing: "Reading the campaign list", done: "Read the campaign list", unit: "campaigns" },
   trend: { icon: TrendingUp, doing: "Reading spend over time", done: "Read spend over time", unit: "points" },
-  save: { icon: Save, doing: "Saving the read for this workspace", done: "Saved the read for this workspace", unit: "campaigns" },
+  save: { icon: Save, doing: "Saving the read for this organization", done: "Saved the read for this organization", unit: "campaigns" },
 };
 
 const TRIGGER_WORDS: Record<SyncRun["trigger"], { icon: LucideIcon; label: string }> = {

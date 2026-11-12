@@ -14,7 +14,7 @@ export function AgentOverviewStory({ state, theme }: { state: string; theme: str
   const tabs = (["market-intelligence", "offer-intelligence", "growth-diagnostics"] as const).map((skill) => storyTab(skill, state));
   const chats = state === "empty" ? [] : [{ id: "i2", title: "Why did we stop adding retained clients?", status: "ready" }];
   return (
-    <StoryFrame theme={theme} role={editor ? "owner" : "rep"} header>
+    <StoryFrame theme={theme} role={editor ? "owner" : "viewer"} header>
       <AgentOverviewView base={base} promise={agent.promise} stateLabel="On" on editor={editor} data={overviewFrom(base, tabs, chats)} skills={agent.skills ?? []} />
     </StoryFrame>
   );

@@ -80,7 +80,7 @@ export function BrandsTabStory({ state, theme }: { state: string; theme: string 
   const empty = state === "empty";
   const [chosen, setChosen] = useState("northside");
   return (
-    <StoryFrame theme={theme} role={state === "rep" ? "rep" : "owner"}>
+    <StoryFrame theme={theme} role={state === "rep" ? "viewer" : "owner"}>
       <BrandsTabView
         editor={state !== "rep"}
         kits={empty ? [] : ROWS}

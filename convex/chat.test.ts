@@ -24,7 +24,7 @@ function script(model: ScriptedModel) {
 
 async function settle(t: Tester) {
   for (let i = 0; i < 4; i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
   }
 }

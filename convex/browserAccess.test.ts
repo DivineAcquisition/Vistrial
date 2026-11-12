@@ -55,7 +55,7 @@ async function signedIn(a: { owner: Caller; workspaceId: Id<"workspaces"> }) {
 
 async function settle(t: Tester) {
   for (let i = 0; i < 10; i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
   }
 }

@@ -73,7 +73,7 @@ describe("skill modules", () => {
     await owner.mutation(api.profile.confirm, { workspaceId });
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-research" });
     for (let i = 0; i < 6; i += 1) {
-      vi.advanceTimersByTime(0);
+      vi.advanceTimersByTime(1);
       await t.finishInProgressScheduledFunctions();
     }
     const run = await owner.query(api.runs.get, { workspaceId, runId });
@@ -118,7 +118,7 @@ describe("skill modules", () => {
     await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "on" });
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     delete process.env.ALLOW_DEV_SKILLS;
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
     const run = await owner.query(api.runs.get, { workspaceId, runId });
     expect(run.status).toBe("failed");

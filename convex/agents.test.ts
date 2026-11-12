@@ -24,7 +24,7 @@ function person(subject: string) {
 
 async function drainScheduler(t: ReturnType<typeof convexTest>) {
   for (let i = 0; i < 10; i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
   }
 }

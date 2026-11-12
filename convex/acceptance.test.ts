@@ -121,7 +121,7 @@ async function run(t: Tester, caller: Caller, workspaceId: Id<"workspaces">, pro
   const runId = await caller.mutation(api.runs.start, { workspaceId, agentSlug: AGENT, skillSlug: MI, projectId });
   let status = "queued";
   for (let i = 0; i < 40 && (status === "queued" || status === "running"); i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
     status = (await caller.query(api.runs.get, { workspaceId, runId })).status as string;
   }
@@ -565,7 +565,7 @@ describe("outcome loop", () => {
     };
     const settle = async () => {
       for (let i = 0; i < 12; i += 1) {
-        vi.advanceTimersByTime(0);
+        vi.advanceTimersByTime(1);
         await t.finishInProgressScheduledFunctions();
       }
     };
@@ -663,7 +663,7 @@ describe("outcome loop", () => {
     const [waiting] = (await a.owner.query(api.approvals.waiting, { workspaceId: a.workspaceId })).items;
     await a.owner.mutation(api.approvals.decide, { workspaceId: a.workspaceId, approvalId: waiting.id, approve: true });
     for (let i = 0; i < 12; i += 1) {
-      vi.advanceTimersByTime(0);
+      vi.advanceTimersByTime(1);
       await t.finishInProgressScheduledFunctions();
     }
     // The model was shown each candidate's own sources, as data, with the ceiling and that this is an estimate.
@@ -698,7 +698,7 @@ describe("outcome loop", () => {
     await results(t, a.workspaceId, 1000, 20);
     await t.mutation(internal.planner.weekly, {});
     for (let i = 0; i < 12; i += 1) {
-      vi.advanceTimersByTime(0);
+      vi.advanceTimersByTime(1);
       await t.finishInProgressScheduledFunctions();
     }
     const later = await t.run((ctx) => ctx.db.query("agentTasks").collect());

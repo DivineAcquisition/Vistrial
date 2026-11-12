@@ -194,7 +194,7 @@ async function run(t: Tester, caller: Caller, workspaceId: Id<"workspaces">) {
   const runId = await caller.mutation(api.runs.start, { workspaceId, agentSlug: AGENT, skillSlug: OI });
   let status = "queued";
   for (let i = 0; i < 30 && (status === "queued" || status === "running"); i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
     status = (await caller.query(api.runs.get, { workspaceId, runId })).status as string;
   }
@@ -399,7 +399,7 @@ describe("Offer Intelligence", () => {
     expect(waiting?.waitingFor?.questionKey).toBe("offerDetails");
     await a.owner.mutation(api.runs.answer, { workspaceId: a.workspaceId, runId, questionId: waiting!.waitingFor!.questionId, answer: "Move-out cleans, $249 flat, re-clean free within 48 hours" });
     for (let i = 0; i < 20; i += 1) {
-      vi.advanceTimersByTime(0);
+      vi.advanceTimersByTime(1);
       await t.finishInProgressScheduledFunctions();
     }
     expect((await a.owner.query(api.runs.get, { workspaceId: a.workspaceId, runId })).status).toBe("completed");
@@ -420,7 +420,7 @@ describe("Offer Intelligence", () => {
     expect(waiting?.waitingFor?.questionKey).toBe("acquisitionChannels");
     await a.owner.mutation(api.runs.answer, { workspaceId: a.workspaceId, runId, questionId: waiting!.waitingFor!.questionId, answer: "Mostly Facebook ads, some referrals" });
     for (let i = 0; i < 20; i += 1) {
-      vi.advanceTimersByTime(0);
+      vi.advanceTimersByTime(1);
       await t.finishInProgressScheduledFunctions();
     }
     expect((await a.owner.query(api.runs.get, { workspaceId: a.workspaceId, runId })).status).toBe("completed");

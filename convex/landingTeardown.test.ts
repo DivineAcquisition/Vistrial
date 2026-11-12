@@ -220,7 +220,7 @@ async function seed(t: Tester, name: string) {
 async function finish(t: Tester, caller: Caller, workspaceId: Id<"workspaces">, runId: Id<"agentRuns">) {
   let status = "queued";
   for (let i = 0; i < 60 && (status === "queued" || status === "running"); i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
     status = (await caller.query(api.runs.get, { workspaceId, runId })).status as string;
   }

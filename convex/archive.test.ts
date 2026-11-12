@@ -179,7 +179,7 @@ describe("archiving an organization", () => {
     expect(audit).toEqual(expect.arrayContaining(["organization.archived", "organization.restored"]));
   });
 
-  it("refuses every organization mutation while archived, even for the Owner, whatever is added later", async () => {
+  it("refuses every organization mutation while archived, even for the Owner, whatever is added later", { timeout: 30_000 }, async () => {
     /** A person's own choices, and the two things an Owner does to an archived organization. */
     const OPEN = new Set(["settings:rememberMe", "settings:setMyPreferences", "agentWaitlist:toggle", "collections:create", "collections:rename", "collections:remove", "collections:addItem", "collections:removeItem", "briefing:markSeen", "home:visit", "personalNotes:add", "personalNotes:update", "personalNotes:remove", "organizations:restore", "exports:start"]);
     type Registered = { isPublic?: boolean; isMutation?: boolean; exportArgs?: () => string; _handler?: (ctx: MutationCtx, args: unknown) => Promise<unknown> };

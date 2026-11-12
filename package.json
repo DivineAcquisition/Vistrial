@@ -50,7 +50,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "convex-test": "0.0.62",
+    "convex-test": "0.0.70",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "shadcn": "^4.16.1",

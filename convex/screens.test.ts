@@ -47,7 +47,7 @@ async function seed(t: Tester) {
 async function drain(t: Tester, caller: ReturnType<Tester["withIdentity"]>, workspaceId: Id<"workspaces">, runId: Id<"agentRuns">) {
   let status = "queued";
   for (let i = 0; i < 20 && (status === "queued" || status === "running"); i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
     status = (await caller.query(api.runs.get, { workspaceId, runId })).status as string;
   }

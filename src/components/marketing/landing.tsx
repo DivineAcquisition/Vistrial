@@ -7,15 +7,14 @@ import { AgentFlow } from "@/components/marketing/agentic-visuals";
 import { LandingFaq } from "@/components/marketing/faq";
 import { PhilosophySection } from "@/components/marketing/philosophy";
 import {
-  DoctrineFlow,
   EvidenceReport,
   PainList,
   ResearchStudioHero,
   ScatteredScene,
   SectionEyebrow,
-  SkillMap,
   WorkforceMap,
 } from "@/components/marketing/growth-visuals";
+import { LoopDemo, RunTimeline, SkillPlans } from "@/components/marketing/agentic-sections";
 import { GuardedRun } from "@/components/marketing/guarded-run";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { IndustrySwitcher } from "@/components/marketing/saas-blocks";
@@ -160,13 +159,16 @@ export function LandingPage() {
 
       {SECTIONS.how ? (
         <Section id={HOW.id} headline={HOW.headline} lead={HOW.lead}>
-          <DoctrineFlow />
+          <RunTimeline />
+          <div className="mt-14">
+            <LoopDemo />
+          </div>
         </Section>
       ) : null}
 
       {SECTIONS.growthArchitect ? (
         <Section id={GROWTH_ARCHITECT.id} eyebrow={GROWTH_ARCHITECT.eyebrow} headline={GROWTH_ARCHITECT.headline} lead={GROWTH_ARCHITECT.lead}>
-          <SkillMap />
+          <SkillPlans />
         </Section>
       ) : null}
 

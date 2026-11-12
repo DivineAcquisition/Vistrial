@@ -309,7 +309,7 @@ export function PainList() {
  * How it works: the five-step doctrine
  * ------------------------------------------------------------------------- */
 
-function DoctrineScene({ id }: { id: string }) {
+export function DoctrineScene({ id }: { id: string }) {
   if (id === "observe") {
     return (
       <div className="grid grid-cols-3 gap-1.5" aria-hidden>
@@ -363,9 +363,9 @@ function DoctrineScene({ id }: { id: string }) {
   );
 }
 
-type RunState = "queued" | "running" | "done" | "waiting";
+export type RunState = "queued" | "running" | "done" | "waiting";
 
-function RunStateChip({ state }: { state: RunState }) {
+export function RunStateChip({ state }: { state: RunState }) {
   const label = DOCTRINE_RUN.labels[state];
   if (state === "done") {
     return (
@@ -581,6 +581,12 @@ export function EvidenceReport() {
             </li>
           ))}
         </ul>
+        <p className="flex items-start gap-2 border-t border-border bg-muted px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-flag-warning" aria-hidden />
+          <span>
+            <span className="font-medium text-strong">{EVIDENCE.notRead.label}</span> {EVIDENCE.notRead.body}
+          </span>
+        </p>
       </GlowPanel>
       <ul className="grid gap-2">
         {EVIDENCE.kinds.map((kind) => (

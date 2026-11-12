@@ -4,12 +4,15 @@ import { CATALOG } from "../../../convex/catalog";
 import { BASIS_LABEL } from "../../../convex/lib/evidence";
 import { PLAN } from "../../../convex/lib/billing";
 import { SKILL_CAPS, SOFT_WARNING_RATIO } from "../../../convex/lib/caps";
+import { CHECK_IN_DAYS } from "../../../convex/decisions";
+import { RESULT_WORDS } from "@/components/research/outcome-loop";
+import { STAGES } from "@/lib/research/words";
 import { BUSINESS_TYPES } from "@/lib/access-requests/options";
 import * as content from "@/lib/marketing/content";
 import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 import { JOURNEY_TABS, journeyTabOf } from "@/lib/shell/journey";
 
-const { AGENTS_SECTION, CLAIMS, EVIDENCE, GROWTH_ARCHITECT, SAFETY, SOURCES } = content;
+const { AGENTS_SECTION, CLAIMS, DOCTRINE_RUN, EVIDENCE, GROWTH_ARCHITECT, HOW, LOOP_DEMO, SAFETY, SOURCES } = content;
 
 /** Every string on the public page, wherever it sits in the copy objects. */
 function strings(value: unknown): string[] {
@@ -103,5 +106,29 @@ describe("the public page tells the truth about the product", () => {
     const guards = new Set<string>(run.guards.map((guard) => guard.id));
     for (const step of run.steps) expect(guards.has(step.guard), step.id).toBe(true);
     expect(run.recordApproved.text).toMatch(/Not published/);
+  });
+
+  it("shows a plan only for a skill that runs, and every plan ends waiting for a person", () => {
+    for (const skill of GROWTH_ARCHITECT.skills) {
+      if (skill.status === "available") {
+        expect(skill.plan.length, skill.id).toBeGreaterThanOrEqual(4);
+        expect(skill.plan.at(-1), skill.id).toMatch(/wait for you/i);
+      } else {
+        expect(skill.plan, skill.id).toEqual([]);
+      }
+    }
+  });
+
+  it("replays the run in the product's own five stages", () => {
+    expect(HOW.steps.map((step) => step.id)).toEqual(STAGES.map((stage) => stage.id));
+    expect(HOW.steps.map((step) => step.title)).toEqual(STAGES.map((stage) => stage.label));
+    for (const step of HOW.steps) expect(DOCTRINE_RUN.replay.did[step.id].length, step.id).toBeGreaterThan(1);
+  });
+
+  it("shows the loop in the product's own words and check-in choices", () => {
+    expect([...LOOP_DEMO.answers]).toEqual(Object.values(RESULT_WORDS).map((row) => row.label));
+    expect(LOOP_DEMO.answers).toContain(LOOP_DEMO.chosen);
+    expect((CHECK_IN_DAYS as readonly number[]).map((days) => `${days} days`)).toContain(LOOP_DEMO.days);
+    expect(LOOP_DEMO.tryButton).toBe("We'll try this");
   });
 });

@@ -105,6 +105,59 @@ export const DOCTRINE_RUN = {
     create: "Report and 4 ad variations",
     validate: "Check-in set for 30 days",
   },
+  /** The run as a timeline a visitor can drag through. What each stage did, in the sample run. */
+  replay: {
+    label: "Sample run",
+    scrub: "Drag to replay the run",
+    stage: "Stage",
+    of: "of",
+    didTitle: "In this stage",
+    did: {
+      observe: ["Read 24 public pages", "Read 9 videos", "Could not read 1 page: it asks for a login"],
+      distinguish: ["8 claims seen directly in a source", "4 read from what was seen", "2 marked as untested ideas"],
+      prioritize: ["3 changes worth testing first", "The rest set aside, each with the reason"],
+      create: ["A market report, version 1", "Four ad variations, each a stated hypothesis", "Both saved as drafts"],
+      validate: ["You approve the report, or send it back", "You pick one change and a 30-day check-in", "Your starting figures are saved for the comparison"],
+    },
+  },
+} as const;
+
+/**
+ * The loop after a report, shown with the product's own words (src/components/research/outcome-loop.tsx).
+ * Sample data: one change an agency tries, and what its own Meta figures showed at the check-in.
+ */
+export const LOOP_DEMO = {
+  title: "Then the loop: try it, check back, measure.",
+  lead: "A report ends with a few changes to test. This is what happens to one of them.",
+  stageLabel: "Step",
+  stages: [
+    { id: "propose", name: "Proposed" },
+    { id: "trying", name: "Trying" },
+    { id: "due", name: "Check-in due" },
+    { id: "result", name: "Measured" },
+  ],
+  change: {
+    title: "State a results guarantee up front",
+    body: "Put the guarantee in the first line of every outreach email and on the sales page.",
+    howLabel: "How to tell if it worked",
+    how: "Compare booked sales calls for four weeks before and after.",
+    evidence: "Evidence: two of three competing agencies state a guarantee.",
+  },
+  tryButton: "We'll try this",
+  checkBack: "Check back in",
+  days: "30 days",
+  trying: "You're trying this.",
+  tryingNote: "Check-in Dec 9, 2026. Starting figures saved from Meta ads.",
+  due: "Check-in due now.",
+  question: "What happened?",
+  answers: ["It helped", "No clear change", "It made things worse", "Too early to tell", "We didn't try it"],
+  chosen: "It helped",
+  recorded: "Recorded Dec 9, 2026. The next research session builds on this.",
+  changes: [
+    { label: "Meta ads conversions", before: "40", after: "58", change: "+45%", good: true },
+    { label: "Meta ads spend", before: "1,200", after: "1,100", change: "-8.3%", good: false },
+  ],
+  replay: "Replay",
 } as const;
 
 /** The approval moment in Safety. */
@@ -220,46 +273,87 @@ export const GROWTH_ARCHITECT = {
       id: "market-intelligence",
       name: "Market Intelligence",
       handsBack: "A market report with sources: competitors, ads, content, and patterns.",
+      plan: [
+        "Plan the research from your business profile",
+        "Collect public pages, videos, and the links you paste",
+        "Sort what was seen from what is inferred",
+        "Write the report, every claim with its source",
+        "Check the report against its rules, then wait for you",
+      ],
       status: "available" as const,
     },
     {
       id: "offer-intelligence",
       name: "Offer Intelligence",
       handsBack: "Your offer set beside what competitors lead with, and two or three changes to test.",
+      plan: [
+        "Read your offer and your approved research",
+        "Set your offer beside what competitors lead with",
+        "Check that every competitor cell has a source",
+        "Write the gaps, the risks, and two or three changes to test",
+        "Wait for your approval",
+      ],
       status: "available" as const,
     },
     {
       id: "growth-diagnostics",
       name: "Growth Diagnostics",
       handsBack: "A diagnosis of where growth stalls, from your own figures.",
+      plan: [
+        "Read your own figures: Meta results and results files",
+        "Find the stage where things drop off most",
+        "Check that every finding cites one of your figures",
+        "Write a 90-day roadmap: fix, build, scale",
+        "Wait for your approval",
+      ],
       status: "available" as const,
     },
     {
       id: "creative-production",
       name: "Creative Production",
       handsBack: "An ad set for one brand: a brief, four copy variations, a video script, and captions. Designed ads on request.",
+      plan: [
+        "Read the brand kit, the offer, and the reference ad",
+        "Write a brief and four copy variations",
+        "Check the copy: new wording, on brand, claims backed",
+        "Add a video script and captions",
+        "Wait for your approval. Designed ads are made on request.",
+      ],
       status: "available" as const,
     },
     {
       id: "landing-page-teardown",
       name: "Landing Page Teardown",
       handsBack: "A section-by-section read of landing pages in your industry: what they share and what your page lacks.",
+      plan: [
+        "Read each public page as VistrialBot",
+        "Split every page into sections and name the job of each",
+        "Count what the pages share",
+        "List what your page lacks, and the changes to try",
+        "Wait for your approval",
+      ],
       status: "available" as const,
     },
     {
       id: "campaign-strategy",
       name: "Campaign Strategy",
       handsBack: "A campaign strategy built on approved research.",
+      plan: [],
       status: "comingSoon" as const,
     },
     {
       id: "funnel-architect",
       name: "Funnel Architect",
       handsBack: "A funnel plan with the pages and steps it needs.",
+      plan: [],
       status: "comingSoon" as const,
     },
   ],
   statusLabel: { available: "Available", comingSoon: "Coming soon" },
+  planTitle: "The plan it runs",
+  handsBackTitle: "What it hands back",
+  notYet: "It does not run yet, so there is no plan to show.",
+  pick: "Pick a skill",
 } as const;
 
 /** Labels match the product's own (convex/lib/evidence.ts). */
@@ -274,6 +368,8 @@ export const EVIDENCE = {
     { id: "firstParty", label: "Your data", body: "Backed by your own measured figures." },
     { id: "insufficient", label: "Not enough data", body: "Said plainly instead of guessed." },
   ],
+  /** A report names what it could not read, the way the Pages screen lists a page under "Not read". */
+  notRead: { label: "Not read:", body: "members-only.example/offer. The page asks for a login, and Vistrial does not log in." },
 } as const;
 
 /** Grouped the way the app groups them (src/lib/shell/journey.ts). Live and planned mirror convex/catalog.ts. */

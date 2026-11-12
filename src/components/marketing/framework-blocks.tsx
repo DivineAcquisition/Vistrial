@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -38,19 +37,6 @@ export function CtaButton({ position, className, size = "xl" }: { position: "nav
     >
       {CTA.label}
     </Button>
-  );
-}
-
-/** Hero, layer one: who this is for, and the line they have to be over. */
-export function QualifierBadge({ children }: { children: ReactNode }) {
-  return (
-    <p className="mx-auto inline-flex max-w-full items-center gap-2.5 rounded-full border border-brand-500/35 bg-brand-500/10 py-1.5 pr-4 pl-3 text-left text-[13px] leading-snug font-medium text-strong sm:text-sm">
-      <span aria-hidden className="relative flex size-2 shrink-0">
-        <span className="absolute inline-flex size-full rounded-full bg-brand-500 opacity-60 motion-safe:animate-ping" />
-        <span className="relative inline-flex size-2 rounded-full bg-brand-500" />
-      </span>
-      {children}
-    </p>
   );
 }
 

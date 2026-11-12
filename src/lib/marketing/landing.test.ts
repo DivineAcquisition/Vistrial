@@ -57,9 +57,10 @@ describe("the landing page follows the owner's framework", () => {
     expect(COPY).not.toMatch(/Start for \$|Buy now|Checkout|Start free/i);
   });
 
-  it("opens with a qualifier, an outcome and a one-sentence how", () => {
-    expect(LANDING_HERO.qualifier).toMatch(/agencies, consultants, coaches/);
-    expect(LANDING_HERO.how.match(/[.!?](\s|$)/g)).toHaveLength(1);
+  it("opens with the hero copy the owner chose: who it is for, what it does, and one button", () => {
+    expect(LANDING_HERO.headline).toBe("The agentic workforce for business growth.");
+    expect(LANDING_HERO.supporting).toMatch(/agencies, consultants, coaches and info sellers/);
+    expect(LANDING_HERO.trust).toMatch(/Nothing is published without a person's approval/);
     expect(HERO.headline).toBe(LANDING_HERO.headline);
   });
 

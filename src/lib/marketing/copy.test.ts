@@ -5,8 +5,8 @@ import { FAQ, SECTIONS } from "@/lib/marketing/content";
 import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 
 describe("public landing copy", () => {
-  it("leads with the outcome, and keeps sign-in pointed at the app with no menu links", () => {
-    expect(HERO.headline).toBe("Know what to fix in your offer and ads, and whether the fix worked.");
+  it("uses the agentic-workforce headline, and keeps sign-in pointed at the app with no menu links", () => {
+    expect(HERO.headline).toBe("The agentic workforce for business growth.");
     expect(SITE_DESCRIPTION.length).toBeGreaterThan(40);
     expect(NAV.signInHref).toBe("https://app.vistrial.io/login");
     expect(NAV.links).toEqual([]);

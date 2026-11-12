@@ -10,7 +10,7 @@
  *    cost, never a figure. Times in the process are described, not measured.
  */
 
-import { EVIDENCE, PHILOSOPHY, SECTIONS } from "@/lib/marketing/content";
+import { EVIDENCE, HERO, PHILOSOPHY, SECTIONS } from "@/lib/marketing/content";
 
 /** The one button. The same words at the nav, hero, offer and final sections. */
 export const CTA = {
@@ -22,10 +22,11 @@ export const CTA = {
 export const SCARCITY = "We bring on a limited number of teams at a time.";
 
 export const LANDING_HERO = {
-  /** Names the reader and a threshold. Anyone not yet selling and spending can leave here. */
-  qualifier: "For agencies, consultants, coaches and info sellers already spending on ads or content",
-  headline: "Know what to fix in your offer and ads, and whether the fix worked.",
-  how: "Vistrial's AI agents study your market from sources you can open, draft the changes for you to approve, and measure each one against your own figures.",
+  /** The owner chose the earlier hero copy over the framework's qualifier badge. The supporting line names the reader. */
+  label: HERO.label,
+  headline: HERO.headline,
+  supporting: HERO.supporting,
+  trust: HERO.trust,
 } as const;
 
 /** Each pain is one moment, and its cost sits on its own line. Costs are kinds of loss, not figures. */
@@ -464,7 +465,7 @@ export function landingProblems(): string[] {
   };
 
   need(!empty(CTA.label) && /^[A-Z][a-z]+ /.test(CTA.label), "Nav: the button needs a verb.");
-  need(![LANDING_HERO.qualifier, LANDING_HERO.headline, LANDING_HERO.how].some(empty), "Hero: qualifier, headline and how are all required.");
+  need(![LANDING_HERO.headline, LANDING_HERO.supporting, LANDING_HERO.trust].some(empty), "Hero: the headline, the supporting line and the trust line are all required.");
   need(PAINS.items.length >= 3 && PAINS.items.length <= 6, "Problem: three to six pains.");
   need(PAINS.items.every((pain) => !empty(pain.moment) && !empty(pain.cost)), "Problem: every pain needs a moment and a cost.");
   need(FIXES.items.length > 0, "Solution: empty.");

@@ -9,7 +9,6 @@ import {
   PrincipleNote,
   ProblemGrid,
   ProductPicture,
-  QualifierBadge,
   ScarcityNote,
   SolutionGrid,
   WithWithout,
@@ -18,7 +17,7 @@ import { AppTour, LiveLoop, LiveProcess, LiveRoles } from "@/components/marketin
 import { LoopDemo, SkillPlans } from "@/components/marketing/agentic-sections";
 import { AgentFlow } from "@/components/marketing/agentic-visuals";
 import { ResearchStudioHero } from "@/components/marketing/growth-visuals";
-import { BeamFrame } from "@/components/marketing/saas-frame";
+import { BeamFrame, ShinyLabel } from "@/components/marketing/saas-frame";
 import { GuardedRun } from "@/components/marketing/guarded-run";
 import { APPROVAL, PROOF, SAFETY, SECTIONS, SITE_DESCRIPTION } from "@/lib/marketing/content";
 import {
@@ -91,15 +90,17 @@ export function LandingPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(home) }} />
 
-      {/* 2. Hero: who it is for, the outcome, how, and one button. Beside it, the agent at work on a sample. */}
+      {/* 2. Hero: the copy from before the rebuild, by the owner's choice, and one button. Beside it, the agent at work on a sample. */}
       <section className={cn(marketingPageGutter, "relative pt-14 pb-16 sm:pt-20 sm:pb-24")}>
         <div className={cn(marketingShell, "grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12")}>
-          <div className="flex flex-col items-start">
-            <QualifierBadge>{LANDING_HERO.qualifier}</QualifierBadge>
-            <h1 className={cn(marketingDisplayTitle, "mt-7 text-balance")}>{LANDING_HERO.headline}</h1>
-            <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{LANDING_HERO.how}</p>
-            <CtaButton position="hero" className="mt-9 px-8!" />
-            <ScarcityNote className="mt-4" />
+          <div>
+            <ShinyLabel>{LANDING_HERO.label}</ShinyLabel>
+            <h1 className={marketingDisplayTitle}>{LANDING_HERO.headline}</h1>
+            <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{LANDING_HERO.supporting}</p>
+            <div className="mt-8">
+              <CtaButton position="hero" className="px-8!" />
+            </div>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">{LANDING_HERO.trust}</p>
           </div>
           <BeamFrame glow>
             <ResearchStudioHero />

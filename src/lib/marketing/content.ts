@@ -27,11 +27,12 @@ export const SECTIONS = {
   proof: false,
 } as const;
 
-/** Shared hero strings: page titles, the social image, and sample labels. The page's own hero copy is LANDING_HERO in landing.ts. */
+/** The hero's words, as on the site before the rebuild, by the owner's choice. Also used for page titles and the social image. */
 export const HERO = {
-  headline: "Know what to fix in your offer and ads, and whether the fix worked.",
+  label: "Vistrial",
+  headline: "The agentic workforce for business growth.",
   supporting:
-    "AI agents for agencies, consultants, coaches and info sellers. They study your market, draft the changes for you to approve, and measure each one against your own figures.",
+    "AI agents for agencies, consultants, coaches and info sellers. They research your market, sharpen your offer, and draft the ads to test. Starting with Growth Architect.",
   primaryCta: "Request private access",
   trust: "Every claim shows its source. Nothing is published without a person's approval. Each customer's data is kept separate.",
   exampleLabel: "Example with sample data",

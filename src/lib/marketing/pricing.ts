@@ -16,6 +16,7 @@ export const PRICING_DISPLAY = {
     includes: [
       "Your own private workspace",
       "Growth Architect: market research, offer analysis, growth diagnosis, ad sets, and landing page teardowns",
+      "A Tasks board and a Briefing: proposed work with its expected return, credit cost and evidence, and approvals in one place",
       "$150 of credits each month. Each piece of work shows its cost, and every run has a cost limit.",
       "Credit packs when you need more. Included credits reset each month.",
     ],

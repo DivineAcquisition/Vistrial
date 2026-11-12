@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "@/components/icons";
 
 import { BlurFade } from "@/components/ui/blur-fade";
+import { AppTour, ProductPicture } from "@/components/marketing/app-screens";
 import { AgentFlow } from "@/components/marketing/agentic-visuals";
 import { LandingFaq } from "@/components/marketing/faq";
 import { PhilosophySection } from "@/components/marketing/philosophy";
@@ -34,6 +35,7 @@ import {
   SECTIONS,
 } from "@/lib/marketing/content";
 import { HERO } from "@/lib/marketing/content";
+import { APP_SCREENS, picturesFor } from "@/lib/marketing/pictures";
 import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 import {
   marketingDisplayTitle,
@@ -163,12 +165,44 @@ export function LandingPage() {
           <div className="mt-14">
             <LoopDemo />
           </div>
+          {/* The same loop on two real screens: picking a change, then what was measured. */}
+          <div className="mt-12">
+            <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_SCREENS.loopTitle}</h3>
+            <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
+              {picturesFor("loop").map((picture) => (
+                <ProductPicture key={picture.id} picture={picture} crop="max-h-[24rem]" />
+              ))}
+            </div>
+          </div>
         </Section>
       ) : null}
 
       {SECTIONS.growthArchitect ? (
         <Section id={GROWTH_ARCHITECT.id} eyebrow={GROWTH_ARCHITECT.eyebrow} headline={GROWTH_ARCHITECT.headline} lead={GROWTH_ARCHITECT.lead}>
           <SkillPlans />
+          {/* What three of the skills hand back, as real screens. */}
+          <div className="mt-12">
+            <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_SCREENS.skillsTitle}</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{APP_SCREENS.skillsLead}</p>
+            <div className="mt-5 grid gap-5 lg:grid-cols-2">
+              {picturesFor("skill").map((picture, index) => (
+                <ProductPicture
+                  key={picture.id}
+                  picture={picture}
+                  crop={index === 2 ? "max-h-[34rem]" : "max-h-[19rem]"}
+                  className={index === 2 ? "lg:col-span-2" : undefined}
+                  sizes={index === 2 ? "(min-width: 1152px) 1152px, 100vw" : undefined}
+                />
+              ))}
+            </div>
+          </div>
+        </Section>
+      ) : null}
+
+      {/* The app itself: Tasks, the Briefing, Home and clients, one real screen after another. */}
+      {SECTIONS.growthArchitect ? (
+        <Section id={APP_SCREENS.id} eyebrow={APP_SCREENS.eyebrow} headline={APP_SCREENS.headline} lead={APP_SCREENS.lead}>
+          <AppTour pictures={picturesFor("app")} />
         </Section>
       ) : null}
 

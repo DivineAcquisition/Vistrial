@@ -199,7 +199,9 @@ export async function alertsFor(ctx: MutationCtx, workspace: Doc<"workspaces">) 
     if (before === undefined || after === undefined || before <= 0) continue;
     const percent = Math.round(((after - before) / before) * 100);
     if (percent > -DROP_PERCENT) continue;
-    await post(ctx, { workspaceId, clientId: later.clientId, kind: "alert", title: `Results dropped: ${later.label}`, body: `Conversions went from ${before.toLocaleString("en-US")} to ${after.toLocaleString("en-US")} (${percent}%) between the last two results files.`, ref: { table: "resultUploads", id: later._id }, key: `drop:${later._id}` });
+    const posted = await post(ctx, { workspaceId, clientId: later.clientId, kind: "alert", title: `Results dropped: ${later.label}`, body: `Conversions went from ${before.toLocaleString("en-US")} to ${after.toLocaleString("en-US")} (${percent}%) between the last two results files.`, ref: { table: "resultUploads", id: later._id }, key: `drop:${later._id}` });
+    // Results dropping is something real that changed. Only the first time it is seen.
+    if (posted) await ctx.scheduler.runAfter(0, internal.planner.changed, { workspaceId, key: `drop:${later._id}` });
   }
 
   // Credits are running low. Once a week, and only where billing is on.

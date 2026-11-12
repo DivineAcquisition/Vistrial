@@ -17,6 +17,8 @@ import { priceFor } from "./lib/credits";
 import { SKILL_CAPS } from "./lib/caps";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { TASK_STATUSES } from "./lib/taskShapes";
+import { weekKey } from "./planner";
+import { readChoice, settlePicks, settleSummary, type Candidate, type PlanRecord } from "./skills/taskProposer/shapes";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -600,5 +602,74 @@ describe("Home", () => {
     // The Viewer is assigned to Aster only. The Member never visited, so has nothing to compare.
     expect((await viewer.query(api.home.dashboard, { workspaceId })).since.changes.map((row) => row.client)).toEqual(["Aster Coaching"]);
     expect((await member.query(api.home.dashboard, { workspaceId })).since).toMatchObject({ at: null, changes: [], figures: 2 });
+  });
+});
+
+describe("the task proposer's rules", () => {
+  const candidate = (id: string, scope = "own"): Candidate => ({ id, scope, clientId: scope === "own" ? null : scope, clientName: scope === "own" ? null : "Aster Coaching", kind: "opportunity", title: `Opportunity ${id}`, action: `Action ${id}`, howToTell: "Bookings", assetId: "asset1", assetTitle: "Market report", projectId: "p1", index: 0 });
+  const plan = (weekly = true): PlanRecord => ({
+    planKey: weekly ? "week:2026-W46" : "change:x",
+    weekly,
+    candidates: ["c1", "c2", "c3", "c4", "c5", "c6"].map((id) => candidate(id, id === "c2" ? "client1" : "own")),
+    figures: [
+      { id: "f1", scope: "own", label: "Northlight enquiries results", metric: "conversions", value: 20, display: "20 results" },
+      { id: "f2", scope: "client1", label: "Aster bookings results", metric: "conversions", value: 31, display: "31 results" },
+      { id: "f3", scope: "own", label: "Meta ads spend", metric: "spend", value: 3000, display: "3,000 USD" },
+    ],
+    outcomes: [],
+    goal: null,
+    metric: "booked calls",
+    finished: [],
+    due: [],
+  });
+
+  it("keeps a number only when it rests on the same organization's or client's own results, and never calls its own guess an inference", () => {
+    const settled = settlePicks(plan(), {
+      summary: "",
+      picks: [
+        { candidateId: "c1", why: "Enquiries fell three weeks running.", low: 2, high: 6, figureIds: ["f1"] },
+        // Another client's figure cannot support it.
+        { candidateId: "c2", why: "Calls rose.", low: 2, high: 6, figureIds: ["f1"] },
+        // Spend is not a result.
+        { candidateId: "c3", why: "Spend rose.", low: 2, high: 6, figureIds: ["f3"] },
+        // More than the figure reads today.
+        { candidateId: "c4", why: "Big.", low: 10, high: 45, figureIds: ["f1"] },
+        // One number is not a range.
+        { candidateId: "c5", why: "Flat.", low: 5, high: 5, figureIds: ["f1"] },
+        // No numbers at all is fine.
+        { candidateId: "c6", why: "Worth trying." },
+      ],
+    });
+    expect(settled.map((row) => row.expectedReturn)).toEqual([
+      { basis: "firstParty", metric: "booked calls", period: "month", low: 2, high: 6 },
+      { basis: "insufficient" },
+      { basis: "insufficient" },
+      { basis: "insufficient" },
+      { basis: "insufficient" },
+    ]);
+    expect(settled.every((row) => row.expectedReturn.basis !== "inferred")).toBe(true);
+    expect(settled[0].evidence).toEqual([{ kind: "asset", refId: "asset1", label: "Market report" }, { kind: "figure", label: "Northlight enquiries results: 20 results" }]);
+    expect(settled[1].notes[0]).toContain("No figure of your own");
+    expect(settled[3].notes[0]).toContain("larger than the figure");
+  });
+
+  it("drops what is not a candidate, never proposes one twice, replaces a promise, and stops at its limit", () => {
+    const picks = [{ candidateId: "nope", why: "x" }, { candidateId: "c1", why: "This will triple enquiries." }, { candidateId: "c1", why: "Again." }, { candidateId: "c3", why: "" }, { candidateId: "c4", why: "Fine." }];
+    const weekly = settlePicks(plan(), { summary: "", picks });
+    expect(weekly.map((row) => [row.candidate.id, row.why])).toEqual([["c1", "Opportunity c1"], ["c3", "Opportunity c3"], ["c4", "Fine."]]);
+    expect(settlePicks(plan(false), { summary: "", picks }).map((row) => row.candidate.id)).toEqual(["c1", "c3"]);
+    expect(settlePicks(plan(), { summary: "", picks: ["c1", "c2", "c3", "c4", "c5", "c6"].map((id) => ({ candidateId: id, why: "ok" })) })).toHaveLength(5);
+    expect(settlePicks(plan(), null)).toEqual([]);
+    // The report's opening is shown only when it claims nothing.
+    expect(settleSummary({ picks: [], summary: "Enquiries fell; the pilot offer is the nearest open item." })).toBe("Enquiries fell; the pilot offer is the nearest open item.");
+    expect(settleSummary({ picks: [], summary: "This plan is guaranteed to work." })).toBe("");
+    expect(readChoice({ picks: [{ candidateId: "c1", why: 4, low: "3" }, { why: "no id" }], summary: 7 })).toEqual({ picks: [{ candidateId: "c1", why: "" }], summary: "" });
+  });
+
+  it("names the week from Monday, in UTC", () => {
+    expect(weekKey(Date.UTC(2026, 10, 12))).toBe("2026-W46");
+    expect(weekKey(Date.UTC(2026, 10, 15, 23, 59))).toBe("2026-W46");
+    expect(weekKey(Date.UTC(2026, 10, 16))).toBe("2026-W47");
+    expect(weekKey(Date.UTC(2027, 0, 1))).toBe("2026-W53");
   });
 });

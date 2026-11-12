@@ -533,6 +533,106 @@ describe("outcome loop", () => {
     expect(measured.card.result).toMatchObject({ result: "better", note: "Bookings rose in week two.", changes: [expect.objectContaining({ metric: "spend", percent: -10 }), expect.objectContaining({ metric: "conversions", percent: 50 })] });
   });
 
+  it("proposes tasks from an approved report when it is approved and once a week, settles the model's estimates in code, and posts the weekly report", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", ALPHA);
+    await results(t, a.workspaceId, 1000, 20);
+    script({ sources: PAGES });
+    expect((await run(t, a.owner, a.workspaceId, a.projectId)).status).toBe("completed");
+    const report = (await reportAsset(a.owner, a.workspaceId))!;
+
+    // The proposer's one model call: it may only pick from the candidates it is shown.
+    const asked: string[] = [];
+    (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel = (params) => {
+      const input = String(params.messages[0].content);
+      asked.push(input);
+      if (!input.startsWith("Choose up to")) throw new Error(`unscripted call: ${input.slice(0, 40)}`);
+      const candidates = [...input.matchAll(/"id":"(c\d+)"/g)].map((m) => m[1]);
+      const figure = input.match(/"id":"(f\d+)","label":"[^"]*results/)?.[1];
+      return {
+        text: JSON.stringify({
+          picks: [
+            // Rests on the organization's own results figure, and expects less than it reads today.
+            { candidateId: candidates[0], why: "Bookings are flat and two competitors lead with this.", low: 3, high: 8, figureIds: figure ? [figure] : [] },
+            // A promise, and a number with no figure behind it.
+            ...(candidates[1] ? [{ candidateId: candidates[1], why: "This will double bookings, guaranteed.", low: 10, high: 30 }] : []),
+            // Not a candidate at all.
+            { candidateId: "c99", why: "Made up." },
+          ],
+          summary: "Bookings are flat; the first-clean offer is the open item closest to them.",
+        }),
+      };
+    };
+    const settle = async () => {
+      for (let i = 0; i < 12; i += 1) {
+        vi.advanceTimersByTime(0);
+        await t.finishInProgressScheduledFunctions();
+      }
+    };
+    const proposerRuns = () => t.run(async (ctx) => (await ctx.db.query("agentRuns").collect()).filter((row) => row.skillSlug === "task-proposer"));
+    const tasks = () => t.run((ctx) => ctx.db.query("agentTasks").collect());
+
+    // Nothing is proposed from a draft. Approving the report is the change that starts the proposer.
+    expect(await proposerRuns()).toHaveLength(0);
+    const [waiting] = (await a.owner.query(api.approvals.waiting, { workspaceId: a.workspaceId })).items;
+    await a.owner.mutation(api.approvals.decide, { workspaceId: a.workspaceId, approvalId: waiting.id, approve: true });
+    await settle();
+    const [first] = await proposerRuns();
+    expect(first).toMatchObject({ status: "completed", inputRef: `change:approved:${report.id}`, agentSlug: AGENT });
+    expect(asked).toHaveLength(1);
+    // What reached the model from the report is marked as data, never as instructions.
+    expect(asked[0]).toContain("UNTRUSTED CONTENT");
+    expect(asked[0]).toContain('"what":"Opportunity 1"');
+
+    // A change proposes at most two. The first keeps its range, as "Your data"; the second lost its number and its promise.
+    const proposed = await tasks();
+    expect(proposed.map((row) => row.title)).toEqual(["Action 1", "Action 2"]);
+    expect(proposed[0]).toMatchObject({ status: "proposed", why: "Bookings are flat and two competitors lead with this.", creditCost: 0, expectedReturn: { basis: "firstParty", low: 3, high: 8, metric: "results", period: "month" }, proposedBy: { kind: "agent", agentSlug: AGENT, runId: first._id }, try: { kind: "opportunity", projectId: a.projectId, index: 0, checkInDays: 30 } });
+    expect(proposed[0].evidence).toEqual([{ kind: "asset", refId: report.id, label: report.title }, { kind: "figure", label: expect.stringContaining("Jobber bookings results") }]);
+    expect(proposed[1]).toMatchObject({ why: "Opportunity 2", expectedReturn: { basis: "insufficient" } });
+    const board = await a.owner.query(api.agentTasks.board, { workspaceId: a.workspaceId });
+    expect(board.columns[0].cards.map((card) => `${card.title}: ${card.expectedReturn.text} (${card.expectedReturn.basis})`)).toEqual(["Action 1: 3 to 8 more results a month (Your data)", "Action 2: Not enough data (Not enough data)"]);
+    // Each waits for an Owner or Admin, in the one queue and the Briefing. A change run posts no weekly report.
+    expect((await a.owner.query(api.approvals.waiting, { workspaceId: a.workspaceId })).items.map((row) => row.kind)).toEqual(["task", "task"]);
+    expect((await a.owner.query(api.briefing.feed, { workspaceId: a.workspaceId, kind: "weeklyReport" })).items).toEqual([]);
+    // The run was charged like any other work, inside the proposer's own cap.
+    expect(first.costCents).toBeLessThanOrEqual(30);
+
+    // The weekly plan: one run per week, proposing only what is still open, and the growth report.
+    await t.mutation(internal.planner.weekly, {});
+    await settle();
+    await t.mutation(internal.planner.weekly, {});
+    await settle();
+    const runs = await proposerRuns();
+    expect(runs.map((row) => row.inputRef.split(":")[0])).toEqual(["change", "week"]);
+    expect((await tasks()).map((row) => row.title)).toEqual(["Action 1", "Action 2", "Action 3"]);
+    const [weeklyPost] = (await a.owner.query(api.briefing.feed, { workspaceId: a.workspaceId, kind: "weeklyReport" })).items;
+    expect(weeklyPost.title).toMatch(/^Weekly growth report: week of \d{4}-\d{2}-\d{2}$/);
+    expect(weeklyPost.body).toContain("Bookings are flat; the first-clean offer is the open item closest to them.");
+    expect(weeklyPost.body).toContain("Proposed for next week\n• Action 3. Expected: 3 to 8 more results a month (Your data)");
+    expect(weeklyPost.body).toContain("Jobber bookings results");
+    expect(weeklyPost.body).toMatch(/Writing this plan used \d+ credits?\./);
+    expect(weeklyPost.credits).toBeGreaterThanOrEqual(0);
+
+    // Next week nothing is left to propose: no model is called, and the report says so.
+    vi.advanceTimersByTime(7 * 24 * 60 * 60 * 1000);
+    const before = asked.length;
+    await t.mutation(internal.planner.weekly, {});
+    await settle();
+    expect(asked).toHaveLength(before);
+    expect((await tasks())).toHaveLength(3);
+    const posts = (await a.owner.query(api.briefing.feed, { workspaceId: a.workspaceId, kind: "weeklyReport" })).items;
+    expect(posts).toHaveLength(2);
+    expect(posts[0].body).toContain("Nothing new to propose: every item of your approved reports has been decided on.");
+
+    // Switched off, the week after brings no run.
+    await a.owner.mutation(api.approvals.setSwitch, { workspaceId: a.workspaceId, key: "weeklyPlan", on: false });
+    vi.advanceTimersByTime(7 * 24 * 60 * 60 * 1000);
+    await t.mutation(internal.planner.weekly, {});
+    await settle();
+    expect(await proposerRuns()).toHaveLength(3);
+  });
+
   it("writes internal learning with no workspace, place, amount or owner note, and deletes it with the decision", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha", ALPHA);

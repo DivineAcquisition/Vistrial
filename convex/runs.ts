@@ -26,6 +26,7 @@ import { OFFER_TOOLS } from "./skills/offerIntelligence/tools";
 import { CREATIVE_TOOLS } from "./skills/creativeProduction/tools";
 import { GD_MUTATION_TOOLS } from "./skills/growthDiagnostics/tools";
 import { LP_MUTATION_TOOLS } from "./skills/landingTeardown/tools";
+import { PROPOSER_TOOLS } from "./skills/taskProposer/tools";
 import { liveEnv, runAdapter } from "./adapters";
 import { assertDeclared, skillFor } from "./lib/skills";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
@@ -35,7 +36,7 @@ import { runChanged } from "./lib/briefing";
 const OPEN = new Set(["queued", "running", "waiting"]);
 
 /** Every skill's code-only tools, by slug. */
-const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS };
+const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS, ...PROPOSER_TOOLS };
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
 
@@ -792,6 +793,7 @@ export const commitTool = internalMutation({
       await assertSourcesExist(ctx, run.workspaceId, claims);
       // The skill says what it hands back. assertDeclared above already proved the skill exists.
       const output = skillFor(run.skillSlug)!.output;
+      if (!output) return { status: "failed" as const };
       const assetId = await ctx.db.insert("assets", {
         workspaceId: run.workspaceId,
         kind: output.assetKind,

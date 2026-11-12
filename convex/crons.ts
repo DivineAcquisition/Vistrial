@@ -55,4 +55,10 @@ crons.interval("queue drafts already waiting", { minutes: 10 }, internal.approva
 /** Posts the alerts nothing else announces to each organization's Briefing: a check-in due, a broken connection, a drop in results, low credits. Each is posted once. */
 crons.interval("post Briefing alerts", { hours: 1 }, internal.briefing.sweep, {});
 
+/**
+ * The weekly plan and growth report: one proposer run per organization per week, where it is switched on.
+ * Checked every six hours; an organization already planned for the week is left alone.
+ */
+crons.interval("weekly plan", { hours: 6 }, internal.planner.weekly, {});
+
 export default crons;

@@ -134,6 +134,8 @@ export async function runChanged(ctx: MutationCtx, runId: Id<"agentRuns">) {
     await post(ctx, { ...base, kind: "alert", title: "An agent is waiting on an answer", body: question, key: `question:${run._id}:${run.waitingFor?.questionId ?? run.status}` });
     return;
   }
+  // The proposer's own runs speak through the tasks and the weekly report they write, not a post each.
+  if (run.skillSlug === "task-proposer") return;
   if (run.status === "completed") {
     const assets = await ctx.db
       .query("assets")

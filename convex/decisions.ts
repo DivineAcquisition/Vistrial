@@ -13,6 +13,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { internalQuery } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
@@ -240,7 +241,7 @@ type PlannedItem = {
  * the diagnosis's own, or the approved market report the offer analysis built on, so the next research
  * session reads the outcome as known context.
  */
-async function itemOf(ctx: QueryCtx, asset: Doc<"assets">, index: number): Promise<PlannedItem | null> {
+export async function itemOf(ctx: QueryCtx, asset: Doc<"assets">, index: number): Promise<PlannedItem | null> {
   const run = asset.createdByRun ? await ctx.db.get(asset.createdByRun) : null;
   if (!run || run.workspaceId !== asset.workspaceId) return null;
   if (asset.kind === "offerAnalysis") {
@@ -438,6 +439,8 @@ export const recordOutcome = workspaceMutation({
       action: "decision.outcome",
       subject: `${decision._id}:${args.result}`,
     });
+    // A check-in came back: the proposer builds on what happened.
+    await ctx.scheduler.runAfter(0, internal.planner.changed, { workspaceId: ctx.workspaceId, key: `outcome:${decision._id}:${now}` });
     return null;
   },
 });

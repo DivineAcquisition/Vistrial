@@ -47,6 +47,13 @@ export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
     maxSteps: 40,
     maxDurationMs: 1_200_000,
   },
+  /** One short model call over the organization's own records, to choose among open report items. No web research. */
+  "task-proposer": {
+    maxCostCentsPerRun: 30,
+    maxCostCentsPerDay: 120,
+    maxSteps: 6,
+    maxDurationMs: 300_000,
+  },
   "growth-diagnostics": {
     maxCostCentsPerRun: 100,
     maxCostCentsPerDay: 1000,

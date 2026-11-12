@@ -2,6 +2,7 @@ import { requireAdmin, requireWork } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
@@ -241,6 +242,8 @@ export async function approveAsset(ctx: Decider, asset: Doc<"assets">) {
     count: asset.currentVersion,
   });
   await recordDecision(ctx, { ...(await assetApproval(ctx, asset)), status: "approved", actor: ctx.identity.subject });
+  // An approved report is something real that changed: the proposer looks at what it opens up.
+  await ctx.scheduler.runAfter(0, internal.planner.changed, { workspaceId: ctx.workspaceId, key: `approved:${asset._id}` });
 }
 
 export const approve = workspaceMutation({

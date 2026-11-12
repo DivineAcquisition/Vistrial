@@ -225,6 +225,50 @@ export const addOrganization = memberAction({
   },
 });
 
+/**
+ * After an organization is archived or brought back: makes what the account pays for match the extra
+ * organizations it has. Runs only where buying extra organizations is switched on (BILLING_EXTRA_ORGS);
+ * elsewhere it does nothing and the fee is stopped by hand (runbook, part D).
+ *
+ * NOT VERIFIED AGAINST AUTUMN. The calls follow the SDK's documented parameters:
+ *   - no extra organization left: the add-on is told to end at the next renewal (cancel_end_of_cycle),
+ *     so it stays paid, and its credits stay, until then;
+ *   - fewer than paid for, but some: the quantity is lowered with no proration, so nothing is charged or
+ *     credited now and the next renewal bills the lower number;
+ *   - one brought back while the add-on was ending: the ending is undone (uncancel).
+ * A failure changes nothing here and is retried by nobody: the organization stays archived and the
+ * Billing page still shows what is paid, so the difference is visible.
+ */
+export const settleExtraOrganizations = internalAction({
+  args: { accountId: v.id("accounts") },
+  handler: async (ctx, args): Promise<"off" | "unchanged" | "ending" | "lowered" | "resumed" | "failed"> => {
+    if (!billingOn() || !extraOrgsOpen()) return "off";
+    const context = await ctx.runQuery(internal.billing.settleContext, { accountId: args.accountId });
+    if (!context) return "unchanged";
+    const base = { customerId: context.customerId, planId: EXTRA_ORG_ID() };
+    try {
+      const autumn = client();
+      let outcome: "unchanged" | "ending" | "lowered" | "resumed" = "unchanged";
+      if (context.wanted === 0 && context.paid > 0 && !context.endsAtRenewal) {
+        await autumn.billing.update({ ...base, cancelAction: "cancel_end_of_cycle" });
+        await ctx.runMutation(internal.billing.markExtraEnding, { accountId: args.accountId, ending: true });
+        outcome = "ending";
+      } else if (context.wanted > 0 && context.endsAtRenewal) {
+        await autumn.billing.update({ ...base, cancelAction: "uncancel" });
+        await ctx.runMutation(internal.billing.markExtraEnding, { accountId: args.accountId, ending: false });
+        outcome = "resumed";
+      } else if (context.wanted > 0 && context.wanted < context.paid) {
+        await autumn.billing.update({ ...base, featureQuantities: [{ featureId: CREDITS_FEATURE(), quantity: context.wanted * EXTRA_ORG.includedCents }], prorationBehavior: "none" });
+        outcome = "lowered";
+      }
+      if (outcome !== "unchanged" && context.firstWorkspaceId) await refreshFrom(ctx, context.firstWorkspaceId);
+      return outcome;
+    } catch {
+      return "failed";
+    }
+  },
+});
+
 /** Stripe's page for cards, invoices and cancelling. */
 export const portal = memberAction({
   args: { returnOrigin: v.optional(v.string()) },

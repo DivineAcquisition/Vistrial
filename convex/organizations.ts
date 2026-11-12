@@ -6,12 +6,15 @@ import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
 import { writeAudit } from "./lib/audit";
-import { signedInMutation, signedInQuery } from "./lib/builders";
-import { EXTRA_ORG, billingOn } from "./lib/billing";
+import { internal } from "./_generated/api";
+import { cancelOpen } from "./controls";
+import { ownerMutation, signedInMutation, signedInQuery, workspaceQuery } from "./lib/builders";
+import { EXTRA_ORG, accountFor, billingOn, billingOwner, extraOrgsOpen } from "./lib/billing";
+import { dollarWords } from "./lib/credits";
 import { notFound, userError } from "./lib/errors";
 import { createWorkspaceFor } from "./lib/newWorkspace";
 import { ADD_ORGANIZATION_CLOSED, MAX_ORGANIZATIONS, accountMember, addingOrganizationsOpen, organizationsOf } from "./lib/organizations";
-import { roleOf } from "./lib/roles";
+import { isOwner, roleOf } from "./lib/roles";
 
 const MAX_NAME = 80;
 
@@ -28,10 +31,16 @@ export const mine = signedInQuery({
       .withIndex("by_user", (q) => q.eq("userId", ctx.userId))
       .take(200);
     const organizations = [];
+    /** Archived organizations, for their Owners only: read-only, and they can be brought back. */
+    const archived = [];
     for (const member of memberships) {
       if (!member.active) continue;
       const workspace = await ctx.db.get(member.workspaceId);
-      if (!workspace || workspace.status !== "active") continue;
+      if (!workspace) continue;
+      if (workspace.status !== "active") {
+        if (isOwner(member.role)) archived.push({ workspaceId: workspace._id, name: workspace.name, accountId: workspace.accountId ?? null, archivedAt: workspace.archivedAt ?? null });
+        continue;
+      }
       const settings = await ctx.db
         .query("workspaceSettings")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspace._id))
@@ -69,7 +78,7 @@ export const mine = signedInQuery({
         addPrice: billingOn() ? { priceCents: EXTRA_ORG.priceCents, includedCents: EXTRA_ORG.includedCents } : null,
       });
     }
-    return { organizations, accounts };
+    return { organizations, accounts, archived };
   },
 });
 
@@ -133,3 +142,84 @@ export const renameAccount = signedInMutation({
   },
 });
 
+
+const FIRST_ORGANIZATION = "This is the account's first organization: the plan and the credit balance are held under it, so it cannot be archived. To stop the plan, use Billing.";
+
+/** What archiving this organization would do to the bill, in words for the confirmation. */
+function feeWords(billed: boolean, automatic: boolean): string {
+  if (!billed) return "Nothing is charged for it here, so nothing changes on a bill.";
+  const price = dollarWords(EXTRA_ORG.priceCents);
+  return automatic
+    ? `Its ${price} a month stops at your next renewal. There is no refund or credit for the part of this month already paid, and the credits it added stay until then.`
+    : `Its ${price} a month does not stop by itself yet. Contact us after archiving and we will stop it from your next renewal.`;
+}
+
+/** Whether this organization is archived, and what an Owner can do about it. Any member may read it. */
+export const archiveState = workspaceQuery({
+  args: {},
+  handler: async (ctx) => {
+    const workspace = await ctx.db.get(ctx.workspaceId);
+    if (!workspace) notFound();
+    const owner = await billingOwner(ctx, ctx.workspaceId);
+    const first = owner.firstWorkspaceId === ctx.workspaceId;
+    const active = owner.account ? await organizationsOf(ctx, owner.account._id) : [workspace];
+    const mirror = await accountFor(ctx, ctx.workspaceId);
+    const paid = mirror?.extraOrganizations ?? 0;
+    // Bringing one back needs a paid place for it. Where nothing is charged there is always one.
+    const placeFree = !billingOn() || active.length - 1 < paid;
+    return {
+      archived: workspace.status === "archived",
+      archivedAt: workspace.archivedAt ?? null,
+      isOwner: isOwner(ctx.role),
+      canArchive: isOwner(ctx.role) && workspace.status === "active" && !first,
+      cannotArchiveReason: first ? FIRST_ORGANIZATION : null,
+      feeWords: feeWords(billingOn(), extraOrgsOpen()),
+      canRestore: isOwner(ctx.role) && workspace.status === "archived" && placeFree,
+      cannotRestoreReason: placeFree ? null : "Its place on the plan has ended. Contact us and we will bring it back.",
+    };
+  },
+});
+
+/**
+ * Archives an organization: it becomes read-only, leaves the selector's main list, and its open runs stop.
+ * Owners only. Nothing is deleted, and it can be brought back. The account's first organization cannot be
+ * archived, because the plan and the balance are held under its id.
+ */
+export const archive = ownerMutation({
+  /** The Owner typed the organization's name to confirm. */
+  args: { confirmName: v.string() },
+  handler: async (ctx, args) => {
+    const workspace = await ctx.db.get(ctx.workspaceId);
+    if (!workspace) notFound();
+    const owner = await billingOwner(ctx, ctx.workspaceId);
+    if (owner.firstWorkspaceId === ctx.workspaceId) throw userError(FIRST_ORGANIZATION, "not_allowed");
+    if (args.confirmName.trim().toLowerCase() !== workspace.name.trim().toLowerCase()) throw userError("Type the organization's name exactly to archive it.");
+    await ctx.db.patch(workspace._id, { status: "archived", archivedAt: Date.now(), archivedBy: ctx.identity.subject });
+    await cancelOpen(ctx, workspace._id, "cancelled");
+    await writeAudit(ctx, { workspaceId: workspace._id, actorType: "user", actorId: ctx.identity.subject, action: "organization.archived", subject: workspace._id });
+    if (owner.account && billingOn()) await ctx.scheduler.runAfter(0, internal.billingActions.settleExtraOrganizations, { accountId: owner.account._id });
+    return null;
+  },
+});
+
+/** Brings an archived organization back. Owners only, and only while the account still has a paid place for it. */
+export const restore = ownerMutation({
+  args: {},
+  archivedToo: true,
+  handler: async (ctx) => {
+    const workspace = await ctx.db.get(ctx.workspaceId);
+    if (!workspace) notFound();
+    if (workspace.status === "active") return null;
+    const owner = await billingOwner(ctx, ctx.workspaceId);
+    const active = owner.account ? await organizationsOf(ctx, owner.account._id) : [];
+    if (active.length >= MAX_ORGANIZATIONS) throw userError(`An account can hold ${MAX_ORGANIZATIONS} organizations. Contact us if you need more.`, "limit");
+    if (billingOn()) {
+      const mirror = await accountFor(ctx, ctx.workspaceId);
+      if (active.length - 1 >= (mirror?.extraOrganizations ?? 0)) throw userError("Its place on the plan has ended. Contact us and we will bring it back.", "not_allowed");
+    }
+    await ctx.db.patch(workspace._id, { status: "active", archivedAt: undefined, archivedBy: undefined });
+    await writeAudit(ctx, { workspaceId: workspace._id, actorType: "user", actorId: ctx.identity.subject, action: "organization.restored", subject: workspace._id });
+    if (owner.account && billingOn()) await ctx.scheduler.runAfter(0, internal.billingActions.settleExtraOrganizations, { accountId: owner.account._id });
+    return null;
+  },
+});

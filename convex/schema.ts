@@ -77,6 +77,8 @@ export default defineSchema({
      * the payment shows on the account, so an organization never exists unpaid.
      */
     pendingOrganization: v.optional(v.object({ name: v.string(), requestedBy: v.string(), requestedAt: v.number() })),
+    /** The extra-organization add-on was told to end at the next renewal, because the last extra one was archived. */
+    extraEndsAtRenewal: v.optional(v.boolean()),
   }),
 
   /** A person on an account. What they can open is a `members` row in each organization they were given. */
@@ -136,9 +138,30 @@ export default defineSchema({
     createdAt: v.number(),
     /** The account it belongs to. Missing only until organizationsMigration has reached the row. */
     accountId: v.optional(v.id("accounts")),
+    /** When an Owner archived it, and who. It is read-only until it is brought back. */
+    archivedAt: v.optional(v.number()),
+    archivedBy: v.optional(v.string()),
   })
     .index("by_slug", ["slug"])
     .index("by_account", ["accountId"]),
+
+  /**
+   * A download of one organization's work, started by an Owner and built in the background. The file is
+   * kept for a week, then removed; the row stays as the record that an export was made.
+   */
+  organizationExports: defineTable({
+    workspaceId: v.id("workspaces"),
+    requestedBy: v.string(),
+    status: v.union(v.literal("building"), v.literal("ready"), v.literal("failed"), v.literal("expired")),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    storageId: v.optional(v.id("_storage")),
+    bytes: v.optional(v.number()),
+    records: v.optional(v.number()),
+  })
+    .index("by_workspace", ["workspaceId", "createdAt"])
+    .index("by_status_expires", ["status", "expiresAt"]),
 
   members: defineTable({
     workspaceId: v.id("workspaces"),

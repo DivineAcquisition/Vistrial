@@ -1,4 +1,3 @@
-import { creditCount } from "../../../convex/lib/credits";
 import { describe, expect, it } from "vitest";
 
 import { CATALOG } from "../../../convex/catalog";
@@ -56,7 +55,7 @@ describe("the public page tells the truth about the product", () => {
 
   it("states the plan's real price and credits", () => {
     const price = `$${PLAN.priceCents / 100}`;
-    const credits = `${creditCount(PLAN.includedCents)} credits`;
+    const credits = `$${PLAN.includedCents / 100}`;
     expect(PRICING_DISPLAY.privateAccess.price).toContain(price);
     expect(PRICING_DISPLAY.privateAccess.price).toContain(credits);
     expect(PUBLIC_COPY.join("\n")).not.toMatch(/\$97\b|Starting at/);

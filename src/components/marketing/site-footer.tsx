@@ -5,6 +5,7 @@ import { OpenConsentButton } from "@/components/marketing/consent-banner";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constants";
 import { FOOTER, NAV } from "@/lib/marketing/content";
+import { LANDING_FOOTER } from "@/lib/marketing/landing";
 import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { loadTrustPublic } from "@/lib/trust/public";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,6 @@ const EMAIL_LOGO_PATH = "/brand/vistrial-icon-96.png";
 const footerLinkClass = "text-sm text-muted-foreground transition-colors hover:text-strong";
 const footerButton = "h-12! rounded-[8px]! before:rounded-[7px]!";
 
-const productLinks = NAV.links;
 const trustLinks = [
   { href: "/security", label: "Security" },
   { href: "/security/subprocessors", label: "Subprocessors" },
@@ -63,14 +63,13 @@ export async function SiteFooter() {
             </div>
           </div>
 
-          <FooterColumn title="Product">
-            {productLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className={footerLinkClass}>
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+          {/* Sign in lives here, not in the header: a returning customer finds it, and a new visitor is not offered an exit. */}
+          <FooterColumn title={LANDING_FOOTER.signInPrompt}>
+            <li>
+              <a href={NAV.signInHref} className={footerLinkClass}>
+                {NAV.signIn}
+              </a>
+            </li>
           </FooterColumn>
 
           <FooterColumn title="Trust">

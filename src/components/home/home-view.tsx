@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
@@ -49,7 +50,12 @@ function NeedRow({ need, data, agentName, decide, recordOutcome }: { need: Need;
       <div className="grid min-w-0 flex-1 gap-2">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
           <span className="font-medium text-card-foreground">{label}</span>
-          {need.agentSlug ? <span>{agentName(need.agentSlug)}</span> : null}
+          {need.agentSlug ? (
+            <span className="inline-flex items-center gap-1.5">
+              <AgentAvatar slug={need.agentSlug} size="xs" className="size-5" />
+              {agentName(need.agentSlug)}
+            </span>
+          ) : null}
           {need.client ? <span className="rounded-md border border-primary/30 px-1.5 text-primary">{need.client}</span> : null}
           <span>{need.kind === "checkIn" ? `due ${day(need.at)}` : day(need.at)}</span>
         </p>
@@ -209,7 +215,11 @@ export function HomeView({
             {data.moving.map((row) => (
               <li key={row.key}>
                 <Link href={row.href} className="flex min-w-0 items-center gap-3 px-4 py-3 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
-                  <span className={cn("size-2 shrink-0 rounded-full", row.kind === "run" ? "animate-pulse bg-primary motion-reduce:animate-none" : "bg-muted-foreground/50")} aria-hidden />
+                  {row.kind === "run" && row.agentSlug ? (
+                    <AgentAvatar slug={row.agentSlug} size="xs" working />
+                  ) : (
+                    <span className={cn("size-2 shrink-0 rounded-full", row.kind === "run" ? "animate-pulse bg-primary motion-reduce:animate-none" : "bg-muted-foreground/50")} aria-hidden />
+                  )}
                   <span className="grid min-w-0 flex-1 gap-0.5">
                     <span className="truncate text-sm text-card-foreground">{row.title}</span>
                     <span className="truncate text-xs text-muted-foreground">

@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
@@ -148,6 +149,7 @@ function Card({ card, column, board, actions, onEdit, onSkip }: { card: TaskCard
   return (
     <li className={cn("grid gap-2.5 rounded-xl border border-l-[3px] border-border bg-card p-3", STAGE_COLOR[column].edge)}>
       <div className="flex flex-wrap items-center gap-1.5">
+        {card.agentSlug ? <AgentAvatar slug={card.agentSlug} size="xs" className="size-5" /> : null}
         <span className={chip}>{card.type === "work" ? (card.skill ? `Agent work · ${card.skill}` : "Agent work") : "A change you make"}</span>
         {card.client ? <span className={cn(chip, "border-primary/30 text-primary")}>{card.client}</span> : null}
         {card.by === "person" ? <span className={chip}>From a teammate</span> : null}

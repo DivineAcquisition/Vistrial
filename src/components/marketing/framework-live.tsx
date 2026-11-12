@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
@@ -51,6 +52,7 @@ export function AgentStatus({ className }: { className?: string }) {
   return (
     <p className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
       <span className="live-pulse size-1.5 shrink-0 rounded-full bg-success" aria-hidden />
+      <AgentAvatar name={LIVE.agent} size="xs" className="size-5" />
       <span className="shrink-0 font-medium text-strong">{LIVE.agent}</span>
       <span className="live-shimmer-text truncate">{AGENT_FLOW.statuses[status]}</span>
     </p>
@@ -148,6 +150,7 @@ export function AppTour({ pictures }: { pictures: Picture[] }) {
         </div>
         <p className="flex min-w-0 flex-1 items-center justify-end gap-2 text-xs text-muted-foreground">
           <span className="live-pulse size-1.5 shrink-0 rounded-full bg-success" aria-hidden />
+          <AgentAvatar name={LIVE.agent} size="xs" className="size-5" />
           <span className="shrink-0 font-medium text-strong">{LIVE.agent}</span>
           <span key={picture.id} className="live-enter truncate">
             {picture.doing}

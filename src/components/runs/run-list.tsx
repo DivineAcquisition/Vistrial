@@ -1,3 +1,4 @@
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import Link from "next/link";
 
 import { RunStatusBadge } from "@/components/runs/run-parts";
@@ -28,7 +29,8 @@ export function RunList({ runs }: { runs: RunListItem[] }) {
           >
             <span className="min-w-0">
               <span className="block truncate font-medium text-card-foreground">{run.skillName}</span>
-              <span className="block text-xs text-muted-foreground">
+              <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                <AgentAvatar name={run.agentName} size="xs" className="size-5" />
                 {run.agentName}, started{" "}
                 {new Date(run.startedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                 {run.startedByMe ? " by you" : ""}

@@ -1,5 +1,7 @@
 "use client";
 
+import { agentSlugForName } from "@/lib/agents/avatars";
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { canWork, isAdmin } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -86,7 +88,7 @@ function YouSaid({ children, at }: { children: React.ReactNode; at?: number }) {
 function AgentSaid({ name, line, icon: Icon = Sparkles, children, id }: { name: string; line: React.ReactNode; icon?: typeof Sparkles; children?: React.ReactNode; id?: string }) {
   return (
     <motion.li id={id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex min-w-0 gap-3">
-      <VistrialMark className="mt-0.5" />
+      {agentSlugForName(name) ? <AgentAvatar name={name} size="sm" className="mt-0.5" /> : <VistrialMark className="mt-0.5" />}
       <div className="grid min-w-0 flex-1 gap-2">
         <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-card-foreground">
           <Icon aria-hidden className="size-3.5 text-primary" />

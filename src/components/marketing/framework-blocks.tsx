@@ -1,3 +1,4 @@
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -157,6 +158,7 @@ export function ProductPicture({
         </span>
         <p className="flex min-w-0 flex-1 items-center justify-end gap-2 text-xs text-muted-foreground">
           <span className="live-pulse size-1.5 shrink-0 rounded-full bg-brand-400" aria-hidden />
+          {picture.place === "fix" ? <AgentAvatar name={LIVE.agent} size="xs" className="size-5" /> : null}
           <span className="truncate">
             {picture.place === "fix" ? LIVE.agent : LIVE.app} · <span className="font-medium text-strong">{picture.by}</span>
           </span>
@@ -190,6 +192,7 @@ export function OfferBox() {
             </p>
             <p className="flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground">
               <span className="live-pulse size-1.5 shrink-0 rounded-full bg-success" aria-hidden />
+              <AgentAvatar name={LIVE.agent} size="xs" className="size-5" />
               <span className="font-medium text-strong">{LIVE.agent}</span>
               {LIVE.status}
             </p>

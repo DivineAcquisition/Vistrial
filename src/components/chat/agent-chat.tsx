@@ -1,5 +1,7 @@
 "use client";
 
+import { agentSlugForName } from "@/lib/agents/avatars";
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
@@ -164,9 +166,13 @@ export function NewChatView({
     <Panel className="relative grid gap-4 overflow-hidden p-4 sm:p-6">
       <div aria-hidden className="pointer-events-none absolute -top-24 -right-16 size-64 rounded-full bg-primary/15 blur-3xl" />
       <div className="relative flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 text-primary ring-1 ring-primary/25">
-          <MessagesSquare aria-hidden className="size-5" />
-        </span>
+        {agentSlugForName(agentName) ? (
+          <AgentAvatar name={agentName} size="lg" className="size-11" />
+        ) : (
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 text-primary ring-1 ring-primary/25">
+            <MessagesSquare aria-hidden className="size-5" />
+          </span>
+        )}
         <div className="grid min-w-0 gap-0.5">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{agentName} · Chat</p>
           <h1 className="font-heading text-lg text-card-foreground">What do you want to work on?</h1>

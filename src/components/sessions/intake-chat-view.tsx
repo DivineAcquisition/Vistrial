@@ -1,5 +1,7 @@
 "use client";
 
+import { agentSlugForName } from "@/lib/agents/avatars";
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import {
   ArrowUp,
   Brain,
@@ -15,7 +17,7 @@ import {
   X,
 } from "@/components/icons";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import { useFillViewport } from "@/components/chat/use-fill-viewport";
 import { VistrialMark } from "@/components/brand/vistrial-mark";
@@ -86,8 +88,12 @@ const SUGGESTIONS = [
   "Who shows prices, and how do they frame them?",
 ];
 
+/** Who is speaking in this conversation, so every turn wears that agent's face. */
+const SpeakerContext = createContext<string | undefined>(undefined);
+
 function Avatar() {
-  return <VistrialMark className="mt-0.5" />;
+  const speaker = useContext(SpeakerContext);
+  return agentSlugForName(speaker) ? <AgentAvatar name={speaker} size="sm" className="mt-0.5" /> : <VistrialMark className="mt-0.5" />;
 }
 
 function Agent({ children, name }: { children: React.ReactNode; name?: string }) {
@@ -354,6 +360,7 @@ export function IntakeChatView({
   const lastQuestion = view ? [...view.messages].reverse().find((row) => row.kind === "question") : null;
 
   return (
+    <SpeakerContext.Provider value={agentName}>
     <div ref={column} className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-4">
       <ol className="grid gap-4" aria-label="Conversation" aria-live="polite">
         <Agent name={agentName}>
@@ -510,5 +517,6 @@ export function IntakeChatView({
         </p>
       ) : null}
     </div>
+    </SpeakerContext.Provider>
   );
 }

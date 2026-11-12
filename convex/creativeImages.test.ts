@@ -90,7 +90,7 @@ async function seed(t: Tester, name: string, status: "draft" | "needsReview" = "
 
 async function settle(t: Tester) {
   for (let i = 0; i < 20; i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
   }
 }

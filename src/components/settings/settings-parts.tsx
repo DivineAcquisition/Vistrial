@@ -135,6 +135,7 @@ export function SettingsNav({
  */
 export function StatusCard({
   icon: Icon,
+  media,
   title,
   status,
   tone = "neutral",
@@ -145,6 +146,8 @@ export function StatusCard({
   id,
 }: {
   icon: LucideIcon;
+  /** Shown in place of the icon, for a card about someone with a face (an agent). */
+  media?: ReactNode;
   title: string;
   status?: string;
   tone?: Tone;
@@ -158,9 +161,11 @@ export function StatusCard({
     <Panel as="section" className="grid min-w-0 gap-4 p-4 sm:p-5">
       <div id={id} className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
-            <Icon aria-hidden className="size-4 text-muted-foreground" />
-          </span>
+          {media ?? (
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
+              <Icon aria-hidden className="size-4 text-muted-foreground" />
+            </span>
+          )}
           <div className="grid min-w-0 gap-1">
             <h3 className={cardTitle}>{title}</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">{sentence}</p>

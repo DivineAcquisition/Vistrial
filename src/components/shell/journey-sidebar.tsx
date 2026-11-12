@@ -11,7 +11,6 @@ import {
   ChevronRight,
   Coins,
   FileSearch,
-  Gauge,
   Home,
   Kanban,
   MessagesSquare,
@@ -21,8 +20,8 @@ import {
   Users,
   type LucideIcon,
 } from "@/components/icons";
-import { GlyphMark } from "@/components/live/agent-identity";
 import { LiveChatList } from "@/components/chat/chat-library";
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { ClientPicker } from "@/components/shell/client-picker";
 import { OrganizationSwitcher } from "@/components/shell/organization-switcher";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
@@ -31,7 +30,6 @@ import { SearchInput } from "@/components/ui/input";
 import { Meter, MeterIndicator, MeterTrack } from "@/components/ui/meter";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import {
-  AGENT_MARK,
   JOURNEY_TABS,
   MAIN_ITEMS,
   MEMORY_HREF,
@@ -225,13 +223,12 @@ function AgentRow({
   const href = `/app/agents/${agent.slug}`;
   const active = isActive(pathname, href, true);
   const dot = agentDot(activity);
-  const mark = AGENT_MARK[agent.slug] ?? { glyph: "spark" as const, accent: "neutral" as const };
   const tabs = agentTabs(agent);
   const expandable = tabs.length > 0;
   const groupId = `agent-tabs-${agent.slug}`;
   const inner = (
     <>
-      <GlyphMark glyph={mark.glyph} accent={mark.accent} size="xs" working={dot === "working"} className={cn(!live && "opacity-50")} />
+      <AgentAvatar slug={agent.slug} size="xs" working={dot === "working"} className={cn(!live && "opacity-60 grayscale")} />
       <span className="truncate">{agent.name}</span>
       {live ? (
         <span className="ml-auto flex shrink-0 items-center gap-1.5">
@@ -475,7 +472,7 @@ export function JourneySidebarView({
             {offJourney.map((agent) => (
               <li key={agent.slug}>
                 <Link href={`/app/agents/${agent.slug}`} onClick={onNavigate} className={cn(row, "text-muted-foreground")}>
-                  <Gauge aria-hidden className="size-4 shrink-0 opacity-60" />
+                  <AgentAvatar slug={agent.slug} size="xs" className="opacity-60 grayscale" />
                   <span className="truncate">{agent.name}</span>
                   <span className="ml-auto shrink-0 rounded-md border border-border px-1.5 text-[10px] leading-4 tracking-wide uppercase">Soon</span>
                 </Link>

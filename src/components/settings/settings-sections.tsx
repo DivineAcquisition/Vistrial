@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { canWork, isAdmin } from "@/lib/roles";
 import { useState, type ReactNode } from "react";
 
@@ -703,6 +704,7 @@ export function AgentsSection({
           <StatusCard
             key={agent.slug}
             icon={agent.status === "live" ? Zap : Lock}
+            media={<AgentAvatar slug={agent.slug} size="md" className={agent.status === "live" ? "size-9" : "size-9 opacity-70 grayscale"} />}
             title={agent.name}
             status={agent.status === "planned" ? "Planned" : agent.state === "off" ? "Off" : "On"}
             tone={agent.status === "planned" ? "neutral" : agent.state === "off" ? "neutral" : "good"}

@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useMutation, useQuery } from "convex/react";
 import { Bell, BellRing, Globe } from "@/components/icons";
 import { useState } from "react";
@@ -39,6 +40,7 @@ export function PlannedAgentView({
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_oklab,var(--agent)_18%,transparent),transparent)]" />
       <div className="grid justify-items-center gap-3 text-center">
         <AgentScene tint={plan.tint} sources={orbit} label="Coming soon" />
+        <AgentAvatar slug={slug} size="lg" />
         <h2 className="font-heading text-2xl text-foreground">{name}</h2>
         <p className="max-w-xl text-sm text-muted-foreground">{job}</p>
       </div>

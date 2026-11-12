@@ -74,6 +74,7 @@ const chip = "inline-flex max-w-full items-center gap-1 rounded-md border border
 function Facts({ card }: { card: TaskCard }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const sources = card.evidence.filter((item) => item.kind === "sourceRef").length;
   return (
     <div className="grid gap-2 rounded-lg bg-overlay/[0.04] p-2.5">
       <dl className="grid gap-2 text-xs">
@@ -83,6 +84,11 @@ function Facts({ card }: { card: TaskCard }) {
             <span className={cn("font-medium", !card.expectedReturn.known && "font-normal text-muted-foreground")}>{card.expectedReturn.text}</span>
             {card.expectedReturn.known ? <span className={chip}>{card.expectedReturn.basis}</span> : null}
           </dd>
+          {card.expectedReturn.known && card.expectedReturn.basis === "Inference" ? (
+            <dd className="text-[11px] leading-4 text-muted-foreground">
+              An estimate, not a measurement. {sources > 0 ? `It rests on the ${sources === 1 ? "source" : `${sources} sources`} linked below.` : "No source is linked to it."}
+            </dd>
+          ) : null}
         </div>
         <div className="flex items-baseline justify-between gap-2">
           <dt className="text-muted-foreground">Credit cost</dt>

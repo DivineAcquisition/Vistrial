@@ -11,7 +11,7 @@ import { reportForProject } from "../../studio";
 import type { ToolOutcome } from "../marketIntelligence/tools";
 import { latestDone, recordOf } from "../marketIntelligence/records";
 import type { SkillContext } from "../types";
-import { MAX_CANDIDATES, PHASE, readChoice, settlePicks, settleSummary, type Candidate, type PlanFigure, type PlanRecord } from "./shapes";
+import { MAX_CANDIDATES, MAX_SOURCES_PER_CANDIDATE, PHASE, readChoice, settlePicks, settleSummary, type Candidate, type PlanFigure, type PlanRecord, type PlanSource } from "./shapes";
 
 type Step = Doc<"runSteps">;
 type MutationTool = (ctx: MutationCtx, run: Doc<"agentRuns">, steps: Step[]) => Promise<ToolOutcome>;
@@ -59,6 +59,26 @@ const read: MutationTool = async (ctx, run) => {
     candidates.push({ ...row, id: `c${candidates.length + 1}`, scope: clientId ?? "own", clientId: clientId ?? null, clientName: await nameOf(clientId) });
   };
 
+  // Market sources a report cited for one of its items. Each must be this organization's and belong to the
+  // report's own project, so a source can only ever support an item of the same organization or client.
+  const sources: PlanSource[] = [];
+  const sourcesFor = async (project: Doc<"researchProjects">, ids: string[]) => {
+    const out: string[] = [];
+    for (const raw of ids) {
+      if (out.length >= MAX_SOURCES_PER_CANDIDATE) break;
+      const id = ctx.db.normalizeId("sourceRefs", raw);
+      const ref = id ? await ctx.db.get(id) : null;
+      if (!ref || ref.workspaceId !== workspaceId || ref.projectId !== project._id) continue;
+      let known = sources.find((row) => row.refId === ref._id);
+      if (!known) {
+        known = { id: `s${sources.length + 1}`, refId: ref._id, scope: project.clientId ?? "own", title: clip(ref.title, 160), publisher: ref.publisher ? clip(ref.publisher, 80) : null, date: `${ref.publishedAt ? "published" : "read"} ${day(ref.publishedAt ?? ref.observedAt)}`, excerpt: ref.excerpt ? clip(ref.excerpt, 300) : null, limitation: ref.limitation ? clip(ref.limitation, 160) : null };
+        sources.push(known);
+      }
+      out.push(known.id);
+    }
+    return out;
+  };
+
   const decisions = await ctx.db.query("decisions").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).take(300);
 
   // Opportunities of approved research reports.
@@ -71,7 +91,7 @@ const read: MutationTool = async (ctx, run) => {
     if (!written || !asset || asset.workspaceId !== workspaceId || asset.status !== "approved") continue;
     for (const [index, opportunity] of written.report.opportunities.entries()) {
       if (taken.has(`o:${project._id}:${index}`) || decisions.some((row) => row.projectId === project._id && row.runId === written.runId && !row.itemKind && row.opportunityIndex === index)) continue;
-      await add({ kind: "opportunity", title: clip(opportunity.opportunity, 140), action: clip(opportunity.proposedAction, 300), howToTell: clip(opportunity.validationMethod, 200), assetId: asset._id, assetTitle: asset.title, projectId: project._id, index }, project.clientId);
+      await add({ kind: "opportunity", title: clip(opportunity.opportunity, 140), action: clip(opportunity.proposedAction, 300), howToTell: clip(opportunity.validationMethod, 200), assetId: asset._id, assetTitle: asset.title, projectId: project._id, index, sourceIds: await sourcesFor(project, opportunity.evidence.sourceRefIds), uncertainty: opportunity.evidence.uncertainty }, project.clientId);
     }
   }
 
@@ -111,7 +131,10 @@ const read: MutationTool = async (ctx, run) => {
   const finished = posts.filter((row) => row.kind === "finished").map((row) => row.title.replace(/^Finished: /, "")).slice(0, 10);
   const due = decisions.filter((row) => !row.outcome && row.checkInAt <= now).map((row) => row.proposedAction).slice(0, 10);
 
-  const value: PlanRecord = { planKey: run.inputRef, weekly: run.inputRef.startsWith("week:"), candidates, figures, outcomes, goal: goal?.text ?? null, metric: clip(goal?.metric ?? "results", 40) || "results", finished, due };
+  // The owner's goal as a number a month, when their words name one in a measure: the ceiling of an inference.
+  const PER_MONTH = { week: 52 / 12, month: 1, quarter: 1 / 3, year: 1 / 12 } as const;
+  const monthlyTarget = goal?.metric && goal.target && goal.target > 0 ? Math.round(goal.target * PER_MONTH[goal.period ?? "month"] * 10) / 10 : null;
+  const value: PlanRecord = { planKey: run.inputRef, weekly: run.inputRef.startsWith("week:"), candidates, figures, outcomes, goal: goal?.text ?? null, metric: clip(goal?.metric ?? "results", 40) || "results", sources, monthlyTarget, finished, due };
   return { resultCode: candidates.length ? "ok" : "nothing_to_propose", resultId: String(candidates.length), artifact: record("plan", value) };
 };
 

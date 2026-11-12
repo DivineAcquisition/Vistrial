@@ -25,6 +25,17 @@ Quoted words are the owner's, from the discovery interview.
 - **Roles.** Owner and Admin approve. A Member works with agents and tasks but cannot approve. A Viewer
   reads. People see only the clients they are assigned to.
 
+### 1.1 Answers of 2026-11-12
+
+To three questions put in the part 6 pull request (#263). The owner's words are quoted.
+
+1. **May an expected return be an Inference range from market sources?** "market source is fine". Built in
+   part 7: section 4.1.
+2. **Should switching off the weekly plan also stop proposals made when something changes?** "no dont stop
+   on change proposal just the weekly plan". That is how it was built; nothing changed.
+3. **Trend posts: which sources, and how often?** "both and monthly will be the cadence": trade press and
+   public social posts, once a month. Section 5.
+
 ## 2. Defaults chosen where the owner has not answered
 
 Each can be changed; they are listed again in the pull requests.
@@ -104,13 +115,40 @@ say why. With no candidates, no model is called.
 - a pick that is not a candidate is dropped; a candidate is proposed once, ever (a skipped task is not
   proposed again);
 - a reason that claims a result is replaced by the report's own words;
-- numbers stand only when they cite one of the organization's own results figures for the same
-  organization or client, are a real range, and expect no more than that figure reads today. Then the card
-  says "Your data". Anything else says "Not enough data". The proposer never labels its own guess
-  "Inference": it has no source for one.
+- numbers must be a real range and rest on something, by the rules of 4.1. Anything else says "Not enough
+  data".
 
 Each proposal is a change the organization makes itself, so approving it records the decision in the
 outcome loop and its Result is measured at the check-in (30 days by default).
+
+### 4.1 What an expected return may rest on
+
+Every range is stated in the organization's one goal measure, a month, so ranges compare fairly.
+
+| Basis | When | What it must cite | Its ceiling |
+|---|---|---|---|
+| **Your data** | The same organization or client has a results figure of its own | That figure | No more than the figure reads today |
+| **Inference** | Only where there is no such figure | At least one market source that the report itself cited **for this very item** | No more a month than the owner's goal, when their words name a number; and wide: the high end at least 1.5 times the low end |
+| **Not enough data** | Everything else | Nothing | No numbers |
+
+- **Your data wins.** Where a figure of its own exists, a market source cannot stand in for it, and the two
+  are never mixed: a "Your data" card lists figures, an "Inference" card lists sources.
+- **What the model is given for an inference**: for each candidate, the sources its report cited for it
+  (title, publisher, the date it was published or read, the saved excerpt of 300 characters or less, and
+  what the source cannot show), inside the untrusted block, plus the report's own uncertainty for the item
+  and the ceiling.
+- **What code checks** (`settlePicks`): each cited id is a saved source of this organization, belongs to
+  the report's own project (so to the same organization or client), and is on the candidate's own list; the
+  range has two ends, low below high; it is wide enough; it is within the goal. With no number in the goal
+  there is nothing to size an inference against, so the card says "Not enough data". The claim-wording
+  check still runs on the reason, and a source title that reads as a promise is not repeated on the card.
+- **The card** says "An estimate, not a measurement" under an Inference range and links each source.
+- **Only research reports' opportunities carry cited sources today.** Items of offer analyses, diagnoses
+  and page teardowns have none per item, so they get "Your data" or "Not enough data".
+- **Ranking** (`returnScore`, `rankTasks`): a "Your data" range counts for its middle; an Inference range
+  counts for its low end only, so an estimate must clear a measured range with its cautious end to rank
+  above it; at the same size "Your data" comes first; "Not enough data" is last.
+- **The Result column is unchanged**: only what was measured at a check-in.
 
 **When it runs.**
 

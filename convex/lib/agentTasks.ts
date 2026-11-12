@@ -81,25 +81,33 @@ export function expectedReturnWords(value: ExpectedReturn): { text: string; basi
   return { text: `${number(value.low)} to ${number(value.high)} more ${value.metric} ${PERIOD_WORDS[value.period ?? "month"]}`, basis: BASIS_LABEL[value.basis] };
 }
 
-/** The number a task is ranked by: the middle of its range, per month. Null when there is not enough data. */
+/**
+ * The number a task is ranked by, per month. A range that rests on the organization's own results counts
+ * for its middle. A range inferred from sources counts for its low end only: measured beats estimated, so
+ * an estimate has to clear a measured range with its cautious end to rank above it. Null when there is not
+ * enough data.
+ */
 export function returnScore(value: ExpectedReturn): number | null {
   if (value.basis === "insufficient" || value.low === undefined || value.high === undefined) return null;
-  return ((value.low + value.high) / 2) * MONTHLY[value.period ?? "month"];
+  return (value.basis === "inferred" ? value.low : (value.low + value.high) / 2) * MONTHLY[value.period ?? "month"];
 }
 
 type Rankable = { expectedReturn: ExpectedReturn; creditCost: number; createdAt: number };
 
 /**
- * The order inside a column: the larger expected return first; tasks with not enough data after every task
- * that has a range; then the cheaper one; then the newer one.
+ * The order inside a column: the larger expected return first (returnScore); at the same size, "Your data"
+ * before "Inference"; tasks with not enough data after every task that has a range; then the cheaper one;
+ * then the newer one.
  */
 export function rankTasks<T extends Rankable>(tasks: T[]): T[] {
+  const measured = (task: T) => (task.expectedReturn.basis === "firstParty" ? 0 : 1);
   return [...tasks].sort((a, b) => {
     const x = returnScore(a.expectedReturn);
     const y = returnScore(b.expectedReturn);
     if (x === null && y !== null) return 1;
     if (y === null && x !== null) return -1;
     if (x !== null && y !== null && x !== y) return y - x;
+    if (x !== null && y !== null && measured(a) !== measured(b)) return measured(a) - measured(b);
     return a.creditCost - b.creditCost || b.createdAt - a.createdAt;
   });
 }

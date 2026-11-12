@@ -86,6 +86,28 @@ export function storyBoard(state: string): Board {
       by: member ? "person" : "agent",
     }),
   ];
+  if (state === "inference") {
+    // What the proposer adds where a client has no results of its own: a range from the report's cited sources.
+    proposed.splice(
+      1,
+      0,
+      card({
+        column: "proposed",
+        title: "Offer Ledgerline's audit as a fixed-fee first engagement",
+        why: "Two of the firms the market report read lead with a fixed-fee audit before any retainer. Ledgerline has no results connected, so this rests on what was observed elsewhere.",
+        client: "Ledgerline CFO",
+        type: "change",
+        checkInDays: 30,
+        expectedReturn: range(1, 3, "new clients", "Inference"),
+        evidence: [
+          { kind: "asset", label: "Market report: fractional CFO services (June)", href: "/app/assets/a5", external: false },
+          { kind: "sourceRef", label: "Fixed-fee finance audits for agencies (Brightwater Advisory, published 2026-05-28)", href: "https://example.com/brightwater-audit", external: true },
+          { kind: "sourceRef", label: "Our first 30 days: the audit (Calder & Voss, read 2026-06-02)", href: "https://example.com/calder-voss", external: true },
+        ],
+        approvalId: approval(9),
+      }),
+    );
+  }
   const approved: TaskCard[] = [
     card({
       column: "approved",

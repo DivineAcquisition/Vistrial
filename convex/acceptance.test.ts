@@ -633,6 +633,79 @@ describe("outcome loop", () => {
     expect(await proposerRuns()).toHaveLength(3);
   });
 
+  it("proposes an Inference range only from the report's own cited sources, linked on the card, and never where the organization has results of its own", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", ALPHA);
+    // No results of its own are connected. The owner's goal names a number, which is the ceiling of any estimate.
+    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "40 more bookings a month" });
+    script({ sources: PAGES });
+    expect((await run(t, a.owner, a.workspaceId, a.projectId)).status).toBe("completed");
+    const report = (await reportAsset(a.owner, a.workspaceId))!;
+
+    const asked: string[] = [];
+    (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel = (params) => {
+      const input = String(params.messages[0].content);
+      asked.push(input);
+      if (!input.startsWith("Choose up to")) throw new Error(`unscripted call: ${input.slice(0, 40)}`);
+      const listed = JSON.parse(input.split("Candidates (each is an item of an approved report; scope is whose it is):")[1].match(/\[\{.*\}\]/)![0]) as { id: string; sources: { id: string }[] }[];
+      return {
+        text: JSON.stringify({
+          picks: [
+            // Rests on the sources the report cited for this item.
+            { candidateId: listed[0].id, why: "Two competitors were observed leading with this.", low: 2, high: 6, sourceIds: listed[0].sources.map((row) => row.id) },
+            // Cites a source that belongs to another item, and one that does not exist.
+            ...(listed[2] ? [{ candidateId: listed[2].id, why: "Seen elsewhere.", low: 2, high: 6, sourceIds: [listed[0].sources[0].id, "s99"] }] : []),
+          ],
+          summary: "",
+        }),
+      };
+    };
+    const [waiting] = (await a.owner.query(api.approvals.waiting, { workspaceId: a.workspaceId })).items;
+    await a.owner.mutation(api.approvals.decide, { workspaceId: a.workspaceId, approvalId: waiting.id, approve: true });
+    for (let i = 0; i < 12; i += 1) {
+      vi.advanceTimersByTime(0);
+      await t.finishInProgressScheduledFunctions();
+    }
+    // The model was shown each candidate's own sources, as data, with the ceiling and that this is an estimate.
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toContain("no more than 40 a month, the owner's whole goal");
+
+    const tasks = await t.run((ctx) => ctx.db.query("agentTasks").collect());
+    expect(tasks.map((row) => row.expectedReturn)).toEqual([{ basis: "inferred", metric: "bookings", period: "month", low: 2, high: 6 }, { basis: "insufficient" }]);
+    // Every source on the card is a saved source of this organization, from the report's own project.
+    const sourceEvidence = tasks[0].evidence.filter((row) => row.kind === "sourceRef");
+    expect(sourceEvidence).toHaveLength(2);
+    const urls: string[] = [];
+    for (const item of sourceEvidence) {
+      const ref = (await t.run((ctx) => ctx.db.get(item.refId as Id<"sourceRefs">)))!;
+      expect(ref).toMatchObject({ workspaceId: a.workspaceId, projectId: a.projectId });
+      // The model was shown this source's title, as data; the card repeats it with where and when it was read.
+      expect(asked[0]).toContain(ref.title);
+      expect(item.label).toContain(ref.title);
+      urls.push(ref.url);
+    }
+    expect(PAGES.map((row) => row.url)).toEqual(expect.arrayContaining(urls));
+    expect(tasks[0].evidence[0]).toEqual({ kind: "asset", refId: report.id, label: report.title });
+    expect(tasks[0].evidence.some((row) => row.kind === "figure")).toBe(false);
+    expect(tasks[1].evidence.map((row) => row.kind)).toEqual(["asset"]);
+    const board = await a.owner.query(api.agentTasks.board, { workspaceId: a.workspaceId });
+    const [card, bare] = board.columns[0].cards;
+    expect(card.expectedReturn).toMatchObject({ text: "2 to 6 more bookings a month", basis: "Inference", known: true });
+    expect(card.evidence.filter((row) => row.kind === "sourceRef").map((row) => [row.href, row.external])).toEqual(urls.map((url) => [url, true]));
+    expect(bare.expectedReturn).toMatchObject({ text: "Not enough data", known: false });
+
+    // Once the organization has results of its own, a market source cannot stand in for them.
+    await results(t, a.workspaceId, 1000, 20);
+    await t.mutation(internal.planner.weekly, {});
+    for (let i = 0; i < 12; i += 1) {
+      vi.advanceTimersByTime(0);
+      await t.finishInProgressScheduledFunctions();
+    }
+    const later = await t.run((ctx) => ctx.db.query("agentTasks").collect());
+    expect(later).toHaveLength(3);
+    expect(later[2].expectedReturn).toEqual({ basis: "insufficient" });
+  });
+
   it("writes internal learning with no workspace, place, amount or owner note, and deletes it with the decision", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha", ALPHA);

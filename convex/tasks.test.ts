@@ -118,18 +118,24 @@ describe("a task's rules", () => {
     expect(expectedReturnWords({ basis: "insufficient" })).toEqual({ text: "Not enough data", basis: "Not enough data" });
   });
 
-  it("ranks a column by expected return, with not enough data last", () => {
+  it("ranks a column by expected return, an inference by its cautious end, your data first at the same size, not enough data last", () => {
     const task = (name: string, expectedReturn: Parameters<typeof cleanExpectedReturn>[0], creditCost = 100, createdAt = 1) => ({ name, expectedReturn, creditCost, createdAt });
     const ranked = rankTasks([
       task("unknown", { basis: "insufficient" }),
       task("small", { basis: "inferred", low: 1, high: 3, metric: "booked calls" }),
-      task("large", { basis: "firstParty", low: 8, high: 12, metric: "booked calls" }),
-      // 2 to 4 a week is about 13 a month: it outranks 8 to 12 a month.
-      task("weekly", { basis: "inferred", low: 2, high: 4, metric: "booked calls", period: "week" }),
+      // Your data counts for its middle: 10 a month.
+      task("measured", { basis: "firstParty", low: 8, high: 12, metric: "booked calls" }),
+      // An inference counts for its low end. 2 to 4 a week is about 8.7 to 17 a month: its middle is above
+      // the measured range, its low end is not, so measured ranks first.
+      task("weekly estimate", { basis: "inferred", low: 2, high: 4, metric: "booked calls", period: "week" }),
+      // Its low end alone clears the measured range's middle.
+      task("large estimate", { basis: "inferred", low: 11, high: 30, metric: "booked calls" }),
+      // The same size as "measured" (low end 10), but estimated: after it.
+      task("same size, estimated", { basis: "inferred", low: 10, high: 20, metric: "booked calls" }, 20),
       task("small but cheaper", { basis: "inferred", low: 1, high: 3, metric: "booked calls" }, 20),
       task("unknown, newer", { basis: "insufficient" }, 100, 5),
     ]);
-    expect(ranked.map((row) => row.name)).toEqual(["weekly", "large", "small but cheaper", "small", "unknown, newer", "unknown"]);
+    expect(ranked.map((row) => row.name)).toEqual(["large estimate", "measured", "same size, estimated", "weekly estimate", "small but cheaper", "small", "unknown, newer", "unknown"]);
   });
 
   it("reads where a task stands from what it is linked to", () => {
@@ -623,7 +629,7 @@ describe("the task proposer's rules", () => {
     due: [],
   });
 
-  it("keeps a number only when it rests on the same organization's or client's own results, and never calls its own guess an inference", () => {
+  it("keeps a number only when it rests on the same organization's or client's own results, and never an inference where such results exist", () => {
     const settled = settlePicks(plan(), {
       summary: "",
       picks: [
@@ -651,6 +657,61 @@ describe("the task proposer's rules", () => {
     expect(settled[0].evidence).toEqual([{ kind: "asset", refId: "asset1", label: "Market report" }, { kind: "figure", label: "Northlight enquiries results: 20 results" }]);
     expect(settled[1].notes[0]).toContain("No figure of your own");
     expect(settled[3].notes[0]).toContain("larger than the figure");
+  });
+
+  it("allows an Inference range only from the item's own cited sources, where there is no figure of its own, wide, and within the owner's goal", () => {
+    const source = (id: string, scope = "own", title = `Competitor page ${id}`) => ({ id, refId: `ref_${id}`, scope, title, publisher: "Example Trade Weekly", date: "published 2026-10-30", excerpt: "Two competitors lead with a pilot offer.", limitation: null });
+    const base = plan();
+    const record: PlanRecord = {
+      ...base,
+      // Only the client has results of its own. The organization itself has none.
+      figures: base.figures.filter((row) => row.scope === "client1"),
+      candidates: base.candidates.map((row) => ({ ...row, sourceIds: row.id === "c2" ? ["s3"] : row.id === "c6" ? [] : ["s1", "s2"], uncertainty: "low" })),
+      sources: [source("s1"), source("s2", "own", "Proven ways to double bookings"), source("s3", "client1"), source("s4")],
+      monthlyTarget: 40,
+    };
+    const picks = [
+      // Rests on two sources the report cited for this item: stands, as an inference.
+      { candidateId: "c1", why: "Two competitors lead with it.", low: 2, high: 6, sourceIds: ["s1", "s2", "s1"] },
+      // The client has results of its own, so a market source cannot stand in for them.
+      { candidateId: "c2", why: "Seen elsewhere.", low: 2, high: 6, sourceIds: ["s3"] },
+      // A real source of this organization, but not one the report cited for this item; and one that does not exist.
+      { candidateId: "c6", why: "Seen elsewhere.", low: 2, high: 6, sourceIds: ["s4", "s99"] },
+      // Larger than the owner's whole goal.
+      { candidateId: "c3", why: "Big.", low: 20, high: 60, sourceIds: ["s1"] },
+      // Too narrow to be an estimate from market sources.
+      { candidateId: "c4", why: "Narrow.", low: 10, high: 12, sourceIds: ["s1"] },
+    ];
+    const settled = settlePicks(record, { summary: "", picks });
+    expect(settled.map((row) => row.expectedReturn)).toEqual([
+      { basis: "inferred", metric: "booked calls", period: "month", low: 2, high: 6 },
+      { basis: "insufficient" },
+      { basis: "insufficient" },
+      { basis: "insufficient" },
+      { basis: "insufficient" },
+    ]);
+    // The card links the sources the range rests on, each once; a title that reads as a promise is not repeated.
+    expect(settled[0].evidence).toEqual([
+      { kind: "asset", refId: "asset1", label: "Market report" },
+      { kind: "sourceRef", refId: "ref_s1", label: "Competitor page s1 (Example Trade Weekly, published 2026-10-30)" },
+      { kind: "sourceRef", refId: "ref_s2", label: "A source the report cites (Example Trade Weekly, published 2026-10-30)" },
+    ]);
+    expect(settled[1].notes[0]).toContain("No figure of your own was cited");
+    expect(settled[2].notes[0]).toContain("no source the report cites for this");
+    expect(settled[2].evidence).toEqual([{ kind: "asset", refId: "asset1", label: "Market report" }]);
+    expect(settled[3].notes[0]).toContain("larger than your whole goal");
+    expect(settled[4].notes[0]).toContain("too narrow");
+    // Your data and Inference are never mixed: a range that cites both where a figure exists rests on the figure alone.
+    const mixed = settlePicks({ ...record, figures: base.figures }, { summary: "", picks: [{ candidateId: "c1", why: "Both.", low: 2, high: 6, figureIds: ["f1"], sourceIds: ["s1"] }] });
+    expect(mixed[0].expectedReturn.basis).toBe("firstParty");
+    expect(mixed[0].evidence.map((row) => row.kind)).toEqual(["asset", "figure"]);
+    // With no number in the owner's goal there is nothing to size an inference against.
+    const noGoal = settlePicks({ ...record, monthlyTarget: null }, { summary: "", picks: [picks[0]] });
+    expect(noGoal[0].expectedReturn).toEqual({ basis: "insufficient" });
+    expect(noGoal[0].notes[0]).toContain("names no number");
+    // A plan read before sources were collected simply has none.
+    expect(settlePicks({ ...base, figures: [] }, { summary: "", picks: [picks[0]] })[0].expectedReturn).toEqual({ basis: "insufficient" });
+    expect(readChoice({ picks: [{ candidateId: "c1", why: "x", sourceIds: ["s1", 4] }], summary: "" })?.picks[0].sourceIds).toEqual(["s1"]);
   });
 
   it("drops what is not a candidate, never proposes one twice, replaces a promise, and stops at its limit", () => {

@@ -223,7 +223,7 @@ function workHref(task: Doc<"agentTasks">, records: Awaited<ReturnType<typeof li
   if (records.intake) return { href: `/app/agents/${agent}/work/chat?c=${records.intake._id}`, label: records.intake.status === "ready" ? "See the plan and start" : "Open the conversation" };
   if (records.decision) {
     const tab = records.decision.assetId ? `/app/assets/${records.decision.assetId}` : `/app/agents/${agent}/sessions/${records.decision.projectId}`;
-    return { href: tab, label: records.decision.outcome ? "Open the result" : "Record what happened" };
+    return { href: tab, label: records.decision.outcome ? "Open the result" : "Open the report it came from" };
   }
   return null;
 }

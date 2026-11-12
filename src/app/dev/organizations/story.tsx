@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { JourneySidebarView, SearchResults } from "@/components/shell/journey-sidebar";
+import { ArchivedBanner, OrganizationDataView, type ExportRow } from "@/components/settings/organization-data";
 import { OrganizationSwitcherView } from "@/components/shell/organization-switcher";
 import type { ShellAccount, ShellOrganization } from "@/components/shell/shell-context";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -30,13 +31,61 @@ const CLOSED = "Adding another organization is not switched on yet. Contact us a
 function fixture(state: string): { organizations: ShellOrganization[]; account: ShellAccount } {
   const owner = state !== "member";
   return {
-    organizations: state === "one" ? OWNED.slice(0, 1) : state === "member" ? GIVEN : OWNED,
+    organizations: state === "one" ? OWNED.slice(0, 1) : state === "member" ? GIVEN : state === "archived" ? [...OWNED.slice(0, 2), { ...OWNED[2], archived: true }] : OWNED,
     account: { accountId: ACCOUNT, name: "Northlight", owner, canAdd: owner && state !== "closed", addClosedReason: owner && state === "closed" ? CLOSED : null },
   };
 }
 
+const NOW = Date.UTC(2026, 10, 12, 15);
+const DAY = 24 * 60 * 60 * 1000;
+const EXPORTS: ExportRow[] = [
+  { id: "e3", status: "building", createdAt: NOW, expiresAt: null, bytes: null, records: null, url: null },
+  { id: "e2", status: "ready", createdAt: NOW - 2 * DAY, expiresAt: NOW + 5 * DAY, bytes: 1_840_000, records: 412, url: "#" },
+  { id: "e1", status: "expired", createdAt: NOW - 30 * DAY, expiresAt: null, bytes: 1_210_000, records: 288, url: null },
+];
+const FEE = "Its $99 a month stops at your next renewal. There is no refund or credit for the part of this month already paid, and the credits it added stay until then.";
+
+/** Settings, Business: export and archive, for an Owner. ?state=data|data-confirm|data-archived|data-first. */
+function DataStory({ state, theme }: { state: string; theme: string }) {
+  const archived = state === "data-archived";
+  const first = state === "data-first";
+  const [busy] = useState<null>(null);
+  return (
+    <div className="min-h-dvh bg-background p-4 text-foreground sm:p-8">
+      <StoryTheme theme={theme} />
+      <div className="mx-auto grid max-w-3xl gap-4">
+        {archived ? <ArchivedBanner name="The Retainer Playbook" owner /> : null}
+        <OrganizationDataView
+          name={first ? "Northlight Growth" : "The Retainer Playbook"}
+          state={{
+            archived,
+            archivedAt: archived ? NOW - 3 * DAY : null,
+            isOwner: true,
+            canArchive: !archived && !first,
+            cannotArchiveReason: first ? "This is the account's first organization: the plan and the credit balance are held under it, so it cannot be archived. To stop the plan, use Billing." : null,
+            feeWords: FEE,
+            canRestore: archived,
+            cannotRestoreReason: null,
+          }}
+          exports={first ? [] : archived ? EXPORTS.slice(1) : EXPORTS}
+          problem={null}
+          busy={busy}
+          onExport={() => {}}
+          onArchive={() => {}}
+          onRestore={() => {}}
+        />
+      </div>
+    </div>
+  );
+}
+
 /** The sidebar with the organization selector on top, fed by fixtures: one business, several, or a team member's view. */
 export function OrganizationsStory({ state, theme }: { state: string; theme: string }) {
+  if (state.startsWith("data")) return <DataStory state={state} theme={theme} />;
+  return <SidebarStory state={state} theme={theme} />;
+}
+
+function SidebarStory({ state, theme }: { state: string; theme: string }) {
   const { organizations: initial, account } = fixture(state);
   const [organizations, setOrganizations] = useState(initial);
   const [current, setCurrent] = useState<string>(initial[0].workspaceId);

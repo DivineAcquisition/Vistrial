@@ -12,7 +12,7 @@ import { userError } from "./lib/errors";
 
 const OPEN = ["queued", "running", "waiting"] as const;
 
-async function cancelOpen(ctx: MutationCtx, workspaceId: Id<"workspaces">, stopReason: "cancelled") {
+export async function cancelOpen(ctx: MutationCtx, workspaceId: Id<"workspaces">, stopReason: "cancelled") {
   for (const status of OPEN) {
     const rows = await ctx.db
       .query("agentRuns")

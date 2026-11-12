@@ -9,7 +9,7 @@ import type { RailAgent } from "@/lib/shell/rail";
 export type ShellAgent = RailAgent & { state: "off" | "suggesting" | "on" };
 
 /** One organization the signed-in person can open, with their role in it. */
-export type ShellOrganization = { workspaceId: Id<"workspaces">; name: string; role: Role; accountId: Id<"accounts"> | null };
+export type ShellOrganization = { workspaceId: Id<"workspaces">; name: string; role: Role; accountId: Id<"accounts"> | null; /** Archived: read-only, listed apart, for Owners only. */ archived?: boolean };
 
 /** The account the open organization belongs to, as far as this person is concerned. */
 export type ShellAccount = {

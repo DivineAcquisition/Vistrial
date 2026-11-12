@@ -1,3 +1,4 @@
+import { creditWords, priceFor } from "../../lib/credits";
 import { PROFILE_FIELDS, type ChecksRecord, type CheckResult, type ComputeRecord, type ContextRecord, type Opportunity, type Report } from "./shapes";
 
 /**
@@ -144,7 +145,7 @@ export function runChecks(input: CheckInput): ChecksRecord {
   );
 
   // 8. Cost within the cap.
-  add(8, CHECK_NAMES[7][1], input.runCostCents <= input.capCents, `The run cost ${input.runCostCents.toFixed(2)}¢ of its ${input.capCents}¢ cap.`);
+  add(8, CHECK_NAMES[7][1], input.runCostCents <= input.capCents, `The run used ${creditWords(priceFor(input.runCostCents))} of its ${creditWords(priceFor(input.capCents))} limit.`);
 
   return { passed: results.every((row) => row.passed), results };
 }

@@ -13,8 +13,9 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SegmentedControl } from "@/components/ui/tabs";
 import type { Tone } from "@/components/ui/tone";
-import { PLATFORM_LABEL, money } from "@/lib/research/words";
+import { PLATFORM_LABEL } from "@/lib/research/words";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { useCredits } from "@/lib/credits";
 
 type Section = "context" | "research" | "findings" | "assets" | "review";
 
@@ -64,6 +65,7 @@ export function StudioLayout({
   /** Opens a section directly (story pages). */
   initialSection?: string;
 }) {
+  const credits = useCredits();
   const [section, setSection] = useState<Section | null>(() => SECTIONS.find((row) => row.value === initialSection)?.value ?? null);
   const hasContext = Boolean(studio.context && (studio.context.profile || studio.context.facts.length > 0));
   const sourceCount = sources.size;
@@ -132,7 +134,7 @@ export function StudioLayout({
               <>
                 <StageProgress steps={steps} open={open} />
                 <p className="text-sm text-muted-foreground">
-                  Spent {money(studio.run.costCents)} of {money(capCents)}.
+                  Spent {credits.cost(studio.run.costCents)} of {credits.cost(capCents)}.
                 </p>
               </>
             ) : (

@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { ShaderBackdrop } from "@/components/ui/shader-backdrop";
 import { errorWords } from "@/lib/research/words";
+import { creditWords, dollarWords } from "@/lib/credits";
 import { cn } from "@/lib/utils";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -65,7 +66,6 @@ export function phaseOf(session: ThreadData | null): Phase {
   return "stopped";
 }
 
-const dollars = (cents: number) => `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 
 function hostOf(url: string) {
   try {
@@ -340,7 +340,7 @@ function UnlockTeaser({ data, onUnlock, busy }: { data: FreeSessionData; onUnloc
           <Lock aria-hidden /> Unlock Vistrial
         </Button>
         <span className="text-sm text-muted-foreground">
-          {data.billing.plan.name} plan, {dollars(data.billing.plan.priceCents)} a month with {dollars(data.billing.plan.includedCents)} of credits included.
+          {data.billing.plan.name} plan, {dollarWords(data.billing.plan.priceCents)} a month with {creditWords(data.billing.plan.includedCents)} included.
         </span>
       </div>
     </Panel>
@@ -415,12 +415,12 @@ function Paywall({ data, actions }: { data: FreeSessionData; actions: FreeSessio
                 <p className="text-xs text-muted-foreground">Cancel any time from Billing.</p>
               </div>
               <p className="font-heading text-3xl text-strong">
-                {dollars(plan.priceCents)}
+                {dollarWords(plan.priceCents)}
                 <span className="text-sm font-normal text-muted-foreground"> / month</span>
               </p>
             </div>
             <p className="text-sm text-muted-foreground">
-              Includes {dollars(plan.includedCents)} of credits every month. Research and follow-ups use credits as they run, and you can add more any time.
+              Includes {creditWords(plan.includedCents)} every month. Research and follow-ups use credits as they run, and you can add more any time.
             </p>
             {data.billing.on ? (
               <Button variant="gradient" size="lg" disabled={busy} onClick={() => void checkout()} className="w-full">

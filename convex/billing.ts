@@ -285,10 +285,10 @@ export const unsynced = internalQuery({
 export const status = workspaceQuery({
   args: {},
   handler: async (ctx) => {
-    if (!billingOn()) return { on: false, balanceCents: null, low: false, empty: false, canManage: isOwner(ctx.member.role) };
+    if (!billingOn()) return { on: false, balanceCents: null, low: false, empty: false, canManage: isOwner(ctx.member.role), markup: markup() };
     const account = await accountFor(ctx, ctx.workspaceId);
     const balanceCents = account?.balanceCents ?? 0;
-    return { on: true, balanceCents, low: balanceCents > 0 && balanceCents <= AUTO_REFILL.thresholdCents, empty: balanceCents <= 0, canManage: isOwner(ctx.member.role) };
+    return { on: true, balanceCents, low: balanceCents > 0 && balanceCents <= AUTO_REFILL.thresholdCents, empty: balanceCents <= 0, canManage: isOwner(ctx.member.role), markup: markup() };
   },
 });
 

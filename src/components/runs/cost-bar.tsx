@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { centsInWords, formatCents, type CostView } from "@/lib/runs/view";
+import { type CostView } from "@/lib/runs/view";
+import { useCredits } from "@/lib/credits";
 
 /**
  * Cost so far against the per-run cap. The soft warning and the hard stop are
@@ -7,6 +8,7 @@ import { centsInWords, formatCents, type CostView } from "@/lib/runs/view";
  * as the limit itself.
  */
 export function CostBar({ cost }: { cost: CostView }) {
+  const credits = useCredits();
   const cap = Math.max(cost.runCapCents, 1);
   const share = Math.min(cost.spentCents / cap, 1);
   const warnAt = Math.min(cost.softWarningCents / cap, 1);
@@ -21,10 +23,10 @@ export function CostBar({ cost }: { cost: CostView }) {
           <span className="font-medium text-card-foreground">This run</span>
           <span className="text-muted-foreground">
             <span aria-hidden="true">
-              {formatCents(cost.spentCents)} of {formatCents(cost.runCapCents)}
+              {credits.cost(cost.spentCents)} of {credits.cost(cost.runCapCents)}
             </span>
             <span className="sr-only">
-              {centsInWords(cost.spentCents)} spent of a {centsInWords(cost.runCapCents)} limit
+              {credits.cost(cost.spentCents)} spent of a {credits.cost(cost.runCapCents)} limit
             </span>
           </span>
         </div>
@@ -34,7 +36,7 @@ export function CostBar({ cost }: { cost: CostView }) {
           aria-valuemin={0}
           aria-valuemax={cost.runCapCents}
           aria-valuenow={Math.min(cost.spentCents, cost.runCapCents)}
-          aria-valuetext={`${centsInWords(cost.spentCents)} of ${centsInWords(cost.runCapCents)}`}
+          aria-valuetext={`${credits.cost(cost.spentCents)} of ${credits.cost(cost.runCapCents)}`}
           className="relative h-2.5 w-full overflow-visible rounded-full bg-muted"
         >
           <div
@@ -54,11 +56,11 @@ export function CostBar({ cost }: { cost: CostView }) {
         <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
           <span>
             <span aria-hidden="true" className="mr-1.5 inline-block h-2.5 w-px bg-warning align-middle" />
-            Warning at {formatCents(cost.softWarningCents)}
+            Warning at {credits.cost(cost.softWarningCents)}
           </span>
           <span>
             <span aria-hidden="true" className="mr-1.5 inline-block h-2.5 w-1 rounded-sm bg-foreground align-middle" />
-            Stops at {formatCents(cost.runCapCents)}
+            Stops at {credits.cost(cost.runCapCents)}
           </span>
         </div>
         {over ? <p className="text-sm text-destructive">This run reached its limit.</p> : null}
@@ -70,10 +72,10 @@ export function CostBar({ cost }: { cost: CostView }) {
           <span className="font-medium text-card-foreground">Today, this agent</span>
           <span className="text-muted-foreground">
             <span aria-hidden="true">
-              {formatCents(cost.daySpentCents)} of {formatCents(cost.dayCapCents)}
+              {credits.cost(cost.daySpentCents)} of {credits.cost(cost.dayCapCents)}
             </span>
             <span className="sr-only">
-              {centsInWords(cost.daySpentCents)} spent today of a {centsInWords(cost.dayCapCents)} daily limit
+              {credits.cost(cost.daySpentCents)} spent today of a {credits.cost(cost.dayCapCents)} daily limit
             </span>
           </span>
         </div>

@@ -9,6 +9,7 @@ import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";
 import { FreeSessionFlow } from "@/components/onboarding/free-session-flow";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 import { ProductShell } from "@/components/shell/product-shell";
+import { CreditsProvider } from "@/lib/credits";
 import { ShellProvider, type ScopeChoice, type ShellAccount, type ShellOrganization, type WorkspaceShell } from "@/components/shell/shell-context";
 import { chooseOrganization, readOrganizationChoice, readScopeChoice, validScope, writeOrganizationChoice, writeScopeChoice } from "@/lib/shell/organization-choice";
 import { useConvexReady } from "@/components/providers/convex-ready";
@@ -96,6 +97,8 @@ function WorkspaceFrame({
 }) {
   const shell = useQuery(api.workspace.shell, { workspaceId });
   const listed = useQuery(api.clients.list, { workspaceId });
+  // The markup turns what work cost into the credits charged for it, on every screen (lib/credits).
+  const billing = useQuery(api.billing.status, { workspaceId });
   // The picker's choice is remembered per organization and per browser.
   const [stored, setStored] = useState<string>(() => readScopeChoice(workspaceId));
   const setChoice = useCallback(
@@ -129,7 +132,9 @@ function WorkspaceFrame({
   };
   return (
     <ShellProvider value={value}>
-      <ProductShell departments={shell.departments} agents={shell.agents}>{children}</ProductShell>
+      <CreditsProvider markup={billing?.markup}>
+        <ProductShell departments={shell.departments} agents={shell.agents}>{children}</ProductShell>
+      </CreditsProvider>
     </ShellProvider>
   );
 }

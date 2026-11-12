@@ -16,6 +16,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { addDaySpend } from "./lib/capRows";
 import { dayKey } from "./lib/caps";
 import { writeAudit } from "./lib/audit";
+import { creditWords, priceFor } from "./lib/credits";
 import { notFound, userError } from "./lib/errors";
 import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
@@ -110,7 +111,7 @@ export const ask = workspaceMutation({
     if (!project || project.workspaceId !== ctx.workspaceId) notFound();
     const text = args.text.replace(/\s+/g, " ").trim().slice(0, 1000);
     if (!text) return null;
-    if ((await spentOn(ctx, project._id)) >= MAX_FOLLOWUP_CENTS) throw userError("This session's follow-ups have reached their $4 limit. Start a new session.");
+    if ((await spentOn(ctx, project._id)) >= MAX_FOLLOWUP_CENTS) throw userError(`This session's follow-ups have reached their limit of ${creditWords(priceFor(MAX_FOLLOWUP_CENTS))}. Start a new session.`);
     const busy = await ctx.db
       .query("sessionChats")
       .withIndex("by_project", (q) => q.eq("projectId", project._id))
@@ -135,7 +136,7 @@ export const run = workspaceMutation({
     const row = await ctx.db.get(args.chatId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
     if (row.kind !== "proposal" || row.status !== "proposed") throw userError("That research is not waiting to run.");
-    if ((await spentOn(ctx, row.projectId)) >= MAX_FOLLOWUP_CENTS) throw userError("This session's follow-ups have reached their $4 limit. Start a new session.");
+    if ((await spentOn(ctx, row.projectId)) >= MAX_FOLLOWUP_CENTS) throw userError(`This session's follow-ups have reached their limit of ${creditWords(priceFor(MAX_FOLLOWUP_CENTS))}. Start a new session.`);
     await ctx.db.patch(row._id, { status: "running" });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "followup.research_approved", subject: row._id });
     await ctx.scheduler.runAfter(0, internal.followups.research, { chatId: row._id });

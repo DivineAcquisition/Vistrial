@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { RunStatusBadge } from "@/components/runs/run-parts";
-import { STOP_REASON_WORDS, centsInWords, formatCents, type RunStatus, type StopReason } from "@/lib/runs/view";
+import { STOP_REASON_WORDS, type RunStatus, type StopReason } from "@/lib/runs/view";
+import { useCredits } from "@/lib/credits";
 
 export type RunListItem = {
   id: string;
@@ -16,6 +17,7 @@ export type RunListItem = {
 
 /** One row per run. Every row is a link, status always has a word next to its colour. */
 export function RunList({ runs }: { runs: RunListItem[] }) {
+  const credits = useCredits();
   return (
     <ul className="grid divide-y divide-border">
       {runs.map((run) => (
@@ -36,8 +38,7 @@ export function RunList({ runs }: { runs: RunListItem[] }) {
             <span className="flex items-center gap-3">
               <RunStatusBadge status={run.status} />
               <span className="text-sm text-muted-foreground tabular-nums">
-                <span aria-hidden="true">{formatCents(run.costCents)}</span>
-                <span className="sr-only">{centsInWords(run.costCents)}</span>
+                {credits.cost(run.costCents)}
               </span>
             </span>
           </Link>

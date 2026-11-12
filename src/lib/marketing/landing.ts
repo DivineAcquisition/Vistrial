@@ -291,6 +291,8 @@ export type Picture = {
   height: number;
   title: string;
   alt: string;
+  /** On a phone a picture is shown larger and cut at the right edge. "fit" shows the whole width, for a screen whose content is centred. */
+  phone?: "fit";
 };
 
 export const PICTURES: Picture[] = [
@@ -352,6 +354,7 @@ export const PICTURES: Picture[] = [
     width: 1568,
     height: 3208,
     title: "Home: what needs you",
+    phone: "fit",
     alt: "The Home screen: a box asking what Vistrial should work on, then a Needs you list with a question from an agent, approvals and a check-in that is due, then what changed since you were last here.",
   },
   {

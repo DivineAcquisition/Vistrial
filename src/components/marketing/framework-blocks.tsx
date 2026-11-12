@@ -213,7 +213,7 @@ export function ProductPicture({
       </div>
       <div className={cn("relative overflow-hidden", crop)}>
         {/* On a phone the picture is shown larger and cut at the right edge, so its words stay readable. */}
-        <Image src={`/marketing/product/${picture.file}.png`} alt={picture.alt} {...shared} className="h-auto w-[200%] max-w-none sm:w-full" />
+        <Image src={`/marketing/product/${picture.file}.png`} alt={picture.alt} {...shared} className={cn("h-auto sm:w-full", picture.phone === "fit" ? "w-full" : "w-[200%] max-w-none")} />
         {crop ? <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent" /> : null}
       </div>
       <figcaption className="mt-auto flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-border px-4 py-3">

@@ -7,17 +7,15 @@ import { AgentFlow } from "@/components/marketing/agentic-visuals";
 import { LandingFaq } from "@/components/marketing/faq";
 import { PhilosophySection } from "@/components/marketing/philosophy";
 import {
-  AssetApprovalExample,
-  DoctrineFlow,
   EvidenceReport,
   PainList,
   ResearchStudioHero,
-  SafetySteps,
   ScatteredScene,
   SectionEyebrow,
-  SkillMap,
   WorkforceMap,
 } from "@/components/marketing/growth-visuals";
+import { LoopDemo, RunTimeline, SkillPlans } from "@/components/marketing/agentic-sections";
+import { GuardedRun } from "@/components/marketing/guarded-run";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { IndustrySwitcher } from "@/components/marketing/saas-blocks";
 import { Button } from "@/components/ui/button";
@@ -161,13 +159,16 @@ export function LandingPage() {
 
       {SECTIONS.how ? (
         <Section id={HOW.id} headline={HOW.headline} lead={HOW.lead}>
-          <DoctrineFlow />
+          <RunTimeline />
+          <div className="mt-14">
+            <LoopDemo />
+          </div>
         </Section>
       ) : null}
 
       {SECTIONS.growthArchitect ? (
         <Section id={GROWTH_ARCHITECT.id} eyebrow={GROWTH_ARCHITECT.eyebrow} headline={GROWTH_ARCHITECT.headline} lead={GROWTH_ARCHITECT.lead}>
-          <SkillMap />
+          <SkillPlans />
         </Section>
       ) : null}
 
@@ -192,26 +193,13 @@ export function LandingPage() {
 
       {SECTIONS.safety ? (
         <Section id={SAFETY.id} headline={SAFETY.headline} lead={SAFETY.lead}>
-          <SafetySteps />
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-            {SAFETY.items.map((item) => (
-              <li key={item}>
-                <SpotlightCard>
-                  <p className="text-sm leading-relaxed text-strong">{item}</p>
-                </SpotlightCard>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-10 grid gap-6 lg:grid-cols-[0.8fr_1fr] lg:items-center lg:gap-12">
-            <div className="max-w-md">
-              <h3 className="font-heading text-xl tracking-tight text-strong">{APPROVAL.introTitle}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{APPROVAL.introBody}</p>
-              <Link href={SAFETY.linkHref} className="mt-4 inline-flex text-sm font-medium text-brand-300 underline underline-offset-4">
-                {SAFETY.linkLabel}
-              </Link>
-            </div>
-            <AssetApprovalExample />
-          </div>
+          <GuardedRun />
+          <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+            <span>{APPROVAL.introBody}</span>
+            <Link href={SAFETY.linkHref} className="font-medium text-brand-300 underline underline-offset-4">
+              {SAFETY.linkLabel}
+            </Link>
+          </p>
         </Section>
       ) : null}
 

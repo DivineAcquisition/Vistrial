@@ -37,6 +37,21 @@ export const COLUMN_WORDS: Record<Column, { label: string; hint: string; empty: 
   result: { label: "Result", hint: "What was measured at the check-in", empty: "No result has been measured yet." },
 };
 
+/**
+ * Each stage has its own colour, used the same way everywhere on the board: the column's header, the edge
+ * of its cards and its chip on a phone. The name is always written beside it, so colour is never the only sign.
+ * Grey: waiting for a decision. Blue: agreed. Violet: an agent is working. Amber: needs a person.
+ * Green: finished. Pink: measured (kept apart from the green and red of the outcome shown inside a Result card).
+ */
+export const STAGE_COLOR: Record<Column, { dot: string; header: string; edge: string; chip: string; count: string }> = {
+  proposed: { dot: "bg-slate-400", header: "border-slate-400/70 bg-slate-400/10", edge: "border-l-slate-400", chip: "border-slate-400 bg-slate-400/15", count: "bg-slate-400/20 text-slate-700 dark:text-slate-200" },
+  approved: { dot: "bg-sky-500", header: "border-sky-500/70 bg-sky-500/10", edge: "border-l-sky-500", chip: "border-sky-500 bg-sky-500/15", count: "bg-sky-500/20 text-sky-800 dark:text-sky-200" },
+  running: { dot: "bg-violet-500", header: "border-violet-500/70 bg-violet-500/10", edge: "border-l-violet-500", chip: "border-violet-500 bg-violet-500/15", count: "bg-violet-500/20 text-violet-800 dark:text-violet-200" },
+  needsYou: { dot: "bg-amber-500", header: "border-amber-500/70 bg-amber-500/10", edge: "border-l-amber-500", chip: "border-amber-500 bg-amber-500/15", count: "bg-amber-500/25 text-amber-900 dark:text-amber-200" },
+  done: { dot: "bg-emerald-500", header: "border-emerald-500/70 bg-emerald-500/10", edge: "border-l-emerald-500", chip: "border-emerald-500 bg-emerald-500/15", count: "bg-emerald-500/20 text-emerald-800 dark:text-emerald-200" },
+  result: { dot: "bg-fuchsia-500", header: "border-fuchsia-500/70 bg-fuchsia-500/10", edge: "border-l-fuchsia-500", chip: "border-fuchsia-500 bg-fuchsia-500/15", count: "bg-fuchsia-500/20 text-fuchsia-800 dark:text-fuchsia-200" },
+};
+
 export type ProposeInput = { title: string; why: string; ask: string; skillSlug: string; low?: number; high?: number; metric?: string };
 
 /** Everything the board can do. Each resolves when it is done, or rejects with the server's words. */
@@ -125,7 +140,7 @@ function Card({ card, column, board, actions, onEdit, onSkip }: { card: TaskCard
     void work.catch((problem: unknown) => showError(problem)).finally(() => setBusy(false));
   };
   return (
-    <li className="grid gap-2.5 rounded-xl border border-border bg-card p-3">
+    <li className={cn("grid gap-2.5 rounded-xl border border-l-[3px] border-border bg-card p-3", STAGE_COLOR[column].edge)}>
       <div className="flex flex-wrap items-center gap-1.5">
         <span className={chip}>{card.type === "work" ? (card.skill ? `Agent work · ${card.skill}` : "Agent work") : "A change you make"}</span>
         {card.client ? <span className={cn(chip, "border-primary/30 text-primary")}>{card.client}</span> : null}
@@ -204,11 +219,11 @@ function ColumnView({ column, cards, children }: { column: Column; cards: TaskCa
   const words = COLUMN_WORDS[column];
   return (
     <section aria-label={words.label} className="flex min-w-0 flex-col gap-2 md:w-[19rem] md:shrink-0">
-      <header className="flex items-baseline justify-between gap-2 px-1">
+      <header className={cn("flex items-baseline justify-between gap-2 rounded-lg border-t-2 px-2.5 py-2", STAGE_COLOR[column].header)}>
         <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <span className={cn("size-2 rounded-full", column === "needsYou" ? "bg-warning" : column === "running" ? "bg-primary" : column === "result" ? "bg-success" : "bg-muted-foreground/50")} aria-hidden />
+          <span className={cn("size-2.5 rounded-full", STAGE_COLOR[column].dot, column === "running" && cards.length > 0 && "animate-pulse motion-reduce:animate-none")} aria-hidden />
           {words.label}
-          <span className="rounded-full bg-overlay/[0.06] px-1.5 text-[11px] leading-5 text-muted-foreground tabular-nums">{cards.length}</span>
+          <span className={cn("rounded-full px-1.5 text-[11px] leading-5 tabular-nums", STAGE_COLOR[column].count)}>{cards.length}</span>
         </h2>
         <span className="truncate text-[11px] text-muted-foreground">{words.hint}</span>
       </header>
@@ -510,9 +525,10 @@ export function TaskBoardView({
                 onClick={() => setColumn(row.column)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  shown === row.column ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground",
+                  shown === row.column ? cn(STAGE_COLOR[row.column].chip, "text-foreground") : "border-border text-muted-foreground",
                 )}
               >
+                <span className={cn("size-2 rounded-full", STAGE_COLOR[row.column].dot)} aria-hidden />
                 {COLUMN_WORDS[row.column].label}
                 <span className="tabular-nums">{row.cards.length}</span>
               </button>

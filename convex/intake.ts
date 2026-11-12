@@ -5,6 +5,7 @@
  * never stuck. Nothing researches or spends on research until the person presses Start on the plan.
  */
 
+import { CONTEXT_NOUN } from "./lib/chatContext";
 import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
@@ -411,7 +412,7 @@ export const load = internalQuery({
       memory: [
         ...(profile ? [`Offer: ${profile.offer}`, `Audience: ${profile.audience}`, `Area: ${profile.geography}`, `Channels: ${profile.channels}`] : ["No confirmed business profile."]),
         ...facts.slice(0, 20).map((row) => `${row.factKey}: ${row.value} (${row.status})`),
-        ...(row.context ? [`The owner attached this ${row.context.kind === "offer" ? "offer of theirs" : "earlier result"} to refine: ${row.context.title}`] : []),
+        ...(row.context ? [`The owner attached this ${CONTEXT_NOUN[row.context.kind]}${row.context.kind === "asset" || row.context.kind === "offer" ? " to refine" : ""}: ${row.context.title}`] : []),
       ],
       route: route ?? (devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null),
     };

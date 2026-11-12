@@ -78,6 +78,7 @@ import type * as lib_businessContext from "../lib/businessContext.js";
 import type * as lib_canSeeLead from "../lib/canSeeLead.js";
 import type * as lib_capRows from "../lib/capRows.js";
 import type * as lib_caps from "../lib/caps.js";
+import type * as lib_chatContext from "../lib/chatContext.js";
 import type * as lib_chatRouting from "../lib/chatRouting.js";
 import type * as lib_clientGuard from "../lib/clientGuard.js";
 import type * as lib_clients from "../lib/clients.js";
@@ -286,6 +287,7 @@ declare const fullApi: ApiFromModules<{
   "lib/canSeeLead": typeof lib_canSeeLead;
   "lib/capRows": typeof lib_capRows;
   "lib/caps": typeof lib_caps;
+  "lib/chatContext": typeof lib_chatContext;
   "lib/chatRouting": typeof lib_chatRouting;
   "lib/clientGuard": typeof lib_clientGuard;
   "lib/clients": typeof lib_clients;

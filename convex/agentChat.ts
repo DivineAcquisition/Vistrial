@@ -6,7 +6,8 @@
  * three the person wants; it never picks one silently. A conversation is an `intakes` row, as before.
  */
 
-import { clientForNew } from "./lib/clients";
+import { CHAT_PAGES, isChatPage, type ContextKind } from "./lib/chatContext";
+import { clientForNew, clientOfAsset, type ClientScope } from "./lib/clients";
 import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
@@ -39,18 +40,41 @@ async function ownIntake(ctx: QueryCtx & { workspaceId: Id<"workspaces"> }, inta
   return row;
 }
 
-/** The item a person attached, checked to be this workspace's, with its title as it reads now. */
-async function readContext(ctx: QueryCtx & { workspaceId: Id<"workspaces"> }, input: { kind: "asset" | "offer"; id: string }) {
+type Reader = QueryCtx & { workspaceId: Id<"workspaces">; clients: ClientScope };
+const contextArg = v.object({ kind: v.union(v.literal("asset"), v.literal("offer"), v.literal("task"), v.literal("project")), id: v.string() });
+
+/**
+ * The record a person had open or attached, checked to be this organization's and one they may see, with
+ * its title as it reads now. Anything else is "Not found.": a chat can never be pointed at another
+ * organization's record, or at a client the person is not assigned to.
+ */
+async function readContext(ctx: Reader, input: { kind: ContextKind; id: string }): Promise<NonNullable<Doc<"intakes">["context"]>> {
   if (input.kind === "asset") {
     const id = ctx.db.normalizeId("assets", input.id);
     const asset = id ? await ctx.db.get(id) : null;
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
-    return { kind: "asset" as const, id: asset._id as string, title: asset.title.slice(0, 160) };
+    ctx.clients.require(await clientOfAsset(ctx, asset));
+    return { kind: "asset", id: asset._id as string, title: asset.title.slice(0, 160) };
+  }
+  if (input.kind === "task") {
+    const id = ctx.db.normalizeId("agentTasks", input.id);
+    const task = id ? await ctx.db.get(id) : null;
+    if (!task || task.workspaceId !== ctx.workspaceId) notFound();
+    ctx.clients.require(task.clientId);
+    return { kind: "task", id: task._id as string, title: task.title.slice(0, 160) };
+  }
+  if (input.kind === "project") {
+    const id = ctx.db.normalizeId("researchProjects", input.id);
+    const project = id ? await ctx.db.get(id) : null;
+    if (!project || project.workspaceId !== ctx.workspaceId) notFound();
+    ctx.clients.require(project.clientId);
+    return { kind: "project", id: project._id as string, title: project.title.slice(0, 160) };
   }
   const id = ctx.db.normalizeId("offerCards", input.id);
   const card = id ? await ctx.db.get(id) : null;
   if (!card || card.workspaceId !== ctx.workspaceId) notFound();
-  return { kind: "offer" as const, id: card._id as string, title: card.name.slice(0, 160) };
+  ctx.clients.require(card.clientId);
+  return { kind: "offer", id: card._id as string, title: card.name.slice(0, 160) };
 }
 
 async function nextAt(ctx: QueryCtx, intakeId: Id<"intakes">) {
@@ -142,7 +166,10 @@ export const send = workspaceMutation({
     text: v.string(),
     /** A preset from the screen ("New research", "Refine in chat"). The person chose it, so nothing is guessed. */
     skill: v.optional(v.string()),
-    context: v.optional(v.object({ kind: v.union(v.literal("asset"), v.literal("offer")), id: v.string() })),
+    /** The record that was open or attached: a report or draft, an offer, a task, a research session. */
+    context: v.optional(contextArg),
+    /** The screen a new conversation was started from (a key of CHAT_PAGES). An unknown one is ignored. */
+    page: v.optional(v.string()),
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
     platforms: v.optional(v.array(v.string())),
     links: v.optional(v.array(v.string())),
@@ -185,7 +212,9 @@ export const send = workspaceMutation({
     if (args.skill !== undefined && !isChatRoute(args.skill)) throw userError("That skill has no chat yet.");
     const context = args.context ? await readContext(ctx, args.context) : undefined;
     const forClient = await clientForNew(ctx, args.clientId);
-    return startConversation(ctx, { text, skill: args.skill as ChatRoute | undefined, context, choices, forClient });
+    const started = await startConversation(ctx, { text, skill: args.skill as ChatRoute | undefined, context, choices, forClient });
+    if (isChatPage(args.page)) await ctx.db.patch(started.intakeId, { page: args.page });
+    return started;
   },
 });
 
@@ -256,6 +285,57 @@ export const list = workspaceQuery({
   },
 });
 
+const LIBRARY_READ = 400;
+const LIBRARY_MAX = 100;
+
+/**
+ * Library > Chats and the side panel's list: every chat started in this organization that the person may
+ * see, newest first, whatever screen it was started from. One store: a chat from Home, the panel or the
+ * Chat tab is the same record and appears once. `mine` keeps only the person's own; `closed` adds the ones
+ * set aside. The client picker narrows it through `scope`.
+ */
+export const library = workspaceQuery({
+  args: { limit: v.optional(v.number()), mine: v.optional(v.boolean()), closed: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(Math.floor(args.limit ?? 30), 1), LIBRARY_MAX);
+    const rows = await ctx.db
+      .query("intakes")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .order("desc")
+      .take(LIBRARY_READ);
+    const names = new Map<string, string>();
+    const items = [];
+    let more = false;
+    for (const row of ctx.clients.filter(rows)) {
+      if (row.agentSlug !== GROWTH_ARCHITECT) continue;
+      if (row.status === "abandoned" && !args.closed) continue;
+      const mine = row.createdBy === ctx.identity.subject;
+      if (args.mine && !mine) continue;
+      if (items.length >= limit) {
+        more = true;
+        break;
+      }
+      if (row.clientId && !names.has(row.clientId)) names.set(row.clientId, (await ctx.db.get(row.clientId))?.name ?? "A client");
+      const route = routeOf(row);
+      items.push({
+        id: row._id,
+        route,
+        title: titleOf(row, await firstText(ctx, row._id)),
+        status: row.status,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        mine,
+        client: row.clientId ? names.get(row.clientId)! : null,
+        /** Where it was started, in words: "Tasks". Null for chats from before the side panel. */
+        page: isChatPage(row.page) ? CHAT_PAGES[row.page] : null,
+        context: row.context ?? null,
+        result: await resultOf(ctx, row, route),
+      });
+    }
+    return { items, more: more || rows.length === LIBRARY_READ };
+  },
+});
+
 /**
  * One conversation: which skill it is on (null while the chat is asking), what is attached, where its work
  * stands, and its messages. The research and skill conversations also read their own detail queries.
@@ -278,6 +358,7 @@ export const get = workspaceQuery({
       status: row.status,
       mine: row.createdBy === ctx.identity.subject,
       context: row.context ?? null,
+      page: isChatPage(row.page) ? CHAT_PAGES[row.page] : null,
       result: await resultOf(ctx, row, route),
       messages: messages.map((message) => ({ id: message._id, role: message.role, kind: message.kind, text: message.text, chips: message.chips ?? [], data: message.data ?? null, at: message.at })),
     };

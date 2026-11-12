@@ -1573,7 +1573,9 @@ export default defineSchema({
      * What the person attached with "Refine in chat": a result (an asset) or an offer card of this
      * workspace. The title is kept so the conversation still names it if the item is later archived.
      */
-    context: v.optional(v.object({ kind: v.union(v.literal("asset"), v.literal("offer")), id: v.string(), title: v.string() })),
+    context: v.optional(v.object({ kind: v.union(v.literal("asset"), v.literal("offer"), v.literal("task"), v.literal("project")), id: v.string(), title: v.string() })),
+    /** The screen the chat was started from, a key of CHAT_PAGES (lib/chatContext.ts). Missing for chats from before the side panel. */
+    page: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

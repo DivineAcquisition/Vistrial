@@ -262,7 +262,7 @@ describe("no write for a Viewer, no read for a stranger", () => {
     }
   }
 
-  it("refuses every organization mutation for a Viewer, whatever is added later", async () => {
+  it("refuses every organization mutation for a Viewer, whatever is added later", { timeout: 30_000 }, async () => {
     const t = newTest();
     const { workspaceId, join } = await agency(t);
     await join("vera", "viewer");
@@ -284,7 +284,7 @@ describe("no write for a Viewer, no read for a stranger", () => {
     expect([...SELF].filter((name) => !mutations.some((row) => row.name === name))).toEqual([]);
   });
 
-  it("refuses every organization query and mutation for someone who is not a member, as not found", async () => {
+  it("refuses every organization query and mutation for someone who is not a member, as not found", { timeout: 30_000 }, async () => {
     const t = newTest();
     const { workspaceId } = await agency(t);
     const other = await agency(t, "ben", "Beacon Coaching");

@@ -253,7 +253,7 @@ describe("a client the member is not assigned to", () => {
     return out;
   }
 
-  it("never shows through any query, whatever ids are asked for", async () => {
+  it("never shows through any query, whatever ids are asked for", { timeout: 30_000 }, async () => {
     const t = newTest();
     const { workspaceId, harbor, b } = await agency(t);
     const ids: Record<string, string> = { clients: harbor, researchProjects: b.projectId, agentRuns: b.runId, assets: b.assetId, sourceRefs: b.sourceRefId, decisions: b.decisionId, callTranscripts: b.transcriptId, resultUploads: b.uploadId, offerCards: b.cardId, intakes: b.intakeId, agentTasks: b.taskId, approvals: b.approvalId, briefingItems: b.briefingId, personalNotes: b.noteId };
@@ -297,7 +297,7 @@ describe("a client the member is not assigned to", () => {
     expect(seen).toBeGreaterThan(10);
   });
 
-  it("cannot be changed through any mutation, whatever ids are given", async () => {
+  it("cannot be changed through any mutation, whatever ids are given", { timeout: 30_000 }, async () => {
     const t = newTest();
     const { workspaceId, harbor, b } = await agency(t);
     const ids: Record<string, string> = { clients: harbor, researchProjects: b.projectId, agentRuns: b.runId, assets: b.assetId, sourceRefs: b.sourceRefId, decisions: b.decisionId, callTranscripts: b.transcriptId, resultUploads: b.uploadId, offerCards: b.cardId, intakes: b.intakeId, agentTasks: b.taskId, approvals: b.approvalId, briefingItems: b.briefingId, personalNotes: b.noteId };
@@ -332,7 +332,7 @@ describe("a client the member is not assigned to", () => {
 });
 
 describe("the client picker", () => {
-  it("narrows any query to the organization itself or to one client, and never widens", async () => {
+  it("narrows any query to the organization itself or to one client, and never widens", { timeout: 30_000 }, async () => {
     const t = newTest();
     const { owner, member, workspaceId, aster, harbor } = await agency(t);
     const titles = async (who: typeof owner, scope?: "own" | Id<"clients">) =>

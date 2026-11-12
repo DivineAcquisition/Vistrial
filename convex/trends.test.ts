@@ -126,7 +126,7 @@ describe("the monthly industry trend run", () => {
 
   const settle = async (t: Tester) => {
     for (let i = 0; i < 14; i += 1) {
-      vi.advanceTimersByTime(0);
+      vi.advanceTimersByTime(1);
       await t.finishInProgressScheduledFunctions();
     }
   };

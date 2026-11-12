@@ -135,7 +135,7 @@ async function seed(t: Tester, name: string, opts: { profile?: boolean; market?:
 
 /** One scheduled round: each step schedules the next, so this runs one step. */
 async function stepOnce(t: Tester) {
-  vi.advanceTimersByTime(0);
+  vi.advanceTimersByTime(1);
   await t.finishInProgressScheduledFunctions();
 }
 

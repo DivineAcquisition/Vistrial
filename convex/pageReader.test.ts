@@ -44,7 +44,7 @@ async function seed(t: Tester, name: string) {
 
 async function settle(t: Tester) {
   for (let i = 0; i < 30; i += 1) {
-    vi.advanceTimersByTime(0);
+    vi.advanceTimersByTime(1);
     await t.finishInProgressScheduledFunctions();
   }
 }
@@ -255,8 +255,11 @@ describe("the page reader", () => {
     vi.setSystemTime(1_000_000);
     const claim = () => t.mutation(internal.pageReader.claimSite, { site: "https://example.com", gapMs: 4_000, maxWaitMs: 9_000 });
     expect(await claim()).toEqual({ waitMs: 0 });
-    expect(await claim()).toEqual({ waitMs: 4_000 });
-    expect(await claim()).toEqual({ waitMs: 8_000 });
+    // The test backend gives each write a time a millisecond or so after the last, even on a stopped clock,
+    // so a wait can read a couple of milliseconds under the exact gap.
+    const near = (waitMs: number) => ({ waitMs: expect.toSatisfy((value: number) => value <= waitMs && value >= waitMs - 5) });
+    expect(await claim()).toEqual(near(4_000));
+    expect(await claim()).toEqual(near(8_000));
     // The fourth would wait 12 seconds: it is refused, and it does not push the queue back further.
     expect(await claim()).toEqual({ denied: true });
     expect(await t.mutation(internal.pageReader.claimSite, { site: "https://other.example.com", gapMs: 4_000, maxWaitMs: 9_000 })).toEqual({ waitMs: 0 });

@@ -1,7 +1,8 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useMutation, useQuery } from "convex/react";
-import { Building2, ShieldCheck } from "@/components/icons";
+import { Building2 } from "@/components/icons";
 import { useState } from "react";
 
 import { useWorkspaceShell } from "@/components/shell/shell-context";
@@ -37,7 +38,7 @@ export function AgentAccess({ workspaceId, agentSlug }: { workspaceId: Id<"works
         {live.map((agent) => (
           <li key={agent.slug} className="flex items-center justify-between gap-3 text-sm">
             <span className="flex items-center gap-2 text-card-foreground">
-              <ShieldCheck aria-hidden className="size-4 text-muted-foreground" /> {agent.name}
+              <AgentAvatar slug={agent.slug} size="xs" /> {agent.name}
             </span>
             <Switch
               aria-label={`Let ${agent.name} use Meta ads`}

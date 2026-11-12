@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { CATALOG } from "../../../convex/catalog";
-import { AGENTS_WITH_AVATARS, agentAvatarSrc } from "./avatars";
+import { AGENTS_WITH_AVATARS, agentAvatarSrc, agentSlugForName } from "./avatars";
 
 describe("agent avatars", () => {
   it("gives every catalog agent its own picture, and the file is there", () => {
@@ -23,5 +23,12 @@ describe("agent avatars", () => {
     for (const slug of AGENTS_WITH_AVATARS) expect(slugs.has(slug), slug).toBe(true);
     expect(agentAvatarSrc("no-such-agent")).toBeNull();
     expect(agentAvatarSrc(null)).toBeNull();
+  });
+
+  it("finds an agent by the name a screen prints", () => {
+    for (const agent of CATALOG) expect(agentSlugForName(agent.name)).toBe(agent.slug);
+    expect(agentSlugForName("  growth architect ")).toBe("growth-architect");
+    expect(agentSlugForName("Someone else")).toBeNull();
+    expect(agentSlugForName(undefined)).toBeNull();
   });
 });

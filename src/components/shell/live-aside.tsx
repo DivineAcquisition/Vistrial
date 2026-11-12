@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 
@@ -29,7 +30,8 @@ function OpenRuns({ shell }: { shell: WorkspaceShell }) {
   return (
     <ul className="mt-3 grid gap-2">
       {runs.map((run) => (
-        <li key={run.id} className="text-sm">
+        <li key={run.id} className="flex flex-wrap items-center gap-x-1.5 text-sm">
+          <AgentAvatar slug={run.agentSlug} size="xs" className="size-5" working />
           <Link className="text-foreground underline-offset-4 hover:underline" href={`/app/runs/${run.id}`}>
             {skillName(shell, run.agentSlug, run.skillSlug)}
           </Link>

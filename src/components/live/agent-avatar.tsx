@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import { GlyphMark } from "@/components/live/agent-identity";
-import { agentAvatarSrc } from "@/lib/agents/avatars";
+import { agentAvatarSrc, agentSlugForName } from "@/lib/agents/avatars";
 import { AGENT_MARK } from "@/lib/shell/journey";
 import { cn } from "@/lib/utils";
 
@@ -14,16 +14,20 @@ const DOT = { xs: "size-1.5 border", sm: "size-2 border-2", md: "size-2.5 border
  * meaning of its own. An agent with no picture falls back to its glyph.
  */
 export function AgentAvatar({
-  slug,
+  slug: given,
+  name,
   size = "sm",
   working = false,
   className,
 }: {
-  slug: string | null | undefined;
+  slug?: string | null;
+  /** For screens that only know the agent by the name they print. */
+  name?: string | null;
   size?: keyof typeof BOX;
   working?: boolean;
   className?: string;
 }) {
+  const slug = given ?? agentSlugForName(name);
   const src = agentAvatarSrc(slug);
   if (!src) {
     const mark = (slug ? AGENT_MARK[slug] : undefined) ?? { glyph: "spark" as const, accent: "neutral" as const };

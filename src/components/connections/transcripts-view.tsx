@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { FileText, ShieldCheck, Trash2 } from "@/components/icons";
 import { useId, useState } from "react";
 
@@ -221,7 +222,10 @@ export function TranscriptsView({
               <ul className="grid gap-2 border-t border-border pt-3" aria-label="Agents that may use this transcript">
                 {agents.map((agent) => (
                   <li key={agent.slug} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-foreground">{agent.name}</span>
+                    <span className="inline-flex items-center gap-1.5 text-foreground">
+                      <AgentAvatar slug={agent.slug} size="xs" className="size-5" />
+                      {agent.name}
+                    </span>
                     {canGrant ? (
                       <Switch aria-label={`Let ${agent.name} use the ${row.title} transcript`} checked={granted.has(agent.slug)} onCheckedChange={(next) => onGrant(row.id, agent.slug, next)} />
                     ) : (

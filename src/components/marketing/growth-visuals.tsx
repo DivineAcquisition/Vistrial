@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useRef, type ReactNode } from "react";
 import {
   ArrowRight,
@@ -635,7 +636,10 @@ export function WorkforceMap() {
                         {AGENTS_SECTION.liveLabel}
                       </Badge>
                     </div>
-                    <p className="font-heading text-lg text-strong">{agent.name}</p>
+                    <p className="flex items-center gap-2.5 font-heading text-lg text-strong">
+                      <AgentAvatar name={agent.name} size="md" />
+                      {agent.name}
+                    </p>
                     <p className="text-sm leading-relaxed text-muted-foreground">{agent.job}</p>
                     <AgentStatusLine />
                   </SpotlightCard>
@@ -646,7 +650,10 @@ export function WorkforceMap() {
                     <span className="font-heading text-sm text-muted-foreground tabular-nums">{agent.number}</span>
                     <Badge variant="outline" size="sm">{AGENTS_SECTION.plannedLabel}</Badge>
                   </div>
-                  <p className="font-medium text-strong">{agent.name}</p>
+                  <p className="flex items-center gap-2 font-medium text-strong">
+                    <AgentAvatar name={agent.name} size="xs" className="opacity-70 grayscale" />
+                    {agent.name}
+                  </p>
                   <p className="text-xs leading-relaxed text-muted-foreground">{agent.job}</p>
                 </li>
               ),

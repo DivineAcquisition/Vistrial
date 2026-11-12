@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
-import { PLATFORMS, PLATFORM_LABEL, money, type PlatformSlug } from "@/lib/research/words";
+import { PLATFORMS, PLATFORM_LABEL, type PlatformSlug } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { SourceIcon } from "@/components/research/source-icon";
 import { showError } from "@/lib/errors/show-error";
+import { useCredits } from "@/lib/credits";
 
 type Competitor = { name: string; url: string };
 
@@ -32,6 +33,7 @@ export function AssignmentForm({
   /** A follow-up from a session's composer, or a suggestion the person picked. */
   initialObjective?: string;
 }) {
+  const credits = useCredits();
   const router = useRouter();
   const createProject = useMutation(api.research.createProject);
   const start = useMutation(api.runs.start);
@@ -208,12 +210,12 @@ export function AssignmentForm({
           {cost ? (
             <>
               <p className="text-sm text-card-foreground">
-                Usually {money(cost.typicalCents[0])} to {money(cost.typicalCents[1])}. Never more than {money(cost.capCents)}.
+                Usually {credits.cost(cost.typicalCents[0])} to {credits.cost(cost.typicalCents[1])}. Never more than {credits.cost(cost.capCents)}.
               </p>
               <p className="text-sm text-muted-foreground">
-                {money(cost.reserveCents)} of that is held back to check the report and fix it once if a check fails.
+                {credits.cost(cost.reserveCents)} of that is held back to check the report and fix it once if a check fails.
               </p>
-              {dayLeft !== null ? <p className="text-sm text-muted-foreground">Left today for research: {money(dayLeft)}.</p> : null}
+              {dayLeft !== null ? <p className="text-sm text-muted-foreground">Left today for research: {credits.cost(dayLeft)}.</p> : null}
             </>
           ) : (
             <p className="text-sm text-muted-foreground">Loading.</p>

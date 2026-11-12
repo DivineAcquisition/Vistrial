@@ -28,7 +28,6 @@ import { Dialog, DialogPopup, DialogTitle } from "@/components/ui/dialog";
 import { SearchInput } from "@/components/ui/input";
 import { Meter, MeterIndicator, MeterTrack } from "@/components/ui/meter";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
-import { money } from "@/lib/research/words";
 import {
   AGENT_MARK,
   JOURNEY_TABS,
@@ -48,6 +47,7 @@ import {
 import type { RailAgent } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
+import { creditCount } from "@/lib/credits";
 
 const TAB_STORE = "vistrial.journeyTab.v1";
 const NEW_CHAT = chatHref("growth-architect");
@@ -460,7 +460,7 @@ export function JourneySidebarView({
         <div className="flex items-center gap-1">
           <Link href="/app/billing" onClick={onNavigate} className={cn(row, "min-w-0 flex-1")} aria-label="Credits balance, open Billing">
             <Coins aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-            <span className="truncate tabular-nums">{credits?.on && credits.balanceCents !== null ? money(credits.balanceCents) : "Billing"}</span>
+            <span className="truncate tabular-nums">{credits?.on && credits.balanceCents !== null ? creditCount(credits.balanceCents) : "Billing"}</span>
             {credits?.on ? <span className="text-[11px] text-muted-foreground">credits</span> : null}
           </Link>
           <Link href="/app/settings" onClick={onNavigate} aria-label="Settings" className={cn(row, "size-8 justify-center px-0")}>

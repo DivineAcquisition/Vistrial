@@ -63,6 +63,3 @@ export function shortDate(time: number) {
   return new Date(time).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function money(cents: number) {
-  return cents >= 100 ? `$${(cents / 100).toFixed(2)}` : `${Math.round(cents)}¢`;
-}

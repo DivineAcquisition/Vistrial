@@ -297,25 +297,6 @@ export function groupSteps(steps: RunStepView[]): StepGroup[] {
  * Numbers in words
  * ------------------------------------------------------------------------- */
 
-/** "$0.42", or "under 1¢" for fractions of a cent. */
-export function formatCents(cents: number) {
-  if (cents > 0 && cents < 1) return "under 1¢";
-  if (cents < 100) return `${Math.round(cents)}¢`;
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-/** What a screen reader says for a cost: "42 cents", "1 dollar and 5 cents". */
-export function centsInWords(cents: number) {
-  if (cents > 0 && cents < 1) return "less than 1 cent";
-  const whole = Math.round(cents);
-  const dollars = Math.floor(whole / 100);
-  const rest = whole % 100;
-  const centWords = `${rest} ${rest === 1 ? "cent" : "cents"}`;
-  if (dollars === 0) return centWords;
-  const dollarWords = `${dollars} ${dollars === 1 ? "dollar" : "dollars"}`;
-  return rest === 0 ? dollarWords : `${dollarWords} and ${centWords}`;
-}
-
 /** "under 1s", "45s", "3m 05s", "1h 02m". */
 export function formatDuration(ms: number) {
   if (ms < 1000) return "under 1s";

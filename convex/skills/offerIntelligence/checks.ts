@@ -1,3 +1,4 @@
+import { creditWords, priceFor } from "../../lib/credits";
 import { CHANNEL_METRICS, EVIDENCE_PLATFORMS } from "./channels";
 import { principleFits, PRINCIPLE_IDS } from "./playbook";
 import { NO_CONTEXT_WORDS, PROFILE_FIELDS, type ChecksRecord, type CheckResult, type OfferAnalysis, type OfferChange, type OfferContext } from "./shapes";
@@ -180,7 +181,7 @@ export function runChecks(input: CheckInput): ChecksRecord {
   );
 
   // 9. Cost within the cap.
-  add(9, input.runCostCents <= input.capCents, `The run cost ${input.runCostCents.toFixed(2)}¢ of its ${input.capCents}¢ cap.`);
+  add(9, input.runCostCents <= input.capCents, `The run used ${creditWords(priceFor(input.runCostCents))} of its ${creditWords(priceFor(input.capCents))} limit.`);
 
   return { passed: results.every((row) => row.passed), results };
 }

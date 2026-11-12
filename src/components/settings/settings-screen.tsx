@@ -19,6 +19,7 @@ import {
   YouSection,
   type YouData,
 } from "@/components/settings/settings-sections";
+import { OrganizationData } from "@/components/settings/organization-data";
 import { useWorkspaceShell, type WorkspaceShell } from "@/components/shell/shell-context";
 import { EmptyState } from "@/components/ui/empty-state";
 import { showError } from "@/lib/errors/show-error";
@@ -109,6 +110,12 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
         onRename={(name) => attempt(rename({ workspaceId, name }))}
         onCountry={(country) => attempt(setCountry({ workspaceId, country }))}
       />
+    );
+    body = (
+      <div className="grid gap-6">
+        {body}
+        <OrganizationData workspaceId={workspaceId} name={business.name} />
+      </div>
     );
   }
 

@@ -12,7 +12,7 @@ import { internal } from "../_generated/api";
 import { requireGrant, requireIdentity, requireMember, requireStaff } from "./access";
 import { guardDb } from "./clientGuard";
 import { clientScopeFor, narrowScope, scopeValidator, type ClientScope, type ScopeArg } from "./clients";
-import { notAllowed, notFound } from "./errors";
+import { notAllowed, notFound, userError } from "./errors";
 import { isAdmin, isOwner, roleOf, type Role } from "./roles";
 
 type AnyValidators = Record<string, PropertyValidators[string]>;
@@ -77,6 +77,18 @@ export function selfMutation<V extends AnyValidators, R>(def: {
   } as any) as RegisteredMutation<"public", WorkspaceArgs<V>, R>;
 }
 
+export const ARCHIVED_WORDS = "This organization is archived, so nothing in it can be changed. An Owner can bring it back from the organization menu.";
+
+/**
+ * An archived organization is read-only. The refusal lives in the builders, so a new mutation or action
+ * cannot forget it. The few writes that must work while archived (bringing it back, exporting it) say so
+ * with `archivedToo`.
+ */
+async function refuseArchived(ctx: MutationCtx & MemberAccess) {
+  const workspace = await ctx.db.get(ctx.workspaceId);
+  if (workspace?.status === "archived") throw userError(ARCHIVED_WORDS, "not_allowed");
+}
+
 /**
  * A write to the organization. Owners, Admins and Members; a Viewer is read-only, so the refusal lives here
  * and a new mutation cannot forget it.
@@ -89,6 +101,7 @@ export function workspaceMutation<V extends AnyValidators, R>(def: {
     args: def.args,
     handler: async (ctx, args) => {
       if (ctx.role === "viewer") notAllowed();
+      await refuseArchived(ctx);
       return def.handler(ctx, args);
     },
   });
@@ -103,6 +116,7 @@ export function adminMutation<V extends AnyValidators, R>(def: {
     args: def.args,
     handler: async (ctx, args) => {
       if (!isAdmin(ctx.role)) notAllowed();
+      await refuseArchived(ctx);
       return def.handler(ctx, args);
     },
   });
@@ -110,12 +124,15 @@ export function adminMutation<V extends AnyValidators, R>(def: {
 
 export function ownerMutation<V extends AnyValidators, R>(def: {
   args: V;
+  /** True for the few writes an Owner makes to an archived organization: bringing it back, exporting it. */
+  archivedToo?: boolean;
   handler: (ctx: MutationCtx & MemberAccess, args: ObjectType<V>) => R;
 }) {
   return selfMutation({
     args: def.args,
     handler: async (ctx, args) => {
       if (!isOwner(ctx.role)) notAllowed();
+      if (!def.archivedToo) await refuseArchived(ctx);
       return def.handler(ctx, args);
     },
   });
@@ -185,10 +202,12 @@ function actionFor<V extends AnyValidators, R>(
       if (!identity) notFound();
       const { workspaceId, ...rest } = args;
       // An action has no database of its own, so membership is read through a query, like everything else it reads.
-      const stored: string | null = await ctx.runQuery(internal.access.memberRole, { workspaceId, userId: identity.subject });
+      const stored: { role: string; archived: boolean } | null = await ctx.runQuery(internal.access.memberRole, { workspaceId, userId: identity.subject });
       if (!stored) notFound();
-      const role = roleOf(stored);
+      const role = roleOf(stored.role);
       if (!viewerToo && role === "viewer") notAllowed();
+      // An action that changes or starts something is refused in an archived organization; one that only reads is not.
+      if (!viewerToo && stored.archived) throw userError(ARCHIVED_WORDS, "not_allowed");
       return def.handler({ ...ctx, userId: identity.subject, workspaceId, role }, rest as ObjectType<V>);
     },
   } as any);

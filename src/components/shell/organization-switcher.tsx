@@ -47,6 +47,27 @@ export function OrganizationSwitcherView({ name, current, organizations, account
     { href: "/app/billing", label: "Billing", icon: Wallet },
   ];
   const role = organizations.find((row) => row.workspaceId === current)?.role;
+  const active = organizations.filter((row) => !row.archived);
+  const archived = organizations.filter((row) => row.archived);
+  const item = (organization: ShellOrganization) => {
+    const open = organization.workspaceId === current;
+    return (
+      <MenuItem
+        key={organization.workspaceId}
+        onClick={() => {
+          if (!open) onSwitch(organization.workspaceId);
+          onNavigate?.();
+        }}
+      >
+        <Mark name={organization.name} className={cn("size-6 rounded-md text-xs", organization.archived && "opacity-60")} />
+        <span className="grid min-w-0 flex-1">
+          <span className="truncate">{organization.name}</span>
+          <span className="text-xs text-muted-foreground">{organization.archived ? "Read-only" : ROLE_LABEL[organization.role]}</span>
+        </span>
+        {open ? <Check aria-label="Open now" className="size-4 shrink-0 text-primary" /> : null}
+      </MenuItem>
+    );
+  };
   return (
     <>
       <Menu>
@@ -63,34 +84,15 @@ export function OrganizationSwitcherView({ name, current, organizations, account
           <span className="grid min-w-0 flex-1">
             <span className="truncate font-heading text-sm text-foreground">{name}</span>
             <span className="truncate text-[11px] text-muted-foreground">
-              {organizations.length > 1 ? `Organization · 1 of ${organizations.length}` : "Organization"}
-              {role ? ` · ${ROLE_LABEL[role]}` : ""}
+              {organizations.find((row) => row.workspaceId === current)?.archived ? "Archived · read-only" : `${active.length > 1 ? `Organization · 1 of ${active.length}` : "Organization"}${role ? ` · ${ROLE_LABEL[role]}` : ""}`}
             </span>
           </span>
           <ChevronsUpDownIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
         </MenuTrigger>
         <MenuPopup align="start" className="min-w-64">
           <MenuGroup>
-          <MenuGroupLabel>{account && organizations.length > 1 ? `${account.name} · organizations` : "Organizations"}</MenuGroupLabel>
-          {organizations.map((organization) => {
-            const open = organization.workspaceId === current;
-            return (
-              <MenuItem
-                key={organization.workspaceId}
-                onClick={() => {
-                  if (!open) onSwitch(organization.workspaceId);
-                  onNavigate?.();
-                }}
-              >
-                <Mark name={organization.name} className="size-6 rounded-md text-xs" />
-                <span className="grid min-w-0 flex-1">
-                  <span className="truncate">{organization.name}</span>
-                  <span className="text-xs text-muted-foreground">{ROLE_LABEL[organization.role]}</span>
-                </span>
-                {open ? <Check aria-label="Open now" className="size-4 shrink-0 text-primary" /> : null}
-              </MenuItem>
-            );
-          })}
+          <MenuGroupLabel>{account && active.length > 1 ? `${account.name} · organizations` : "Organizations"}</MenuGroupLabel>
+          {active.map(item)}
           {account?.owner ? (
             <MenuItem onClick={() => setAdding(true)}>
               <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
@@ -103,6 +105,15 @@ export function OrganizationSwitcherView({ name, current, organizations, account
             </MenuItem>
           ) : null}
           </MenuGroup>
+          {archived.length ? (
+            <>
+              <MenuSeparator />
+              <MenuGroup>
+                <MenuGroupLabel>Archived</MenuGroupLabel>
+                {archived.map(item)}
+              </MenuGroup>
+            </>
+          ) : null}
           <MenuSeparator />
           {links.map((item) => (
             <MenuLinkItem key={item.href} render={<Link href={item.href} onClick={onNavigate} />}>

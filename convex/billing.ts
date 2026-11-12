@@ -320,3 +320,30 @@ export const accountOf = internalQuery({
   },
 });
 
+
+/** What the add-on should be after an organization was archived or brought back. Internal: read by settleExtraOrganizations. */
+export const settleContext = internalQuery({
+  args: { accountId: v.id("accounts") },
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account) return null;
+    const organizations = await organizationsOf(ctx, account._id);
+    const first = ctx.db.normalizeId("workspaces", account.billingCustomerId);
+    const mirror = first ? await accountFor(ctx, first) : null;
+    return {
+      customerId: account.billingCustomerId,
+      firstWorkspaceId: first,
+      wanted: Math.max(0, organizations.length - 1),
+      paid: mirror?.extraOrganizations ?? 0,
+      endsAtRenewal: account.extraEndsAtRenewal === true,
+    };
+  },
+});
+
+export const markExtraEnding = internalMutation({
+  args: { accountId: v.id("accounts"), ending: v.boolean() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.accountId, { extraEndsAtRenewal: args.ending ? true : undefined });
+    return null;
+  },
+});

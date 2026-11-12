@@ -434,6 +434,24 @@ Each step says how to check it worked. Stop at the first check that fails.
   billed until their add-on quantity is lowered in Autumn.
 - Nothing in A to C touches an existing customer's subscription.
 
+**E. Archiving an organization and its fee** (PR 7; do this on dev, in Stripe test mode, before C)
+
+None of the Autumn calls below has been made. They follow the SDK's documented parameters.
+
+1. With two extra organizations bought on dev, archive one in Settings, Business. Check in Autumn that the
+   `extra_org` quantity dropped from 10,000 to 5,000 credits, that **no** credit note or charge was made
+   today, and that the next invoice preview shows $99, not $198. Check whether the 5,000 credits already
+   granted this month were taken back; the owner's decision is that they stay until renewal. If Autumn
+   takes them back at once, the lowering has to wait for the renewal instead, and that is a code change.
+2. Archive the last extra one. Check in Autumn that `extra_org` shows as ending at the period end, not
+   cancelled now, and that no refund was made.
+3. Bring that one back before the renewal. Check the ending was undone and nothing was charged.
+4. After a renewal with an archived organization, check its place is gone: Billing shows one fewer paid,
+   and bringing it back is refused with "Its place on the plan has ended".
+5. Where `BILLING_EXTRA_ORGS` is off (production today), archiving changes nothing in Autumn. An extra
+   organization that Vistrial added by hand has to have its fee stopped by hand too; the confirmation
+   says so.
+
 ### 6.5 What is deliberately not solved
 
 - Merging two existing paying accounts into one (two Autumn customers, two subscriptions). No customer has
@@ -583,7 +601,7 @@ Attract | Convert | Keep tabs directly beneath it, unchanged, ready for step 2 t
 | 4 | `claude/orgs-foundation-4-billing` | `main` | Shared balance, the extra-organization fee, Billing page. No public wording. | Open (#251) |
 | 5 | `claude/orgs-foundation-5-credits` | PR 4's branch | Credits shown as credits, not dollars; public wording in its own commit. | Open (#253) |
 | 6 | `claude/orgs-foundation-6-decisions` | PR 5's branch | The owner's answers recorded here (section 10), and a test for decision 4. | Open |
-| 7 | `claude/orgs-foundation-7-archive` | PR 6's branch | Archiving an organization, exporting its data, copying material to another organization. | Open |
+| 7 | `claude/orgs-foundation-7-archive` | PR 6's branch | Archiving an organization and exporting its data. Copying material to another organization is designed in section 11, not built. | Open |
 
 Merge in order. Each is reviewable on its own diff against the one before.
 
@@ -606,7 +624,7 @@ change an Owner.
 add it as context for their other orgs". The $99 for an archived organization stops at the next renewal,
 with no credit for the part of the month already paid. Before or after archiving, the Owner can export the
 organization's data, and can copy chosen material into another organization of the same account for its
-agents to read. Built in PR 7; its design is section 11.
+agents to read. Archiving and export are built in PR 7. Copying is designed in section 11 and waits for four answers.
 
 **10.4 One person, several organizations.** "yes 1 person can belong to 2 orgs if admin assign but of
 course their role can be edited". A person joins an organization only by an invitation from an Owner or
@@ -628,3 +646,57 @@ organizations and do not mention two accounts; say if a person should be limited
 4. **Should an Admin see the ledger** for their organization? As built, yes (Managers did before).
 5. **How long an archived organization's data is kept.** As built in PR 7 it is kept, read-only, until the
    Owner brings the organization back; nothing deletes it.
+
+## 11. Archiving, exporting and copying (PR 7)
+
+**Archiving.** Owner only. The organization's row keeps everything; `status` becomes `archived`, with when
+and by whom. From then on:
+
+- it is **read-only**: `workspaceMutation`, `adminMutation`, `ownerMutation` and `memberAction` refuse with
+  one sentence, so no function has to remember. Reading, and a person's own preferences, still work. The
+  two writes that must work while archived say so: bringing it back, and starting an export;
+- its **open runs are stopped**, the same way pausing agents stops them;
+- it **leaves the selector's main list**. Its Owners see it under "Archived" and can open it to read or
+  export. Nobody else has it listed;
+- it can be **brought back** by an Owner while the account still has a paid place for it.
+
+The account's **first organization cannot be archived**: the plan, the balance and the Autumn customer id
+are held under it. Stopping the plan is done in Billing.
+
+**The fee.** $99 stops at the next renewal with no credit for the month already paid (decision 10.3). The
+call that tells Autumn is behind the same switch as buying one, and is unverified (runbook E).
+
+**Export.** An Owner starts it; it is built in the background into one `.zip` and kept for a week, then the
+file is removed and the row stays as the record. It is audit-logged when started and when built. Contents:
+`data/*.json` (clients, research, reports and assets with their versions, offers and versions, decisions,
+goals, results files' summaries, call transcripts, brand kits and versions, creative requests and tests,
+page teardowns, the business profile), `reports/*.md` (the current version of each written asset) and
+`transcripts/*.txt`. The list of tables is written out in `convex/lib/exportShape.ts`; a new table is not
+exported until it is added there. Never exported: connections and tokens, people and invitations, billing,
+the audit log, uploaded files themselves (logos, images, screenshots), anything of another organization.
+Keys that look like a credential, a stored file's id or a person's id are dropped at every depth.
+
+**Copying material into another organization ("add it as context").** Proposed, not built; it needs the
+owner's answers below.
+
+- *What is copied*: an approved report or offer analysis the Owner picks, as a snapshot of its current
+  version's text. Not its sources, not its run, not the client it was for.
+- *Where it lands*: a new row in the receiving organization, kind "reference", labelled "From <organization>,
+  copied on <date> by <Owner>". Read-only there. Removing it deletes only the copy.
+- *How agents see it*: listed in the business context under its own heading, "Reference material from
+  another of your organizations (not facts about this business)", each item with its label, so an agent
+  can quote it but does not treat it as this organization's own figures or approved facts.
+- *Deliberately not copied*: connections and tokens, people and their assignments, clients, brand kits,
+  results files, call transcripts.
+- *Who*: an Owner of the account, between two organizations of the same account, from an active or an
+  archived one into an active one.
+
+Questions for the owner before it is built:
+
+1. **May work that was done for a client be copied?** A Member of the receiving organization who was never
+   assigned to that client would then be able to read it. The proposal says no: only the organization's
+   own work.
+2. **Which kinds**: reports and offer analyses only (the proposal), or also brand kits and transcripts?
+3. **A snapshot or a live link?** The proposal is a snapshot; a later version in the source does not change
+   the copy.
+4. **Should people in the receiving organization see where it came from**, by name? The proposal says yes.

@@ -9,6 +9,7 @@ import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";
 import { FreeSessionFlow } from "@/components/onboarding/free-session-flow";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 import { ProductShell } from "@/components/shell/product-shell";
+import { ArchivedNotice } from "@/components/settings/organization-data";
 import { CreditsProvider } from "@/lib/credits";
 import { ShellProvider, type ScopeChoice, type ShellAccount, type ShellOrganization, type WorkspaceShell } from "@/components/shell/shell-context";
 import { chooseOrganization, readOrganizationChoice, readScopeChoice, validScope, writeOrganizationChoice, writeScopeChoice } from "@/lib/shell/organization-choice";
@@ -69,9 +70,14 @@ function AuthedFrame({ children }: { children: React.ReactNode }) {
       </ProductShell>
     );
   }
-  const current = chooseOrganization(mine.organizations, remembered);
+  // An Owner can open an archived organization to read or export it; it is never the one opened by default.
+  const archived = mine.archived.find((row) => row.workspaceId === remembered);
+  const current = archived ?? chooseOrganization(mine.organizations, remembered);
   if (!current) return <OnboardingFlow />;
-  const organizations: ShellOrganization[] = mine.organizations.map((row) => ({ workspaceId: row.workspaceId, name: row.name, role: row.role, accountId: row.accountId }));
+  const organizations: ShellOrganization[] = [
+    ...mine.organizations.map((row) => ({ workspaceId: row.workspaceId, name: row.name, role: row.role, accountId: row.accountId })),
+    ...mine.archived.map((row) => ({ workspaceId: row.workspaceId, name: row.name, role: "owner" as const, accountId: row.accountId, archived: true })),
+  ];
   const found = mine.accounts.find((row) => row.accountId === current.accountId);
   const account: ShellAccount | null = found ? { accountId: found.accountId, name: found.name, owner: found.owner, canAdd: found.canAdd, addClosedReason: found.addClosedReason, addPrice: found.addPrice } : null;
   return (
@@ -133,7 +139,10 @@ function WorkspaceFrame({
   return (
     <ShellProvider value={value}>
       <CreditsProvider markup={billing?.markup}>
-        <ProductShell departments={shell.departments} agents={shell.agents}>{children}</ProductShell>
+        <ProductShell departments={shell.departments} agents={shell.agents}>
+          <ArchivedNotice workspaceId={workspaceId} name={organizations.find((row) => row.workspaceId === workspaceId)?.name ?? "This organization"} />
+          {children}
+        </ProductShell>
       </CreditsProvider>
     </ShellProvider>
   );

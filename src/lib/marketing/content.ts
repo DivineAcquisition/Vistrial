@@ -27,16 +27,22 @@ export const SECTIONS = {
   proof: false,
 } as const;
 
-/** The hero's words, as on the site before the rebuild, by the owner's choice. Also used for page titles and the social image. */
 export const HERO = {
-  label: "Vistrial",
+  /** Chosen draft. The other options are in HEADLINE_OPTIONS for review. */
   headline: "The agentic workforce for business growth.",
   supporting:
     "AI agents for agencies, consultants, coaches and info sellers. They research your market, sharpen your offer, and draft the ads to test. Starting with Growth Architect.",
   primaryCta: "Request private access",
+  secondaryCta: "See Growth Architect",
   trust: "Every claim shows its source. Nothing is published without a person's approval. Each customer's data is kept separate.",
   exampleLabel: "Example with sample data",
 } as const;
+
+export const HEADLINE_OPTIONS = [
+  "The agentic workforce for business growth.",
+  "Understand your market before you spend on it.",
+  "Specialists for every stage of growth. Starting with research.",
+] as const;
 
 export const NAV = {
   skipToContent: "Skip to content",
@@ -45,8 +51,13 @@ export const NAV = {
   signIn: "Sign in",
   signInHref: `${PRODUCTION_APP_ORIGIN}/login`,
   request: "Request private access",
-  /** The framework's nav has a logo and one button. Menu links are exits, so there are none. */
-  links: [],
+  links: [
+    { href: "/#how", label: "How it works" },
+    { href: "/#growth-architect", label: "Growth Architect" },
+    { href: "/#agents", label: "Agents" },
+    { href: "/#pricing", label: "Pricing" },
+    { href: "/#faq", label: "FAQ" },
+  ],
 } as const;
 
 /**
@@ -456,8 +467,8 @@ export const INDUSTRIES = {
 /**
  * Safety is shown as one sample run with its guardrails working: what the agent did, what it was
  * refused, what it cost against the limit, and where it stopped for a person. Every figure is sample
- * data. The limit is the real one for a research run (convex/lib/caps.ts) and the warning sits at the
- * real 80 percent. Costs here are cents of cost; the page shows them as the app does, in credits.
+ * data. The limit is the real one for a research run (convex/lib/caps.ts), and the warning sits at
+ * the real 80 percent.
  */
 export const SAFETY = {
   id: "safety",
@@ -481,7 +492,8 @@ export const SAFETY = {
       capCents: 300,
       warnShare: 0.8,
       spent: "Spent",
-      of: "of",
+      of: "of a",
+      limit: "limit",
       warns: "Warns",
       stops: "Stops",
     },
@@ -577,7 +589,7 @@ export const PROOF = {
 } as const;
 
 export const FOOTER = {
-  productLine: "AI agents that study your market, draft the changes, and measure what worked.",
+  productLine: "The agentic workforce for business growth.",
   copyright: "Vistrial",
   links: [
     { href: "/security-overview", label: "Security overview" },

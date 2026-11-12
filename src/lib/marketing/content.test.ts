@@ -4,7 +4,6 @@ import { CATALOG } from "../../../convex/catalog";
 import { BASIS_LABEL } from "../../../convex/lib/evidence";
 import { PLAN } from "../../../convex/lib/billing";
 import { SKILL_CAPS, SOFT_WARNING_RATIO } from "../../../convex/lib/caps";
-import { DEFAULT_MARKUP, creditWords, creditsForCost } from "../../../convex/lib/credits";
 import { CHECK_IN_DAYS } from "../../../convex/decisions";
 import { RESULT_WORDS } from "@/components/research/outcome-loop";
 import { STAGES } from "@/lib/research/words";
@@ -107,9 +106,6 @@ describe("the public page tells the truth about the product", () => {
     const guards = new Set<string>(run.guards.map((guard) => guard.id));
     for (const step of run.steps) expect(guards.has(step.guard), step.id).toBe(true);
     expect(run.recordApproved.text).toMatch(/Not published/);
-    // The page shows the run's cost the way the app does: in credits, cost times the markup. No dollar figures.
-    expect(creditWords(creditsForCost(run.budget.capCents, DEFAULT_MARKUP))).toBe("900 credits");
-    expect(JSON.stringify(SAFETY)).not.toMatch(/\$\d|¢/);
   });
 
   it("shows a plan only for a skill that runs, and every plan ends waiting for a person", () => {

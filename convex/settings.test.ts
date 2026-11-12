@@ -140,6 +140,33 @@ describe("settings: invites", () => {
   });
 });
 
+describe("settings: one person in several organizations (the owner's decision of 2026-11-11)", () => {
+  it("lets an Admin invite, and keeps the person's role in each organization separate, across two accounts", async () => {
+    const { t, workspaceId, admin, owner } = await team();
+    // A second agency, a different account, invites the same person.
+    const otherId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_other_owner" });
+    const otherOwner = t.withIdentity(identity("user_other_owner"));
+    const person = t.withIdentity(identity("user_freelancer"));
+    const fromAdmin = await admin.mutation(api.workspace.invite, { workspaceId, email: "user_freelancer@example.com", role: "viewer" });
+    const fromOther = await otherOwner.mutation(api.workspace.invite, { workspaceId: otherId, email: "user_freelancer@example.com", role: "admin" });
+    await person.mutation(api.workspace.acceptInvite, { token: fromAdmin.token });
+    await person.mutation(api.workspace.acceptInvite, { token: fromOther.token });
+
+    const roleIn = async (as: typeof owner, id: Id<"workspaces">) => (await as.query(api.settings.people, { workspaceId: id })).members.find((row) => row.email === "user_freelancer@example.com");
+    expect((await roleIn(owner, workspaceId))?.role).toBe("viewer");
+    expect((await roleIn(otherOwner, otherId))?.role).toBe("admin");
+
+    // Their role is edited in one organization; the other is untouched.
+    await admin.mutation(api.settings.setMemberRole, { workspaceId, memberId: (await roleIn(owner, workspaceId))!.id, role: "member" });
+    expect((await roleIn(owner, workspaceId))?.role).toBe("member");
+    expect((await roleIn(otherOwner, otherId))?.role).toBe("admin");
+
+    // Being an Admin in one account gives nothing in the other, and an Admin cannot invite an Owner.
+    await expect(person.mutation(api.settings.renameWorkspace, { workspaceId, name: "Mine now" })).rejects.toThrow(/Not allowed/);
+    await expect(admin.mutation(api.workspace.invite, { workspaceId, email: "x@example.com", role: "owner" as never })).rejects.toThrow();
+  });
+});
+
 describe("settings: Vistrial support access", () => {
   async function withGrant() {
     const ctx = await team();

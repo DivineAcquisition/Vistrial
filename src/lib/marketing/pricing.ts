@@ -12,11 +12,11 @@ export const PRICING_DISPLAY = {
   privateAccess: {
     id: "private_access",
     name: "Private Access",
-    price: "$179 per month, with 15,000 credits included.",
+    price: "$179 per month, with $150 of credits included.",
     includes: [
       "Your own private workspace",
       "Growth Architect: market research, offer analysis, growth diagnosis, ad sets, and landing page teardowns",
-      "15,000 credits each month. Each piece of work shows its cost in credits, and every run has a credit limit.",
+      "$150 of credits each month. Each piece of work shows its cost, and every run has a cost limit.",
       "Credit packs when you need more. Included credits reset each month.",
     ],
     why: "We bring on a limited number of teams at a time so each one is set up properly. Request access and a person on our team will review it.",

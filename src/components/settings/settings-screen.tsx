@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { AccountSecurity } from "@/components/account/security";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { SettingsLayout } from "@/components/settings/settings-layout";
+import { MemorySection } from "@/components/settings/memory-section";
 import { parseSection, type SettingsSection } from "@/components/settings/settings-parts";
 import {
   AgentsSection,
@@ -26,6 +27,7 @@ import { showError } from "@/lib/errors/show-error";
 import { saveTheme, storedChoice, type ThemeChoice } from "@/lib/theme";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { MEMORY_HREF } from "@/lib/shell/journey";
 
 const AGENT = "growth-architect";
 
@@ -105,7 +107,7 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
               : { state: "none", version: null },
           factCount: facts ? facts.length : null,
         }}
-        memoryHref={`/app/agents/${AGENT}/memory`}
+        memoryHref={MEMORY_HREF}
         profileEditor={<ProfileEditor workspaceId={workspaceId} role={shell.role} />}
         onRename={(name) => attempt(rename({ workspaceId, name }))}
         onCountry={(country) => attempt(setCountry({ workspaceId, country }))}
@@ -202,6 +204,8 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
   }
 
   if (section === "billing") body = <BillingSection />;
+
+  if (section === "memory") body = <MemorySection />;
 
   if (section === "you" && me) {
     const data: YouData = {

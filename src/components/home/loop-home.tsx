@@ -16,6 +16,7 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
+import { MEMORY_HREF } from "@/lib/shell/journey";
 
 export type HomeOverview = FunctionReturnType<typeof api.home.overview>;
 export type WaitingItem = FunctionReturnType<typeof api.home.waiting>[number];
@@ -27,7 +28,7 @@ export const HOME_HEADING = "What does the business need to figure out next?";
 export function loopSteps(overview: HomeOverview | undefined) {
   const loop = overview?.loop;
   return [
-    { key: "understand", name: "Understand", value: loop ? `${loop.understand}%` : "…", caption: "known about the business", href: "/app/agents/growth-architect/memory" },
+    { key: "understand", name: "Understand", value: loop ? `${loop.understand}%` : "…", caption: "known about the business", href: MEMORY_HREF },
     { key: "research", name: "Research", value: loop?.research ?? "…", caption: loop?.research === 1 ? "run going" : "runs going", href: "/app/runs" },
     { key: "decide", name: "Decide", value: loop?.decide ?? "…", caption: loop?.decide === 1 ? "report to approve" : "reports to approve", href: "#waiting" },
     { key: "try", name: "Try", value: loop?.try ?? "…", caption: "being tried", href: "/app/research" },

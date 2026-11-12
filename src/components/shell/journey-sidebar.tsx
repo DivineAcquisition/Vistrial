@@ -8,13 +8,13 @@ import { useEffect, useState } from "react";
 import {
   Bell,
   BookOpen,
-  Brain,
   ChevronRight,
   Coins,
   FileSearch,
   Gauge,
-  Hourglass,
-  Plus,
+  Home,
+  Kanban,
+  Newspaper,
   Search,
   Settings,
   Users,
@@ -31,11 +31,12 @@ import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import {
   AGENT_MARK,
   JOURNEY_TABS,
+  MAIN_ITEMS,
+  MEMORY_HREF,
   agentDot,
   agentsForTab,
   agentTabs,
   agentsOffJourney,
-  chatHref,
   defaultTab,
   isJourneyTab,
   workTabsFor,
@@ -50,7 +51,6 @@ import { api } from "../../../convex/_generated/api";
 import { creditCount } from "@/lib/credits";
 
 const TAB_STORE = "vistrial.journeyTab.v1";
-const NEW_CHAT = chatHref("growth-architect");
 
 function readTab(): JourneyTab | null {
   try {
@@ -242,7 +242,6 @@ function AgentRow({
     </>
   );
   const shared = [
-    { href: `/app/agents/${agent.slug}/memory`, label: "Memory" },
     { href: "/app/evidence", label: "Evidence" },
     { href: "/app/settings?section=data", label: "Connections" },
   ];
@@ -299,16 +298,19 @@ function AgentRow({
   );
 }
 
+/** Library holds what work produced. Chats (every chat session started) joins it in step 3. Memory is in Settings. */
 const LIBRARY: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/app/research", label: "Sessions", icon: BookOpen },
   { href: "/app/evidence", label: "Evidence", icon: FileSearch },
-  { href: "/app/agents/growth-architect/memory", label: "Memory", icon: Brain },
   { href: "/app/leads", label: "Customers", icon: Users },
 ];
 
+const MAIN_ICON: Record<(typeof MAIN_ITEMS)[number]["key"], LucideIcon> = { home: Home, tasks: Kanban, briefing: Newspaper };
+
 /**
- * The sidebar: the business, what is waiting, a new session and search always at the top; agents grouped by
- * the customer journey; the library; and what Vistrial knows and the credit balance at the foot.
+ * The sidebar, top to bottom: which organization and which client; the customer journey tabs; Home, Tasks
+ * and Briefing; the agents of the chosen tab; the library; and what Vistrial knows and the credit balance
+ * at the foot.
  */
 export function JourneySidebarView({
   agents,
@@ -364,39 +366,45 @@ export function JourneySidebarView({
         )}
       </div>
 
-      <ul className="grid gap-0.5 border-b border-border px-3 pt-2 pb-3" aria-label="Always here">
-        <li>
-          <Link href="/app" onClick={onNavigate} aria-current={pathname === "/app" ? "page" : undefined} className={cn(row, pathname === "/app" && "bg-accent")}>
-            <Hourglass aria-hidden className={cn("size-4 shrink-0", waiting ? "text-warning" : "text-muted-foreground")} />
-            <span className="truncate">{waitingLabel}</span>
-            <Count value={waiting} tone="warning" label={`${waiting} waiting`} />
-          </Link>
-        </li>
-        <li>
-          <Link href={NEW_CHAT} onClick={onNavigate} className={cn(row, "text-primary")}>
-            <Plus aria-hidden className="size-4 shrink-0" />
-            <span>New chat</span>
-          </Link>
-        </li>
+      <div className="px-3 pt-2">
+        <SegmentedRadioGroup
+          aria-label="Customer journey"
+          size="sm"
+          className="w-full flex-nowrap"
+          value={tab}
+          onValueChange={(next) => {
+            if (!isJourneyTab(next)) return;
+            setTab(next);
+            writeTab(next);
+          }}
+          options={JOURNEY_TABS}
+        />
+      </div>
+
+      <ul className="grid gap-0.5 border-b border-border px-3 pt-2 pb-3" aria-label="Main">
+        {MAIN_ITEMS.map((item) => {
+          const Icon = MAIN_ICON[item.key];
+          const active = isActive(pathname, item.href, item.key === "home");
+          const count = item.key === "home" ? waiting : item.key === "tasks" ? (overview?.nav.tasks ?? 0) : (overview?.nav.briefing ?? 0);
+          const label = item.key === "home" ? `${count} ${waitingLabel.toLowerCase()}` : item.key === "tasks" ? `${count} proposed` : `${count} new`;
+          return (
+            <li key={item.key}>
+              <Link href={item.href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(row, active && "bg-accent")}>
+                <Icon aria-hidden className={cn("size-4 shrink-0", item.key === "home" && waiting ? "text-warning" : "text-muted-foreground")} />
+                <span className="truncate">{item.label}</span>
+                <Count value={count} tone={item.key === "home" ? "warning" : "neutral"} label={label} />
+              </Link>
+            </li>
+          );
+        })}
         <li>
           <SidebarSearch renderResults={renderSearch ?? ((text, close) => <LiveSearchResults text={text} close={close} />)} />
         </li>
       </ul>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3 pb-4">
-        <div className="grid gap-2">
-          <SegmentedRadioGroup
-            aria-label="Customer journey"
-            size="sm"
-            className="w-full flex-nowrap"
-            value={tab}
-            onValueChange={(next) => {
-              if (!isJourneyTab(next)) return;
-              setTab(next);
-              writeTab(next);
-            }}
-            options={JOURNEY_TABS}
-          />
+        <div className="grid gap-1">
+          <p className={heading}>{JOURNEY_TABS.find((row) => row.value === tab)?.label} agents</p>
           <ul className="grid gap-1" aria-label={`${JOURNEY_TABS.find((row) => row.value === tab)?.label} agents`}>
             {shown.length ? (
               shown.map((agent) => (
@@ -445,7 +453,7 @@ export function JourneySidebarView({
       </div>
 
       <div className="grid gap-3 border-t border-border px-3 py-3">
-        <Link href={knowledge?.next?.href ?? "/app/agents/growth-architect/memory"} onClick={onNavigate} className="grid gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
+        <Link href={knowledge?.next?.href ?? MEMORY_HREF} onClick={onNavigate} className="grid gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
           <Meter value={knowledge?.percent ?? 0} aria-label="What Vistrial knows" className="gap-1.5">
             <span className="flex items-center justify-between text-xs">
               <span className="text-foreground">Knowledge</span>
@@ -466,11 +474,11 @@ export function JourneySidebarView({
           <Link href="/app/settings" onClick={onNavigate} aria-label="Settings" className={cn(row, "size-8 justify-center px-0")}>
             <Settings aria-hidden className="size-4 text-muted-foreground" />
           </Link>
-          <Link href="/app" onClick={onNavigate} aria-label={`Notifications: ${waiting} waiting`} className={cn(row, "relative size-8 justify-center px-0")}>
+          <Link href="/app/briefing" onClick={onNavigate} aria-label={`Briefing: ${overview?.nav.briefing ?? 0} new`} className={cn(row, "relative size-8 justify-center px-0")}>
             <Bell aria-hidden className="size-4 text-muted-foreground" />
-            {waiting ? (
+            {overview?.nav.briefing ? (
               <span className="absolute -top-0.5 -right-0.5 min-w-4 rounded-full bg-warning px-1 text-center text-[10px] leading-4 font-medium text-background tabular-nums">
-                {waiting > 99 ? "99+" : waiting}
+                {overview.nav.briefing > 99 ? "99+" : overview.nav.briefing}
               </span>
             ) : null}
           </Link>

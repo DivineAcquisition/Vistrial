@@ -23,7 +23,7 @@ export type KnowledgeKey = "profile" | "facts" | "meta" | "results" | "outcome";
 /** In the order a business should add them: the first one missing is the suggestion. */
 export const KNOWLEDGE: { key: KnowledgeKey; label: string; missing: string; href: string }[] = [
   { key: "profile", label: "Confirmed business profile", missing: "Confirm your business profile", href: "/app/settings?section=business" },
-  { key: "facts", label: "Business facts", missing: "Add facts about your business", href: "/app/agents/growth-architect/memory" },
+  { key: "facts", label: "Business facts", missing: "Add facts about your business", href: "/app/settings?section=memory" },
   { key: "results", label: "Results file", missing: "Upload a results file", href: "/app/connections/results" },
   { key: "meta", label: "Meta ads connected", missing: "Connect Meta ads", href: "/app/connections/meta" },
   { key: "outcome", label: "A recorded outcome", missing: "Record what happened after a decision", href: "/app" },
@@ -182,7 +182,21 @@ export const overview = workspaceQuery({
     }
 
     const known = await knowledge(ctx);
+    // The sidebar's three main items: what waits for a decision, tasks proposed, and Briefing posts not yet seen.
+    const queue = await ctx.db
+      .query("approvals")
+      .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", "waiting"))
+      .take(100);
+    const visit = await ctx.db
+      .query("memberVisits")
+      .withIndex("by_workspace_user", (q) => q.eq("workspaceId", ctx.workspaceId).eq("userId", ctx.identity.subject))
+      .unique();
+    const posts = await ctx.db
+      .query("briefingItems")
+      .withIndex("by_workspace_at", (q) => q.eq("workspaceId", ctx.workspaceId).gt("at", visit?.briefingSeenAt ?? 0))
+      .take(100);
     return {
+      nav: { tasks: queue.filter((row) => row.kind === "task").length, briefing: posts.length },
       workspaceName: workspace?.name ?? "Your business",
       role: ctx.role,
       /** A Viewer can see what is waiting; everyone else can answer. Approving is for Owners and Admins. */

@@ -21,6 +21,7 @@ export const STORY_AGENTS: ShellAgent[] = CATALOG.map((row) => ({
 export function storyOverview(state: string): HomeOverview {
   const empty = state === "empty";
   return {
+    nav: empty ? { tasks: 0, briefing: 0 } : { tasks: 3, briefing: 5 },
     workspaceName: "Northlight Growth",
     role: state === "rep" ? "viewer" : "owner",
     actionable: state !== "rep",
@@ -29,14 +30,14 @@ export function storyOverview(state: string): HomeOverview {
     knowledge: {
       items: [
         { key: "profile", label: "Confirmed business profile", done: true, href: "/app/profile" },
-        { key: "facts", label: "Business facts", done: !empty, href: "/app/agents/growth-architect/memory" },
+        { key: "facts", label: "Business facts", done: !empty, href: "/app/settings?section=memory" },
         { key: "results", label: "Results file", done: false, href: "/app/connections/results" },
         { key: "meta", label: "Meta ads connected", done: !empty, href: "/app/connections/meta" },
         { key: "outcome", label: "A recorded outcome", done: false, href: "/app" },
       ],
       percent: empty ? 20 : 60,
       next: empty
-        ? { key: "facts", label: "Add facts about your business", href: "/app/agents/growth-architect/memory" }
+        ? { key: "facts", label: "Add facts about your business", href: "/app/settings?section=memory" }
         : { key: "results", label: "Upload a results file", href: "/app/connections/results" },
     },
     agents: empty ? {} : { "growth-architect": { working: 1, waiting: 4 } },

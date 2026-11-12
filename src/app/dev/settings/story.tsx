@@ -22,6 +22,7 @@ import { Panel } from "@/components/ui/panel";
 import { AccountStory } from "../auth-pages/account-story";
 import { saveTheme, type ThemeChoice } from "@/lib/theme";
 import { CATALOG } from "@/lib/shell/rail";
+import { ApprovalSettingsView, type ApprovalSettingsData } from "@/components/settings/approval-settings";
 import { MemoryView, type MemoryFact } from "@/components/settings/memory-section";
 
 /** What an agency's memory holds: facts with where each came from and whether a person confirmed it. */
@@ -133,6 +134,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
     notifications: { checkInsDue: true, questionsWaiting: true, reportReady: false, email: true },
   });
 
+  const [approval, setApproval] = useState<ApprovalSettingsData>({ spendApprovalCredits: 500, weeklyPlan: true, trendPosts: false, canEdit: true, min: 1, max: 100_000 });
   const hrefFor = (next: SettingsSection) => `/dev/settings?section=${next}&role=${role}`;
   return (
     <main className="min-h-screen bg-background px-4 py-8 md:px-8">
@@ -181,6 +183,16 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
             onPause={async (paused) => setAgentData((row) => ({ ...row, controls: row.controls && { ...row.controls, paused } }))}
             onCaps={done}
           />
+        ) : null}
+        {section === "agents" ? (
+          <div className="mt-8">
+            <ApprovalSettingsView
+              key={String(approval.spendApprovalCredits)}
+              data={{ ...approval, canEdit: role === "owner" || role === "admin" }}
+              onLimit={async (credits) => setApproval((row) => ({ ...row, spendApprovalCredits: credits }))}
+              onSwitch={async (key, on) => setApproval((row) => ({ ...row, [key]: on }))}
+            />
+          </div>
         ) : null}
         {section === "data" ? (
           <DataSection

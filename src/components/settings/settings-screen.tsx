@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { AccountSecurity } from "@/components/account/security";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { SettingsLayout } from "@/components/settings/settings-layout";
+import { ApprovalSettings } from "@/components/settings/approval-settings";
 import { MemorySection } from "@/components/settings/memory-section";
 import { parseSection, type SettingsSection } from "@/components/settings/settings-parts";
 import {
@@ -142,6 +143,7 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
 
   if (section === "agents" && defaults && controls) {
     body = (
+      <div className="grid gap-8">
       <AgentsSection
         key={`${controls.caps.maxCostCentsPerRun}-${controls.caps.maxCostCentsPerDay}`}
         role={shell.role}
@@ -181,6 +183,8 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
           )
         }
       />
+      <ApprovalSettings />
+      </div>
     );
   }
 

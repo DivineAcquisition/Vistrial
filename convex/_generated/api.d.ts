@@ -27,6 +27,7 @@ import type * as billing from "../billing.js";
 import type * as billingActions from "../billingActions.js";
 import type * as bookings from "../bookings.js";
 import type * as brandKits from "../brandKits.js";
+import type * as briefing from "../briefing.js";
 import type * as browserAccess from "../browserAccess.js";
 import type * as catalog from "../catalog.js";
 import type * as clients from "../clients.js";
@@ -227,6 +228,7 @@ declare const fullApi: ApiFromModules<{
   billingActions: typeof billingActions;
   bookings: typeof bookings;
   brandKits: typeof brandKits;
+  briefing: typeof briefing;
   browserAccess: typeof browserAccess;
   catalog: typeof catalog;
   clients: typeof clients;

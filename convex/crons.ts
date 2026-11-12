@@ -52,4 +52,7 @@ crons.interval("remove old exports", { hours: 6 }, internal.exports.removeExpire
  */
 crons.interval("queue drafts already waiting", { minutes: 10 }, internal.approvals.backfillIfNeeded, {});
 
+/** Posts the alerts nothing else announces to each organization's Briefing: a check-in due, a broken connection, a drop in results, low credits. Each is posted once. */
+crons.interval("post Briefing alerts", { hours: 1 }, internal.briefing.sweep, {});
+
 export default crons;

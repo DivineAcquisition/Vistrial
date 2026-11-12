@@ -8,10 +8,11 @@
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { CLAIM_WORDS, TRANSITIONS, canMove, claimsResult, cleanExpectedReturn, expectedReturnWords, rankTasks, taskState, type TaskLinks } from "./lib/agentTasks";
 import { OWNER_ONLY_WORDS, mayDecide, needsApproval } from "./lib/approvals";
+import { post } from "./lib/briefing";
 import { priceFor } from "./lib/credits";
 import { SKILL_CAPS } from "./lib/caps";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
@@ -429,5 +430,97 @@ describe("notes to self", () => {
     expect((await viewer.query(api.personalNotes.mine, { workspaceId }))[0].done).toBe(true);
     await viewer.mutation(api.personalNotes.remove, { workspaceId, personalNoteId: mine });
     expect(await viewer.query(api.personalNotes.mine, { workspaceId })).toEqual([]);
+  });
+});
+
+describe("the Briefing", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const upload = (t: Tester, workspaceId: Id<"workspaces">, label: string, conversions: number, clientId?: Id<"clients">) =>
+    t.run(async (ctx) => {
+      await ctx.db.insert("resultUploads", { workspaceId, ...(clientId ? { clientId } : {}), fileName: `${label}.csv`, label, currency: "USD", uploadedBy: "nora", createdAt: Date.now(), status: "ready", summary: { rows: 3, dateStart: "2026-10-01", dateStop: "2026-10-31", metrics: ["conversions"], totals: { conversions }, groupBy: null, groups: [], otherGroups: 0, ignoredColumns: [] } });
+    });
+  const sweep = async (t: Tester) => {
+    await t.mutation(internal.briefing.sweep, {});
+  };
+
+  it("lists posts newest first with their approval, filters by kind and agent, and counts what is new for each person", async () => {
+    const t = newTest();
+    const { owner, member, viewer, workspaceId, aster, harbor } = await agency(t);
+    await member.mutation(api.agentTasks.propose, { workspaceId, title: "Research coaching prices", why: "Pricing pages changed.", ask: "What do coaching competitors charge?", skillSlug: "market-intelligence", clientId: aster });
+    await owner.mutation(api.agentTasks.propose, { workspaceId, title: "Research dental plans", why: "Harbor asked.", ask: "What do dental membership plans cost?", skillSlug: "market-intelligence", clientId: harbor });
+    const assetId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert("assets", { workspaceId, kind: "adCopySet", title: "Northlight ad copy", status: "draft", currentVersion: 1, createdAt: Date.now() });
+      await ctx.db.insert("assetVersions", { workspaceId, assetId: id, version: 1, body: "Four headlines for the retainer offer.", createdBy: "agent" });
+      return id;
+    });
+    await owner.mutation(api.assets.addVersion, { workspaceId, assetId, body: "Five headlines for the retainer offer.", claims: [] });
+
+    const all = await owner.query(api.briefing.feed, { workspaceId });
+    expect(all.items.map((row) => row.kind)).toEqual(["draft", "approval", "approval"]);
+    expect(all).toMatchObject({ unread: 3, total: 3, counts: { approval: 2, draft: 1, alert: 0 } });
+    // A draft can be read where it is posted, and decided there by someone who may.
+    expect(all.items[0]).toMatchObject({ kindLabel: "Draft to review", href: `/app/assets/${assetId}`, draft: { text: "Five headlines for the retainer offer.", version: 2 }, approval: { kind: "publish", canDecide: true, needsReason: true } });
+    expect(all.items[1]).toMatchObject({ client: "Harbor Dental", approval: { kind: "task", credits: 900, canDecide: true } });
+    // A Member sees only their clients' posts and cannot decide; a Viewer the same.
+    for (const who of [member, viewer]) {
+      const theirs = await who.query(api.briefing.feed, { workspaceId });
+      expect(theirs.items.map((row) => row.title)).toEqual(["Draft to review: Northlight ad copy", "Proposed by a teammate: Research coaching prices"]);
+      expect(theirs.items.every((row) => row.approval?.canDecide === false)).toBe(true);
+    }
+    expect((await owner.query(api.briefing.feed, { workspaceId, kind: "draft" })).items).toHaveLength(1);
+    expect((await owner.query(api.briefing.feed, { workspaceId, kind: "alert" })).items).toEqual([]);
+    expect((await owner.query(api.briefing.feed, { workspaceId, scope: harbor })).items.map((row) => row.client)).toEqual(["Harbor Dental"]);
+
+    // Approving in place: the post then shows the decision instead of the buttons.
+    await owner.mutation(api.approvals.decide, { workspaceId, approvalId: all.items[0].approval!.id, approve: true });
+    expect((await owner.query(api.briefing.feed, { workspaceId })).items[0].approval).toMatchObject({ status: "approved", canDecide: false });
+
+    // Seen is per person, and a Viewer may mark their own.
+    await viewer.mutation(api.briefing.markSeen, { workspaceId });
+    expect((await viewer.query(api.briefing.feed, { workspaceId })).unread).toBe(0);
+    expect((await owner.query(api.briefing.feed, { workspaceId })).unread).toBe(3);
+    expect((await owner.query(api.home.overview, { workspaceId })).nav).toEqual({ tasks: 2, briefing: 3 });
+    expect((await viewer.query(api.home.overview, { workspaceId })).nav).toEqual({ tasks: 1, briefing: 0 });
+  });
+
+  it("posts each alert once: a check-in due, a connection to reconnect, and results that dropped", async () => {
+    const t = newTest();
+    const { owner, member, workspaceId, aster, harbor } = await agency(t);
+    await t.run(async (ctx) => {
+      const now = Date.now();
+      const projectId = await ctx.db.insert("researchProjects", { workspaceId, clientId: harbor, title: "Harbor", objective: "x", market: "Dental", geography: "US", competitors: [], platforms: ["web"], suppliedUrls: [], status: "ready", createdBy: "nora", createdAt: now, updatedAt: now });
+      const runId = await ctx.db.insert("agentRuns", { workspaceId, clientId: harbor, agentSlug: AGENT, skillSlug: "market-intelligence", status: "completed", startedBy: "nora", inputRef: projectId, startedAt: now, costCents: 1, inputTokens: 0, outputTokens: 0 });
+      await ctx.db.insert("decisions", { workspaceId, clientId: harbor, projectId, runId, opportunityIndex: 0, opportunity: "Membership plan", proposedAction: "Offer a membership plan to uninsured patients.", validationMethod: "New patients", checkInAt: now - 1000, createdBy: "nora", createdAt: now - 5000, baseline: [] });
+      await ctx.db.insert("metaConnections", { workspaceId, source: "oauth", accessToken: "x", scopes: [], metaUserId: "1", metaUserName: "Nora", status: "needsReconnect", connectedAt: now, connectedBy: "nora", callsOk: 0, callsFailed: 0 });
+    });
+    await upload(t, workspaceId, "Aster bookings", 40, aster);
+    vi.advanceTimersByTime(1000);
+    await upload(t, workspaceId, "Aster bookings", 28, aster);
+    // A small dip is not an alert.
+    await upload(t, workspaceId, "Northlight enquiries", 20);
+    vi.advanceTimersByTime(1000);
+    await upload(t, workspaceId, "Northlight enquiries", 18);
+
+    await sweep(t);
+    await sweep(t);
+    const alerts = (await owner.query(api.briefing.feed, { workspaceId, kind: "alert" })).items;
+    expect(alerts.map((row) => row.title).sort()).toEqual(["A check-in is due", "Meta ads needs reconnecting", "Results dropped: Aster bookings"]);
+    expect(alerts.find((row) => row.title.startsWith("Results dropped"))).toMatchObject({ client: "Aster Coaching", body: "Conversions went from 40 to 28 (-30%) between the last two results files.", href: "/app/connections/results" });
+    // The Member is not assigned to Harbor, so its check-in is not in their Briefing.
+    expect((await member.query(api.briefing.feed, { workspaceId, kind: "alert" })).items.map((row) => row.title).sort()).toEqual(["Meta ads needs reconnecting", "Results dropped: Aster bookings"]);
+  });
+
+  it("writes a trend post only where trend posts are switched on", async () => {
+    const t = newTest();
+    const { owner, workspaceId } = await agency(t);
+    const trend = { workspaceId, kind: "trend" as const, title: "Meta is testing longer lead forms", sources: [{ title: "Meta for Business", url: "https://example.com/meta" }], key: "trend:1" };
+    expect(await t.run((ctx) => post(ctx, trend))).toBeNull();
+    await owner.mutation(api.approvals.setSwitch, { workspaceId, key: "trendPosts", on: true });
+    expect(await t.run((ctx) => post(ctx, trend))).not.toBeNull();
+    // The same post is never written twice.
+    expect(await t.run((ctx) => post(ctx, trend))).toBeNull();
+    expect((await owner.query(api.briefing.feed, { workspaceId, kind: "trend" })).items).toMatchObject([{ title: "Meta is testing longer lead forms", sources: [{ title: "Meta for Business", url: "https://example.com/meta" }] }]);
   });
 });

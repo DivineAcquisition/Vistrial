@@ -140,6 +140,8 @@ export const OFFER = {
     "Ad sets: a brief, four copy variations, a video script and captions",
     "Designed ads on request, charged per image from your credits",
     "Landing page teardowns, section by section",
+    "A Tasks board: proposed work with its expected return, credit cost and evidence",
+    "A Briefing: approvals, finished work and a weekly growth report",
     "A check-in on every change you try",
     "PDF exports, with a white-label option",
     "A cost limit on every run",
@@ -148,7 +150,7 @@ export const OFFER = {
   price: "$179",
   per: "a month",
   credits: "$150 of credits included each month",
-  creditsNote: "Each piece of work shows its cost. Included credits reset each month.",
+  creditsNote: "Each piece of work shows its cost in credits. Included credits reset each month.",
   access: "Access is by request. A person reviews every request and replies by email.",
   noCharge: "Nothing is charged on this site.",
 } as const;
@@ -220,7 +222,7 @@ export const LANDING_FAQ = {
     {
       topic: "price",
       q: "What does it cost?",
-      a: "$179 a month, with $150 of credits included. Each piece of work shows its cost, and every run stops at a limit. If you need more, credit packs are $10, $25 or $50. Nothing is charged on this site.",
+      a: "$179 a month, with $150 of credits included. Each piece of work shows its cost in credits, and every run stops at a limit. If you need more, credit packs are $10, $25 or $50. Nothing is charged on this site.",
     },
     {
       topic: "guarantee",
@@ -275,23 +277,20 @@ export const LANDING_FOOTER = {
 } as const;
 
 /**
- * Product pictures. Every picture that is on is a real screen from the app, cut from a dev story
- * with sample data by scripts/capture-landing-pictures.cjs, in the white theme only. A planned slot stays off until its
- * screen exists on main: turn it on by adding the story to that script and a file here.
- * Never fill a slot with a mock-up.
+ * Product pictures. Every picture is a real screen from the app, cut from a dev story with sample data
+ * by scripts/capture-landing-pictures.cjs, in the white theme only. To add one, add its story to that
+ * script and an entry here. Never show a mock-up, and switch a picture off rather than fake a screen.
  */
 export type Picture = {
   id: string;
   on: boolean;
-  /** Which fix or section the picture supports. */
-  place: "fix" | "loop" | "planned";
+  /** Which part of Solution the picture supports: a fix, where the work shows up, or the loop. */
+  place: "fix" | "work" | "loop";
   file: string | null;
   width: number;
   height: number;
   title: string;
   alt: string;
-  /** For a planned slot: the screen it is waiting for. */
-  waitingFor?: string;
 };
 
 export const PICTURES: Picture[] = [
@@ -326,6 +325,46 @@ export const PICTURES: Picture[] = [
     alt: "The Pages screen: a landing page read section by section, with counts of its buttons and header links, its qualifier, headline, proof and offer, and a note on whether each section does its job.",
   },
   {
+    id: "tasks-board",
+    on: true,
+    place: "work",
+    file: "tasks-board",
+    width: 1924,
+    height: 1475,
+    title: "Tasks: proposed work, ranked",
+    alt: "The Tasks board with three columns: Proposed, Approved and Running. Each card names the work, the client it is for, the expected return as a range marked Your data or Inference, the credit cost, and its evidence. Proposed cards have Approve, Edit and Skip buttons.",
+  },
+  {
+    id: "briefing-approval",
+    on: true,
+    place: "work",
+    file: "briefing-approval",
+    width: 1412,
+    height: 515,
+    title: "Briefing: approve where you read",
+    alt: "A Briefing post from Growth Architect for a client: a proposed task with its reason, marked as needing approval because an agent wants to run it, with Approve and Decline buttons.",
+  },
+  {
+    id: "home",
+    on: true,
+    place: "work",
+    file: "home",
+    width: 1568,
+    height: 3208,
+    title: "Home: what needs you",
+    alt: "The Home screen: a box asking what Vistrial should work on, then a Needs you list with a question from an agent, approvals and a check-in that is due, then what changed since you were last here.",
+  },
+  {
+    id: "organizations-clients",
+    on: true,
+    place: "work",
+    file: "organizations-clients",
+    width: 2336,
+    height: 2294,
+    title: "Clients, and who can see each one",
+    alt: "The Clients screen for an agency: a list of client businesses and people, one client's profile with what they sell and who they sell to, and a list of team members showing who can see that client.",
+  },
+  {
     id: "test-plan",
     on: true,
     place: "loop",
@@ -336,47 +375,14 @@ export const PICTURES: Picture[] = [
     alt: "A test plan with two changes. The first is being tried, with a check-in date and starting figures saved. The second has a We'll try this button and a check-back choice of 30 days.",
   },
   {
-    id: "research-approve",
+    id: "tasks-result",
     on: true,
     place: "loop",
-    file: "research-approve",
-    width: 1688,
-    height: 608,
-    title: "A report waits for you",
-    alt: "The Research screen: a market report waiting for approval with Approve, Request changes and Reject buttons, and an earlier version marked Approved.",
-  },
-  {
-    id: "tasks-board",
-    on: false,
-    place: "planned",
-    file: null,
-    width: 0,
-    height: 0,
-    title: "Tasks board",
-    alt: "",
-    waitingFor: "The Tasks board screen (being built in another session).",
-  },
-  {
-    id: "briefing-post",
-    on: false,
-    place: "planned",
-    file: null,
-    width: 0,
-    height: 0,
-    title: "Briefing post",
-    alt: "",
-    waitingFor: "The Briefing screen (being built in another session).",
-  },
-  {
-    id: "organizations-clients",
-    on: false,
-    place: "planned",
-    file: null,
-    width: 0,
-    height: 0,
-    title: "Organizations and clients",
-    alt: "",
-    waitingFor: "The organization and client screens (claude/orgs-foundation, then the screens session).",
+    file: "tasks-result",
+    width: 828,
+    height: 1140,
+    title: "Result: what was measured",
+    alt: "The Result column of the Tasks board: two changes with what was measured at the check-in. One is marked It helped, with bookings up from 24 to 31. The other is marked No clear change. Each shows what was expected beforehand.",
   },
 ];
 
@@ -385,6 +391,18 @@ export function picturesFor(place: Picture["place"]) {
 }
 
 export const PICTURE_NOTE = "A real screen from the app, with sample data.";
+
+/** Headings for the supporting material inside Solution. They are not sections of their own. */
+export const SUPPORT = {
+  work: {
+    title: "Where the work shows up",
+    lead: "Agents propose the work. You see what each piece is expected to return, what it may cost in credits, and the evidence behind it, and you approve.",
+  },
+  plans: {
+    title: "The plan each skill runs",
+    lead: "Pick a skill to see its steps. Every plan ends waiting for you.",
+  },
+} as const;
 
 /** The framework's order. Results is left out when there is no real proof. */
 export const LANDING_ORDER = ["nav", "hero", "results", "problem", "solution", "offer", "compare", "process", "roles", "faq", "final"] as const;

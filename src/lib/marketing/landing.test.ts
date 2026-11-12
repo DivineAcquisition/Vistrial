@@ -109,14 +109,26 @@ describe("the landing page follows the owner's framework", () => {
     expect(LOOP.steps.map((step) => step.id)).toEqual(["study", "propose", "approve", "try", "measure"]);
   });
 
-  it("shows only real screens, and keeps the planned slots off", () => {
-    for (const picture of PICTURES.filter((entry) => entry.on)) {
+  it("shows only real screens, each with its file and a description", () => {
+    expect(PICTURES.map((picture) => picture.id)).toEqual([
+      "offer-compare",
+      "ad-set",
+      "page-teardown",
+      "tasks-board",
+      "briefing-approval",
+      "home",
+      "organizations-clients",
+      "test-plan",
+      "tasks-result",
+    ]);
+    for (const picture of PICTURES) {
+      expect(picture.on, picture.id).toBe(true);
       expect(picture.alt.length, picture.id).toBeGreaterThan(40);
+      expect(picture.width * picture.height, picture.id).toBeGreaterThan(0);
       expect(existsSync(join(process.cwd(), "public/marketing/product", `${picture.file}.png`)), picture.id).toBe(true);
     }
-    const planned = PICTURES.filter((entry) => entry.place === "planned");
-    expect(planned.map((entry) => entry.id)).toEqual(["tasks-board", "briefing-post", "organizations-clients"]);
-    for (const slot of planned) expect(slot.on, slot.id).toBe(false);
+    // Industry trend posts are off by default and have not run for a customer, so no picture features them.
+    expect(PICTURES.map((picture) => `${picture.title} ${picture.alt}`).join(" ")).not.toMatch(/trend/i);
   });
 
   it("uses no old audience, no old product names, no invented proof and no em dash", () => {

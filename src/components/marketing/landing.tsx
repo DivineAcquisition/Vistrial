@@ -17,6 +17,7 @@ import {
   SolutionGrid,
   WithWithout,
 } from "@/components/marketing/framework-blocks";
+import { LoopDemo, SkillPlans } from "@/components/marketing/agentic-sections";
 import { GuardedRun } from "@/components/marketing/guarded-run";
 import { APPROVAL, PROOF, SAFETY, SECTIONS, SITE_DESCRIPTION } from "@/lib/marketing/content";
 import {
@@ -29,11 +30,15 @@ import {
   PAINS,
   PROCESS,
   ROLES,
+  SUPPORT,
   landingProblems,
   picturesFor,
 } from "@/lib/marketing/landing";
 import { marketingDisplayTitle, marketingLead, marketingPageGutter, marketingSectionTitle, marketingShell, marketingSubhead } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
+
+/** How wide a full-width product picture is drawn, for the browser to pick the right file. */
+const WIDE = "(min-width: 1152px) 1152px, 100vw";
 
 function Section({ id, headline, children, tone = "plain" }: { id: string; headline: string; children: ReactNode; tone?: "plain" | "tint" }) {
   return (
@@ -78,6 +83,7 @@ export function LandingPage() {
   };
 
   const fixPictures = picturesFor("fix");
+  const workPictures = picturesFor("work");
   const loopPictures = picturesFor("loop");
 
   return (
@@ -120,20 +126,50 @@ export function LandingPage() {
               picture={picture}
               crop={index === 2 ? "max-h-[34rem]" : "max-h-[19rem]"}
               className={index === 2 ? "lg:col-span-2" : undefined}
-              sizes={index === 2 ? "(min-width: 1152px) 1152px, 100vw" : undefined}
+              sizes={index === 2 ? WIDE : undefined}
             />
           ))}
         </div>
-        <div className="mt-12 grid gap-5">
+
+        {/* Where the work shows up: Tasks, the Briefing, Home and clients. Real screens. */}
+        <div className="mt-14">
+          <h3 className="font-heading text-2xl tracking-tight text-strong">{SUPPORT.work.title}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{SUPPORT.work.lead}</p>
+          <div className="mt-6 grid gap-5">
+            {workPictures.slice(0, 1).map((picture) => (
+              <ProductPicture key={picture.id} picture={picture} crop="max-h-[36rem]" sizes={WIDE} />
+            ))}
+            <div className="grid items-start gap-5 lg:grid-cols-2">
+              <div className="grid gap-5">
+                {workPictures.slice(1, 2).map((picture) => (
+                  <ProductPicture key={picture.id} picture={picture} />
+                ))}
+                {workPictures.slice(3).map((picture) => (
+                  <ProductPicture key={picture.id} picture={picture} crop="max-h-[22rem]" />
+                ))}
+              </div>
+              {workPictures.slice(2, 3).map((picture) => (
+                <ProductPicture key={picture.id} picture={picture} crop="max-h-[41rem]" />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* The loop: the diagram, one change followed through, and the two screens it happens on. */}
+        <div className="mt-14 grid gap-5">
           <LoopDiagram />
+          <div className="py-4">
+            <LoopDemo />
+          </div>
           <div className="grid items-start gap-5 lg:grid-cols-2">
             {loopPictures.map((picture) => (
-              <ProductPicture key={picture.id} picture={picture} />
+              <ProductPicture key={picture.id} picture={picture} crop="max-h-[24rem]" />
             ))}
           </div>
         </div>
+
         {/* The safety behaviors, shown working in one sample run. It ends on the hold-to-approve step. */}
-        <div className="mt-12">
+        <div className="mt-14">
           <h3 className="font-heading text-2xl tracking-tight text-strong">{SAFETY.headline}</h3>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{SAFETY.lead}</p>
           <div className="mt-6">
@@ -165,6 +201,14 @@ export function LandingPage() {
       {/* 9. Your role vs ours */}
       <Section id={ROLES.id} headline={ROLES.headline}>
         <RolesBlock />
+        {/* What "the agents' part" means for each skill. */}
+        <div className="mt-12">
+          <h3 className="font-heading text-2xl tracking-tight text-strong">{SUPPORT.plans.title}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{SUPPORT.plans.lead}</p>
+          <div className="mt-6">
+            <SkillPlans />
+          </div>
+        </div>
       </Section>
 
       {/* 10. FAQ */}

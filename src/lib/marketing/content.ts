@@ -455,8 +455,8 @@ export const INDUSTRIES = {
 /**
  * Safety is shown as one sample run with its guardrails working: what the agent did, what it was
  * refused, what it cost against the limit, and where it stopped for a person. Every figure is sample
- * data. The limit is the real one for a research run (convex/lib/caps.ts), and the warning sits at
- * the real 80 percent.
+ * data. The limit is the real one for a research run (convex/lib/caps.ts) and the warning sits at the
+ * real 80 percent. Costs here are cents of cost; the page shows them as the app does, in credits.
  */
 export const SAFETY = {
   id: "safety",
@@ -480,8 +480,7 @@ export const SAFETY = {
       capCents: 300,
       warnShare: 0.8,
       spent: "Spent",
-      of: "of a",
-      limit: "limit",
+      of: "of",
       warns: "Warns",
       stops: "Stops",
     },

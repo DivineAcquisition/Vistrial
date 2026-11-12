@@ -7,6 +7,7 @@ import { HoldToApprove, useInViewSequence } from "@/components/marketing/agentic
 import { BasisBadge } from "@/components/marketing/growth-visuals";
 import { Badge } from "@/components/ui/badge";
 import { HERO, SAFETY } from "@/lib/marketing/content";
+import { DEFAULT_MARKUP, creditWords, creditsForCost } from "../../../convex/lib/credits";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,7 +32,8 @@ const GUARD_ICON: Record<(typeof RUN.guards)[number]["id"], typeof Search> = {
   record: ScrollTextIcon,
 };
 
-const money = (cents: number) => (cents < 100 ? `${cents}¢` : `$${(cents / 100).toFixed(2)}`);
+/** What a customer sees in the app: the cost of the work times the markup, in whole credits (convex/lib/credits.ts). */
+const credits = (costCents: number) => creditWords(creditsForCost(costCents, DEFAULT_MARKUP));
 
 function StateBadge({ state }: { state: Shown }) {
   const label = RUN.stateLabel[state];
@@ -85,8 +87,8 @@ function BudgetGuard({ spentCents }: { spentCents: number }) {
         <span className="flex items-center gap-1.5">
           <Gauge className="size-3.5 text-brand-400" aria-hidden />
           <span>
-            {budget.spent} <span className="font-medium text-strong tabular-nums">{money(spentCents)}</span> {budget.of}{" "}
-            <span className="font-medium text-strong tabular-nums">{money(budget.capCents)}</span> {budget.limit}
+            {budget.spent} <span className="font-medium text-strong tabular-nums">{credits(spentCents)}</span> {budget.of}{" "}
+            <span className="font-medium text-strong tabular-nums">{credits(budget.capCents)}</span>
           </span>
         </span>
       </p>
@@ -200,7 +202,7 @@ export function GuardedRun() {
                   <div>
                     <p className="text-sm font-medium text-strong">{RUN.reportTitle}</p>
                     <p className="text-xs text-muted-foreground">
-                      {RUN.reportMeta} · {money(RUN.steps[RUN.steps.length - 1].spentCents)}
+                      {RUN.reportMeta} · {credits(RUN.steps[RUN.steps.length - 1].spentCents)}
                     </p>
                   </div>
                   <Badge variant={done ? "success" : "warning"} size="sm">

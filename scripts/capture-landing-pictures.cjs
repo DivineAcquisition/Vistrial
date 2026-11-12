@@ -1,6 +1,7 @@
 /**
  * Takes the product pictures on the public landing page from the dev stories, so every picture is a
- * real screen with sample data. Run `npm run dev`, then `node scripts/capture-landing-pictures.cjs`.
+ * real screen with sample data. Run `npm run dev`, then `node scripts/capture-landing-pictures.cjs`
+ * (add picture names to retake only those).
  * Playwright is not a project dependency: use a machine that has it (for example `npx -p playwright node ...`).
  * Each picture is cut from one text marker to another, in the white theme: the public site is white only.
  * To add a picture (see PICTURES in src/lib/marketing/landing.ts), add its story here.
@@ -12,7 +13,7 @@ const ORIGIN = process.env.STORY_ORIGIN ?? "http://localhost:3000";
 const OUT = "public/marketing/product";
 const WIDTH = 1280;
 
-/** from/to: visible text that marks the top and bottom edge. width: the screen width, 1280 unless given. trim: extra cut from the bottom. pad: extra kept at the bottom. maxWidth: the widest the cut may be. lift: extra kept at the top. */
+/** from/to: visible text that marks the top and bottom edge. width: the screen width, 1280 unless given. column: the text whose row sets the left and right edge, when the first marker is narrower than the screen it sits in. trim: extra cut from the bottom. pad: extra kept at the bottom. maxWidth: the widest the cut may be. lift: extra kept at the top. */
 const SHOTS = [
   { name: "offer-compare", story: "/dev/offers-tab?state=full", from: "You vs competitors", to: "Highlighted: a competitor states this" },
   { name: "test-plan", story: "/dev/offers-tab?state=full", from: "Test plan", to: "Ask retained clients for a referral", toEdge: "top" },
@@ -23,13 +24,16 @@ const SHOTS = [
   { name: "tasks-result", story: "/dev/tasks?state=busy&column=result", width: 430, from: "What was measured at the check-in", to: "Skipped", toEdge: "top" },
   // One approval in the Briefing. The cut starts under the filter row (industry trends are off by default, so their tab is left out) and stops before the next post.
   { name: "briefing-approval", story: "/dev/briefing?state=busy&kind=approval", from: "Proposed: Test a two-call close", lift: 34, to: "Approve a change in Practice CRM", toEdge: "top", trim: 34 },
-  { name: "home", story: "/dev/home?state=busy", from: "What should Vistrial work on?", to: "In motion", toEdge: "top" },
+  // Home: the question box is narrower than the lists under it, so the cut takes its sides from the "Needs you" row.
+  { name: "home", story: "/dev/home?state=busy", width: 1100, from: "What should Vistrial work on?", column: "Needs you", to: "In motion", toEdge: "top" },
   { name: "organizations-clients", story: "/dev/clients?view=page&state=owner&open=c1", from: "Executive coaching for new directors", to: "Sam Patel", pad: 44 },
 ];
 
 (async () => {
   const browser = await chromium.launch();
-  for (const shot of SHOTS) {
+  // Name pictures after the script to retake only those: `node scripts/capture-landing-pictures.cjs home`.
+  const only = process.argv.slice(2);
+  for (const shot of SHOTS.filter((shot) => only.length === 0 || only.includes(shot.name))) {
     const width = shot.width ?? WIDTH;
     const context = await browser.newContext({ viewport: { width, height: 1000 }, deviceScaleFactor: 2, reducedMotion: "reduce" });
     const page = await context.newPage();
@@ -40,7 +44,7 @@ const SHOTS = [
     const end = await page.getByText(shot.to, { exact: false }).first().boundingBox();
     if (!top || !end) throw new Error(`${shot.name}: marker not found`);
     // The column the picture sits in: the nearest ancestor of the first marker that is wider than half the screen.
-    const column = await page.getByText(shot.from, { exact: false }).first().evaluate((node, half) => {
+    const column = await page.getByText(shot.column ?? shot.from, { exact: false }).first().evaluate((node, half) => {
       let el = node.parentElement;
       while (el && el.getBoundingClientRect().width < half) el = el.parentElement;
       const box = (el ?? document.body).getBoundingClientRect();

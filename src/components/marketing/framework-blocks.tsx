@@ -2,19 +2,17 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { ArrowRight, Check, CheckCircle2, Clock, Minus, RefreshCw } from "@/components/icons";
+import { Check, CheckCircle2, Minus } from "@/components/icons";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   COMPARE,
   CTA,
   FIXES,
-  LOOP,
+  LIVE,
   OFFER,
   PAINS,
   PICTURE_NOTE,
-  PROCESS,
-  ROLES,
   SCARCITY,
   type Picture,
 } from "@/lib/marketing/landing";
@@ -100,6 +98,10 @@ export function SolutionGrid() {
           </span>
           <p className="mt-3 font-heading text-lg leading-snug tracking-tight text-strong">{fix.outcome}</p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{fix.detail}</p>
+          <p className="mt-auto flex items-center gap-2 pt-4 text-xs text-muted-foreground">
+            <span className="live-pulse size-1.5 shrink-0 rounded-full bg-brand-400" aria-hidden />
+            {FIXES.handledBy} <span className="font-medium text-strong">{fix.by}</span>
+          </p>
         </li>
       ))}
     </ol>
@@ -142,51 +144,6 @@ export function PrincipleNote() {
 }
 
 /* ---------------------------------------------------------------------------
- * The loop: study, propose, you approve, try, measure, and round again.
- * ------------------------------------------------------------------------- */
-
-export function LoopDiagram() {
-  return (
-    <figure className="rounded-xl border border-border bg-card p-5 sm:p-6">
-      <figcaption className={eyebrow}>{LOOP.title}</figcaption>
-      <ol className="mt-5 grid gap-2 lg:grid-cols-5 lg:gap-0">
-        {LOOP.steps.map((step, index) => {
-          const yours = step.by === "you";
-          return (
-            <li key={step.id} className="relative flex gap-3 lg:flex-col lg:gap-0 lg:pr-4">
-              {/* The line that joins one step to the next: down the side on a phone, along the top on a desktop. */}
-              <span aria-hidden className={cn("absolute bg-border", "top-9 bottom-[-0.5rem] left-[17px] w-px lg:top-[17px] lg:right-0 lg:bottom-auto lg:left-9 lg:h-px lg:w-auto", index === LOOP.steps.length - 1 && "hidden")} />
-              <span
-                className={cn(
-                  "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border font-heading text-sm tabular-nums",
-                  yours ? "border-brand-500 bg-brand-500 text-primary-foreground" : "border-brand-500/40 bg-card text-brand-300",
-                )}
-                aria-hidden
-              >
-                {index + 1}
-              </span>
-              <div className="min-w-0 pb-4 lg:mt-3 lg:pb-0">
-                <p className="flex flex-wrap items-center gap-2">
-                  <span className="font-heading text-base tracking-tight text-strong">{step.name}</span>
-                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.1em] uppercase", yours ? "bg-brand-500/15 text-brand-300" : "bg-muted text-muted-foreground")}>
-                    {LOOP.who[step.by]}
-                  </span>
-                </p>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-      <p className="mt-5 flex items-center gap-2 border-t border-dashed border-border pt-4 text-sm text-strong">
-        <RefreshCw className="size-4 shrink-0 text-brand-300" aria-hidden />
-        {LOOP.again}
-      </p>
-    </figure>
-  );
-}
-
-/* ---------------------------------------------------------------------------
  * Product pictures: real screens only.
  * ------------------------------------------------------------------------- */
 
@@ -206,10 +163,18 @@ export function ProductPicture({
   const shared = { width: picture.width, height: picture.height, sizes };
   return (
     <figure className={cn("flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[0_24px_50px_-32px_rgba(11,10,17,0.45)]", className)}>
-      <div className="flex items-center gap-1.5 border-b border-border bg-muted px-3 py-2" aria-hidden>
-        <span className="size-2 rounded-full bg-foreground/15" />
-        <span className="size-2 rounded-full bg-foreground/15" />
-        <span className="size-2 rounded-full bg-brand-400" />
+      <div className="flex items-center gap-3 border-b border-border bg-muted px-3 py-2">
+        <span className="flex shrink-0 items-center gap-1.5" aria-hidden>
+          <span className="size-2 rounded-full bg-foreground/15" />
+          <span className="size-2 rounded-full bg-foreground/15" />
+          <span className="size-2 rounded-full bg-brand-400" />
+        </span>
+        <p className="flex min-w-0 flex-1 items-center justify-end gap-2 text-xs text-muted-foreground">
+          <span className="live-pulse size-1.5 shrink-0 rounded-full bg-brand-400" aria-hidden />
+          <span className="truncate">
+            {picture.place === "fix" ? LIVE.agent : LIVE.app} · <span className="font-medium text-strong">{picture.by}</span>
+          </span>
+        </p>
       </div>
       <div className={cn("relative overflow-hidden", crop)}>
         {/* On a phone the picture is shown larger and cut at the right edge, so its words stay readable. */}
@@ -233,9 +198,16 @@ export function OfferBox() {
     <div className="relative rounded-2xl bg-gradient-to-br from-brand-400 via-brand-500 to-brand-700 p-[2px] shadow-[0_40px_80px_-40px_rgba(var(--brand-rgb),0.75)]">
       <div className="grid overflow-hidden rounded-[14px] bg-card lg:grid-cols-[1.25fr_0.75fr]">
         <div className="p-6 sm:p-9">
-          <p className={eyebrow}>
-            {OFFER.eyebrow} · {OFFER.name}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <p className={eyebrow}>
+              {OFFER.eyebrow} · {OFFER.name}
+            </p>
+            <p className="flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="live-pulse size-1.5 shrink-0 rounded-full bg-success" aria-hidden />
+              <span className="font-medium text-strong">{LIVE.agent}</span>
+              {LIVE.status}
+            </p>
+          </div>
           <h2 id="offer-title" className="mt-3 font-heading text-[1.75rem] leading-tight tracking-tight text-strong sm:text-4xl sm:leading-[1.12]">
             {OFFER.headline}
           </h2>
@@ -309,75 +281,6 @@ export function WithWithout() {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------------------
- * Process: a numbered line. The reader's time sits apart from the step.
- * ------------------------------------------------------------------------- */
-
-export function ProcessLine() {
-  return (
-    <ol className="relative">
-      <span aria-hidden className="absolute top-5 bottom-5 left-5 w-px bg-border" />
-      {PROCESS.steps.map((step, index) => (
-        <li key={step.title} className="relative grid gap-x-6 gap-y-3 pb-6 pl-16 last:pb-0 sm:grid-cols-[1fr_13rem] sm:items-center">
-          <span className="absolute top-0 left-0 z-10 flex size-10 items-center justify-center rounded-full border border-brand-500/40 bg-card font-heading text-base text-brand-300 tabular-nums" aria-hidden>
-            {index + 1}
-          </span>
-          <div>
-            <h3 className="font-heading text-lg tracking-tight text-strong sm:text-xl">{step.title}</h3>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{step.body}</p>
-          </div>
-          <p className="flex items-center gap-2.5 rounded-lg border border-brand-500/30 bg-brand-500/10 px-3.5 py-2.5">
-            <Clock className="size-4 shrink-0 text-brand-300" aria-hidden />
-            <span className="min-w-0">
-              <span className="block text-[10px] font-semibold tracking-[0.14em] text-brand-300 uppercase">{PROCESS.timeLabel}</span>
-              <span className="block text-sm font-medium text-strong">{step.time}</span>
-            </span>
-          </p>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/* ---------------------------------------------------------------------------
- * Roles: two columns of unequal size. The imbalance is the message.
- * ------------------------------------------------------------------------- */
-
-export function RolesBlock() {
-  return (
-    <div className="grid items-start gap-4 lg:grid-cols-[0.55fr_1.45fr]">
-      <div className="rounded-xl border border-border bg-muted p-5 sm:p-6">
-        <h3 className="flex items-baseline justify-between gap-3">
-          <span className="font-heading text-xl tracking-tight text-strong">{ROLES.yours.title}</span>
-          <span className="font-heading text-sm text-muted-foreground tabular-nums" aria-hidden>{ROLES.yours.items.length}</span>
-        </h3>
-        <ul className="mt-4 grid gap-2.5">
-          {ROLES.yours.items.map((item) => (
-            <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-strong">
-              <ArrowRight className="mt-1 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="rounded-xl border border-brand-500/35 bg-card p-5 shadow-[0_24px_60px_-36px_rgba(var(--brand-rgb),0.7)] sm:p-6">
-        <h3 className="flex items-baseline justify-between gap-3">
-          <span className="font-heading text-xl tracking-tight text-strong">{ROLES.ours.title}</span>
-          <span className="font-heading text-sm text-brand-300 tabular-nums" aria-hidden>{ROLES.ours.items.length}</span>
-        </h3>
-        <ul className="mt-4 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
-          {ROLES.ours.items.map((item) => (
-            <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-strong">
-              <Check className="mt-1 size-3.5 shrink-0 text-brand-400" aria-hidden />
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 }

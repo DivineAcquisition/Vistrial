@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { PLAN, TOPUP_PACKS_CENTS } from "../../../convex/lib/billing";
 import { CHECK_IN_DAYS } from "../../../convex/decisions";
-import { FINAL_CTA, HERO, NAV, SECTIONS } from "@/lib/marketing/content";
+import { AGENTS_SECTION, FINAL_CTA, GROWTH_ARCHITECT, HERO, NAV, SECTIONS } from "@/lib/marketing/content";
 import * as landing from "@/lib/marketing/landing";
 
 const { COMPARE, CTA, FIXES, LANDING_FAQ, LANDING_HERO, LANDING_ORDER, LOOP, OFFER, PAINS, PICTURES, PROCESS, ROLES, landingProblems } = landing;
@@ -129,6 +129,25 @@ describe("the landing page follows the owner's framework", () => {
     }
     // Industry trend posts are off by default and have not run for a customer, so no picture features them.
     expect(PICTURES.map((picture) => `${picture.title} ${picture.alt}`).join(" ")).not.toMatch(/trend/i);
+  });
+
+  it("names a real, available skill wherever it says a skill did the work", () => {
+    const available = GROWTH_ARCHITECT.skills.filter((skill) => skill.status === "available").map((skill) => skill.name as string);
+    // A fix is handled by an available skill, by every skill, or by the check-ins the app keeps.
+    for (const fix of FIXES.items) {
+      expect([...available, "Every skill", "Check-ins"], fix.id).toContain(fix.by);
+    }
+    // A picture of a skill's work names that skill. The rest name the part of the app they show.
+    for (const picture of PICTURES) {
+      if (picture.place === "fix") expect(available, picture.id).toContain(picture.by);
+      else expect(available, picture.id).not.toContain(picture.by);
+    }
+    // The tour needs a tab and a line for every screen it shows.
+    for (const picture of landing.picturesFor("work")) {
+      expect(picture.tab, picture.id).toBeTruthy();
+      expect(picture.doing, picture.id).toBeTruthy();
+    }
+    expect(AGENTS_SECTION.departments.flatMap((group) => [...group.agents]).find((agent) => agent.name === landing.LIVE.agent)?.live).toBe(true);
   });
 
   it("uses no old audience, no old product names, no invented proof and no em dash", () => {

@@ -5,19 +5,20 @@ import { BlurFade } from "@/components/ui/blur-fade";
 import { LandingFaq } from "@/components/marketing/faq";
 import {
   CtaButton,
-  LoopDiagram,
   OfferBox,
   PrincipleNote,
   ProblemGrid,
-  ProcessLine,
   ProductPicture,
   QualifierBadge,
-  RolesBlock,
   ScarcityNote,
   SolutionGrid,
   WithWithout,
 } from "@/components/marketing/framework-blocks";
+import { AppTour, LiveLoop, LiveProcess, LiveRoles } from "@/components/marketing/framework-live";
 import { LoopDemo, SkillPlans } from "@/components/marketing/agentic-sections";
+import { AgentFlow } from "@/components/marketing/agentic-visuals";
+import { ResearchStudioHero } from "@/components/marketing/growth-visuals";
+import { BeamFrame } from "@/components/marketing/saas-frame";
 import { GuardedRun } from "@/components/marketing/guarded-run";
 import { APPROVAL, PROOF, SAFETY, SECTIONS, SITE_DESCRIPTION } from "@/lib/marketing/content";
 import {
@@ -90,16 +91,24 @@ export function LandingPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(home) }} />
 
-      {/* 2. Hero: who it is for, the outcome, how, and one button. */}
-      <section className={cn(marketingPageGutter, "relative pt-16 pb-20 text-center sm:pt-24 sm:pb-28")}>
-        <div className={cn(marketingShell, "flex max-w-4xl flex-col items-center")}>
-          <QualifierBadge>{LANDING_HERO.qualifier}</QualifierBadge>
-          <h1 className={cn(marketingDisplayTitle, "mt-7 text-balance")}>{LANDING_HERO.headline}</h1>
-          <p className={cn(marketingSubhead, "mt-6 max-w-2xl text-balance")}>{LANDING_HERO.how}</p>
-          <CtaButton position="hero" className="mt-9 px-8!" />
-          <ScarcityNote className="mt-4" />
+      {/* 2. Hero: who it is for, the outcome, how, and one button. Beside it, the agent at work on a sample. */}
+      <section className={cn(marketingPageGutter, "relative pt-14 pb-16 sm:pt-20 sm:pb-24")}>
+        <div className={cn(marketingShell, "grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12")}>
+          <div className="flex flex-col items-start">
+            <QualifierBadge>{LANDING_HERO.qualifier}</QualifierBadge>
+            <h1 className={cn(marketingDisplayTitle, "mt-7 text-balance")}>{LANDING_HERO.headline}</h1>
+            <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{LANDING_HERO.how}</p>
+            <CtaButton position="hero" className="mt-9 px-8!" />
+            <ScarcityNote className="mt-4" />
+          </div>
+          <BeamFrame glow>
+            <ResearchStudioHero />
+          </BeamFrame>
         </div>
       </section>
+
+      {/* Still the hero's picture: what goes in, the agent, and the draft that waits for you. */}
+      <AgentFlow />
 
       {/* 3. Results: no proof, no section. */}
       {SECTIONS.proof ? (
@@ -135,29 +144,14 @@ export function LandingPage() {
         <div className="mt-14">
           <h3 className="font-heading text-2xl tracking-tight text-strong">{SUPPORT.work.title}</h3>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{SUPPORT.work.lead}</p>
-          <div className="mt-6 grid gap-5">
-            {workPictures.slice(0, 1).map((picture) => (
-              <ProductPicture key={picture.id} picture={picture} crop="max-h-[36rem]" sizes={WIDE} />
-            ))}
-            <div className="grid items-start gap-5 lg:grid-cols-2">
-              <div className="grid gap-5">
-                {workPictures.slice(1, 2).map((picture) => (
-                  <ProductPicture key={picture.id} picture={picture} />
-                ))}
-                {workPictures.slice(3).map((picture) => (
-                  <ProductPicture key={picture.id} picture={picture} crop="max-h-[22rem]" />
-                ))}
-              </div>
-              {workPictures.slice(2, 3).map((picture) => (
-                <ProductPicture key={picture.id} picture={picture} crop="max-h-[41rem]" />
-              ))}
-            </div>
+          <div className="mt-6">
+            <AppTour pictures={workPictures} />
           </div>
         </div>
 
         {/* The loop: the diagram, one change followed through, and the two screens it happens on. */}
         <div className="mt-14 grid gap-5">
-          <LoopDiagram />
+          <LiveLoop />
           <div className="py-4">
             <LoopDemo />
           </div>
@@ -194,13 +188,13 @@ export function LandingPage() {
       {/* 8. Process */}
       <Section id={PROCESS.id} headline={PROCESS.headline} tone="tint">
         <div className="max-w-5xl">
-          <ProcessLine />
+          <LiveProcess />
         </div>
       </Section>
 
       {/* 9. Your role vs ours */}
       <Section id={ROLES.id} headline={ROLES.headline}>
-        <RolesBlock />
+        <LiveRoles />
         {/* What "the agents' part" means for each skill. */}
         <div className="mt-12">
           <h3 className="font-heading text-2xl tracking-tight text-strong">{SUPPORT.plans.title}</h3>
@@ -229,6 +223,11 @@ export function LandingPage() {
           style={{ background: "radial-gradient(ellipse 80% 90% at 50% 110%, rgba(154,136,252,0.26) 0%, rgba(154,136,252,0.07) 40%, transparent 72%)" }}
         />
         <div className={cn(marketingShell, "relative flex max-w-4xl flex-col items-center")}>
+          <span className="relative mb-7 flex size-14 items-center justify-center rounded-full border border-brand-400/40 bg-background shadow-[0_0_0_4px_rgba(154,136,252,0.12)]" aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/vistrial-crest-ink-96.png" alt="" width={96} height={96} className="size-10" />
+            <span className="live-pulse absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 border-background bg-success" />
+          </span>
           <h2 id="final-title" className={cn(marketingDisplayTitle, "text-balance")}>
             {LANDING_FINAL.headline}
           </h2>

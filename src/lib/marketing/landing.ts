@@ -74,35 +74,43 @@ export const FIXES = {
   items: [
     {
       id: "price",
+      by: "Offer Intelligence",
       outcome: "You answer with their page open.",
       detail: "Your offer sits beside competitors' stated price and guarantee, each with its source.",
     },
     {
       id: "hunch",
+      by: "Check-ins",
       outcome: "Every change gets a check-in date.",
       detail: "Connect your figures and the before and after are compared for you.",
     },
     {
       id: "tabs",
+      by: "Market Intelligence",
       outcome: "Your research is one report you can reopen.",
       detail: "Every claim links to the source it came from.",
     },
     {
       id: "unsourced",
+      by: "Every skill",
       outcome: "Every claim says how sure it is.",
       detail: "Observed, an inference, an untested hypothesis, your data, or not enough data.",
     },
     {
       id: "ads",
+      by: "Creative Production",
       outcome: "You see what competitors lead with before you write.",
       detail: "Then you get four variations to test, each one a stated hypothesis.",
     },
     {
       id: "page",
+      by: "Landing Page Teardown",
       outcome: "You see which objections your page skips.",
       detail: "It is read section by section, beside other pages in your industry.",
     },
   ],
+  /** Each fix names the skill or the part of the app that does it. */
+  handledBy: "Handled by",
   /** The philosophy and the evidence labels support the fixes. They are not separate stops. */
   principle: {
     title: PHILOSOPHY.headline,
@@ -292,13 +300,18 @@ export type Picture = {
   title: string;
   alt: string;
   /** On a phone a picture is shown larger and cut at the right edge. "fit" shows the whole width, for a screen whose content is centred. */
-  phone?: "fit";
+  phone?: "fit";  /** The skill that made the screen, or the part of the app it is. Shown in the picture's header. */
+  by: string;
+  /** For the screens in the tour: the tab's short name, and what the agents do on that screen. */
+  tab?: string;
+  doing?: string;
 };
 
 export const PICTURES: Picture[] = [
   {
     id: "offer-compare",
     on: true,
+    by: "Offer Intelligence",
     place: "fix",
     file: "offer-compare",
     width: 1604,
@@ -309,6 +322,7 @@ export const PICTURES: Picture[] = [
   {
     id: "ad-set",
     on: true,
+    by: "Creative Production",
     place: "fix",
     file: "ad-set",
     width: 2236,
@@ -319,6 +333,7 @@ export const PICTURES: Picture[] = [
   {
     id: "page-teardown",
     on: true,
+    by: "Landing Page Teardown",
     place: "fix",
     file: "page-teardown",
     width: 2236,
@@ -329,6 +344,9 @@ export const PICTURES: Picture[] = [
   {
     id: "tasks-board",
     on: true,
+    by: "Tasks",
+    tab: "Tasks",
+    doing: "Proposes work and ranks it by expected return",
     place: "work",
     file: "tasks-board",
     width: 1924,
@@ -339,6 +357,9 @@ export const PICTURES: Picture[] = [
   {
     id: "briefing-approval",
     on: true,
+    by: "Briefing",
+    tab: "Briefing",
+    doing: "Asks before it runs anything",
     place: "work",
     file: "briefing-approval",
     width: 1412,
@@ -349,10 +370,13 @@ export const PICTURES: Picture[] = [
   {
     id: "home",
     on: true,
+    by: "Home",
+    tab: "Home",
+    doing: "Lists what needs you, and what changed",
     place: "work",
     file: "home",
-    width: 1568,
-    height: 3208,
+    width: 1528,
+    height: 3240,
     title: "Home: what needs you",
     phone: "fit",
     alt: "The Home screen: a box asking what Vistrial should work on, then a Needs you list with a question from an agent, approvals and a check-in that is due, then what changed since you were last here.",
@@ -360,6 +384,9 @@ export const PICTURES: Picture[] = [
   {
     id: "organizations-clients",
     on: true,
+    by: "Clients",
+    tab: "Clients",
+    doing: "Keeps each client's work with that client",
     place: "work",
     file: "organizations-clients",
     width: 2336,
@@ -370,6 +397,7 @@ export const PICTURES: Picture[] = [
   {
     id: "test-plan",
     on: true,
+    by: "Test plan",
     place: "loop",
     file: "test-plan",
     width: 1604,
@@ -380,6 +408,7 @@ export const PICTURES: Picture[] = [
   {
     id: "tasks-result",
     on: true,
+    by: "Tasks",
     place: "loop",
     file: "tasks-result",
     width: 828,
@@ -396,6 +425,16 @@ export function picturesFor(place: Picture["place"]) {
 export const PICTURE_NOTE = "A real screen from the app, with sample data.";
 
 /** Headings for the supporting material inside Solution. They are not sections of their own. */
+/** The words on the live parts of the page. "Sample" marks anything that is an example, not a customer. */
+export const LIVE = {
+  agent: "Growth Architect",
+  app: "Vistrial",
+  /** Growth Architect is the agent that is available today. */
+  status: "Available now",
+  tourLabel: "Screens from the app",
+  sample: "Example with sample data",
+} as const;
+
 export const SUPPORT = {
   work: {
     title: "Where the work shows up",

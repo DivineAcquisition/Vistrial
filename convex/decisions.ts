@@ -13,6 +13,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { internalQuery } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
@@ -240,7 +241,7 @@ type PlannedItem = {
  * the diagnosis's own, or the approved market report the offer analysis built on, so the next research
  * session reads the outcome as known context.
  */
-async function itemOf(ctx: QueryCtx, asset: Doc<"assets">, index: number): Promise<PlannedItem | null> {
+export async function itemOf(ctx: QueryCtx, asset: Doc<"assets">, index: number): Promise<PlannedItem | null> {
   const run = asset.createdByRun ? await ctx.db.get(asset.createdByRun) : null;
   if (!run || run.workspaceId !== asset.workspaceId) return null;
   if (asset.kind === "offerAnalysis") {
@@ -280,6 +281,54 @@ async function itemOf(ctx: QueryCtx, asset: Doc<"assets">, index: number): Promi
   return null;
 }
 
+type Planner = MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } };
+
+/**
+ * Records the decision to try an offer change, roadmap step or page change, with its check-in date and
+ * today's figures. Shared by "We'll try this" on the asset and by approving a task that proposes the same
+ * change, so both write one kind of record. Rejected work cannot be tried.
+ */
+export async function planAssetItem(ctx: Planner, args: { assetId: Id<"assets">; index: number; checkInDays: number }) {
+  if (!CHECK_IN_DAYS.includes(args.checkInDays as (typeof CHECK_IN_DAYS)[number])) notAllowed();
+  const asset = await ctx.db.get(args.assetId);
+  if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+  if (asset.status === "rejected" || asset.status === "archived") notAllowed();
+  const item = await itemOf(ctx, asset, args.index);
+  if (!item) notFound();
+  const existing = await ctx.db
+    .query("decisions")
+    .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
+    .take(50);
+  const same = existing.find((row) => row.itemKind === item.itemKind && row.opportunityIndex === args.index);
+  if (same) return same._id;
+  const now = Date.now();
+  const decisionId = await ctx.db.insert("decisions", {
+    workspaceId: ctx.workspaceId,
+    ...(await clientOfProject(ctx, item.projectId)),
+    projectId: item.projectId,
+    runId: item.runId,
+    assetId: asset._id,
+    itemKind: item.itemKind,
+    ...(item.phase ? { phase: item.phase } : {}),
+    opportunityIndex: args.index,
+    opportunity: clip(item.opportunity, MAX_TEXT),
+    proposedAction: clip(item.proposedAction, MAX_TEXT),
+    validationMethod: clip(item.validationMethod, MAX_TEXT),
+    checkInAt: now + args.checkInDays * DAY_MS,
+    createdBy: ctx.identity.subject,
+    createdAt: now,
+    baseline: await currentFigures(ctx, ctx.workspaceId, (await clientOfProject(ctx, item.projectId)).clientId),
+  });
+  await writeAudit(ctx, {
+    workspaceId: ctx.workspaceId,
+    actorType: "user",
+    actorId: ctx.identity.subject,
+    action: "decision.planned",
+    subject: decisionId,
+  });
+  return decisionId;
+}
+
 /**
  * "We'll try this" on an offer change or a roadmap step: the same outcome loop as a report opportunity,
  * with the check-in date and today's figures. Rejected work cannot be tried. Owners, Admins and Members.
@@ -288,44 +337,7 @@ export const planItem = workspaceMutation({
   args: { assetId: v.id("assets"), index: v.number(), checkInDays: v.number() },
   handler: async (ctx, args) => {
     requireEditor(ctx.member.role);
-    if (!CHECK_IN_DAYS.includes(args.checkInDays as (typeof CHECK_IN_DAYS)[number])) notAllowed();
-    const asset = await ctx.db.get(args.assetId);
-    if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
-    if (asset.status === "rejected" || asset.status === "archived") notAllowed();
-    const item = await itemOf(ctx, asset, args.index);
-    if (!item) notFound();
-    const existing = await ctx.db
-      .query("decisions")
-      .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
-      .take(50);
-    const same = existing.find((row) => row.itemKind === item.itemKind && row.opportunityIndex === args.index);
-    if (same) return same._id;
-    const now = Date.now();
-    const decisionId = await ctx.db.insert("decisions", {
-      workspaceId: ctx.workspaceId,
-      ...(await clientOfProject(ctx, item.projectId)),
-      projectId: item.projectId,
-      runId: item.runId,
-      assetId: asset._id,
-      itemKind: item.itemKind,
-      ...(item.phase ? { phase: item.phase } : {}),
-      opportunityIndex: args.index,
-      opportunity: clip(item.opportunity, MAX_TEXT),
-      proposedAction: clip(item.proposedAction, MAX_TEXT),
-      validationMethod: clip(item.validationMethod, MAX_TEXT),
-      checkInAt: now + args.checkInDays * DAY_MS,
-      createdBy: ctx.identity.subject,
-      createdAt: now,
-      baseline: await currentFigures(ctx, ctx.workspaceId, (await clientOfProject(ctx, item.projectId)).clientId),
-    });
-    await writeAudit(ctx, {
-      workspaceId: ctx.workspaceId,
-      actorType: "user",
-      actorId: ctx.identity.subject,
-      action: "decision.planned",
-      subject: decisionId,
-    });
-    return decisionId;
+    return planAssetItem(ctx, args);
   },
 });
 
@@ -345,49 +357,54 @@ export const due = workspaceQuery({
   },
 });
 
+/** Records the decision to try a report opportunity. Shared by "We'll try this" on the report and by approving a task. */
+export async function planOpportunity(ctx: Planner, args: { projectId: Id<"researchProjects">; opportunityIndex: number; checkInDays: number }) {
+  if (!CHECK_IN_DAYS.includes(args.checkInDays as (typeof CHECK_IN_DAYS)[number])) notAllowed();
+  const project = await ctx.db.get(args.projectId);
+  if (!project || project.workspaceId !== ctx.workspaceId) notFound();
+  const written = await reportForProject(ctx, project);
+  const opportunity = written?.report.opportunities[args.opportunityIndex];
+  if (!written || !opportunity) notFound();
+  const existing = await ctx.db
+    .query("decisions")
+    .withIndex("by_workspace_project", (q) => q.eq("workspaceId", ctx.workspaceId).eq("projectId", args.projectId))
+    .take(20);
+  // One decision per opportunity of the current report.
+  const same = existing.find((row) => row.runId === written.runId && row.opportunityIndex === args.opportunityIndex);
+  if (same) return same._id;
+  const assetId = written.assetId ? ctx.db.normalizeId("assets", written.assetId) : null;
+  const now = Date.now();
+  const decisionId = await ctx.db.insert("decisions", {
+    workspaceId: ctx.workspaceId,
+    ...(project.clientId ? { clientId: project.clientId } : {}),
+    projectId: args.projectId,
+    runId: written.runId,
+    ...(assetId ? { assetId } : {}),
+    opportunityIndex: args.opportunityIndex,
+    opportunity: clip(opportunity.opportunity, MAX_TEXT),
+    proposedAction: clip(opportunity.proposedAction, MAX_TEXT),
+    validationMethod: clip(opportunity.validationMethod, MAX_TEXT),
+    checkInAt: now + args.checkInDays * DAY_MS,
+    createdBy: ctx.identity.subject,
+    createdAt: now,
+    baseline: await currentFigures(ctx, ctx.workspaceId, project.clientId),
+  });
+  await writeAudit(ctx, {
+    workspaceId: ctx.workspaceId,
+    actorType: "user",
+    actorId: ctx.identity.subject,
+    action: "decision.planned",
+    subject: decisionId,
+  });
+  return decisionId;
+}
+
 /** "We'll try this": records the decision, its check-in date, and today's figures. Owners, Admins and Members. */
 export const plan = workspaceMutation({
   args: { projectId: v.id("researchProjects"), opportunityIndex: v.number(), checkInDays: v.number() },
   handler: async (ctx, args) => {
     requireEditor(ctx.member.role);
-    if (!CHECK_IN_DAYS.includes(args.checkInDays as (typeof CHECK_IN_DAYS)[number])) notAllowed();
-    const project = await ctx.db.get(args.projectId);
-    if (!project || project.workspaceId !== ctx.workspaceId) notFound();
-    const written = await reportForProject(ctx, project);
-    const opportunity = written?.report.opportunities[args.opportunityIndex];
-    if (!written || !opportunity) notFound();
-    const existing = await ctx.db
-      .query("decisions")
-      .withIndex("by_workspace_project", (q) => q.eq("workspaceId", ctx.workspaceId).eq("projectId", args.projectId))
-      .take(20);
-    // One decision per opportunity of the current report.
-    const same = existing.find((row) => row.runId === written.runId && row.opportunityIndex === args.opportunityIndex);
-    if (same) return same._id;
-    const assetId = written.assetId ? ctx.db.normalizeId("assets", written.assetId) : null;
-    const now = Date.now();
-    const decisionId = await ctx.db.insert("decisions", {
-      workspaceId: ctx.workspaceId,
-      ...(project.clientId ? { clientId: project.clientId } : {}),
-      projectId: args.projectId,
-      runId: written.runId,
-      ...(assetId ? { assetId } : {}),
-      opportunityIndex: args.opportunityIndex,
-      opportunity: clip(opportunity.opportunity, MAX_TEXT),
-      proposedAction: clip(opportunity.proposedAction, MAX_TEXT),
-      validationMethod: clip(opportunity.validationMethod, MAX_TEXT),
-      checkInAt: now + args.checkInDays * DAY_MS,
-      createdBy: ctx.identity.subject,
-      createdAt: now,
-      baseline: await currentFigures(ctx, ctx.workspaceId, project.clientId),
-    });
-    await writeAudit(ctx, {
-      workspaceId: ctx.workspaceId,
-      actorType: "user",
-      actorId: ctx.identity.subject,
-      action: "decision.planned",
-      subject: decisionId,
-    });
-    return decisionId;
+    return planOpportunity(ctx, args);
   },
 });
 
@@ -422,6 +439,8 @@ export const recordOutcome = workspaceMutation({
       action: "decision.outcome",
       subject: `${decision._id}:${args.result}`,
     });
+    // A check-in came back: the proposer builds on what happened.
+    await ctx.scheduler.runAfter(0, internal.planner.changed, { workspaceId: ctx.workspaceId, key: `outcome:${decision._id}:${now}` });
     return null;
   },
 });

@@ -93,6 +93,44 @@ async function begin(ctx: Access, route: ChatRoute, input: Choices & { text: str
 }
 
 /**
+ * Starts a conversation with the Growth Architect: on the skill named, otherwise on the skill the text is
+ * clearly about, otherwise it asks which. Shared by the chat box and by approving a task that asks an agent
+ * for work, so both start work the same way. The caller has checked the client.
+ */
+export async function startConversation(
+  ctx: Access,
+  input: { text: string; skill?: ChatRoute; context?: Doc<"intakes">["context"]; choices?: Choices; forClient: { clientId?: Id<"clients"> } },
+): Promise<{ intakeId: Id<"intakes">; route: ChatRoute | null }> {
+  const { text, context, forClient } = input;
+  const route = input.skill ?? routeIntent(text);
+  if (route) {
+    const intakeId = await begin(ctx, route, { text, context, ...(input.choices ?? {}), ...forClient });
+    return { intakeId, route };
+  }
+  const now = Date.now();
+  const intakeId = await ctx.db.insert("intakes", {
+    workspaceId: ctx.workspaceId,
+    agentSlug: GROWTH_ARCHITECT,
+    ...forClient,
+    skillSlug: UNDECIDED,
+    ...(context ? { context } : {}),
+    createdBy: ctx.identity.subject,
+    status: "chatting",
+    slots: {},
+    questionsAsked: 0,
+    asking: "skill",
+    costCents: 0,
+    capCents: 0,
+    pendingRemember: [],
+    createdAt: now,
+    updatedAt: now,
+  });
+  await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
+  await askWhich(ctx, { _id: intakeId, workspaceId: ctx.workspaceId }, false);
+  return { intakeId, route: null };
+}
+
+/**
  * One message in the agent chat. Without `intakeId` it starts a conversation: on the skill named by `skill`
  * (a preset such as "New research"), otherwise on the skill the text is clearly about, otherwise it asks
  * which. With `intakeId` it answers: the routing question, or the skill's own next question.
@@ -146,33 +184,8 @@ export const send = workspaceMutation({
 
     if (args.skill !== undefined && !isChatRoute(args.skill)) throw userError("That skill has no chat yet.");
     const context = args.context ? await readContext(ctx, args.context) : undefined;
-    const route = (args.skill as ChatRoute | undefined) ?? routeIntent(text);
     const forClient = await clientForNew(ctx, args.clientId);
-    if (route) {
-      const intakeId = await begin(ctx, route, { text, context, ...choices, ...forClient });
-      return { intakeId, route };
-    }
-    const now = Date.now();
-    const intakeId = await ctx.db.insert("intakes", {
-      workspaceId: ctx.workspaceId,
-      agentSlug: GROWTH_ARCHITECT,
-      ...forClient,
-      skillSlug: UNDECIDED,
-      ...(context ? { context } : {}),
-      createdBy: ctx.identity.subject,
-      status: "chatting",
-      slots: {},
-      questionsAsked: 0,
-      asking: "skill",
-      costCents: 0,
-      capCents: 0,
-      pendingRemember: [],
-      createdAt: now,
-      updatedAt: now,
-    });
-    await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
-    await askWhich(ctx, { _id: intakeId, workspaceId: ctx.workspaceId }, false);
-    return { intakeId, route: null };
+    return startConversation(ctx, { text, skill: args.skill as ChatRoute | undefined, context, choices, forClient });
   },
 });
 

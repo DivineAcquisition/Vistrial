@@ -46,4 +46,25 @@ crons.interval("refresh calendar bookings", { hours: 6 }, internal.bookings.sync
 /** Removes export files a week after they were built. The record that an export was made stays. */
 crons.interval("remove old exports", { hours: 6 }, internal.exports.removeExpired, {});
 
+/**
+ * Puts drafts that were already waiting for review when approvals arrived into the approvals queue and the
+ * Briefing, once, on any deployment whose queue is still empty. A no-op after that.
+ */
+crons.interval("queue drafts already waiting", { minutes: 10 }, internal.approvals.backfillIfNeeded, {});
+
+/** Posts the alerts nothing else announces to each organization's Briefing: a check-in due, a broken connection, a drop in results, low credits. Each is posted once. */
+crons.interval("post Briefing alerts", { hours: 1 }, internal.briefing.sweep, {});
+
+/**
+ * The weekly plan and growth report: one proposer run per organization per week, where it is switched on.
+ * Checked every six hours; an organization already planned for the week is left alone.
+ */
+crons.interval("weekly plan", { hours: 6 }, internal.planner.weekly, {});
+
+/**
+ * Industry trend posts: one reading per organization per month, only where an Owner or Admin switched them
+ * on. Checked every six hours; a month already read is left alone.
+ */
+crons.interval("monthly industry trends", { hours: 6 }, internal.planner.monthly, {});
+
 export default crons;

@@ -26,14 +26,18 @@ import { OFFER_TOOLS } from "./skills/offerIntelligence/tools";
 import { CREATIVE_TOOLS } from "./skills/creativeProduction/tools";
 import { GD_MUTATION_TOOLS } from "./skills/growthDiagnostics/tools";
 import { LP_MUTATION_TOOLS } from "./skills/landingTeardown/tools";
+import { TREND_TOOLS } from "./skills/industryTrends/tools";
+import { PROPOSER_TOOLS } from "./skills/taskProposer/tools";
 import { liveEnv, runAdapter } from "./adapters";
 import { assertDeclared, skillFor } from "./lib/skills";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
+import { requireSpendApproval } from "./lib/approvals";
+import { runChanged } from "./lib/briefing";
 
 const OPEN = new Set(["queued", "running", "waiting"]);
 
 /** Every skill's code-only tools, by slug. */
-const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS };
+const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS, ...PROPOSER_TOOLS, ...TREND_TOOLS };
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
 
@@ -72,6 +76,8 @@ async function stopRun(
     subject: run._id,
     count: costCents,
   });
+  // The Briefing hears of it, and any draft the run made joins the approvals queue.
+  await runChanged(ctx, run._id);
 }
 
 /** The person who started the run must still be an active member, or the run stops. */
@@ -362,6 +368,8 @@ export async function startRunFor(
   const caps = await loadCaps(ctx, workspaceId, args.agentSlug, args.skillSlug);
   const spent = await daySpend(ctx, workspaceId, args.agentSlug, args.skillSlug, dayKey());
   const blocked = gate.paused || gate.halted || spent >= caps.maxCostCentsPerDay;
+  // Work above the organization's spending limit waits for an Owner or Admin (lib/approvals.ts). The free session spends nothing.
+  const spendApproval = free ? null : await requireSpendApproval(ctx, { workspaceId, role, skillSlug: args.skillSlug, clientId: runClient, maxCostCentsPerRun: caps.maxCostCentsPerRun });
   const id = await ctx.db.insert("agentRuns", {
     workspaceId: workspaceId,
     agentSlug: args.agentSlug,
@@ -387,6 +395,8 @@ export async function startRunFor(
     subject: id,
     count: 0,
   });
+  // One approval covers one run.
+  if (spendApproval) await ctx.db.patch(spendApproval, { usedByRun: id });
   // Running locks the project's scope. Whether it is running now is read from its latest run.
   if (project) await ctx.db.patch(project._id, { status: "ready", latestRunId: id, updatedAt: Date.now() });
   if (!blocked) {
@@ -784,6 +794,7 @@ export const commitTool = internalMutation({
       await assertSourcesExist(ctx, run.workspaceId, claims);
       // The skill says what it hands back. assertDeclared above already proved the skill exists.
       const output = skillFor(run.skillSlug)!.output;
+      if (!output) return { status: "failed" as const };
       const assetId = await ctx.db.insert("assets", {
         workspaceId: run.workspaceId,
         kind: output.assetKind,
@@ -1163,6 +1174,7 @@ async function openQuestion(ctx: MutationCtx, run: Doc<"agentRuns">, waitingFor:
     action: "run.asked",
     subject: run._id,
   });
+  await runChanged(ctx, run._id);
 }
 
 /**

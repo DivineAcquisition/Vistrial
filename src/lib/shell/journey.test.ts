@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CATALOG } from "../../../convex/catalog";
-import { agentDot, agentsForTab, agentsOffJourney, defaultTab, journeyTabOf, agentTabs, liveSkills, tabForPath, workTabsFor } from "./journey";
+import { MAIN_ITEMS, MEMORY_HREF, sidebarTabOf, agentDot, agentsForTab, agentsOffJourney, defaultTab, journeyTabOf, agentTabs, liveSkills, tabForPath, workTabsFor } from "./journey";
 import type { RailAgent } from "./rail";
 
 const agents: RailAgent[] = CATALOG.map((row) => ({ ...row, skills: row.skills }));
@@ -9,9 +9,13 @@ const agents: RailAgent[] = CATALOG.map((row) => ({ ...row, skills: row.skills }
 describe("journey tabs", () => {
   it("groups catalog agents by lifecycle", () => {
     expect(agentsForTab(agents, "attract").map((row) => row.slug)).toEqual(["growth-architect", "campaign-execution"]);
-    expect(agentsForTab(agents, "convert").map((row) => row.slug)).toEqual(["sales-conversion"]);
+    // Operations Intelligence sits under Convert.
+    expect(agentsForTab(agents, "convert").map((row) => row.slug)).toEqual(["sales-conversion", "operations-intelligence"]);
     expect(agentsForTab(agents, "keep").map((row) => row.slug)).toEqual(["activation", "retention", "expansion"]);
-    expect(agentsOffJourney(agents).map((row) => row.slug)).toEqual(["operations-intelligence"]);
+    expect(agentsOffJourney(agents)).toEqual([]);
+    expect(sidebarTabOf("Run")).toBe("convert");
+    // The journey stage itself is unchanged: the public page still lists operations apart.
+    expect(journeyTabOf("Run")).toBeNull();
     expect(journeyTabOf("Grow")).toBe("keep");
     expect(journeyTabOf(null)).toBeNull();
   });
@@ -58,6 +62,9 @@ describe("journey tabs", () => {
     expect(agentDot(undefined)).toBe("idle");
     expect(defaultTab(agents)).toBe("attract");
     expect(tabForPath("/app/agents/retention", agents)).toBe("keep");
+    expect(tabForPath("/app/agents/operations-intelligence", agents)).toBe("convert");
     expect(tabForPath("/app/research", agents)).toBeNull();
+    expect(MAIN_ITEMS.map((row) => [row.label, row.href])).toEqual([["Home", "/app"], ["Tasks", "/app/tasks"], ["Briefing", "/app/briefing"]]);
+    expect(MEMORY_HREF).toBe("/app/settings?section=memory");
   });
 });

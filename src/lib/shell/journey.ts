@@ -10,7 +10,7 @@ export const JOURNEY_TABS = [
 
 export type JourneyTab = (typeof JOURNEY_TABS)[number]["value"];
 
-/** Each catalog lifecycle and the tab it sits under. "Run" (operations) sits in the Library instead. */
+/** Each catalog lifecycle and the stage of the journey it belongs to. "Run" (operations) belongs to none. */
 const TAB_BY_LIFECYCLE: Record<string, JourneyTab> = {
   attract: "attract",
   convert: "convert",
@@ -27,15 +27,23 @@ export function isJourneyTab(value: unknown): value is JourneyTab {
   return JOURNEY_TABS.some((tab) => tab.value === value);
 }
 
+/**
+ * The sidebar tab an agent sits under. It is its journey stage, except that Operations Intelligence
+ * ("Run"), which belongs to no stage, sits under Convert. The public page keeps its own grouping.
+ */
+export function sidebarTabOf(lifecycle: string | null | undefined): JourneyTab | null {
+  return journeyTabOf(lifecycle) ?? (lifecycle?.toLowerCase() === "run" ? "convert" : null);
+}
+
 export function agentsForTab(agents: RailAgent[], tab: JourneyTab) {
   return agents
-    .filter((agent) => journeyTabOf(agent.lifecycle) === tab)
+    .filter((agent) => sidebarTabOf(agent.lifecycle) === tab)
     .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
 }
 
-/** Agents with no journey tab (Operations Intelligence), shown in the Library. */
+/** Agents with no journey tab. None today: every catalog lifecycle has one. Kept so a new lifecycle still shows somewhere. */
 export function agentsOffJourney(agents: RailAgent[]) {
-  return agents.filter((agent) => journeyTabOf(agent.lifecycle) === null);
+  return agents.filter((agent) => sidebarTabOf(agent.lifecycle) === null);
 }
 
 const WORK_TAB_LABEL: Record<WorkTab, string> = { research: "Research", offers: "Offers", diagnostics: "Diagnostics" };
@@ -54,7 +62,17 @@ export function workTabsFor(agent: RailAgent) {
 
 export type AgentTab = { tab: "chat" | "creative" | "pages" | "brands" | WorkTab; skillSlug: string | null; label: string; href: string };
 
-/** Where the one chat with an agent lives. */
+/** Where business memory lives: in Settings, for the whole organization, not under one agent. */
+export const MEMORY_HREF = "/app/settings?section=memory";
+
+/** The three places a person starts from, above the agents. */
+export const MAIN_ITEMS = [
+  { key: "home", label: "Home", href: "/app" },
+  { key: "tasks", label: "Tasks", href: "/app/tasks" },
+  { key: "briefing", label: "Briefing", href: "/app/briefing" },
+] as const;
+
+/** Where the one chat with an agent lives. Only an agent with a work tab has one; nothing may assume every agent does. */
 export function chatHref(agentSlug: string) {
   return `/app/agents/${agentSlug}/work/chat`;
 }
@@ -127,5 +145,5 @@ export function tabForPath(pathname: string, agents: RailAgent[]): JourneyTab | 
   const match = pathname.match(/^\/app\/agents\/([^/]+)/);
   if (!match) return null;
   const agent = agents.find((row) => row.slug === match[1]);
-  return agent ? journeyTabOf(agent.lifecycle) : null;
+  return agent ? sidebarTabOf(agent.lifecycle) : null;
 }

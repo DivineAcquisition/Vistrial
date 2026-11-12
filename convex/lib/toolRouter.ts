@@ -333,7 +333,7 @@ const FAKE_SEARCH_RESULT = {
  * Tests script answers per call with this hook, used only by the "fake-scripted" model. Nothing in the
  * product sets it, and the fake provider itself runs only where dev skills are on or a test sets a route.
  */
-export type ScriptedModel = (params: Anthropic.MessageCreateParamsNonStreaming) => { text: string; searches?: number; sources?: { url: string; title: string }[] };
+export type ScriptedModel = (params: Anthropic.MessageCreateParamsNonStreaming) => { text: string; searches?: number; sources?: { url: string; title: string; pageAge?: string }[] };
 
 export function fakeCreate(model: string): CreateMessage {
   let calls = 0;
@@ -341,7 +341,7 @@ export function fakeCreate(model: string): CreateMessage {
   if (model === "fake-scripted" && scripted) {
     return async (params) => {
       const reply = scripted(params);
-      const results = (reply.sources ?? []).map((row) => ({ type: "web_search_result", url: row.url, title: row.title, page_age: null, encrypted_content: "x" }));
+      const results = (reply.sources ?? []).map((row) => ({ type: "web_search_result", url: row.url, title: row.title, page_age: row.pageAge ?? null, encrypted_content: "x" }));
       return fakeMessage(model, {
         stop: "end_turn",
         searches: reply.searches ?? 0,

@@ -499,6 +499,10 @@ the sentence. That is a wording pass the owner should approve as a whole; it is 
 
 ## 8. What steps 2 and 3 need, and where it lives
 
+**Step 2 has been built from these shapes: see `tasks-briefing-home.md` for what was built and where it
+differs** (the limit is stored in credits as `spendApprovalCredits`; `briefingReads` became one mark per
+person in `memberVisits`; trend posts are off until switched on).
+
 Nothing below is built in step 1 beyond the scoping it stands on (organization, client, roles, assignments,
 `ctx.clients`). The shapes are recorded so step 2 does not have to re-decide them.
 

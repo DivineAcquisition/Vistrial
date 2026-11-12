@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { MEMORY_HREF } from "@/lib/shell/journey";
 
 const STORE = "vistrial.folders.v1";
 
@@ -360,7 +361,7 @@ function AgentFolder({
         onToggle={onToggle}
         icon={Brain}
         label="Memory"
-        href={`${base}/memory`}
+        href={MEMORY_HREF}
         pathname={pathname}
         onNavigate={onNavigate}
         trailing={<Count value={data?.counts.facts ?? 0} />}

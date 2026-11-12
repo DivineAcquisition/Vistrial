@@ -27,6 +27,7 @@ import { TAB_SKILL, type WorkTab } from "../../../convex/lib/workTabs";
 import { ReviewBar } from "./review-bar";
 import type { FinishedRun, ResultRow, ReviewActions, RunningRun, SuggestionRow } from "./types";
 import { useCredits } from "@/lib/credits";
+import { MEMORY_HREF } from "@/lib/shell/journey";
 
 /** Plain words for a step's phase, as the live feed shows it. */
 const PHASE_WORDS: Record<string, string> = {
@@ -260,7 +261,7 @@ export function refineLink(base: string, skill: string, item: { kind: "asset" | 
 /** The agent's shared shelves: what it knows, the evidence behind its claims, and what it is connected to. */
 export function SharedLinks({ base }: { base: string }) {
   const links = [
-    { href: `${base}/memory`, label: "Memory", detail: "What it knows about your business", icon: Brain },
+    { href: MEMORY_HREF, label: "Memory", detail: "What it knows about your business", icon: Brain },
     { href: "/app/evidence", label: "Evidence", detail: "Every claim and its source", icon: ShieldCheck },
     { href: `${base}/connections`, label: "Connections", detail: "Meta and your results files", icon: Plug },
   ];

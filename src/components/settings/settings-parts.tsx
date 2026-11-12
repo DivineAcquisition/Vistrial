@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import {
   ArrowRight,
   BotIcon,
+  Brain,
   Building2,
   Plug,
   User,
@@ -22,21 +23,22 @@ import { cn } from "@/lib/utils";
 
 export type { Role };
 
-export const SECTIONS = ["business", "people", "agents", "data", "billing", "you"] as const;
+export const SECTIONS = ["business", "people", "agents", "memory", "data", "billing", "you"] as const;
 export type SettingsSection = (typeof SECTIONS)[number];
 
 export const SECTION_META: Record<SettingsSection, { label: string; hint: string; icon: LucideIcon }> = {
-  business: { label: "Business", hint: "Name, country, profile and memory", icon: Building2 },
+  business: { label: "Business", hint: "Name, country and profile", icon: Building2 },
   people: { label: "People", hint: "Members, invites and support access", icon: Users },
   agents: { label: "Agents", hint: "Which agents run, caps and defaults", icon: BotIcon },
+  memory: { label: "Memory", hint: "What Vistrial knows about the business", icon: Brain },
   data: { label: "Data", hint: "Your accounts and results files", icon: Plug },
   billing: { label: "Billing", hint: "Plan, credits and invoices", icon: Wallet },
   you: { label: "You", hint: "Theme, notices and sign-in", icon: User },
 };
 
-/** Owners and Admins see every group. Members and Viewers see only their own section. */
+/** Owners and Admins see every group. Members and Viewers see their own section, and Memory, which everyone reads. */
 export function sectionsFor(role: Role): SettingsSection[] {
-  return isAdmin(role) ? [...SECTIONS] : ["you"];
+  return isAdmin(role) ? [...SECTIONS] : ["you", "memory"];
 }
 
 export function parseSection(value: string | null | undefined, role: Role): SettingsSection {

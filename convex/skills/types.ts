@@ -58,8 +58,8 @@ export type SkillModule = {
   devOnly: boolean;
   /** The whole list of tools this skill may call. Model output can never add one. */
   tools: readonly ToolSlug[];
-  /** What the skill hands back. */
-  output: { assetKind: Doc<"assets">["kind"]; title: string };
+  /** The asset the skill hands back. Missing for a skill that makes no asset (the task proposer writes tasks and a Briefing post). */
+  output?: { assetKind: Doc<"assets">["kind"]; title: string };
   /**
    * Cents of the run cap held back for the completion check and its one revision. Before every model call
    * the runtime estimates the worst case and refuses a call that would spend into this reserve, unless the

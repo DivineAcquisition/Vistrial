@@ -22,6 +22,18 @@ import { Panel } from "@/components/ui/panel";
 import { AccountStory } from "../auth-pages/account-story";
 import { saveTheme, type ThemeChoice } from "@/lib/theme";
 import { CATALOG } from "@/lib/shell/rail";
+import { ApprovalSettingsView, type ApprovalSettingsData } from "@/components/settings/approval-settings";
+import { MemoryView, type MemoryFact } from "@/components/settings/memory-section";
+
+/** What an agency's memory holds: facts with where each came from and whether a person confirmed it. */
+const MEMORY: MemoryFact[] = [
+  { id: "f1", factKey: "monthlyRetainer", value: "$4,500 a month for paid ads management, three month minimum", status: "verified", sourceType: "owner", recordedAt: Date.UTC(2026, 9, 2) },
+  { id: "f2", factKey: "idealClient", value: "Coaches and consultants selling a program above $3,000", status: "verified", sourceType: "owner", recordedAt: Date.UTC(2026, 9, 2) },
+  { id: "f3", factKey: "bookedCallsPerMonth", value: "About 22 booked sales calls a month across clients", status: "unverified", sourceType: "agent", recordedAt: Date.UTC(2026, 10, 4) },
+  { id: "f4", factKey: "closeRate", value: "Roughly one in four booked calls becomes a client", status: "unverified", sourceType: "agent", recordedAt: Date.UTC(2026, 10, 4) },
+  { id: "f5", factKey: "mainChannel", value: "Meta ads to a booking page, then a sales call", status: "verified", sourceType: "owner", recordedAt: Date.UTC(2026, 9, 14) },
+  { id: "f6", factKey: "teamSize", value: "Five people: two media buyers, a copywriter, an account lead and the owner", status: "verified", sourceType: "owner", recordedAt: Date.UTC(2026, 8, 20) },
+];
 
 const NOW = 1794240000000; // Nov 9, 2026
 const DAY = 86_400_000;
@@ -122,6 +134,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
     notifications: { checkInsDue: true, questionsWaiting: true, reportReady: false, email: true },
   });
 
+  const [approval, setApproval] = useState<ApprovalSettingsData>({ spendApprovalCredits: 500, weeklyPlan: true, trendPosts: false, canEdit: true, min: 1, max: 100_000, trendCapCredits: 360 });
   const hrefFor = (next: SettingsSection) => `/dev/settings?section=${next}&role=${role}`;
   return (
     <main className="min-h-screen bg-background px-4 py-8 md:px-8">
@@ -171,6 +184,16 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
             onCaps={done}
           />
         ) : null}
+        {section === "agents" ? (
+          <div className="mt-8">
+            <ApprovalSettingsView
+              key={String(approval.spendApprovalCredits)}
+              data={{ ...approval, canEdit: role === "owner" || role === "admin" }}
+              onLimit={async (credits) => setApproval((row) => ({ ...row, spendApprovalCredits: credits }))}
+              onSwitch={async (key, on) => setApproval((row) => ({ ...row, [key]: on }))}
+            />
+          </div>
+        ) : null}
         {section === "data" ? (
           <DataSection
             role={role}
@@ -182,6 +205,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
           />
         ) : null}
         {section === "billing" ? <BillingSection /> : null}
+        {section === "memory" ? <MemoryView facts={MEMORY} canEdit={role !== "viewer"} onRemove={() => undefined} /> : null}
         {section === "you" ? (
           <YouSection
             data={you}

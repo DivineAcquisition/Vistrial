@@ -64,6 +64,9 @@ import {
   Globe as PhGlobe,
   Hand as PhHand,
   Hourglass as PhHourglass,
+  House as PhHouse,
+  Kanban as PhKanban,
+  Newspaper as PhNewspaper,
   Info as PhInfo,
   Lightbulb as PhLightbulb,
   Lightning as PhLightning,
@@ -206,7 +209,10 @@ export const Hand = wrap(PhHand, "Hand", true);
 export const Hourglass = wrap(PhHourglass, "Hourglass", true);
 export const Info = wrap(PhInfo, "Info", true);
 export const InfoIcon = wrap(PhInfo, "InfoIcon", true);
+export const Home = wrap(PhHouse, "Home", true);
+export const Kanban = wrap(PhKanban, "Kanban", true);
 export const LayoutGrid = wrap(PhSquaresFour, "LayoutGrid", true);
+export const Newspaper = wrap(PhNewspaper, "Newspaper", true);
 export const LayoutList = wrap(PhListDashes, "LayoutList", true);
 export const LayoutListIcon = wrap(PhListDashes, "LayoutListIcon", true);
 export const Lightbulb = wrap(PhLightbulb, "Lightbulb", true);

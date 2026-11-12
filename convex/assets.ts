@@ -2,10 +2,13 @@ import { requireAdmin, requireWork } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
+import { recordDecision } from "./lib/approvals";
 import { writeAudit } from "./lib/audit";
+import { askAssetReview, assetApproval } from "./lib/briefing";
 import {
   BASIS_LABEL,
   MISSING_SOURCE,
@@ -204,6 +207,45 @@ export const version = workspaceQuery({
   },
 });
 
+type Decider = MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } };
+
+/**
+ * Approves a waiting asset. The rule lives here, for every door that approves one (the asset page, the
+ * Briefing, the Tasks board): every claim on the version being approved must still point at a real source
+ * in this organization, or be marked computed. The caller has already checked the person is an Owner or Admin.
+ */
+export async function approveAsset(ctx: Decider, asset: Doc<"assets">) {
+  if (asset.status === "needsReview") throw userError(NEEDS_REVIEW);
+  if (asset.status !== "draft") throw userError("That asset is not waiting.");
+  const current = await ctx.db
+    .query("assetVersions")
+    .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
+    .filter((q) => q.eq(q.field("version"), asset.currentVersion))
+    .first();
+  if (!current) throw userError("That version is missing, so it cannot be approved.");
+  const claims: ClaimInput[] = [];
+  for await (const row of ctx.db
+    .query("evidence")
+    .withIndex("by_workspace_version", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetVersionId", current._id))) {
+    claims.push(claimFromRow(row));
+  }
+  if ((await claimsWithMissingSources(ctx, ctx.workspaceId, claims)).length > 0) {
+    throw userError(MISSING_SOURCE);
+  }
+  await ctx.db.patch(asset._id, { status: "approved" });
+  await writeAudit(ctx, {
+    workspaceId: ctx.workspaceId,
+    actorType: "user",
+    actorId: ctx.identity.subject,
+    action: "asset.approved",
+    subject: asset._id,
+    count: asset.currentVersion,
+  });
+  await recordDecision(ctx, { ...(await assetApproval(ctx, asset)), status: "approved", actor: ctx.identity.subject });
+  // An approved report is something real that changed: the proposer looks at what it opens up.
+  await ctx.scheduler.runAfter(0, internal.planner.changed, { workspaceId: ctx.workspaceId, key: `approved:${asset._id}` });
+}
+
 export const approve = workspaceMutation({
   args: { assetId: v.id("assets") },
   handler: async (ctx, args) => {
@@ -211,34 +253,7 @@ export const approve = workspaceMutation({
     requireAdmin(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
-    if (asset.status === "needsReview") throw userError(NEEDS_REVIEW);
-    if (asset.status !== "draft") throw userError("That asset is not waiting.");
-    // The screen blocks this too, but the rule lives here: every claim on the version being
-    // approved must still point at a real source in this workspace, or be marked computed.
-    const current = await ctx.db
-      .query("assetVersions")
-      .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
-      .filter((q) => q.eq(q.field("version"), asset.currentVersion))
-      .first();
-    if (!current) throw userError("That version is missing, so it cannot be approved.");
-    const claims: ClaimInput[] = [];
-    for await (const row of ctx.db
-      .query("evidence")
-      .withIndex("by_workspace_version", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetVersionId", current._id))) {
-      claims.push(claimFromRow(row));
-    }
-    if ((await claimsWithMissingSources(ctx, ctx.workspaceId, claims)).length > 0) {
-      throw userError(MISSING_SOURCE);
-    }
-    await ctx.db.patch(asset._id, { status: "approved" });
-    await writeAudit(ctx, {
-      workspaceId: ctx.workspaceId,
-      actorType: "user",
-      actorId: ctx.identity.subject,
-      action: "asset.approved",
-      subject: asset._id,
-      count: asset.currentVersion,
-    });
+    await approveAsset(ctx, asset);
     return null;
   },
 });
@@ -262,37 +277,42 @@ function cleanReason(raw: string) {
 
 /**
  * Rejects a waiting asset with a reason. It leaves the queue and keeps every version. The reason is saved
- * as feedback, which becomes reusable context only if a person promotes it.
+ * as feedback, which becomes reusable context only if a person promotes it. The caller has checked the role.
  */
+export async function rejectAsset(ctx: Decider, asset: Doc<"assets">, rawReason: string) {
+  if (asset.status !== "draft" && asset.status !== "needsReview") throw userError("That asset is not waiting.");
+  const reason = cleanReason(rawReason);
+  const version = await currentVersion(ctx, asset);
+  if (!version) throw userError("That version is missing.");
+  const feedbackId = await ctx.db.insert("feedback", {
+    workspaceId: ctx.workspaceId,
+    assetId: asset._id,
+    assetVersionId: version._id,
+    kind: "rejection",
+    reason,
+    createdBy: ctx.identity.subject,
+    createdAt: Date.now(),
+  });
+  await ctx.db.patch(asset._id, { status: "rejected" });
+  await writeAudit(ctx, {
+    workspaceId: ctx.workspaceId,
+    actorType: "user",
+    actorId: ctx.identity.subject,
+    action: "asset.rejected",
+    subject: asset._id,
+    count: asset.currentVersion,
+  });
+  await recordDecision(ctx, { ...(await assetApproval(ctx, asset)), status: "declined", actor: ctx.identity.subject });
+  return feedbackId;
+}
+
 export const reject = workspaceMutation({
   args: { assetId: v.id("assets"), reason: v.string() },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
-    if (asset.status !== "draft" && asset.status !== "needsReview") throw userError("That asset is not waiting.");
-    const reason = cleanReason(args.reason);
-    const version = await currentVersion(ctx, asset);
-    if (!version) throw userError("That version is missing.");
-    const feedbackId = await ctx.db.insert("feedback", {
-      workspaceId: ctx.workspaceId,
-      assetId: asset._id,
-      assetVersionId: version._id,
-      kind: "rejection",
-      reason,
-      createdBy: ctx.identity.subject,
-      createdAt: Date.now(),
-    });
-    await ctx.db.patch(asset._id, { status: "rejected" });
-    await writeAudit(ctx, {
-      workspaceId: ctx.workspaceId,
-      actorType: "user",
-      actorId: ctx.identity.subject,
-      action: "asset.rejected",
-      subject: asset._id,
-      count: asset.currentVersion,
-    });
-    return feedbackId;
+    return rejectAsset(ctx, asset, args.reason);
   },
 });
 
@@ -365,6 +385,7 @@ export const addVersion = workspaceMutation({
     }
     // Approval covers one version. New content waits for approval again.
     await ctx.db.patch(asset._id, { currentVersion: version, status: "draft" });
+    await askAssetReview(ctx, { ...asset, currentVersion: version, status: "draft" });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,
       actorType: "user",

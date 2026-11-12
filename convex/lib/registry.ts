@@ -34,6 +34,10 @@ export const TOOLS = [
   "lp.apply",
   "lp.check",
   "lp.save",
+  "tp.read",
+  "tp.save",
+  "it.read",
+  "it.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

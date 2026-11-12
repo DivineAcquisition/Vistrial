@@ -69,7 +69,9 @@ export function useInViewSequence(ref: RefObject<HTMLElement | null>, total: num
           });
         }, interval);
       },
-      { threshold: 0.35 },
+      // Starts when any part of the element reaches the middle of the screen. A share of the element
+      // would never be reached by one taller than the screen, which a stacked panel is on a phone.
+      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
     );
     observer.observe(node);
     return () => {

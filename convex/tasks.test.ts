@@ -524,3 +524,81 @@ describe("the Briefing", () => {
     expect((await owner.query(api.briefing.feed, { workspaceId, kind: "trend" })).items).toMatchObject([{ title: "Meta is testing longer lead forms", sources: [{ title: "Meta for Business", url: "https://example.com/meta" }] }]);
   });
 });
+
+describe("Home", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const upload = (t: Tester, workspaceId: Id<"workspaces">, label: string, conversions: number, clientId?: Id<"clients">) =>
+    t.run(async (ctx) => {
+      await ctx.db.insert("resultUploads", { workspaceId, ...(clientId ? { clientId } : {}), fileName: `${label}.csv`, label, currency: "USD", uploadedBy: "nora", createdAt: Date.now(), status: "ready", summary: { rows: 3, dateStart: "2026-10-01", dateStop: "2026-10-31", metrics: ["conversions", "spend"], totals: { conversions, spend: 1000 }, groupBy: null, groups: [], otherGroups: 0, ignoredColumns: [] } });
+    });
+
+  it("lists what needs a person, what is in motion and each client, for the clients they may see", async () => {
+    const t = newTest();
+    const { owner, member, workspaceId, aster, harbor } = await agency(t);
+    await member.mutation(api.agentTasks.propose, { workspaceId, title: "Research coaching prices", why: "Pricing pages changed.", ask: "What do coaching competitors charge?", skillSlug: "market-intelligence", clientId: aster });
+    await owner.mutation(api.agentTasks.propose, { workspaceId, title: "Research dental plans", why: "Harbor asked.", ask: "What do dental membership plans cost?", skillSlug: "market-intelligence", clientId: harbor });
+    await t.run(async (ctx) => {
+      const now = Date.now();
+      const projectId = await ctx.db.insert("researchProjects", { workspaceId, clientId: aster, title: "Aster pricing", objective: "x", market: "Coaching", geography: "US", competitors: [], platforms: ["web"], suppliedUrls: [], status: "ready", createdBy: "nora", createdAt: now, updatedAt: now });
+      const runId = await ctx.db.insert("agentRuns", { workspaceId, clientId: aster, agentSlug: AGENT, skillSlug: "market-intelligence", status: "running", startedBy: "nora", inputRef: projectId, startedAt: now, costCents: 1, inputTokens: 0, outputTokens: 0 });
+      await ctx.db.insert("decisions", { workspaceId, clientId: aster, projectId, runId, opportunityIndex: 0, opportunity: "Two calls", proposedAction: "Split the sale into two calls.", validationMethod: "New clients", checkInAt: now - 1000, createdBy: "nora", createdAt: now - 5000, baseline: [] });
+      await ctx.db.insert("decisions", { workspaceId, clientId: harbor, projectId, runId, opportunityIndex: 1, opportunity: "Plan", proposedAction: "Offer a membership plan.", validationMethod: "New patients", checkInAt: now + 9_000_000, createdBy: "nora", createdAt: now - 5000, baseline: [] });
+    });
+
+    const home = await owner.query(api.home.dashboard, { workspaceId });
+    expect(home.needs.map((row) => `${row.kind}:${row.title}`)).toEqual(["approval:Research coaching prices", "approval:Research dental plans", "checkIn:Split the sale into two calls."]);
+    expect(home.needs[0]).toMatchObject({ client: "Aster Coaching", detail: "A task an agent wants to run", approval: { canDecide: true, credits: 900 } });
+    expect(home.moving.map((row) => `${row.kind}:${row.title}`)).toEqual(["run:Aster pricing", "trying:Offer a membership plan."]);
+    expect(home.clients).toEqual([
+      { id: aster, name: "Aster Coaching", type: "business", needs: 2, moving: 1 },
+      { id: harbor, name: "Harbor Dental", type: "business", needs: 1, moving: 1 },
+    ]);
+    expect(home).toMatchObject({ organization: "Northlight Growth", canApprove: true, own: { needs: 0, moving: 0 } });
+
+    // A Member sees their client only, and cannot approve.
+    const theirs = await member.query(api.home.dashboard, { workspaceId });
+    expect(theirs.needs.map((row) => row.title)).toEqual(["Research coaching prices", "Split the sale into two calls."]);
+    expect(theirs.needs[0].approval?.canDecide).toBe(false);
+    expect(theirs.moving.map((row) => row.title)).toEqual(["Aster pricing"]);
+    expect(theirs.clients.map((row) => row.name)).toEqual(["Aster Coaching"]);
+    expect(theirs.canApprove).toBe(false);
+    // The picker narrows it.
+    const picked = await owner.query(api.home.dashboard, { workspaceId, scope: harbor });
+    expect(picked.needs.map((row) => row.title)).toEqual(["Research dental plans"]);
+    expect(picked.own).toBeNull();
+  });
+
+  it("compares two real readings for 'since you were last here', per person, and never another client's", async () => {
+    const t = newTest();
+    const { owner, member, viewer, workspaceId, aster, harbor } = await agency(t);
+    await upload(t, workspaceId, "Aster bookings", 24, aster);
+    await upload(t, workspaceId, "Harbor bookings", 60, harbor);
+    // A first visit has nothing to compare with.
+    expect((await owner.query(api.home.dashboard, { workspaceId })).since).toMatchObject({ at: null, changes: [], figures: 4 });
+    await owner.mutation(api.home.visit, { workspaceId });
+    await viewer.mutation(api.home.visit, { workspaceId });
+    // Opening it again a minute later is the same visit.
+    vi.advanceTimersByTime(60_000);
+    await owner.mutation(api.home.visit, { workspaceId });
+    expect((await owner.query(api.home.dashboard, { workspaceId })).since).toMatchObject({ at: null, changes: [] });
+
+    // A day later newer files are in.
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000);
+    await upload(t, workspaceId, "Aster bookings", 31, aster);
+    await upload(t, workspaceId, "Harbor bookings", 45, harbor);
+    const back = await owner.query(api.home.dashboard, { workspaceId });
+    expect(back.since.at).toBeGreaterThan(0);
+    expect(back.since.changes).toEqual([
+      { label: "Aster bookings: results", client: "Aster Coaching", before: 24, after: 31, unit: "results", percent: 29.2 },
+      { label: "Harbor bookings: results", client: "Harbor Dental", before: 60, after: 45, unit: "results", percent: -25 },
+    ]);
+    // Coming back records the visit; the comparison stays the same for the rest of it.
+    await owner.mutation(api.home.visit, { workspaceId });
+    expect((await owner.query(api.home.dashboard, { workspaceId })).since.changes).toHaveLength(2);
+    // The Viewer is assigned to Aster only. The Member never visited, so has nothing to compare.
+    expect((await viewer.query(api.home.dashboard, { workspaceId })).since.changes.map((row) => row.client)).toEqual(["Aster Coaching"]);
+    expect((await member.query(api.home.dashboard, { workspaceId })).since).toMatchObject({ at: null, changes: [], figures: 2 });
+  });
+});

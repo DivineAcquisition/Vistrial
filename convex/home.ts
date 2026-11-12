@@ -11,7 +11,9 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { changesBetween, currentFigures } from "./decisions";
-import { workspaceQuery } from "./lib/builders";
+import { approvalView } from "./approvals";
+import { selfMutation, workspaceQuery } from "./lib/builders";
+import type { ClientScope } from "./lib/clients";
 import { SKILL_ASSET } from "./lib/workTabs";
 
 type Ctx = QueryCtx & { workspaceId: Id<"workspaces"> };
@@ -371,5 +373,190 @@ export const search = workspaceQuery({
       if (row.title.toLowerCase().includes(needle)) hits.push({ kind: "asset", id: row._id, title: row.title, href: `/app/assets/${row._id}` });
     }
     return hits.slice(0, 20);
+  },
+});
+
+// ------------------------------------------------------------------------------------------- Home (step 2)
+
+export type HomeFigure = { scope: string; key: string; label: string; value: number; unit: string };
+
+type Scoped = QueryCtx & { workspaceId: Id<"workspaces">; clients: ClientScope };
+
+async function visibleClients(ctx: Scoped) {
+  return ctx.db
+    .query("clients")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", "active"))
+    .take(60);
+}
+
+/**
+ * The numbers Home can show for what the caller may see, read now: booked calls from a connected calendar,
+ * and spend, results and revenue from Meta and each results file. One entry per number per owner ("own" for
+ * the organization itself, or a client's id). Nothing is estimated: a number that has no source is absent.
+ */
+export async function figuresNow(ctx: Scoped): Promise<HomeFigure[]> {
+  const out: HomeFigure[] = [];
+  const add = async (scope: string, clientId: Id<"clients"> | undefined) => {
+    for (const row of await currentFigures(ctx, ctx.workspaceId, clientId)) {
+      const key = `${row.source}:${row.label}`;
+      if (row.conversions !== undefined) out.push({ scope, key: `${key}:conversions`, label: `${row.label}: results`, value: row.conversions, unit: "results" });
+      if (row.spend !== undefined) out.push({ scope, key: `${key}:spend`, label: `${row.label}: spend`, value: row.spend, unit: row.currency });
+      if (row.revenue !== undefined) out.push({ scope, key: `${key}:revenue`, label: `${row.label}: revenue`, value: row.revenue, unit: row.currency });
+    }
+  };
+  if (ctx.clients.sees(undefined)) {
+    for (const provider of ["google_calendar", "calendly"]) {
+      const row = await ctx.db
+        .query("integrationSnapshots")
+        .withIndex("by_workspace_provider", (q) => q.eq("workspaceId", ctx.workspaceId).eq("provider", provider).eq("kind", "bookings"))
+        .unique();
+      const booked = (row?.data as { totals?: { booked?: unknown } } | undefined)?.totals?.booked;
+      if (typeof booked === "number") out.push({ scope: "own", key: `bookings:${provider}`, label: "Booked calls", value: booked, unit: "calls" });
+    }
+    await add("own", undefined);
+  }
+  for (const client of await visibleClients(ctx)) await add(client._id, client._id);
+  return out;
+}
+
+/** A visit this long after the last one counts as coming back, so "since you were last here" moves on. */
+export const VISIT_GAP_MS = 30 * 60 * 1000;
+
+async function visitOf(ctx: QueryCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } }) {
+  return ctx.db
+    .query("memberVisits")
+    .withIndex("by_workspace_user", (q) => q.eq("workspaceId", ctx.workspaceId).eq("userId", ctx.identity.subject))
+    .unique();
+}
+
+/**
+ * Records that the caller opened Home, with the figures as they are now. Coming back after a while moves
+ * the last reading to "previous", which is what Home compares against. Any member, a Viewer included.
+ */
+export const visit = selfMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const row = await visitOf(ctx);
+    if (row?.homeSeenAt && now - row.homeSeenAt < VISIT_GAP_MS) return null;
+    const figures = await figuresNow(ctx);
+    if (!row) await ctx.db.insert("memberVisits", { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, homeSeenAt: now, homeFigures: figures });
+    else await ctx.db.patch(row._id, { homeSeenAt: now, homeFigures: figures, homePreviousAt: row.homeSeenAt, homePreviousFigures: row.homeFigures });
+    return null;
+  },
+});
+
+/**
+ * Home, top to bottom under the chat box: what needs the caller (approvals, questions, check-ins), what
+ * changed since they were last here (two real readings compared), what agents are working on, and each
+ * client with what needs them. Filtered by the client picker; a Member or Viewer only sees their clients.
+ */
+export const dashboard = workspaceQuery({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const names = new Map<string, string>();
+    const clients = await visibleClients(ctx);
+    for (const client of clients) names.set(client._id, client.name);
+    const nameOf = (clientId: Id<"clients"> | undefined) => (clientId ? (names.get(clientId) ?? "A client") : null);
+
+    // ---- Needs you
+    const needs: {
+      key: string;
+      kind: "approval" | "question" | "checkIn";
+      title: string;
+      detail: string | null;
+      client: string | null;
+      clientId: Id<"clients"> | null;
+      agentSlug: string | null;
+      at: number;
+      href: string | null;
+      approval: Awaited<ReturnType<typeof approvalView>> | null;
+      decisionId: Id<"decisions"> | null;
+    }[] = [];
+    const queue = await ctx.db
+      .query("approvals")
+      .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", "waiting"))
+      .take(50);
+    for (const row of queue) {
+      const view = await approvalView(ctx, row);
+      needs.push({ key: `a:${row._id}`, kind: "approval", title: row.summary, detail: view.kindLabel, client: nameOf(row.clientId), clientId: row.clientId ?? null, agentSlug: row.agentSlug ?? null, at: row.requestedAt, href: view.href, approval: view, decisionId: null });
+    }
+    for (const { run, project } of await questions(ctx)) {
+      needs.push({ key: `q:${run._id}`, kind: "question", title: run.waitingFor!.question, detail: project.title, client: nameOf(run.clientId), clientId: run.clientId ?? null, agentSlug: run.agentSlug, at: run.waitingFor!.askedAt, href: `/app/runs/${run._id}`, approval: null, decisionId: null });
+    }
+    const decisions = await allDecisions(ctx);
+    for (const row of decisions) {
+      if (row.outcome || row.checkInAt > now) continue;
+      needs.push({ key: `c:${row._id}`, kind: "checkIn", title: row.proposedAction, detail: "Check-in due: say what happened", client: nameOf(row.clientId), clientId: row.clientId ?? null, agentSlug: GROWTH_ARCHITECT, at: row.checkInAt, href: row.assetId ? `/app/assets/${row.assetId}` : `/app/agents/${GROWTH_ARCHITECT}/sessions/${row.projectId}`, approval: null, decisionId: row._id });
+    }
+    // A question stops a run, so it comes first; then what was asked longest ago.
+    const order = { question: 0, approval: 1, checkIn: 2 } as const;
+    needs.sort((a, b) => order[a.kind] - order[b.kind] || a.at - b.at);
+
+    // ---- Since you were last here
+    const seen = await visitOf(ctx);
+    const current = await figuresNow(ctx);
+    // Within a visit the comparison is with the visit before; the first time back, with the last reading.
+    const fresh = Boolean(seen?.homeSeenAt && now - seen.homeSeenAt < VISIT_GAP_MS);
+    const beforeAt = fresh ? (seen?.homePreviousAt ?? null) : (seen?.homeSeenAt ?? null);
+    const before = (fresh ? seen?.homePreviousFigures : seen?.homeFigures) ?? [];
+    const changes = [];
+    for (const figure of current) {
+      // The stored reading is the person's own, but assignments can change: only what they may see now is compared.
+      if (!ctx.clients.sees(figure.scope === "own" ? undefined : (figure.scope as Id<"clients">))) continue;
+      const old = before.find((row) => row.scope === figure.scope && row.key === figure.key);
+      if (!old || old.value === figure.value) continue;
+      changes.push({ label: figure.label, client: figure.scope === "own" ? null : (names.get(figure.scope) ?? "A client"), before: old.value, after: figure.value, unit: figure.unit, percent: old.value !== 0 ? Math.round(((figure.value - old.value) / Math.abs(old.value)) * 1000) / 10 : null });
+    }
+    const posts = beforeAt
+      ? await ctx.db
+          .query("briefingItems")
+          .withIndex("by_workspace_at", (q) => q.eq("workspaceId", ctx.workspaceId).gt("at", beforeAt))
+          .take(100)
+      : [];
+    const since = {
+      /** Null on a first visit: there is nothing to compare with yet. */
+      at: beforeAt,
+      changes,
+      figures: current.length,
+      finished: posts.filter((row) => row.kind === "finished").length,
+      alerts: posts.filter((row) => row.kind === "alert").length,
+      outcomes: beforeAt ? decisions.filter((row) => row.outcome && row.outcome.recordedAt > beforeAt).length : 0,
+    };
+
+    // ---- In motion
+    const moving: { key: string; kind: "run" | "trying"; title: string; agentSlug: string | null; skillSlug: string | null; client: string | null; clientId: Id<"clients"> | null; since: number; until: number | null; href: string }[] = [];
+    for (const status of ["queued", "running"] as const) {
+      const runs = await ctx.db
+        .query("agentRuns")
+        .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", status))
+        .take(25);
+      for (const run of runs) {
+        const projectId = ctx.db.normalizeId("researchProjects", run.inputRef);
+        const project = projectId ? await ctx.db.get(projectId) : null;
+        moving.push({ key: `r:${run._id}`, until: null, kind: "run", title: project && project.workspaceId === ctx.workspaceId ? project.title : "Agent work", agentSlug: run.agentSlug, skillSlug: run.skillSlug, client: nameOf(run.clientId), clientId: run.clientId ?? null, since: run.startedAt, href: `/app/runs/${run._id}` });
+      }
+    }
+    for (const row of decisions) {
+      if (row.outcome || row.checkInAt <= now) continue;
+      moving.push({ key: `d:${row._id}`, kind: "trying", title: row.proposedAction, agentSlug: null, skillSlug: null, client: nameOf(row.clientId), clientId: row.clientId ?? null, since: row.createdAt, until: row.checkInAt, href: row.assetId ? `/app/assets/${row.assetId}` : `/app/agents/${GROWTH_ARCHITECT}/sessions/${row.projectId}` });
+    }
+
+    // ---- Clients
+    const tally = (clientId: Id<"clients"> | null) => ({ needs: needs.filter((row) => row.clientId === clientId).length, moving: moving.filter((row) => row.clientId === clientId).length });
+    const rows = clients.map((client) => ({ id: client._id as string, name: client.name, type: client.type, ...tally(client._id) }));
+    rows.sort((a, b) => b.needs - a.needs || b.moving - a.moving || a.name.localeCompare(b.name));
+    const workspace = await ctx.db.get(ctx.workspaceId);
+    return {
+      organization: workspace?.name ?? "Your organization",
+      canApprove: isAdmin(ctx.role),
+      canWork: canWork(ctx.role),
+      needs,
+      since,
+      moving: moving.slice(0, 20),
+      own: ctx.clients.sees(undefined) ? tally(null) : null,
+      clients: rows,
+    };
   },
 });

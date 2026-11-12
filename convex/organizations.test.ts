@@ -233,7 +233,7 @@ describe("accounts and organizations", () => {
 
 describe("no write for a Viewer, no read for a stranger", () => {
   /** A Viewer's own choices, and personal collections that only they see. Everything else must refuse. */
-  const SELF = new Set(["settings:rememberMe", "settings:setMyPreferences", "agentWaitlist:toggle", "collections:create", "collections:rename", "collections:remove", "collections:addItem", "collections:removeItem", "briefing:markSeen", "personalNotes:add", "personalNotes:update", "personalNotes:remove"]);
+  const SELF = new Set(["settings:rememberMe", "settings:setMyPreferences", "agentWaitlist:toggle", "collections:create", "collections:rename", "collections:remove", "collections:addItem", "collections:removeItem", "briefing:markSeen", "home:visit", "personalNotes:add", "personalNotes:update", "personalNotes:remove"]);
 
   type Registered = { isPublic?: boolean; isMutation?: boolean; isQuery?: boolean; exportArgs?: () => string; _handler?: (ctx: MutationCtx, args: unknown) => Promise<unknown> };
 

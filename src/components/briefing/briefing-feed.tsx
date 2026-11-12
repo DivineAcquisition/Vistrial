@@ -53,8 +53,7 @@ const DECIDED: Record<string, { label: string; tone: "good" | "neutral" | "warni
 };
 
 /** One decision about one thing, made where it is read. Declining a draft asks why; an Owner-only step asks for its word. */
-function ApprovalBlock({ post, decide }: { post: Post; decide: Decide }) {
-  const approval = post.approval!;
+export function ApprovalBlock({ approval, needsReview = false, decide }: { approval: NonNullable<Post["approval"]>; needsReview?: boolean; decide: Decide }) {
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState("");
   const [word, setWord] = useState("");
@@ -83,7 +82,7 @@ function ApprovalBlock({ post, decide }: { post: Post; decide: Decide }) {
         {approval.credits ? <span>Up to {creditWords(approval.credits)}</span> : null}
         {approval.ownerOnly ? <span>Owner only</span> : null}
       </p>
-      {post.draft?.needsReview ? <p className="text-xs text-muted-foreground">This draft did not pass its checks. Open it to edit it, or decline it.</p> : null}
+      {needsReview ? <p className="text-xs text-muted-foreground">This draft did not pass its checks. Open it to edit it, or decline it.</p> : null}
       {approval.canDecide ? (
         <>
           {approval.confirm ? (
@@ -112,7 +111,7 @@ function ApprovalBlock({ post, decide }: { post: Post; decide: Decide }) {
               </>
             ) : (
               <>
-                <Button size="sm" variant="primary" disabled={busy || Boolean(post.draft?.needsReview) || (approval.confirm !== null && word.trim() !== approval.confirm.word)} onClick={() => run(true)}>
+                <Button size="sm" variant="primary" disabled={busy || needsReview || (approval.confirm !== null && word.trim() !== approval.confirm.word)} onClick={() => run(true)}>
                   <Check aria-hidden /> Approve
                 </Button>
                 <Button size="sm" variant="ghost" disabled={busy} onClick={() => setDeclining(true)}>
@@ -175,7 +174,7 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
             ))}
           </ul>
         ) : null}
-        {post.approval ? <ApprovalBlock post={post} decide={decide} /> : null}
+        {post.approval ? <ApprovalBlock approval={post.approval} needsReview={post.draft?.needsReview} decide={decide} /> : null}
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {post.href ? (
             <Link href={post.href} className="font-medium text-primary underline-offset-2 hover:underline">

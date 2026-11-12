@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { GROWTH_ARCHITECT } from "../../../convex/catalog";
 import { VistrialMark } from "@/components/brand/vistrial-mark";
-import { LoopHome } from "@/components/home/loop-home";
+import { Home } from "@/components/home/home-view";
 import { Plus } from "@/components/icons";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
@@ -28,8 +28,8 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
   const architectState = shell.agents.find((agent) => agent.slug === GROWTH_ARCHITECT)?.state ?? "off";
   const architectOn = architectState !== "off";
 
-  // Once setup is done, home is the loop. The first sign-in keeps its setup path below.
-  if (shell.setupDone) return <LoopHome />;
+  // Once setup is done, this is Home. The first sign-in keeps its setup path below.
+  if (shell.setupDone) return <Home />;
 
   if (profile === undefined) {
     return <p className="text-sm text-muted-foreground">Loading the queue.</p>;

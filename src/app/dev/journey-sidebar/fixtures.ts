@@ -1,6 +1,5 @@
 import { CATALOG } from "../../../../convex/catalog";
-import type { HomeOverview } from "@/components/home/loop-home";
-import type { SearchHit } from "@/components/shell/journey-sidebar";
+import type { HomeOverview, SearchHit } from "@/components/shell/journey-sidebar";
 import type { ShellAgent } from "@/components/shell/shell-context";
 
 /** The catalog as the shell reads it, with Growth Architect on. */

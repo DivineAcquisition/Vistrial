@@ -4,7 +4,7 @@
  */
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { autumnMode, billingOn } from "./billing";
+import { billingOn, extraOrgsOpen } from "./billing";
 import { isOwner } from "./roles";
 
 type Ctx = QueryCtx | MutationCtx;
@@ -15,12 +15,12 @@ export const MAX_ORGANIZATIONS = 25;
 export const ADD_ORGANIZATION_CLOSED = "Adding another organization is not switched on yet. Contact us and we will add it for you.";
 
 /**
- * Whether an Owner may add an organization right now. Each one after the first is paid for, and the
- * payment is not built in this step, so on a deployment that charges real money this stays closed. Where
- * billing is off (local, tests) or in Stripe test mode it is open.
+ * Whether an Owner may add an organization right now. Each one after the first is paid for, so where
+ * billing is on it is open only once buying one is switched on. Where billing is off (local, tests)
+ * nothing is charged and it is open.
  */
 export function addingOrganizationsOpen(): boolean {
-  return !billingOn() || autumnMode() === "test";
+  return !billingOn() || extraOrgsOpen();
 }
 
 export async function organizationsOf(ctx: Ctx, accountId: Id<"accounts">) {

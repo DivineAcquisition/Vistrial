@@ -72,6 +72,11 @@ export default defineSchema({
     billingCustomerId: v.string(),
     createdBy: v.string(),
     createdAt: v.number(),
+    /**
+     * An organization the Owner confirmed the price of and is paying for at checkout. It is created when
+     * the payment shows on the account, so an organization never exists unpaid.
+     */
+    pendingOrganization: v.optional(v.object({ name: v.string(), requestedBy: v.string(), requestedAt: v.number() })),
   }),
 
   /** A person on an account. What they can open is a `members` row in each organization they were given. */
@@ -300,18 +305,28 @@ export default defineSchema({
    * mutation check it without a network call. Amounts are cents of what the customer pays.
    */
   billingAccounts: defineTable({
+    /** The account's first organization: the row was keyed by it before accounts existed. */
     workspaceId: v.id("workspaces"),
+    /** The account whose balance this is. Every organization of the account reads and spends this one row. */
+    accountId: v.optional(v.id("accounts")),
+    /** How many organizations beyond the first are paid for ($99 a month and $50 of credits each). */
+    extraOrganizations: v.optional(v.number()),
     balanceCents: v.number(),
     planId: v.optional(v.string()),
     planStatus: v.optional(v.string()),
     nextResetAt: v.optional(v.number()),
     autoRefill: v.optional(v.object({ enabled: v.boolean(), thresholdCents: v.number(), amountCents: v.number() })),
     refreshedAt: v.number(),
-  }).index("by_workspace", ["workspaceId"]),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_account", ["accountId"]),
 
   /** Every charge for AI work: what it really cost, the markup, and what the customer paid. */
   billingLedger: defineTable({
+    /** The organization that spent. The balance it came from is its account's. */
     workspaceId: v.id("workspaces"),
+    /** The client the work was for, when it was for one: so the cost of serving a client can be measured. */
+    clientId: v.optional(v.id("clients")),
     source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative"), v.literal("page")),
     ref: v.string(),
     costCents: v.number(),

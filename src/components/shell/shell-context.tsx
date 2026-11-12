@@ -20,6 +20,8 @@ export type ShellAccount = {
   canAdd: boolean;
   /** Why adding is closed, for an Owner. Null when it is open or the person is not an Owner. */
   addClosedReason: string | null;
+  /** What one more organization costs each month and the credits it adds. Null or missing where nothing is charged. */
+  addPrice?: { priceCents: number; includedCents: number } | null;
 };
 
 /** A client the person may see, as the picker lists it. */

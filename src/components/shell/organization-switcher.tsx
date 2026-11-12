@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -115,7 +115,13 @@ export function OrganizationSwitcherView({ name, current, organizations, account
   );
 }
 
-function AddOrganizationDialog({
+const money = (cents: number) => `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+
+/**
+ * Adding an organization. Where it is paid for, the price is stated before anything happens and the Owner
+ * ticks that they agree to it: nothing is charged, and nothing is created, without that.
+ */
+export function AddOrganizationDialog({
   open,
   onOpenChange,
   account,
@@ -127,9 +133,11 @@ function AddOrganizationDialog({
   onAdd: (name: string) => Promise<string | null>;
 }) {
   const [name, setName] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const closed = account ? !account.canAdd : true;
+  const price = account?.addPrice ?? null;
   return (
     <Dialog
       open={open}
@@ -137,6 +145,7 @@ function AddOrganizationDialog({
         onOpenChange(next);
         if (!next) {
           setName("");
+          setAgreed(false);
           setProblem(null);
         }
       }}
@@ -169,6 +178,23 @@ function AddOrganizationDialog({
               <span className="text-xs text-muted-foreground">Name</span>
               <Input autoFocus required maxLength={80} value={name} onChange={(event) => setName(event.target.value)} placeholder="Northlight Coaching" />
             </label>
+            {price ? (
+              <div className="grid gap-2 rounded-xl border border-primary/30 bg-primary/[0.05] p-3">
+                <p className="text-sm text-foreground">
+                  <span className="font-heading text-2xl">{money(price.priceCents)}</span>
+                  <span className="text-muted-foreground"> a month, added to your plan</span>
+                </p>
+                <ul className="grid gap-1 text-xs text-muted-foreground">
+                  <li>Adds {money(price.includedCents)} of credits to your shared balance every month.</li>
+                  <li>Charged today for the rest of this billing period, then with each renewal.</li>
+                  <li>Clients inside it are not charged for.</li>
+                </ul>
+                <label className="flex items-start gap-2 text-sm text-foreground">
+                  <input type="checkbox" required className="mt-0.5 size-4 shrink-0 accent-primary" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
+                  <span>I agree to add {money(price.priceCents)} a month to this account.</span>
+                </label>
+              </div>
+            ) : null}
             <p className="text-xs text-muted-foreground">
               You and the account&apos;s other Owners can open it straight away. Nobody else can until you give them a role in it under Settings, People.
             </p>
@@ -181,8 +207,8 @@ function AddOrganizationDialog({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={busy || !name.trim()}>
-                {busy ? "Adding…" : "Add organization"}
+              <Button type="submit" disabled={busy || !name.trim() || (price !== null && !agreed)}>
+                {busy ? "Adding…" : price ? `Add and pay ${money(price.priceCents)} a month` : "Add organization"}
               </Button>
             </div>
           </form>
@@ -192,10 +218,37 @@ function AddOrganizationDialog({
   );
 }
 
+/**
+ * Adds an organization for the open account: through billing where it is paid for (the price the Owner
+ * agreed to is sent with the request, so a changed price is refused), directly where nothing is charged.
+ * Resolves with nothing when it was added or the person was sent to pay, or with why it was not.
+ */
+export function useAddOrganization() {
+  const shell = useWorkspaceShell();
+  const create = useMutation(api.organizations.create);
+  const buy = useAction(api.billingActions.addOrganization);
+  const account = shell?.account ?? null;
+  return async (newName: string): Promise<string | null> => {
+    if (!shell || !account) return "Only an Owner of the account can add an organization.";
+    try {
+      if (account.addPrice) {
+        const result = await buy({ workspaceId: shell.workspaceId, name: newName, confirmedCents: account.addPrice.priceCents, returnOrigin: window.location.origin });
+        if (result.url) window.location.assign(result.url);
+        else if (result.workspaceId) shell.switchOrganization?.(result.workspaceId);
+        return null;
+      }
+      shell.switchOrganization?.(await create({ accountId: account.accountId, name: newName }));
+      return null;
+    } catch (problem) {
+      return describeError(problem, "The organization could not be added. Try again.").message;
+    }
+  };
+}
+
 /** The selector wired to the signed-in person's organizations. */
 export function OrganizationSwitcher({ name, onNavigate }: { name: string; onNavigate?: () => void }) {
   const shell = useWorkspaceShell();
-  const create = useMutation(api.organizations.create);
+  const add = useAddOrganization();
   // A shell without the list (a story, or a moment before it loads) still shows the organization that is open.
   const organizations: ShellOrganization[] =
     shell?.organizations ?? (shell ? [{ workspaceId: shell.workspaceId, name, role: shell.role, accountId: null }] : []);
@@ -207,16 +260,7 @@ export function OrganizationSwitcher({ name, onNavigate }: { name: string; onNav
       organizations={organizations}
       account={account}
       onSwitch={(workspaceId) => shell?.switchOrganization?.(workspaceId)}
-      onAdd={async (newName) => {
-        if (!account) return "Only an Owner of the account can add an organization.";
-        try {
-          const workspaceId = await create({ accountId: account.accountId, name: newName });
-          shell?.switchOrganization?.(workspaceId);
-          return null;
-        } catch (problem) {
-          return describeError(problem, "The organization could not be added. Try again.").message;
-        }
-      }}
+      onAdd={add}
       onNavigate={onNavigate}
     />
   );

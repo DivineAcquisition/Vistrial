@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowSquareOut, Lightning, Receipt, ShieldCheck, Wallet } from "@phosphor-icons/react/dist/ssr";
+import { ArrowSquareOut, Buildings, Lightning, Receipt, ShieldCheck, Wallet } from "@phosphor-icons/react/dist/ssr";
 
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,20 @@ export type BillingData = {
     autoRefill: { enabled: boolean; thresholdCents: number; amountCents: number } | null;
     refreshedAt: number;
   } | null;
+  /** The account the balance belongs to, and what each of its organizations used. Missing in older stories. */
+  accountName?: string;
+  organizations?: { workspaceId: string; name: string; current: boolean; first: boolean; spent30dCents: number | null }[];
+  extra?: {
+    priceCents: number;
+    includedCents: number;
+    count: number;
+    monthlyCents: number;
+    monthlyCreditsCents: number;
+    canAdd: boolean;
+    closedReason: string | null;
+    needsPlan: boolean;
+    pendingName: string | null;
+  };
   spent30dCents: number;
   ledger: { id: string; source: string; ref: string; costCents: number; priceCents: number; at: number; synced: boolean }[];
 };
@@ -42,7 +56,7 @@ export function BillingView({
   data: BillingData;
   busy: string | null;
   notice: string;
-  actions: { subscribe: () => void; topUp: (cents: number) => void; autoRefill: (on: boolean) => void; portal: () => void };
+  actions: { subscribe: () => void; topUp: (cents: number) => void; autoRefill: (on: boolean) => void; portal: () => void; addOrganization?: () => void };
 }) {
   const balance = data.account?.balanceCents ?? 0;
   const active = Boolean(data.account?.planId) && data.account?.planStatus !== "canceled";
@@ -50,7 +64,7 @@ export function BillingView({
   const low = data.on && balance <= data.autoRefillDefaults.thresholdCents;
   return (
     <div className="mx-auto grid w-full max-w-5xl min-w-0 gap-6">
-      <PageHeader eyebrow="Workspace" title="Billing" description={`Credits pay for the AI work your agents do. Each piece of work costs what it really cost Vistrial, times ${data.markup}. Nothing is charged until work runs.`} />
+      <PageHeader eyebrow={data.accountName ? `${data.accountName} · account` : "Account"} title="Billing" description={`One balance for the whole account: every organization spends from it. Credits pay for the AI work your agents do. Each piece of work costs what it really cost Vistrial, times ${data.markup}. Nothing is charged until work runs.`} />
 
       {data.testMode ? (
         <Banner compact tone="brand" title="Test mode">
@@ -125,6 +139,48 @@ export function BillingView({
           {!data.canManage ? <p className="text-xs text-muted-foreground">The account Owner manages billing.</p> : null}
         </Panel>
       </div>
+
+      {data.organizations && data.extra ? (
+        <Panel className="grid gap-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="grid gap-1">
+              <h2 className="flex items-center gap-2 font-heading text-base text-card-foreground">
+                <Buildings weight="duotone" aria-hidden className="size-5 text-primary" /> Organizations
+              </h2>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                The plan covers your first organization. Each one after it adds {dollars(data.extra.priceCents).replace(".00", "")} a month and {dollars(data.extra.includedCents).replace(".00", "")} of credits to the shared balance. Clients are not charged for.
+              </p>
+            </div>
+            {data.canManage && actions.addOrganization ? (
+              <Button variant="outline" disabled={busy !== null || (data.extra.canAdd && data.extra.needsPlan)} onClick={actions.addOrganization}>
+                Add an organization
+              </Button>
+            ) : null}
+          </div>
+          <ul className="grid divide-y divide-border/70 rounded-xl border border-border">
+            {data.organizations.map((organization) => (
+              <li key={organization.workspaceId} className="grid gap-1 p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-4">
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="truncate text-sm text-card-foreground">{organization.name}</span>
+                  {organization.current ? <StatusBadge label="Open now" tone="brand" className="[&_span]:normal-case" /> : null}
+                </span>
+                <span className="text-xs text-muted-foreground">{organization.first ? "Covered by the plan" : `${dollars(data.extra!.priceCents).replace(".00", "")} a month`}</span>
+                <span className="text-sm text-card-foreground tabular-nums sm:text-right">
+                  {organization.spent30dCents === null ? "" : `${dollars(organization.spent30dCents)} used, 30 days`}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {data.extra.pendingName ? <p className="text-sm text-muted-foreground">{data.extra.pendingName} is waiting for its payment. It appears here as soon as the payment lands.</p> : null}
+          {data.canManage && data.extra.canAdd && data.extra.needsPlan ? <p className="text-sm text-muted-foreground">Start the {data.plan.name} plan to add another organization.</p> : null}
+          {data.canManage && data.extra.closedReason ? <p className="text-sm text-muted-foreground">{data.extra.closedReason}</p> : null}
+          {data.canManage ? (
+            <p className="text-sm text-muted-foreground">
+              With {data.organizations.length === 1 ? "one organization" : `${data.organizations.length} organizations`}: {dollars(data.extra.monthlyCents).replace(".00", "")} a month, including {dollars(data.extra.monthlyCreditsCents).replace(".00", "")} of credits.
+            </p>
+          ) : null}
+        </Panel>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel className="grid content-start gap-3 p-5 sm:p-6">

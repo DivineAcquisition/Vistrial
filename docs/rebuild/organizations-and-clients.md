@@ -28,7 +28,7 @@ Never a cleaning or home-service company as the customer.
 as now. Each extra organization adds **$99 a month and $50 of credits** to the shared pool. The reason:
 "over time more users will cost and maintain systems; I need to make sure our cost of servicing them is
 worth it and we get a profitable return." Clients are not charged for and not capped for now. **The standing
-cost per client should be measured** (section 8.6) so that decision can be revisited with numbers.
+cost per client should be measured** (section 6.6) so that decision can be revisited with numbers.
 
 **People.** A person is invited to the account and given access to **chosen organizations, with a role per
 organization**. Roles inside an organization:
@@ -575,33 +575,56 @@ Attract | Convert | Keep tabs directly beneath it, unchanged, ready for step 2 t
 
 ## 9. How the PRs stack
 
-| PR | Branch | Base | Holds |
-|---|---|---|---|
-| 1 | `claude/orgs-foundation` | `main` | This document. |
-| 2 | `claude/orgs-foundation-2-accounts` | PR 1's branch | Accounts, organizations, four roles, the selector, People. |
-| 3 | `claude/orgs-foundation-3-clients` | PR 2's branch | Clients, assignments, `clientId` on work records, the picker. |
-| 4 | `claude/orgs-foundation-4-billing` | PR 3's branch | Shared balance, the extra-organization fee, Billing page; wording in its own commit. |
+| PR | Branch | Base | Holds | State |
+|---|---|---|---|---|
+| 1 | `claude/orgs-foundation` | `main` | This document. | Merged (#245) |
+| 2 | `claude/orgs-foundation-2-accounts` | PR 1's branch | Accounts, organizations, four roles, the selector, People. | Merged (#246) |
+| 3 | `claude/orgs-foundation-3-clients` | PR 2's branch | Clients, assignments, `clientId` on work records, the picker. | Merged (#250) |
+| 4 | `claude/orgs-foundation-4-billing` | `main` | Shared balance, the extra-organization fee, Billing page. No public wording. | Open (#251) |
+| 5 | `claude/orgs-foundation-5-credits` | PR 4's branch | Credits shown as credits, not dollars; public wording in its own commit. | Open (#253) |
+| 6 | `claude/orgs-foundation-6-decisions` | PR 5's branch | The owner's answers recorded here (section 10), and a test for decision 4. | Open |
+| 7 | `claude/orgs-foundation-7-archive` | PR 6's branch | Archiving an organization, exporting its data, copying material to another organization. | Open |
 
 Merge in order. Each is reviewable on its own diff against the one before.
 
-## 10. Open questions for the owner
+## 10. Decisions the owner made on 2026-11-11
 
-1. **Former Reps can start agent work.** Mapping Rep → Member gives them what a Member has, including
-   starting research and creative that spends credits (inside the existing caps). Is that right for people
-   who are Reps today, or should existing Reps become Viewers and be raised by hand?
-2. **Can someone be an Owner of one organization without being an Owner of the account?** This design says
+Quoted words are the owner's, answering the open questions this document first listed.
+
+**10.1 Former Reps are Members, and credits are shown as credits.** "Yes also instead of showing a dollar
+amount for credits let's show the actual credit amount." A Rep became a Member and may start work that
+spends credits, inside the existing limits; this is as built in PR 2. Credit amounts are written as a number
+of credits everywhere (PR 5). One credit is one cent of balance, so the plan's $150 is 15,000 credits and an
+extra organization adds 5,000. Money charged to a card stays in dollars. Credits are whole numbers; a charge
+and every amount shown round up to the next whole credit.
+
+**10.2 Admins invite people and change roles.** "Yes admin can invite and change people roles". As built in
+PR 2: an Admin invites and changes roles up to Admin in their own organization. Only an Owner can make or
+change an Owner.
+
+**10.3 Archiving an organization.** "Yes $99 stop also users should have the ability to export the data or
+add it as context for their other orgs". The $99 for an archived organization stops at the next renewal,
+with no credit for the part of the month already paid. Before or after archiving, the Owner can export the
+organization's data, and can copy chosen material into another organization of the same account for its
+agents to read. Built in PR 7; its design is section 11.
+
+**10.4 One person, several organizations.** "yes 1 person can belong to 2 orgs if admin assign but of
+course their role can be edited". A person joins an organization only by an invitation from an Owner or
+Admin of it, and has a separate role in each, which an Owner or Admin of that organization can change. As
+built in PR 2, and now tested (`convex/settings.test.ts`). The same holds when the two organizations belong
+to different accounts, for example a freelancer invited by two agencies: nothing is shared between the
+accounts, and a person can never create a second account of their own. The owner's words speak of two
+organizations and do not mention two accounts; say if a person should be limited to one account.
+
+## 10a. Still open
+
+1. **Can someone be an Owner of one organization without being an Owner of the account?** This design says
    no: Owner means the account's owner, in every organization. A partner who runs one brand is an Admin
    there. Say if a per-organization Owner (without billing) is needed.
-3. **May an Admin invite people and change roles**, up to Admin, in their own organization? The design
-   says yes ("runs the organization"). Today only the Owner can.
-4. **One person, several accounts.** A freelancer could be invited by two different agencies. The data
-   allows it and the selector would group organizations by account. Should it be allowed now, or refused
-   as today ("You already belong to a workspace")? PR 2 allows it only by invitation, never by creating a
-   second account.
-5. **Removing an organization.** When an Owner archives one: does the $99 stop at the next renewal (the
-   design) or at once with a pro-rated credit? And is its data kept, read-only, for how long?
-6. **Client brand kits become clients automatically** (3.3). The alternative is to leave them as they are
-   and let an Admin link each one by hand. Automatic loses nothing and can be undone by archiving.
-7. **The spending limit that needs approval**: one amount per organization, or per account? The design
-   stores it per organization.
-8. **Should an Admin see the ledger** for their organization? The design says yes (Managers do today).
+2. **Client brand kits become clients automatically** (3.3). This is merged and running. The alternative
+   was to link each one by hand; say if any client that appeared this way should not have.
+3. **The spending limit that needs approval**: one amount per organization, or per account? The design
+   stores it per organization. Needed for step 2.
+4. **Should an Admin see the ledger** for their organization? As built, yes (Managers did before).
+5. **How long an archived organization's data is kept.** As built in PR 7 it is kept, read-only, until the
+   Owner brings the organization back; nothing deletes it.

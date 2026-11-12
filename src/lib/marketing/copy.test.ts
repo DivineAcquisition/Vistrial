@@ -5,17 +5,11 @@ import { FAQ, SECTIONS } from "@/lib/marketing/content";
 import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 
 describe("public landing copy", () => {
-  it("uses the agentic-workforce headline and a sign-in link to the app", () => {
+  it("uses the agentic-workforce headline, and keeps sign-in pointed at the app with no menu links", () => {
     expect(HERO.headline).toBe("The agentic workforce for business growth.");
     expect(SITE_DESCRIPTION.length).toBeGreaterThan(40);
     expect(NAV.signInHref).toBe("https://app.vistrial.io/login");
-    expect(NAV.links.map((link) => link.label)).toEqual([
-      "How it works",
-      "Growth Architect",
-      "Agents",
-      "Pricing",
-      "FAQ",
-    ]);
+    expect(NAV.links).toEqual([]);
   });
 
   it("answers the product questions without a payment step", () => {

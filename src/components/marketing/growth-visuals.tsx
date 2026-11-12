@@ -706,7 +706,7 @@ export function AssetApprovalExample() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-strong">Market report · Home-service lead generation</p>
-                  <p className="text-xs text-muted-foreground">Version 2 · 14 claims · 31 sources · 84¢ to research</p>
+                  <p className="text-xs text-muted-foreground">Version 2 · 14 claims · 31 sources · 252 credits to research</p>
                 </div>
                 <Badge variant={approved ? "success" : "warning"} size="sm">
                   {approved ? "Approved" : "Waiting"}

@@ -3,12 +3,13 @@ import { describe, expect, it } from "vitest";
 import { CATALOG } from "../../../convex/catalog";
 import { BASIS_LABEL } from "../../../convex/lib/evidence";
 import { PLAN } from "../../../convex/lib/billing";
+import { SKILL_CAPS, SOFT_WARNING_RATIO } from "../../../convex/lib/caps";
 import { BUSINESS_TYPES } from "@/lib/access-requests/options";
 import * as content from "@/lib/marketing/content";
 import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 import { JOURNEY_TABS, journeyTabOf } from "@/lib/shell/journey";
 
-const { AGENTS_SECTION, CLAIMS, EVIDENCE, GROWTH_ARCHITECT, SOURCES } = content;
+const { AGENTS_SECTION, CLAIMS, EVIDENCE, GROWTH_ARCHITECT, SAFETY, SOURCES } = content;
 
 /** Every string on the public page, wherever it sits in the copy objects. */
 function strings(value: unknown): string[] {
@@ -84,5 +85,23 @@ describe("the public page tells the truth about the product", () => {
     expect(PRICING_DISPLAY.privateAccess.cta).toBe("Request private access");
     expect(PRICING_DISPLAY.connectedToBilling).toBe(false);
     expect(content.SECTIONS.proof).toBe(false);
+  });
+
+  it("shows the safety run with the product's own limit, and every guardrail in it", () => {
+    const { run } = SAFETY;
+    expect(run.budget.capCents).toBe(SKILL_CAPS["market-intelligence"].maxCostCentsPerRun);
+    expect(run.budget.warnShare).toBe(SOFT_WARNING_RATIO);
+    const spent = run.steps.map((step) => step.spentCents);
+    expect([...spent].sort((a, b) => a - b)).toEqual(spent);
+    expect(Math.max(...spent)).toBeLessThan(run.budget.capCents);
+    // A refused page costs nothing, and the run ends waiting for a person.
+    const refused = run.steps.findIndex((step) => step.state === "blocked");
+    expect(run.steps[refused].spentCents).toBe(run.steps[refused - 1].spentCents);
+    expect(run.steps.at(-1)?.state).toBe("waiting");
+    // One guardrail per safety statement, and each step points at a guardrail that exists.
+    expect(run.guards).toHaveLength(SAFETY.items.length);
+    const guards = new Set<string>(run.guards.map((guard) => guard.id));
+    for (const step of run.steps) expect(guards.has(step.guard), step.id).toBe(true);
+    expect(run.recordApproved.text).toMatch(/Not published/);
   });
 });

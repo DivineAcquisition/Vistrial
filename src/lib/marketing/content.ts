@@ -110,7 +110,7 @@ export const DOCTRINE_RUN = {
 /** The approval moment in Safety. */
 export const APPROVAL = {
   introTitle: "Try the approval step",
-  introBody: "Every draft waits here until a person approves it. Hold the button to approve the sample report. Nothing is published either way.",
+  introBody: "Every draft waits until a person approves it. Hold the button to approve the sample report. Nothing is published either way.",
   hold: "Hold to approve",
   holding: "Keep holding",
   hint: "Press and hold the button, or hold Space or Enter.",
@@ -368,10 +368,16 @@ export const INDUSTRIES = {
   closing: "If you sell your expertise and your business is not listed, request access and tell us what you sell.",
 } as const;
 
+/**
+ * Safety is shown as one sample run with its guardrails working: what the agent did, what it was
+ * refused, what it cost against the limit, and where it stopped for a person. Every figure is sample
+ * data. The limit is the real one for a research run (convex/lib/caps.ts), and the warning sits at
+ * the real 80 percent.
+ */
 export const SAFETY = {
   id: "safety",
   headline: "Safe by design",
-  lead: "These are product behaviors, not badges.",
+  lead: "These are product behaviors, not badges. Here they are in one sample run.",
   steps: ["Draft", "Your review", "Not published"],
   items: [
     "Nothing is published, posted, or sent without a person's approval.",
@@ -381,6 +387,49 @@ export const SAFETY = {
     "Each customer's data is separate from every other customer's.",
     "Every important action is recorded.",
   ],
+  run: {
+    agent: "Growth Architect",
+    skill: "Market Intelligence run",
+    workspace: "Northlight Growth",
+    workspaceNote: "Private workspace",
+    budget: {
+      capCents: 300,
+      warnShare: 0.8,
+      spent: "Spent",
+      of: "of a",
+      limit: "limit",
+      warns: "Warns",
+      stops: "Stops",
+    },
+    stateLabel: { queued: "Queued", running: "Running", done: "Done", blocked: "Refused", waiting: "Waiting on you" },
+    steps: [
+      { id: "search", tool: "Search the web", target: "Agencies selling lead generation to home-service brands", state: "done" as const, result: "24 public pages found", spentCents: 12, guard: "access" },
+      { id: "read", tool: "Read a page", target: "leadforge-media.example/pricing", state: "done" as const, result: "Public page. Its robots.txt allows the read.", spentCents: 31, guard: "access" },
+      { id: "refused", tool: "Read a page", target: "members-only.example/offer", state: "blocked" as const, result: "The page asks for a login. Vistrial does not log in, so it stopped after one request.", spentCents: 31, guard: "access" },
+      { id: "label", tool: "Label the claims", target: "14 claims in the draft", state: "done" as const, result: "8 observed, 4 inference, 2 untested hypothesis. Each one links to its source.", spentCents: 84, guard: "evidence" },
+      { id: "draft", tool: "Save the draft", target: "Market report, version 1", state: "waiting" as const, result: "Nothing is published. The report waits for a person.", spentCents: 84, guard: "approval" },
+    ],
+    guardsTitle: "Guardrails in this run",
+    guardOn: "Shown in this run",
+    guardWaiting: "Not reached yet",
+    guards: [
+      { id: "approval", title: "A person approves", body: "Nothing is published, posted, or sent without a person's approval." },
+      { id: "access", title: "Public access only", body: "Public sources, official APIs, and links you provide. No logins and no getting around blocks." },
+      { id: "evidence", title: "Every claim labeled", body: "Observed, an inference, an untested hypothesis, or your data, with its source." },
+      { id: "cost", title: "A cost limit", body: "Every run has a limit. The cost is shown as it runs, and the run stops at the limit." },
+      { id: "separation", title: "Your data stays yours", body: "Each customer's data is separate from every other customer's." },
+      { id: "record", title: "Everything recorded", body: "Every important action is written to a record, with who and when." },
+    ],
+    recordTitle: "Activity record",
+    record: [
+      { afterStep: 1, time: "10:02", text: "Run started by Sam, Owner" },
+      { afterStep: 3, time: "10:03", text: "Page refused. No retry." },
+      { afterStep: 5, time: "10:04", text: "Draft saved for approval" },
+    ],
+    recordApproved: { time: "10:09", text: "Approved by Sam, Owner. Not published." },
+    reportTitle: "Market report · Home-service lead generation",
+    reportMeta: "Version 1 · 14 claims · 31 sources",
+  },
   linkLabel: "Security overview",
   linkHref: "/security",
 } as const;

@@ -22,7 +22,7 @@ export function StoryFrame({ theme, role = "owner", header = false, children }: 
         <StoryTheme theme={theme} />
         <main className="min-h-dvh bg-background px-4 py-6 sm:px-8">
           <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-5">
-            {header ? <AgentHeader department="Growth and Marketing" name="Growth Architect" job="Researches your market and hands back reports and strategies, each claim with its source." stateLabel="On" on /> : null}
+            {header ? <AgentHeader slug="growth-architect" department="Growth and Marketing" name="Growth Architect" job="Researches your market and hands back reports and strategies, each claim with its source." stateLabel="On" on /> : null}
             <div className="min-w-0">{children}</div>
           </div>
         </main>

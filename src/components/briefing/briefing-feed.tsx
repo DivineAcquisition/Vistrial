@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
@@ -141,7 +142,12 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
       <div className="grid min-w-0 flex-1 gap-2">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
           <span className="font-medium text-card-foreground">{post.kindLabel}</span>
-          {post.agentSlug ? <span>{agentName(post.agentSlug)}</span> : null}
+          {post.agentSlug ? (
+            <span className="inline-flex items-center gap-1.5">
+              <AgentAvatar slug={post.agentSlug} size="xs" className="size-5" />
+              {agentName(post.agentSlug)}
+            </span>
+          ) : null}
           {post.client ? <span className="rounded-md border border-primary/30 px-1.5 text-primary">{post.client}</span> : null}
           <span>{when(post.at, now)}</span>
           {post.unread ? <span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 font-medium text-primary-foreground">New</span> : null}

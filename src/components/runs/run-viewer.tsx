@@ -9,8 +9,9 @@ import { StepList } from "@/components/runs/step-list";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Panel } from "@/components/ui/panel";
-import { centsInWords, formatCents, formatDuration, isOpen, stepAnnouncement, summaryLine, type RunAssetView, type RunView } from "@/lib/runs/view";
+import { formatDuration, isOpen, stepAnnouncement, summaryLine, type RunAssetView, type RunView } from "@/lib/runs/view";
 import { Banner } from "@/components/ui/banner";
+import { useCredits } from "@/lib/credits";
 
 export type RunViewerProps = {
   run: RunView;
@@ -42,6 +43,7 @@ export function RunViewer({
   renderArtifactBody,
   renderAssetLink,
 }: RunViewerProps) {
+  const credits = useCredits();
   const [notice, setNotice] = useState("");
   const open = isOpen(run.status);
   const live = open && connected;
@@ -76,8 +78,7 @@ export function RunViewer({
           <div>
             <dt className="text-xs text-muted-foreground">Cost</dt>
             <dd className="text-card-foreground">
-              <span aria-hidden="true">{formatCents(run.cost.spentCents)}</span>
-              <span className="sr-only">{centsInWords(run.cost.spentCents)}</span>
+              {credits.cost(run.cost.spentCents)}
             </dd>
           </div>
         </dl>

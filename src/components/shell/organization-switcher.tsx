@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuLinkItem, MenuPopup, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { ROLE_LABEL } from "@/lib/roles";
 import { describeError } from "@/lib/errors/user-error";
+import { creditWords, dollarWords } from "@/lib/credits";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 
@@ -115,7 +116,6 @@ export function OrganizationSwitcherView({ name, current, organizations, account
   );
 }
 
-const money = (cents: number) => `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 
 /**
  * Adding an organization. Where it is paid for, the price is stated before anything happens and the Owner
@@ -181,17 +181,17 @@ export function AddOrganizationDialog({
             {price ? (
               <div className="grid gap-2 rounded-xl border border-primary/30 bg-primary/[0.05] p-3">
                 <p className="text-sm text-foreground">
-                  <span className="font-heading text-2xl">{money(price.priceCents)}</span>
+                  <span className="font-heading text-2xl">{dollarWords(price.priceCents)}</span>
                   <span className="text-muted-foreground"> a month, added to your plan</span>
                 </p>
                 <ul className="grid gap-1 text-xs text-muted-foreground">
-                  <li>Adds {money(price.includedCents)} of credits to your shared balance every month.</li>
+                  <li>Adds {creditWords(price.includedCents)} to your shared balance every month.</li>
                   <li>Charged today for the rest of this billing period, then with each renewal.</li>
                   <li>Clients inside it are not charged for.</li>
                 </ul>
                 <label className="flex items-start gap-2 text-sm text-foreground">
                   <input type="checkbox" required className="mt-0.5 size-4 shrink-0 accent-primary" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
-                  <span>I agree to add {money(price.priceCents)} a month to this account.</span>
+                  <span>I agree to add {dollarWords(price.priceCents)} a month to this account.</span>
                 </label>
               </div>
             ) : null}
@@ -208,7 +208,7 @@ export function AddOrganizationDialog({
                 Cancel
               </Button>
               <Button type="submit" disabled={busy || !name.trim() || (price !== null && !agreed)}>
-                {busy ? "Adding…" : price ? `Add and pay ${money(price.priceCents)} a month` : "Add organization"}
+                {busy ? "Adding…" : price ? `Add and pay ${dollarWords(price.priceCents)} a month` : "Add organization"}
               </Button>
             </div>
           </form>

@@ -7,6 +7,9 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { markup, priceFor } from "./credits";
+
+export { markup, priceFor };
 import { userError } from "./errors";
 
 export const CREDITS_FEATURE = () => process.env.AUTUMN_FEATURE_ID || "credits";
@@ -20,11 +23,6 @@ export const PLAN = { name: "Growth", priceCents: 17900, includedCents: 15000 } 
 export const EXTRA_ORG = { priceCents: 9900, includedCents: 5000 } as const;
 export const TOPUP_PACKS_CENTS = [1000, 2500, 5000] as const;
 export const AUTO_REFILL = { thresholdCents: 200, amountCents: 1000, maxPerMonth: 4 } as const;
-
-export function markup(): number {
-  const value = Number(process.env.BILLING_MARKUP ?? "3");
-  return Number.isFinite(value) && value >= 1 ? value : 3;
-}
 
 /**
  * Which Autumn key this deployment uses. AUTUMN_MODE=test picks AUTUMN_TEST_SECRET_KEY (Stripe test mode,
@@ -69,10 +67,6 @@ export function extraUnitsFrom(subscriptions: { planId?: string; status?: string
 export function planActive(account: { planId?: string | null; planStatus?: string | null } | null | undefined): boolean {
   if (!account?.planId || account.planId !== PLAN_ID()) return false;
   return !["canceled", "cancelled", "expired", "incomplete", "incomplete_expired", "unpaid"].includes(account.planStatus ?? "");
-}
-
-export function priceFor(costCents: number, factor = markup()): number {
-  return costCents > 0 ? Math.ceil(costCents * factor) : 0;
 }
 
 /**

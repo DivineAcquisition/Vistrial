@@ -87,7 +87,7 @@ export function assertWithinCeiling(caps: Caps) {
     throw userError("A day cap cannot exceed the platform ceiling.", "limit");
   }
   if (caps.maxCostCentsPerRun < 1 || caps.maxCostCentsPerDay < 1) {
-    throw userError("Caps must be at least 1 cent.", "limit");
+    throw userError("A limit must be above zero.", "limit");
   }
 }
 

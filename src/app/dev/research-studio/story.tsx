@@ -31,7 +31,7 @@ const CHECKS_PASSED = {
     [6, "Limits are named"],
     [7, "Required structure"],
     [8, "Within the cost cap"],
-  ].map(([id, name]) => ({ id: id as number, name: name as string, passed: true, detail: id === 8 ? "The run cost 81.62¢ of its 300¢ cap." : "Passed." })),
+  ].map(([id, name]) => ({ id: id as number, name: name as string, passed: true, detail: id === 8 ? "The run used 245 credits of its 900 credits limit." : "Passed." })),
 };
 
 const OPPS = [

@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { FACT_SOURCE_WORDS, FACT_STATUS_WORDS, PLATFORM_LABEL, SOURCE_STATE_WORDS, STAGES, money, shortDate } from "@/lib/research/words";
+import { FACT_SOURCE_WORDS, FACT_STATUS_WORDS, PLATFORM_LABEL, SOURCE_STATE_WORDS, STAGES, shortDate } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { SourceIcon } from "@/components/research/source-icon";
 import { showError } from "@/lib/errors/show-error";
+import { useCredits } from "@/lib/credits";
 
 export type Studio = FunctionReturnType<typeof api.studio.studio>;
 type Step = { phase?: string | null; status: string; kind: string; resultCode: string };
@@ -279,6 +280,7 @@ export function SourceStatusList({ statuses }: { statuses: { platform: string; s
  * only the research questions and planned searches come from the model.
  */
 export function BriefCard({ studio, capCents, reserveCents = 50 }: { studio: Studio; capCents: number; reserveCents?: number }) {
+  const credits = useCredits();
   const brief = studio.brief;
   const context = studio.context;
   const spent = studio.run?.costCents ?? 0;
@@ -348,7 +350,7 @@ export function BriefCard({ studio, capCents, reserveCents = 50 }: { studio: Stu
         <div className={row}>
           <dt className={label}>Research budget</dt>
           <dd className="text-card-foreground">
-            Up to {money(capCents)} for this run, with {money(reserveCents)} held back to check the report and fix it once. Spent so far: {money(spent)}.
+            Up to {credits.cost(capCents)} for this run, with {credits.cost(reserveCents)} held back to check the report and fix it once. Spent so far: {credits.cost(spent)}.
           </dd>
         </div>
         {brief && brief.researchQuestions.length > 0 ? (

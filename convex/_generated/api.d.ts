@@ -75,6 +75,7 @@ import type * as lib_clientGuard from "../lib/clientGuard.js";
 import type * as lib_clients from "../lib/clients.js";
 import type * as lib_consent from "../lib/consent.js";
 import type * as lib_creativeImages from "../lib/creativeImages.js";
+import type * as lib_credits from "../lib/credits.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_estimate from "../lib/estimate.js";
 import type * as lib_evidence from "../lib/evidence.js";
@@ -262,6 +263,7 @@ declare const fullApi: ApiFromModules<{
   "lib/clients": typeof lib_clients;
   "lib/consent": typeof lib_consent;
   "lib/creativeImages": typeof lib_creativeImages;
+  "lib/credits": typeof lib_credits;
   "lib/errors": typeof lib_errors;
   "lib/estimate": typeof lib_estimate;
   "lib/evidence": typeof lib_evidence;

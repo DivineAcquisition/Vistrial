@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  centsInWords,
-  formatCents,
   formatDuration,
   groupSteps,
   resultWords,
@@ -65,16 +63,6 @@ describe("run view", () => {
     expect(stepLabel(step(0, "profile.read"))).toBe("Read the business profile");
     expect(stepLabel(step(1, null, "model"))).toBe("Wrote");
     expect(stepLabel(step(2, "unknown.tool"))).toBe("Used a tool");
-  });
-
-  it("says costs in plain words", () => {
-    expect(formatCents(0.4)).toBe("under 1¢");
-    expect(formatCents(42)).toBe("42¢");
-    expect(formatCents(105)).toBe("$1.05");
-    expect(centsInWords(42)).toBe("42 cents");
-    expect(centsInWords(1)).toBe("1 cent");
-    expect(centsInWords(105)).toBe("1 dollar and 5 cents");
-    expect(centsInWords(0.2)).toBe("less than 1 cent");
   });
 
   it("formats durations", () => {

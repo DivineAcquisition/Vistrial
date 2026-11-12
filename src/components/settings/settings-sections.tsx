@@ -43,6 +43,7 @@ import { Switch } from "@/components/ui/switch";
 import { captionText, selectClass } from "@/lib/ui";
 import type { ThemeChoice } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { useCredits } from "@/lib/credits";
 
 /** Every action resolves when the server has the change, or rejects with the error to show. */
 type Act<A extends unknown[] = []> = (...args: A) => Promise<unknown>;
@@ -581,8 +582,6 @@ export type AgentsData = {
   } | null;
 };
 
-const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
 export function AgentsSection({
   role,
   data,
@@ -598,9 +597,10 @@ export function AgentsSection({
   onPause: Act<[boolean]>;
   onCaps: Act<[number, number]>;
 }) {
+  const credits = useCredits();
   const controls = data.controls;
-  const [run, setRun] = useState(controls ? (controls.maxCostCentsPerRun / 100).toFixed(2) : "");
-  const [day, setDay] = useState(controls ? (controls.maxCostCentsPerDay / 100).toFixed(2) : "");
+  const [run, setRun] = useState(controls ? String(credits.ofCost(controls.maxCostCentsPerRun)) : "");
+  const [day, setDay] = useState(controls ? String(credits.ofCost(controls.maxCostCentsPerDay)) : "");
   const live = data.agents.filter((row) => row.status === "live");
   const on = live.filter((row) => row.state !== "off");
   return (
@@ -640,7 +640,7 @@ export function AgentsSection({
         tone={controls?.halted ? "critical" : controls?.paused ? "warning" : "good"}
         sentence={
           controls
-            ? `${controls.paused ? "Agents are paused: no new runs start." : "Agents are not paused."} Each run stops at ${dollars(controls.maxCostCentsPerRun)}; each day at ${dollars(controls.maxCostCentsPerDay)}. ${dollars(controls.daySpentCents)} used today.${controls.halted ? " Vistrial has halted all runs on the platform for now." : ""}`
+            ? `${controls.paused ? "Agents are paused: no new runs start." : "Agents are not paused."} Each run stops at ${credits.cost(controls.maxCostCentsPerRun)}; each day at ${credits.cost(controls.maxCostCentsPerDay)}. ${credits.cost(controls.daySpentCents)} used today.${controls.halted ? " Vistrial has halted all runs on the platform for now." : ""}`
             : "Loading the limits."
         }
         affects={data.canEdit ? "Applies to new runs for everyone. Pausing cancels runs still open. Recorded in the audit log." : undefined}
@@ -672,16 +672,17 @@ export function AgentsSection({
               className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end"
               onSubmit={(event) => {
                 event.preventDefault();
-                void onCaps(Math.round(Number(run) * 100), Math.round(Number(day) * 100));
+                // Typed in credits; a limit is kept as the cost it allows.
+                void onCaps(credits.toCost(Number(run)), credits.toCost(Number(day)));
               }}
             >
               <label className="grid gap-1.5 text-sm">
-                <span className={captionText}>Most per run, up to {dollars(controls.ceiling.maxCostCentsPerRun)}</span>
-                <Input inputMode="decimal" value={run} onChange={(event) => setRun(event.target.value)} />
+                <span className={captionText}>Most credits per run, up to {credits.costCount(controls.ceiling.maxCostCentsPerRun)}</span>
+                <Input inputMode="numeric" value={run} onChange={(event) => setRun(event.target.value)} />
               </label>
               <label className="grid gap-1.5 text-sm">
-                <span className={captionText}>Most per day, up to {dollars(controls.ceiling.maxCostCentsPerDay)}</span>
-                <Input inputMode="decimal" value={day} onChange={(event) => setDay(event.target.value)} />
+                <span className={captionText}>Most credits per day, up to {credits.costCount(controls.ceiling.maxCostCentsPerDay)}</span>
+                <Input inputMode="numeric" value={day} onChange={(event) => setDay(event.target.value)} />
               </label>
               <Button type="submit" variant="outline">
                 Save caps

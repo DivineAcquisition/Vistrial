@@ -12,6 +12,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { AUTO_REFILL, CREDITS_FEATURE, EXTRA_ORG, EXTRA_ORG_ID, PLAN, PLAN_ID, TOPUP_ID, TOPUP_PACKS_CENTS, autumnKey, autumnMode, billingOn, extraOrgsOpen, extraUnitsFrom } from "./lib/billing";
+import { creditCount } from "./lib/credits";
 import { ADD_ORGANIZATION_CLOSED } from "./lib/organizations";
 import { memberAction, viewerAction } from "./lib/builders";
 import { notAllowed, notFound, userError } from "./lib/errors";
@@ -137,7 +138,7 @@ export const topUp = memberAction({
   args: { amountCents: v.number(), returnOrigin: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ url: string | null }> => {
     await requireRole(ctx, ctx.workspaceId, ctx.userId, true);
-    if (!(TOPUP_PACKS_CENTS as readonly number[]).includes(args.amountCents)) throw userError("Choose a $10, $25 or $50 pack.");
+    if (!(TOPUP_PACKS_CENTS as readonly number[]).includes(args.amountCents)) throw userError(`Choose a pack of ${TOPUP_PACKS_CENTS.map((cents) => creditCount(cents)).join(", ")} credits.`);
     const autumn = client();
     const info = await ctx.runQuery(internal.billing.customerInfo, { workspaceId: ctx.workspaceId });
     await autumn.customers.getOrCreate({ customerId: info.customerId, name: info.name, email: info.email ?? undefined });
@@ -356,7 +357,7 @@ export const grantCredits = internalAction({
   args: { workspaceId: v.id("workspaces"), amountCents: v.number(), reason: v.string(), grantedBy: v.string() },
   handler: async (ctx, args): Promise<{ balanceCents: number | null }> => {
     if (!Number.isInteger(args.amountCents) || args.amountCents <= 0 || args.amountCents > MAX_GRANT_CENTS) {
-      throw new Error(`Grant between 1 and ${MAX_GRANT_CENTS} cents.`);
+      throw new Error(`Grant between 1 and ${MAX_GRANT_CENTS} credits.`);
     }
     if (args.reason.trim().length < 4) throw new Error("Give a reason for the grant.");
     const info = await ctx.runQuery(internal.billing.customerInfo, { workspaceId: args.workspaceId });

@@ -5,6 +5,7 @@ import type { QueryCtx } from "./_generated/server";
 import { workspaceQuery } from "./lib/builders";
 import { SKILL_CAPS, dayKey } from "./lib/caps";
 import { daySpend, loadCaps } from "./lib/capRows";
+import { TYPICAL_RESEARCH_COST_CENTS } from "./lib/credits";
 import { notFound } from "./lib/errors";
 import { euUkCountry } from "./adapters/metaAdLibrary";
 import { PHASE, SKILL_SLUG, parseJson, readBrief, readReport, type ChecksRecord, type ContextRecord } from "./skills/marketIntelligence/shapes";
@@ -40,7 +41,7 @@ export const sourceSetup = workspaceQuery({
         dayCapCents: caps.maxCostCentsPerDay,
         daySpentCents: await daySpend(ctx, ctx.workspaceId, AGENT, SKILL_SLUG, dayKey()),
         // Measured on dev (phase-2-progress, 2.11): 82¢ for 60 sources with one revision.
-        typicalCents: [60, 150] as [number, number],
+        typicalCents: TYPICAL_RESEARCH_COST_CENTS,
         defaultCapCents: SKILL_CAPS[SKILL_SLUG].maxCostCentsPerRun,
       },
     };

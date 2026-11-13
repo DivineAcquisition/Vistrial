@@ -35,13 +35,17 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderColor: LINE, borderRadius: 8, padding: 12, marginBottom: 8 },
   row: { flexDirection: "row", gap: 8 },
   num: { width: 18, fontFamily: "Helvetica-Bold", color: BRAND },
-  pill: { fontSize: 7.5, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 6, backgroundColor: NEUTRAL_SOFT, color: NEUTRAL, alignSelf: "flex-start" },
+  pill: { fontSize: 7.5, lineHeight: 1.15, paddingTop: 3.5, paddingBottom: 1.5, paddingHorizontal: 6, borderRadius: 6, borderWidth: 0.75, borderColor: NEUTRAL, backgroundColor: "#ffffff", color: INK, alignSelf: "flex-start" },
   refs: { fontSize: 8, color: MUTED, marginTop: 4 },
   chartTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 6 },
   barLabel: { width: 120, fontSize: 8.5, color: INK },
   barValue: { width: 54, fontSize: 8.5, textAlign: "right", color: MUTED },
   footer: { position: "absolute", left: 52, right: 52, flexDirection: "row", justifyContent: "space-between", fontSize: 7.5, color: MUTED, borderTopWidth: 1, borderTopColor: LINE, paddingTop: 6 },
   link: { color: BRAND, textDecoration: "none" },
+  answer: { borderWidth: 1, borderRadius: 8, padding: 14, marginBottom: 10 },
+  answerText: { fontSize: 13, fontFamily: "Helvetica-Bold", lineHeight: 1.35, marginTop: 6 },
+  counts: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 10 },
+  count: { flexDirection: "row", gap: 5, alignItems: "center" },
 });
 
 /** One horizontal bar chart, drawn as vector shapes so it prints sharp. */
@@ -82,11 +86,23 @@ function Footer({ text, padded = true }: { text: string; padded?: boolean }) {
   );
 }
 
+/**
+ * An evidence label. It is always the label's own words in a bordered box, in ink: it reads the same in a
+ * black-and-white print, so nothing here rests on colour.
+ */
+function Label({ text }: { text: string }) {
+  return <Text style={styles.pill}>{text}</Text>;
+}
+
 function refs(numbers: number[]) {
   return numbers.length ? `Sources: ${numbers.map((n) => `[${n}]`).join(" ")}` : "No outside source";
 }
 
-/** The market report as a PDF: cover, summary, charts, findings, opportunities and the sources appendix. */
+/**
+ * The market report as a PDF, in the same order as the screen: the cover, then the answer (the summary with
+ * its evidence label, what to do next and the opportunities), then what the research saw, then every finding
+ * with its label and sources, and the sources appendix.
+ */
 export function ReportPdf({ model }: { model: ReportPdfModel }) {
   const accent = model.cover.brandMark ? BRAND : NEUTRAL;
   const band = model.cover.brandMark ? BRAND_SOFT : NEUTRAL_SOFT;
@@ -125,11 +141,65 @@ export function ReportPdf({ model }: { model: ReportPdfModel }) {
         </View>
       </Page>
 
+      {/* The answer first: the summary with its label, the claims by label, what to do next, then each opportunity. */}
       <Page size="A4" style={styles.page}>
         <Footer text={model.footer} />
-        <Text style={styles.h1}>Summary</Text>
-        <Text>{model.summary.text}</Text>
-        <Text style={styles.h2}>What the research saw</Text>
+        <Text style={styles.h1}>The answer</Text>
+        <View style={[styles.answer, { borderColor: accent, backgroundColor: band }]} wrap={false}>
+          {model.answer.label ? <Label text={model.answer.label} /> : null}
+          <Text style={styles.answerText}>{model.summary.text}</Text>
+          {model.answer.byLabel.length ? (
+            <View style={styles.counts}>
+              {model.answer.byLabel.map((row) => (
+                <View key={row.label} style={styles.count}>
+                  <Text style={{ fontFamily: "Helvetica-Bold" }}>{row.count}</Text>
+                  <Label text={row.label} />
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {model.answer.label ? <Text style={[styles.refs, { marginTop: 8 }]}>The summary carries the weakest label among the report&apos;s claims. A count is a number of claims, not a score.</Text> : null}
+        </View>
+        {model.answer.next ? (
+          <View style={[styles.card, { borderColor: accent }]} wrap={false}>
+            <Text style={styles.eyebrow}>What to do next</Text>
+            <Text style={{ fontSize: 12, fontFamily: "Helvetica-Bold", marginTop: 4 }}>{model.answer.next.action}</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 5, alignItems: "center" }}>
+              {model.answer.next.label ? <Label text={model.answer.next.label} /> : null}
+              <Text style={[styles.refs, { marginTop: 0 }]}>From opportunity 1: {model.answer.next.from}</Text>
+            </View>
+          </View>
+        ) : null}
+
+        <Text style={styles.h2}>Opportunities</Text>
+        {model.opportunities.length === 0 ? <Text style={styles.muted}>No opportunity was supported by the research.</Text> : null}
+        {model.opportunities.map((row) => (
+          <View key={row.number} style={styles.card} wrap={false}>
+            <View style={styles.row}>
+              <Text style={[styles.num, { color: accent }]}>{row.number}</Text>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <Text style={{ fontFamily: "Helvetica-Bold" }}>{row.opportunity}</Text>
+                  {row.uncertainty ? <Label text={row.uncertainty} /> : null}
+                </View>
+                <Text style={{ marginTop: 4 }}>
+                  <Text style={styles.muted}>Do: </Text>
+                  {row.action}
+                </Text>
+                <Text style={{ marginTop: 2 }}>
+                  <Text style={styles.muted}>How to tell if it worked: </Text>
+                  {row.howToTell}
+                </Text>
+                <Text style={styles.refs}>{refs(row.sources)}</Text>
+              </View>
+            </View>
+          </View>
+        ))}
+      </Page>
+
+      <Page size="A4" style={styles.page}>
+        <Footer text={model.footer} />
+        <Text style={styles.h1}>What the research saw</Text>
         <BarChart title="Sources by platform" bars={model.charts.platforms} accent={accent} empty="No sources were kept." />
         <BarChart title="Offers seen" bars={model.charts.offers} accent={accent} empty="No source showed an offer." />
         <BarChart title="Calls to action seen" bars={model.charts.ctas} accent={accent} empty="No source showed a call to action." />
@@ -156,6 +226,7 @@ export function ReportPdf({ model }: { model: ReportPdfModel }) {
         ) : null}
       </Page>
 
+      {/* The full text: every finding with its label and sources, the limits, and what the labels mean. */}
       <Page size="A4" style={styles.page}>
         <Footer text={model.footer} />
         <Text style={styles.h1}>Findings</Text>
@@ -167,32 +238,9 @@ export function ReportPdf({ model }: { model: ReportPdfModel }) {
               <View style={{ flex: 1 }}>
                 <Text>{row.statement}</Text>
                 <View style={{ flexDirection: "row", gap: 8, marginTop: 5, alignItems: "center" }}>
-                  <Text style={styles.pill}>{row.basisLabel}</Text>
+                  <Label text={row.basisLabel} />
                   <Text style={[styles.refs, { marginTop: 0 }]}>{refs(row.sources)}</Text>
                 </View>
-              </View>
-            </View>
-          </View>
-        ))}
-
-        <Text style={[styles.h1, { marginTop: 18 }]}>Opportunities</Text>
-        {model.opportunities.length === 0 ? <Text style={styles.muted}>No opportunity was supported by the research.</Text> : null}
-        {model.opportunities.map((row) => (
-          <View key={row.number} style={styles.card} wrap={false}>
-            <View style={styles.row}>
-              <Text style={[styles.num, { color: accent }]}>{row.number}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: "Helvetica-Bold" }}>{row.opportunity}</Text>
-                <Text style={{ marginTop: 4 }}>
-                  <Text style={styles.muted}>Do: </Text>
-                  {row.action}
-                </Text>
-                <Text style={{ marginTop: 2 }}>
-                  <Text style={styles.muted}>How to tell if it worked: </Text>
-                  {row.howToTell}
-                </Text>
-                {row.uncertainty ? <Text style={[styles.pill, { marginTop: 5 }]}>{row.uncertainty}</Text> : null}
-                <Text style={styles.refs}>{refs(row.sources)}</Text>
               </View>
             </View>
           </View>
@@ -204,6 +252,17 @@ export function ReportPdf({ model }: { model: ReportPdfModel }) {
               <Text key={row} style={styles.muted}>
                 • {row}
               </Text>
+            ))}
+          </View>
+        ) : null}
+        {model.answer.legend.length ? (
+          <View wrap={false}>
+            <Text style={styles.h2}>What the labels mean</Text>
+            {model.answer.legend.map((row) => (
+              <View key={row.label} style={{ flexDirection: "row", gap: 8, marginBottom: 4, alignItems: "center" }}>
+                <Label text={row.label} />
+                <Text style={[styles.muted, { flex: 1 }]}>{row.means}</Text>
+              </View>
             ))}
           </View>
         ) : null}

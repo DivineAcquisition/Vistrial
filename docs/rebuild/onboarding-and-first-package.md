@@ -30,8 +30,8 @@ exist. Open questions for the owner are at the end.
 | D5 | **"Ready to use" means approved only when the run's own checks pass.** A part whose checks still fail after its one revision is shown as "Needs your review", not approved. | The owner chose ready to use, not drafts. Approving work that failed its evidence checks would put an unsupported claim in front of the customer marked as approved. This is the one place the package can arrive as a draft, and it says why. |
 | D6 | **The two offer ideas come from Offer Intelligence in a new "first package" mode**, not a new skill. | Offer Intelligence already reads the approved research, the profile, the facts and the business's own results, cites sources and has code checks. The mode adds: exactly two changes, one `acquisition` and one `retention`, built on the captured offers and prices, and it never stops to ask a question (no one is waiting at a chat). |
 | D7 | **The page teardown is the Landing Page Teardown skill in a new "own site" mode**: up to 5 of the business's own pages, no competitor search. | The per-page reading against the owner's framework is unchanged. The cross-page write changes: with no competitor pages there are no "patterns others share"; it writes improvements per page and across the funnel. |
-| D8 | **The free limit is $8.00 of our cost per organization**, split per part (section 4.2), enforced in code on top of each skill's own run cap. | Each skill's existing run cap (research $3, offers $1.50, teardown $3) already bounds a run; the package limit makes the total a single, stated number, and a retry can only spend what is left. |
-| D9 | **Capturing the organization's own site is free once. A Client's site, and any later re-read, uses credits**, at the usual markup, with the most it can cost shown on the form before it is submitted. | A capture is cheap (section 1.6), but free reads on demand for every client would be an open tap on our cost. |
+| D8 | **The free limit is $15.00 of our cost per organization** (owner's decision; first proposed at $8.00), split per part (section 4.2), enforced in code on top of each skill's own run cap. | Each skill's existing run cap (research $3, offers $1.50, teardown $3) already bounds a run; the package limit makes the total a single, stated number, and a retry can only spend what is left. |
+| D9 | **The first read of each site is free: the organization's own and each Client's (owner's decision). Any later re-read uses credits**, at the usual markup, with the most it can cost shown before it starts. | A capture is cheap (section 1.6); free re-reads on demand would be an open tap on our cost. |
 
 ---
 
@@ -73,7 +73,7 @@ All three are additive: older rows read as before.
 |---|---|---|
 | Onboarding step 1 | The organization | Free (inside the package limit) |
 | Settings › Brand › Your brand › "Read my website again" | The organization | Free the first time for an organization that never had a capture (existing organizations), credits after |
-| Adding a Client with a website, or adding a website to a Client that had none | That Client | Credits, shown on the form |
+| Adding a Client with a website, or adding a website to a Client that had none | That Client | Free the first time (owner's decision); credits after, shown on the form |
 | Settings › Brand › a client › "Read the website again" | That Client | Credits, shown before |
 
 A read that cannot be paid for (out of credits) saves the website, says "Not read: out of credits" and
@@ -469,19 +469,45 @@ too.
 
 ---
 
-## 7. Open questions for the owner
+## 7. The owner's decisions (2026-11-13)
 
-1. **First package for existing organizations?** Recommended: no, they already had the free session. A
-   one-time "Get your first package" on Home is easy to add if you want it.
-2. **Limits:** $8.00 per organization, 3 packages per account, $400 a day across the platform. Change any
-   of them?
-3. **Email with report content:** it goes to the Owner only and includes the answer, three findings and
-   the two offer ideas. Should Admins get it too? Should the "report ready" notice switch also switch it
-   off (recommended: yes)?
-4. **A Client's site capture uses credits** (D9). Should the first capture of each client be free instead?
-5. **Auto-approval when checks fail** (D5): the part arrives as "Needs your review" instead of approved.
-   Is that right, or do you want it approved with the failed checks listed?
-6. **HighLevel:** the slot reads the provider key `highlevel`. Confirm that is the key the other session
-   uses.
-7. **No website:** step 1 lets a person skip the site. Then there are no pages to tear down, so the
-   package is research and offer ideas only. Fine, or should a website be required?
+The questions this section first asked, with the owner's answers. Where an answer changes something above,
+the change is built in the PR named, and the sections above are to be read with it.
+
+1. **Existing organizations:** no first package. New sign-ups only. (As built.)
+2. **Limits:** the per-organization limit is **$15.00** of our cost (not $8.00). Shares: research $7.00,
+   offer ideas $3.00, the page part (teardown or landing page) $5.00. A package run may use its share even
+   where the skill's usual run cap is lower, never past the platform ceiling ($10 a run). Still 3
+   packages per account and $400 a day across the platform (so about 26 new packages a day before the
+   queue). (#300)
+3. **Failed checks:** a part that fails its checks arrives as "Needs your review"; everything that passes
+   arrives approved. (As built.)
+4. **Email:** the Owner **and the Admins** get the package email. The "Report ready" notice switch still
+   turns it off for a person. (#300)
+5. **Client site capture:** the **first** read of each client's website is free; later reads use credits,
+   with the most they can cost shown first. (#296)
+6. **HighLevel:** the slot keys on the provider `highlevel`; the coordinator confirms the key with the
+   HighLevel session. HighLevel now reads and writes (writes approved by a person first); the slot is
+   unchanged.
+7. **No website:** step 1 keeps a clear "I don't have a website yet" choice. Then:
+   - Vistrial gathers context from everywhere else it can: connected accounts (Meta, calendar, results
+     files, the CRM once connected), the social profiles the person gives on Confirm, the answers on
+     Confirm, and the research.
+   - In place of the teardown, the first package builds them **a landing page**, on Strategist's **Pages**
+     tab: a full layout following `landing-page-framework.md`, all eleven sections in order, copy unique to
+     this business, built from the research and the acquisition offer idea. Every claim points at what it
+     was built from (a research finding, a stated offer, a fact the person confirmed, a connected
+     account's figure).
+   - The framework's rules are enforced in code, not asked of the model: **Results is left out when there
+     is no real proof**; the page is refused (saved as "Needs your review", never approved) when a
+     required section is empty or the pain and solution counts differ; the FAQ must cover price,
+     guarantee, who it is for, how long, and what if it doesn't work; the call to action starts with a
+     verb.
+   - It is written after the offer ideas, because it sells the acquisition idea. If no offer idea was
+     written, it sells the offer the person confirmed.
+   - Built in a new skill, Landing Page Build (#301, stacked on #300).
+
+Two scope notes from the owner, applied to everything here: the model's name is never shown, and credits
+spent are not shown on work screens (a separate Usage page does that). The only credit figure shown is a
+budget a person confirms before work starts (a client's paid site read); the first package is free, so it
+shows none.

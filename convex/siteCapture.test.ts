@@ -346,31 +346,37 @@ describe("a site capture", () => {
     expect(calls).toHaveLength(0);
   });
 
-  it("reads a client's site on the organization's credits, after checking they cover it, and keeps it to the people who see that client", async () => {
+  it("reads each client's site free the first time, then on the organization's credits after checking they cover it, and keeps it to the people who see that client", async () => {
     const t = makeTester();
     await routes(t);
     const a = await seed(t, "Agency");
     web();
     model(SAMPLE_WORDS);
     const clientId = (await a.owner.mutation(api.clients.create, { workspaceId: a.workspaceId, type: "business", name: "Northbound Coaching" })) as Id<"clients">;
-
     process.env.AUTUMN_SECRET_KEY = "test_key";
     await t.run((ctx) => ctx.db.insert("billingAccounts", { workspaceId: a.workspaceId, balanceCents: 100, refreshedAt: 1 }));
-    expect(await a.owner.query(api.siteCapture.quote, { workspaceId: a.workspaceId, clientId })).toMatchObject({ free: false, maxCredits: 150, canAfford: false });
-    expect(await message(a.owner.mutation(api.siteCapture.start, { workspaceId: a.workspaceId, url: SAMPLE_SITE, clientId }))).toMatch(/credits/i);
 
+    // The first read of this client's site is free, whatever the balance.
+    expect(await a.owner.query(api.siteCapture.quote, { workspaceId: a.workspaceId, clientId })).toMatchObject({ free: true, maxCredits: 0, canAfford: true });
+    const captureId = await a.owner.mutation(api.siteCapture.start, { workspaceId: a.workspaceId, url: SAMPLE_SITE, clientId });
+    await settle(t);
+    const row = await a.owner.query(api.siteCapture.get, { workspaceId: a.workspaceId, captureId });
+    expect(row).toMatchObject({ status: "done", free: true });
+    expect(await t.run((ctx) => ctx.db.query("billingLedger").collect())).toHaveLength(0);
+    // The organization's own site was not read, so the client's capture is not "the latest" for the organization.
+    expect(await a.owner.query(api.siteCapture.latest, { workspaceId: a.workspaceId })).toBeNull();
+
+    // A second read of the same client's site uses credits, and the balance must cover the most it can cost.
+    expect(await a.owner.query(api.siteCapture.quote, { workspaceId: a.workspaceId, clientId })).toMatchObject({ free: false, maxCredits: 150, canAfford: false });
+    vi.advanceTimersByTime(120_000);
+    expect(await message(a.owner.mutation(api.siteCapture.start, { workspaceId: a.workspaceId, url: SAMPLE_SITE, clientId }))).toMatch(/credits/i);
     await t.run(async (ctx) => {
       const account = await ctx.db.query("billingAccounts").first();
       await ctx.db.patch(account!._id, { balanceCents: 5000 });
     });
-    const captureId = await a.owner.mutation(api.siteCapture.start, { workspaceId: a.workspaceId, url: SAMPLE_SITE, clientId });
+    await a.owner.mutation(api.siteCapture.start, { workspaceId: a.workspaceId, url: SAMPLE_SITE, clientId });
     await settle(t);
-    const row = await a.owner.query(api.siteCapture.get, { workspaceId: a.workspaceId, captureId });
-    expect(row.status).toBe("done");
-    const ledger = await t.run((ctx) => ctx.db.query("billingLedger").collect());
-    expect(ledger).toHaveLength(1);
-    // The organization's own site was not read, so the client's capture is not "the latest" for the organization.
-    expect(await a.owner.query(api.siteCapture.latest, { workspaceId: a.workspaceId })).toBeNull();
+    expect(await t.run((ctx) => ctx.db.query("billingLedger").collect())).toHaveLength(1);
 
     await a.owner.mutation(api.siteCapture.apply, { workspaceId: a.workspaceId, captureId, take: ["colors", "audience", "location", "offers"], logoOwned: false });
     const kits = await t.run((ctx) => ctx.db.query("brandKits").collect());
@@ -387,7 +393,7 @@ describe("a site capture", () => {
     expect(await message(member.query(api.siteCapture.get, { workspaceId: a.workspaceId, captureId }))).toBe("Not found.");
   });
 
-  it("reads a client's website the moment it is added, when the credits cover it", async () => {
+  it("reads a client's website the moment it is added, free the first time; a changed address is read again only when credits cover it", async () => {
     const t = makeTester();
     await routes(t);
     const a = await seed(t, "Agency");
@@ -395,20 +401,30 @@ describe("a site capture", () => {
     model(SAMPLE_WORDS);
     const business = { website: "northbound-coaching.example.com", industry: "Coaching", offer: "", audience: "", geography: "", notes: "" };
     process.env.AUTUMN_SECRET_KEY = "test_key";
-    // No credits: the client is added, the site is not read.
-    const poor = (await a.owner.mutation(api.clients.create, { workspaceId: a.workspaceId, type: "business", name: "Poor Client", business })) as Id<"clients">;
-    await settle(t);
-    expect(await a.owner.query(api.siteCapture.latest, { workspaceId: a.workspaceId, clientId: poor })).toBeNull();
-
-    await t.run((ctx) => ctx.db.insert("billingAccounts", { workspaceId: a.workspaceId, balanceCents: 5000, refreshedAt: 1 }));
+    await t.run((ctx) => ctx.db.insert("billingAccounts", { workspaceId: a.workspaceId, balanceCents: 0, refreshedAt: 1 }));
+    // No credits, but the first read is free.
     const clientId = (await a.owner.mutation(api.clients.create, { workspaceId: a.workspaceId, type: "business", name: "Northbound Coaching", business })) as Id<"clients">;
     await settle(t);
-    expect(await a.owner.query(api.siteCapture.latest, { workspaceId: a.workspaceId, clientId })).toMatchObject({ status: "done", url: SAMPLE_SITE });
-    // Adding the website later reads it then (once the site's own rate limit has room again).
+    const first = await a.owner.query(api.siteCapture.latest, { workspaceId: a.workspaceId, clientId });
+    expect(first).toMatchObject({ status: "done", url: SAMPLE_SITE, free: true });
+
+    // A changed address with no credits: not read again.
     vi.advanceTimersByTime(120_000);
-    await a.owner.mutation(api.clients.update, { workspaceId: a.workspaceId, clientId: poor, business: { ...business, website: "https://northbound-coaching.example.com/about" } });
+    await a.owner.mutation(api.clients.update, { workspaceId: a.workspaceId, clientId, business: { ...business, website: "https://northbound-coaching.example.com/about" } });
     await settle(t);
-    expect(await a.owner.query(api.siteCapture.latest, { workspaceId: a.workspaceId, clientId: poor })).toMatchObject({ status: "done" });
+    expect((await a.owner.query(api.siteCapture.latest, { workspaceId: a.workspaceId, clientId }))?.id).toBe(first!.id);
+
+    // With credits, a changed address is read again.
+    await t.run(async (ctx) => {
+      const account = await ctx.db.query("billingAccounts").first();
+      await ctx.db.patch(account!._id, { balanceCents: 5000 });
+    });
+    vi.advanceTimersByTime(120_000);
+    await a.owner.mutation(api.clients.update, { workspaceId: a.workspaceId, clientId, business: { ...business, website: "https://www.northbound-coaching.example.com/" } });
+    await settle(t);
+    const again = await a.owner.query(api.siteCapture.latest, { workspaceId: a.workspaceId, clientId });
+    expect(again?.id).not.toBe(first!.id);
+    expect(again).toMatchObject({ free: false });
   });
 
   it("shows progress page by page", () => {

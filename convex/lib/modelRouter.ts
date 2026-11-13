@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+import { openRouterComplete } from "./openrouter";
 import { WORK_KINDS, type WorkKind } from "./registry";
 
 export type ModelRoute = {
@@ -18,17 +19,40 @@ export type Completion = {
   model: string;
 };
 
-export const PROVIDERS = ["claude", "fake"] as const;
+/** "claude" is Anthropic, direct. "openrouter" reaches other companies' models through OpenRouter (lib/openrouter.ts). */
+export const PROVIDERS = ["claude", "openrouter", "fake"] as const;
+
+export type Price = {
+  input: number;
+  output: number;
+  cacheRead: number;
+  /** Dollars per million tokens written to the cache. Missing means 1.25x input (Anthropic's rule). */
+  cacheWrite?: number;
+  /** Cents for one web search by the model's own search. Missing means 1 cent (Anthropic's fee). */
+  searchCents?: number;
+};
 
 /**
- * Dollars per million tokens, first-party API rates. A model missing here cannot run, so caps stay real.
- * Cache writes cost 1.25x input. Cache reads are listed per model (Haiku 5.5's is assumed at 10% of input).
+ * Dollars per million tokens. A model missing here cannot run, through any provider, so caps stay real.
+ *
+ * Claude rows are Anthropic's first-party API rates. Cache writes cost 1.25x input; cache reads are listed
+ * per model (Haiku 5.5's is assumed at 10% of input).
+ *
+ * Rows with a company prefix ("openai/", "google/") are OpenRouter model ids, with the prices its models
+ * endpoint (https://openrouter.ai/api/v1/models) listed on 2026-11-13. OpenRouter reports what each call
+ * cost, and that is what is charged; these rows are the fallback when it reports none, and what the
+ * worst-case estimate before a step is worked out from. Above 272,000 input tokens the GPT-6.1 input price
+ * doubles; the reported cost includes that, this table does not.
  */
-export const PRICES: Record<string, { input: number; output: number; cacheRead: number }> = {
+export const PRICES: Record<string, Price> = {
   "claude-fable-5-1": { input: 10, output: 50, cacheRead: 0.25 },
   "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2 },
   "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.2 },
   "claude-haiku-5-5": { input: 0.1, output: 0.5, cacheRead: 0.01 },
+  "openai/gpt-6.1-sol": { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5, searchCents: 1 },
+  "openai/gpt-6.1-terra": { input: 1, output: 5, cacheRead: 0.05, cacheWrite: 1.25, searchCents: 1 },
+  "google/gemini-4-carbon": { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875, searchCents: 1.4 },
+  "google/gemini-4-hydrogen": { input: 1.5, output: 7.5, cacheRead: 0.075, cacheWrite: 0.0833, searchCents: 1.4 },
 };
 
 /** Output room per kind of work. Short kinds stay short so one call cannot spend the run cap alone. */
@@ -109,6 +133,7 @@ export async function complete(route: ModelRoute, workKind: WorkKind, input: str
 
 async function callProvider(provider: string, model: string, workKind: WorkKind, input: string) {
   if (provider === "claude") return claudeComplete(model, workKind, input);
+  if (provider === "openrouter") return openRouterComplete(model, workKind, input);
   if (provider === "fake") return fakeComplete(provider, model);
   throw new ModelError("unknown_provider", false);
 }

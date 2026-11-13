@@ -101,7 +101,10 @@ import type * as lib_integrations_signatures from "../lib/integrations/signature
 import type * as lib_leadBuilders from "../lib/leadBuilders.js";
 import type * as lib_leadGuard from "../lib/leadGuard.js";
 import type * as lib_metaGraph from "../lib/metaGraph.js";
+import type * as lib_modelChoice from "../lib/modelChoice.js";
 import type * as lib_modelRouter from "../lib/modelRouter.js";
+import type * as lib_models from "../lib/models.js";
+import type * as lib_openrouter from "../lib/openrouter.js";
 import type * as lib_newWorkspace from "../lib/newWorkspace.js";
 import type * as lib_offerCards from "../lib/offerCards.js";
 import type * as lib_onboarding from "../lib/onboarding.js";
@@ -135,6 +138,7 @@ import type * as lib_transcriptText from "../lib/transcriptText.js";
 import type * as lib_workTabs from "../lib/workTabs.js";
 import type * as lib_zip from "../lib/zip.js";
 import type * as merges from "../merges.js";
+import type * as modelCheck from "../modelCheck.js";
 import type * as metaAds from "../metaAds.js";
 import type * as offerRuns from "../offerRuns.js";
 import type * as offers from "../offers.js";
@@ -312,7 +316,10 @@ declare const fullApi: ApiFromModules<{
   "lib/leadBuilders": typeof lib_leadBuilders;
   "lib/leadGuard": typeof lib_leadGuard;
   "lib/metaGraph": typeof lib_metaGraph;
+  "lib/modelChoice": typeof lib_modelChoice;
   "lib/modelRouter": typeof lib_modelRouter;
+  "lib/models": typeof lib_models;
+  "lib/openrouter": typeof lib_openrouter;
   "lib/newWorkspace": typeof lib_newWorkspace;
   "lib/offerCards": typeof lib_offerCards;
   "lib/onboarding": typeof lib_onboarding;
@@ -346,6 +353,7 @@ declare const fullApi: ApiFromModules<{
   "lib/workTabs": typeof lib_workTabs;
   "lib/zip": typeof lib_zip;
   merges: typeof merges;
+  modelCheck: typeof modelCheck;
   metaAds: typeof metaAds;
   offerRuns: typeof offerRuns;
   offers: typeof offers;

@@ -20,5 +20,6 @@ export function estimateCents(route: ModelRoute, workKind: WorkKind, prompt: str
   const input = promptTokens(prompt) + maxSearches * 25_000;
   const output = MAX_TOKENS[workKind];
   const dollars = Math.max(...prices.map((row) => (input * row.input + output * row.output) / 1_000_000));
-  return Math.ceil(dollars * 100 + maxSearches * WEB_SEARCH_CENTS);
+  const searchCents = Math.max(...prices.map((row) => row.searchCents ?? WEB_SEARCH_CENTS));
+  return Math.ceil(dollars * 100 + maxSearches * searchCents);
 }

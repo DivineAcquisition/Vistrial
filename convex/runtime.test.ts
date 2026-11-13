@@ -9,6 +9,8 @@ import type { Id } from "./_generated/dataModel";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { MISSING_SOURCE } from "./lib/evidence";
 import { INJECTION_FIXTURE, toolsAfterModel } from "./lib/registry";
+import { resolveRoute } from "./lib/modelChoice";
+import type { Family, Needs } from "./lib/models";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -494,6 +496,93 @@ describe("step 4 runtime", () => {
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
     expect(await modelRoutes(t, workspaceId, runId)).toContain("fake/fake-writer");
+  });
+
+  it("runs a step on OpenRouter when a route names it, records the model, and charges the reported cost", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    delete process.env.OPENROUTER_API_KEY;
+    const sent: Record<string, unknown>[] = [];
+    (globalThis as { __vistrialScriptedOpenRouter?: unknown }).__vistrialScriptedOpenRouter = (body: Record<string, unknown>) => {
+      sent.push(body);
+      return {
+        status: 200,
+        body: { id: "gen-1", type: "message", role: "assistant", model: body.model, content: [{ type: "text", text: "ok", citations: null }], stop_reason: "end_turn", stop_sequence: null, usage: { input_tokens: 50, output_tokens: 10, server_tool_use: null, cost: 0.02 } },
+      };
+    };
+    try {
+      const t = convexTest(schema, modules);
+      const { owner, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      await t.mutation(internal.staffAdmin.enroll, { userId: "staff", role: "platform_admin" });
+      const staff = t.withIdentity(person("staff", "staff@example.com", { secondFactor: true }));
+      await staff.mutation(api.platform.setRoute, { workKind: "write", provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" });
+      const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+      expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
+      expect(await modelRoutes(t, workspaceId, runId)).toContain("openrouter/openai/gpt-6.1-sol");
+      expect(sent).toHaveLength(1);
+      expect(sent[0].provider).toEqual({ data_collection: "deny", zdr: true, require_parameters: true });
+      const run = await t.run((ctx) => ctx.db.get(runId));
+      // $0.02 reported is 2 cents: the run carries what OpenRouter said, not a table price.
+      expect(run?.costCents).toBeCloseTo(2, 6);
+    } finally {
+      delete (globalThis as { __vistrialScriptedOpenRouter?: unknown }).__vistrialScriptedOpenRouter;
+    }
+  });
+
+  it("fails the run with no_key, and spends nothing, when a route names OpenRouter and no key is set", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    delete process.env.OPENROUTER_API_KEY;
+    const t = convexTest(schema, modules);
+    const { owner, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    await t.mutation(internal.staffAdmin.enroll, { userId: "staff", role: "platform_admin" });
+    const staff = t.withIdentity(person("staff", "staff@example.com", { secondFactor: true }));
+    await staff.mutation(api.platform.setRoute, { workKind: "write", provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" });
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, runId)).toBe("failed");
+    const steps = await t.run((ctx) => ctx.db.query("runSteps").withIndex("by_workspace_run", (q) => q.eq("workspaceId", workspaceId).eq("runId", runId)).take(10));
+    expect(steps.map((step) => step.resultCode)).toContain("no_key");
+    expect((await t.run((ctx) => ctx.db.get(runId)))?.costCents).toBe(0);
+  });
+
+  it("never points a route at a model that has no price", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.staffAdmin.enroll, { userId: "admin", role: "platform_admin" });
+    const admin = t.withIdentity(person("admin", "admin@example.com", { secondFactor: true }));
+    const route = { workKind: "write", provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "claude", fallbackModel: "claude-sonnet-5-5" };
+    await admin.mutation(api.platform.setRoute, route);
+    await expect(admin.mutation(api.platform.setRoute, { ...route, model: "openai/gpt-6-astra" })).rejects.toThrow("has no price set");
+    await expect(admin.mutation(api.platform.setRoute, { ...route, fallbackModel: "claude-opus-9" })).rejects.toThrow("has no price set");
+    await expect(admin.mutation(api.platform.setRoute, { ...route, provider: "claude" })).rejects.toThrow("Anthropic's own model ids");
+  });
+
+  it("resolves a family to its route only where it can run, and otherwise keeps the platform's", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.platform.ensureDefaultRoutes, {});
+    const opus = { provider: "claude", model: "claude-opus-5-5", fallbackProvider: "claude", fallbackModel: "claude-sonnet-5-5" };
+    const resolve = (choice: Family | undefined, needs: Needs = {}) => t.run((ctx) => resolveRoute(ctx, "research", choice, needs));
+    delete process.env.OPENROUTER_API_KEY;
+    delete process.env.MODEL_FAMILIES;
+    delete process.env.OPENROUTER_WEB_SEARCH;
+    try {
+      expect(await resolve(undefined)).toEqual({ route: opus });
+      expect(await resolve("claude", { webSearch: true })).toEqual({ route: opus });
+      // No key, or the owner has not switched the family on: the platform's route runs, and the answer says why.
+      expect(await resolve("gpt")).toEqual({ route: opus, setAside: { family: "gpt", reason: "not_switched_on" } });
+      process.env.OPENROUTER_API_KEY = "test-key";
+      expect(await resolve("gpt")).toEqual({ route: opus, setAside: { family: "gpt", reason: "not_switched_on" } });
+      process.env.MODEL_FAMILIES = "gpt, Gemini";
+      expect((await resolve("gpt")).route).toEqual({ provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" });
+      expect((await resolve("gemini")).route?.model).toBe("google/gemini-4-carbon");
+      expect(await resolve("gemini", { webSearch: true })).toEqual({ route: opus, setAside: { family: "gemini", reason: "no_web_search" } });
+      process.env.OPENROUTER_WEB_SEARCH = "on";
+      expect((await resolve("gemini", { webSearch: true })).route?.provider).toBe("openrouter");
+      expect(await resolve("gpt", { webFetch: true })).toEqual({ route: opus, setAside: { family: "gpt", reason: "no_web_fetch" } });
+    } finally {
+      delete process.env.OPENROUTER_API_KEY;
+      delete process.env.MODEL_FAMILIES;
+      delete process.env.OPENROUTER_WEB_SEARCH;
+    }
   });
 
   it("lets only a Platform Admin change model routes", async () => {

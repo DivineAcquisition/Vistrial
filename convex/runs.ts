@@ -14,8 +14,9 @@ import { addDaySpend, daySpend, loadCaps, runCaps } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notFound, userError } from "./lib/errors";
-import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
+import { ModelError, NO_SPEND, complete, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
+import { platformRoute } from "./lib/modelChoice";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isActionTool, isCollectTool, wrapUntrusted } from "./lib/registry";
 import { collectResult, type Platform } from "./lib/researchShapes";
 import { saveSourceRef, setSourceStatus } from "./lib/sourceRefs";
@@ -87,17 +88,6 @@ async function starterActive(ctx: QueryCtx, run: Doc<"agentRuns">) {
     .withIndex("by_workspace_user", (q) => q.eq("workspaceId", run.workspaceId).eq("userId", run.startedBy))
     .unique();
   return member?.active === true;
-}
-
-/** A workspace without a route uses the fake model only where dev skills are on. Production fails the run instead. */
-async function routeFor(ctx: QueryCtx, workKind: string): Promise<ModelRoute | null> {
-  const row = await ctx.db
-    .query("modelRoutes")
-    .withIndex("by_workKind", (q) => q.eq("workKind", workKind))
-    .unique();
-  if (row) return row;
-  if (!devSkillsEnabled()) return null;
-  return { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" };
 }
 
 export const devSkill = workspaceQuery({
@@ -533,7 +523,7 @@ export const prepare = internalMutation({
     }
     // Fast mode runs research and writing on the faster route.
     const workKindRoute = run.mode === "fast" && (next.workKind === "research" || next.workKind === "write") ? "classify" : next.workKind;
-    const route = await routeFor(ctx, workKindRoute);
+    const route = await platformRoute(ctx, workKindRoute);
     if (!route) {
       await recordFailure(ctx, run, index, idempotencyKey, "no_route", "model", NO_SPEND, 0, undefined, next.phase);
       return { done: true as const };

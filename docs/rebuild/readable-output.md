@@ -158,8 +158,10 @@ on screen.
 
 ### 6. Comparison across pages (`CompareGrid`)
 
-A table: the framework's jobs down, the pages across, the person's page first. A cell says "has a section"
-or "no section" and nothing more, because that is what code counted for every page. The last columns give
+A table: the framework's jobs down, the pages across, the person's page first. A cell says whether the page
+has a section doing the job (fully or partly) or none, and nothing more, because that is what the teardown
+saved for every page. A section read as not doing its job does not count as having it; the server's table
+and its gap check use the same rule. The last columns give
 "N of M other pages" and flag the rows where "Yours lacks this". One sentence above it counts those rows.
 It replaces the eleven bars and says the same thing they do, plus which page.
 

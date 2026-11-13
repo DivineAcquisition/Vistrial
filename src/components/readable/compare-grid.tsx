@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils";
 import { StatusChip, StatusIcon } from "./status-chip";
 
 /**
- * Pages side by side: the framework's jobs down, the pages across, yours first. A cell says only "has a
- * section" or "no section". A real table, so a screen reader reads each cell with its row and column.
+ * Pages side by side: the framework's jobs down, the pages across, yours first. A cell says only whether the page
+ * has a section doing the job (fully or partly) or none. A real table, so a screen reader reads each cell with its row and column.
  */
 export function CompareGrid({ columns, rows, className }: { columns: ComparePage[]; rows: CompareRow[]; className?: string }) {
   const hasOwn = columns.some((page) => page.own);
   const name = (page: ComparePage) => (page.own ? "Your page" : page.host);
   return (
-    <div className={cn("min-w-0 overflow-x-auto rounded-xl border border-border", className)} tabIndex={0} role="region" aria-label="Which page has which section">
+    <div className={cn("min-w-0 overflow-x-auto rounded-xl border border-border", className)} tabIndex={0} role="region" aria-label="Which page has a section doing each job">
       <table className="w-full min-w-max border-collapse text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs text-muted-foreground">
@@ -43,7 +43,7 @@ export function CompareGrid({ columns, rows, className }: { columns: ComparePage
               </th>
               {row.has.map((has, index) => (
                 <td key={columns[index].id} className={cn("px-2 py-1.5 text-center", columns[index].own && "bg-primary/5")}>
-                  <StatusIcon tone={has ? "good" : "absent"} label={has ? "Has a section" : "No section"} className="align-middle" />
+                  <StatusIcon tone={has ? "good" : "absent"} label={has ? "Has a section doing this job" : "No section doing this job"} className="align-middle" />
                 </td>
               ))}
               <td className="px-3 py-1.5 whitespace-nowrap text-muted-foreground tabular-nums">

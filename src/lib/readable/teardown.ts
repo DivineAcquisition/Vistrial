@@ -167,7 +167,7 @@ export type CompareRow = {
   key: string;
   name: string;
   objection: string;
-  /** For each page column, whether the page has a section for the job. */
+  /** For each page column, whether the page has a section doing the job, fully or partly (the saved `order`). */
   has: boolean[];
   /** How many of the other pages have it, and out of how many. */
   others: number;
@@ -179,8 +179,9 @@ export type CompareRow = {
 };
 
 /**
- * The comparison across pages: framework jobs down, pages across (yours first). A cell is only "has a section"
- * or "no section", because that is all code counted for every page. It says how many pages do a thing, never
+ * The comparison across pages: framework jobs down, pages across (yours first). A cell is only "has a section
+ * doing the job" or "none", because that is all the teardown saved for every page: a section read as not doing
+ * its job is not counted as having it, the same rule the server's table and its gap check use. It says how many pages do a thing, never
  * how well any of them performs.
  */
 export function comparePages(framework: readonly FrameworkJob[], pages: readonly ComparePage[]): { columns: ComparePage[]; rows: CompareRow[]; lacking: number; hasOwn: boolean } {

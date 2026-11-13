@@ -118,9 +118,12 @@ One **site capture** per read, run in the background, with its progress visible 
      of your site", because it is a reading, not a statement.
    - **Offers and prices as stated**: name, price exactly as written, what is included, the guarantee and
      terms if stated. A price must also match a currency pattern found in code on that page.
-   - **Who they serve**, **proof** (testimonials, numbers, logos of clients, named results), **guarantees**,
-     and the **purpose of each page read** (home, sales, landing, booking, opt-in, pricing, about,
-     contact, results, other).
+   - **Who they serve**, **proof** (testimonials, numbers, logos of clients, named results) and
+     **guarantees**.
+   - The **purpose of each page read** (home, sales, landing, booking, opt-in, pricing, services,
+     results, about, contact, other) is decided in code, not by the model: a booking widget makes a
+     booking page, a short email form an opt-in page, prices with a button a sales page, otherwise how
+     the home page linked to it (`lib/siteCapture/pages.ts`).
    - Code then checks every quote against the page's text (`snapshotText`, compared with spacing and case
      ignored). **An item whose quote is not on its page is dropped**, and the count dropped is kept on the
      capture for us to watch (it is never shown to the customer as a finding).

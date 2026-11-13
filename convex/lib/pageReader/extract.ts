@@ -41,6 +41,32 @@ export type PageForm = {
   submit: string[];
 };
 
+/**
+ * What the page's own markup says about its brand, for the site capture: never shown as page text. All of it
+ * is still untrusted. Older snapshots have none.
+ */
+export type BrandSignals = {
+  /** `<meta name="theme-color">`, as written. */
+  themeColor: string | null;
+  /** `<link rel="icon">` and `apple-touch-icon` addresses, the touch icon first. */
+  icons: string[];
+  ogImage: string | null;
+  /** Images whose class, id, alt or file name says "logo", or the first image in the header. */
+  logoImages: { src: string; alt: string | null; region: Region; why: "named" | "header" }[];
+  /** Stylesheets on font hosts (Google Fonts and the like). */
+  fontLinks: string[];
+  /** The page's other stylesheets, in order. The capture may read the first few. */
+  stylesheets: string[];
+  /** The text of the page's `<style>` blocks and the `style` attributes of buttons and links, cut at a limit. */
+  css: string;
+  /** The text of each `application/ld+json` block: the site's structured data about itself. */
+  jsonLd: string[];
+};
+
+export const BRAND_LIMITS = { css: 60_000, jsonLd: 6, jsonLdChars: 20_000, logoImages: 6, stylesheets: 8, icons: 6 } as const;
+const FONT_HOST = /(^|\.)(fonts\.googleapis\.com|fonts\.bunny\.net|use\.typekit\.net|use\.fontawesome\.com|fonts\.cdnfonts\.com)$/i;
+const LOGO_WORD = /logo/i;
+
 export type PageSnapshot = {
   title: string;
   description: string;
@@ -73,6 +99,7 @@ export type PageSnapshot = {
     /** Little text and many scripts: the page probably builds itself in the browser, so a plain request sees a shell. */
     needsBrowser: boolean;
   };
+  brand?: BrandSignals;
 };
 
 const SKIP = new Set(["script", "style", "template", "noscript", "svg", "canvas", "object", "math", "select", "datalist", "head"]);
@@ -114,7 +141,7 @@ function hostOf(src: string | undefined, base: URL): string | null {
   }
 }
 
-type Open = { name: string; hidden: boolean; skip: boolean; region: Region };
+type Open = { name: string; hidden: boolean; skip: boolean; region: Region; keep?: "css" | "ld" };
 type Anchor = { href: string | null; button: boolean; text: string; start: number; flushes: number };
 
 /** Reads HTML into a snapshot. `baseUrl` is the page's final address, for resolving its links. */
@@ -147,6 +174,12 @@ export function extractPage(html: string, baseUrl: string): PageSnapshot {
   let openForm: number | null = null;
   let looseForm: { index: number; section: number } | null = null;
   let label: { forId: string | null; text: string; wrap: number } | null = null;
+  const brand: BrandSignals = { themeColor: null, icons: [], ogImage: null, logoImages: [], fontLinks: [], stylesheets: [], css: "", jsonLd: [] };
+  let touchIcon: string | null = null;
+  let headerImage = false;
+  const keepCss = (text: string) => {
+    if (brand.css.length < BRAND_LIMITS.css) brand.css = (brand.css + text).slice(0, BRAND_LIMITS.css);
+  };
   const facts = { images: 0, imagesWithoutAlt: 0, scripts: 0, stylesheets: 0, iframes: 0, navLinks: 0, stickyNavHint: false, mobileViewport: false, ctas: 0, headings: 0, words: 0 };
 
   const top = () => stack[stack.length - 1];
@@ -218,7 +251,9 @@ export function extractPage(html: string, baseUrl: string): PageSnapshot {
           (name === "input" && (attribs.type ?? "").toLowerCase() === "hidden") ||
           (name === "dialog" && !("open" in attribs));
         const region = LANDMARK[name] ?? (attribs.role === "navigation" ? "nav" : attribs.role === "banner" ? "header" : attribs.role === "contentinfo" ? "footer" : (parent?.region ?? ""));
-        stack.push({ name, hidden: isHidden, skip: (parent?.skip ?? false) || SKIP.has(name), region });
+        const keep = name === "style" ? "css" : name === "script" && (attribs.type ?? "").toLowerCase().trim() === "application/ld+json" ? "ld" : undefined;
+        stack.push({ name, hidden: isHidden, skip: (parent?.skip ?? false) || SKIP.has(name), region, ...(keep ? { keep } : {}) });
+        if (keep === "ld" && brand.jsonLd.length < BRAND_LIMITS.jsonLd) brand.jsonLd.push("");
 
         if (name === "html" && attribs.lang) lang = attribs.lang.slice(0, 20);
         if (name === "title" && parent?.name === "head") inTitle = true;
@@ -236,11 +271,27 @@ export function extractPage(html: string, baseUrl: string): PageSnapshot {
           else if (key === "og:title") ogTitle = content;
           else if (key === "og:description") ogDescription = content;
           else if (key === "viewport" && /width\s*=\s*device-width/i.test(content)) facts.mobileViewport = true;
+          else if (key === "theme-color" && content) brand.themeColor = content.slice(0, 40);
+          else if ((key === "og:image" || key === "og:image:url") && !brand.ogImage) brand.ogImage = resolve(attribs.content, base);
         }
         if (name === "link") {
           const rel = (attribs.rel ?? "").toLowerCase();
           if (rel.includes("stylesheet")) facts.stylesheets += 1;
           if (rel === "canonical") canonical = resolve(attribs.href, base);
+          const href = resolve(attribs.href, base);
+          if (href && /^https?:/i.test(href)) {
+            if (rel.includes("stylesheet")) {
+              const host = hostOf(href, base) ?? "";
+              if (FONT_HOST.test(host)) {
+                if (brand.fontLinks.length < BRAND_LIMITS.stylesheets) brand.fontLinks.push(href);
+              } else if (brand.stylesheets.length < BRAND_LIMITS.stylesheets) brand.stylesheets.push(href);
+            }
+            if (rel.includes("apple-touch-icon")) touchIcon = touchIcon ?? href;
+            else if (rel.split(/\s+/).includes("icon") && brand.icons.length < BRAND_LIMITS.icons) brand.icons.push(href);
+          }
+        }
+        if ((name === "a" || name === "button") && attribs.style && !(isHidden || parent?.skip)) {
+          keepCss(`\n${BUTTON_CLASS.test(attribs.class ?? "") || name === "button" ? "button" : "a"}{${attribs.style}}`);
         }
         if (name === "script") facts.scripts += 1;
         if (isHidden || parent?.skip) return;
@@ -310,6 +361,13 @@ export function extractPage(html: string, baseUrl: string): PageSnapshot {
           if (alt && anchor) anchor.text += ` ${alt}`;
           if (alt && (button || heading !== null)) buf += ` ${alt} `;
           const src = attribs.src ?? attribs["data-src"] ?? "";
+          const imageUrl = /^data:/i.test(src) ? null : resolve(src, base);
+          if (imageUrl && /^https?:/i.test(imageUrl) && brand.logoImages.length < BRAND_LIMITS.logoImages) {
+            const named = [attribs.class, attribs.id, alt, src].some((value) => value && LOGO_WORD.test(value));
+            const inHeader = (region === "header" || region === "nav") && !headerImage;
+            if (named || inHeader) brand.logoImages.push({ src: imageUrl, alt, region, why: named ? "named" : "header" });
+          }
+          if (region === "header" || region === "nav") headerImage = true;
           if (blocks.filter((row) => row.kind === "image").length < SNAPSHOT_LIMITS.images) {
             flush();
             push({ kind: "image", alt, src: /^data:/i.test(src) ? "inline" : (resolve(src, base) ?? ""), ...place() });
@@ -332,6 +390,12 @@ export function extractPage(html: string, baseUrl: string): PageSnapshot {
           return;
         }
         if (stack.length === 0) return;
+        const keeping = top().keep;
+        if (keeping === "css") keepCss(text);
+        if (keeping === "ld" && brand.jsonLd.length > 0) {
+          const at = brand.jsonLd.length - 1;
+          brand.jsonLd[at] = (brand.jsonLd[at] + text).slice(0, BRAND_LIMITS.jsonLdChars);
+        }
         if (top().skip) return;
         if (top().hidden) {
           hiddenChars += clean(text).length;
@@ -438,6 +502,7 @@ export function extractPage(html: string, baseUrl: string): PageSnapshot {
       truncated,
       needsBrowser: words < 80 && facts.scripts >= 3,
     },
+    brand: { ...brand, icons: touchIcon ? [touchIcon, ...brand.icons.filter((row) => row !== touchIcon)] : brand.icons, jsonLd: brand.jsonLd.filter((row) => row.trim()) },
   };
 }
 

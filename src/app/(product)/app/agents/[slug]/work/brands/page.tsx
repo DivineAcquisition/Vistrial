@@ -1,21 +1,8 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { canWork } from "@/lib/roles";
-import { useParams } from "next/navigation";
+import { BRAND_HREF } from "@/lib/shell/journey";
 
-import { useWorkspaceShell } from "@/components/shell/shell-context";
-import { BrandsTab } from "@/components/work/brands-tab";
-import { WorkGate } from "@/components/work/work-gate";
-
-/** The Brands workspace: a kit for the business and one per client, read by Creative Production. */
+/** Brands moved to Settings › Brand. Old links and bookmarks land there. */
 export default function BrandsPage() {
-  const params = useParams<{ slug: string }>();
-  const shell = useWorkspaceShell();
-  if (!shell) return null;
-  const agent = shell.agents.find((row) => row.slug === params.slug);
-  return (
-    <WorkGate agent={agent}>
-      <BrandsTab workspaceId={shell.workspaceId} editor={canWork(shell.role) && agent?.state !== "off"} />
-    </WorkGate>
-  );
+  redirect(BRAND_HREF);
 }

@@ -6,6 +6,7 @@
  */
 import { v } from "convex/values";
 
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
@@ -135,6 +136,8 @@ export const create = adminMutation({
       updatedAt: now,
     });
     await audit(ctx, "client.created", id, args.type === "business" ? 0 : 1);
+    // A website given with the client is read straight away (siteCapture.startForClient says when it is not).
+    if (args.type === "business" && args.business?.website?.trim()) await ctx.scheduler.runAfter(0, internal.siteCapture.startForClient, { clientId: id, userId: ctx.identity.subject });
     return id;
   },
 });
@@ -155,6 +158,10 @@ export const update = adminMutation({
     if (row.type === "person" && args.person) patch.person = { ...cleanPerson(row.person), ...cleanPerson({ ...row.person, ...args.person }) };
     await ctx.db.patch(row._id, patch);
     await audit(ctx, "client.updated", row._id);
+    // A website added to a client that had none, or changed, is read straight away.
+    const before = row.business?.website?.trim() ?? "";
+    const after = patch.business?.website?.trim() ?? before;
+    if (row.type === "business" && after && after !== before) await ctx.scheduler.runAfter(0, internal.siteCapture.startForClient, { clientId: row._id, userId: ctx.identity.subject });
     return null;
   },
 });

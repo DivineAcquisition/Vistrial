@@ -7,6 +7,8 @@ export const factSourceType = v.union(
   v.literal("assumption"),
   v.literal("upload"),
   v.literal("feedback"),
+  /** Read from the business's own website by a site capture. `sourceReference` is the capture. */
+  v.literal("site"),
 );
 export type FactSourceType = Infer<typeof factSourceType>;
 

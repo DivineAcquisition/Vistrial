@@ -43,7 +43,7 @@ export const TRUST_FALLBACK: TrustPublic = {
   securityUpdatedOn: "2026-10-14",
   subprocessorsUpdatedOn: "2026-10-14",
   privacyUpdatedOn: "2026-11-11",
-  termsUpdatedOn: "2026-11-10",
+  termsUpdatedOn: "2026-11-13",
   termsEffectiveOn: "2026-11-10",
   legalEntity: "Divine Agency LLC",
   mailingAddress: "7404 Executive Place, Lanham, MD 20706",

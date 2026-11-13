@@ -169,6 +169,13 @@ describe("account errors", () => {
     expect(explainAccountError(boom("something_new"), "form").message).not.toMatch(/raw|_/);
   });
 
+  it("words a taken email for someone changing theirs, not signing up", () => {
+    expect(explainAccountError(boom("form_identifier_exists"), "email")).toEqual({
+      field: "email",
+      message: "Another account already uses that email. Choose a different one.",
+    });
+  });
+
   it("treats closing the check as nothing to report", () => {
     expect(isConfirmCancelled({ code: "reverification_cancelled" })).toBe(true);
     expect(isConfirmCancelled(boom("form_code_incorrect"))).toBe(false);

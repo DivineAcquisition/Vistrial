@@ -9,7 +9,7 @@ describe("terms stay inside what the product does", () => {
   it("uses the filled operator, address, and dates", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Last updated: November 10, 2026");
+    expect(text).toContain("Last updated: November 13, 2026");
     expect(text).toContain("Effective: November 10, 2026");
     expect(text).toContain("contact@vistrial.io");
     expect(text).not.toContain("\u2014");
@@ -17,7 +17,7 @@ describe("terms stay inside what the product does", () => {
   });
 
   it("states the billing terms the product runs: plan, credits, renewal, refunds and failed payments", () => {
-    expect(text).toContain("$179 per month and includes $150 of credits");
+    expect(text).toContain("$179 per month and includes 15,000 credits");
     expect(text).toContain("Payment is taken by Stripe on its own checkout page");
     expect(text).toContain("renews automatically each month");
     expect(text).toContain("still unpaid 7 days after it was due");

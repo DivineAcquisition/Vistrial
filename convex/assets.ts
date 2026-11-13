@@ -23,6 +23,7 @@ import {
 import { basis } from "./lib/researchShapes";
 import { assetStatus } from "./lib/assetStatus";
 import { notFound, userError } from "./lib/errors";
+import { markOfAsset } from "./lib/modelMarks";
 
 /** A draft that failed a completion check is fixed by a person first: a new version, or a rejection. */
 export const NEEDS_REVIEW = "This draft did not pass its checks. Edit it to add a new version, or reject it.";
@@ -181,6 +182,8 @@ export const get = workspaceQuery({
       currentVersion: asset.currentVersion,
       createdAt: asset.createdAt,
       createdByRun: asset.createdByRun ?? null,
+      /** The model that made it, as stored on its run. Null for older work. */
+      model: await markOfAsset(ctx, asset),
       body: view?.body ?? "",
       evidence: view?.evidence ?? [],
       versions: versions

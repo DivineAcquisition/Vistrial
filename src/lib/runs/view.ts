@@ -25,7 +25,12 @@ export type RunStepView = {
   outputTokens: number;
   /** The skill's name for the step (brief, classify, write...). */
   phase?: string | null;
+  /** The model a model step ran on, from the route stored with it. */
+  model?: RunModel | null;
 };
+
+/** A model as a screen shows it: its family, for the maker's mark, and its plain name. */
+export type RunModel = { family: "claude" | "gpt" | "gemini"; name: string };
 
 export type StepGroup =
   | { type: "single"; key: string; step: RunStepView }
@@ -64,6 +69,8 @@ export type RunView = {
   startedAt: number;
   finishedAt: number | null;
   startedByName: string | null;
+  /** The model that did this run's writing, as stored when it ran. Missing on older runs. */
+  model?: RunModel | null;
   maxSteps: number;
   maxDurationMs: number;
   cost: CostView;
@@ -86,6 +93,7 @@ export type RunRow = {
   startedAt: number;
   finishedAt: number | null;
   startedByName: string | null;
+  model?: RunModel | null;
   caps: {
     maxCostCentsPerRun: number;
     maxCostCentsPerDay: number;
@@ -121,6 +129,7 @@ export function toRunView(row: RunRow): RunView {
     startedAt: row.startedAt,
     finishedAt: row.finishedAt,
     startedByName: row.startedByName,
+    model: row.model ?? null,
     maxSteps: row.caps.maxSteps,
     maxDurationMs: row.caps.maxDurationMs,
     cost: {

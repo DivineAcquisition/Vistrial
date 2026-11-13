@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { ChatComposer, type ComposerFile, type ComposerMode } from "@/components/chat/chat-composer";
+import { SAMPLE_MARKS, SAMPLE_MODELS, SAMPLE_MODELS_CLAUDE } from "@/components/models/sample";
 import { FollowUpsView, type FollowUpMessage } from "@/components/sessions/session-thread";
 
 const AGENTS = [
@@ -22,9 +23,10 @@ const MESSAGES: FollowUpMessage[] = [
     status: "done",
     data: { cited: [{ id: "s1", title: "Housekeep end of tenancy cleaning", url: "https://housekeep.com/end-of-tenancy", platform: "web" }] },
     costCents: 3,
+    model: SAMPLE_MARKS.sol,
   },
   { id: "q2", role: "you", kind: "question", text: "Who is cheapest for a two-bed flat?", status: "done", costCents: 0 },
-  { id: "a2", role: "agent", kind: "answer", text: "This session only has Housekeep's price (from £200), so I can't compare yet.", status: "done", data: { cited: [] }, costCents: 2 },
+  { id: "a2", role: "agent", kind: "answer", text: "This session only has Housekeep's price (from £200), so I can't compare yet.", status: "done", data: { cited: [] }, costCents: 2, model: SAMPLE_MARKS.sol },
   {
     id: "p2",
     role: "agent",
@@ -39,6 +41,7 @@ const MESSAGES: FollowUpMessage[] = [
 export function ChatStory() {
   const [agent, setAgent] = useState("growth-architect");
   const [mode, setMode] = useState<ComposerMode>("thorough");
+  const [family, setFamily] = useState("openai/gpt-6.1-sol");
   const [sources, setSources] = useState<string[] | null>(null);
   const [links, setLinks] = useState<string[]>(["https://housekeep.com/"]);
   const [files, setFiles] = useState<ComposerFile[]>([
@@ -62,7 +65,8 @@ export function ChatStory() {
           files={{ value: files, onAdd: () => undefined, onRemove: (key) => setFiles((rows) => rows.filter((row) => row.key !== key)) }}
           connect={{ canConnect: true, metaConnected: false, onConnectMeta: () => undefined }}
           onSubmit={async () => undefined}
-          footnote="Thorough · Opus 5.5 · up to $3 per session"
+          model={{ options: SAMPLE_MODELS_CLAUDE, value: "claude-opus-5-5" }}
+          footnote="It asks only what it needs, then shows a plan with its budget. Nothing runs or spends until you press Start."
         />
       </section>
       <section className="grid gap-4">
@@ -71,6 +75,7 @@ export function ChatStory() {
         <ChatComposer
           placeholder="Ask about this report, or ask for more research…"
           mode={{ value: mode, onChange: setMode }}
+          model={{ options: SAMPLE_MODELS, value: family, onChange: setFamily }}
           files={{ value: [], onAdd: () => undefined, onRemove: () => undefined }}
           connect={{ canConnect: true, metaConnected: true, onConnectMeta: () => undefined }}
           onSubmit={async () => undefined}

@@ -23,6 +23,8 @@ import type { ItemDecision, PagesQuote, PagesTabData, ReviewActions, TeardownPag
 import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
 import { useCredits } from "@/lib/credits";
+import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
+import { useModelChoice } from "@/components/models/use-model-choice";
 
 export type TeardownAsk = { industry: string; ownUrl: string; urls: string[]; find: boolean; note: string };
 
@@ -34,6 +36,8 @@ export type PagesTabProps = {
   quote: PagesQuote | null;
   onAskChange: (ask: TeardownAsk | null) => void;
   onStart: (ask: TeardownAsk, confirmedCents: number) => Promise<void>;
+  /** The model switch for work started here. Left out where no model can be chosen. */
+  model?: ModelSwitchProps | null;
   view: TeardownView | null;
   page: TeardownPageView | null;
   onSelect: (assetId: string) => void;
@@ -57,7 +61,7 @@ const STOP_WORDS: Record<string, string> = {
 
 const EMPTY_ASK: TeardownAsk = { industry: "", ownUrl: "", urls: [], find: true, note: "" };
 /** The ask: industry, your page, other pages, and whether to look for more. The plan and budget sit under it. */
-function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial: TeardownAsk; quote: PagesQuote | null; onAskChange: (ask: TeardownAsk | null) => void; onStart: PagesTabProps["onStart"]; onClose: () => void }) {
+function StartForm({ initial, quote, onAskChange, onStart, onClose, model }: { model?: ModelSwitchProps | null; initial: TeardownAsk; quote: PagesQuote | null; onAskChange: (ask: TeardownAsk | null) => void; onStart: PagesTabProps["onStart"]; onClose: () => void }) {
   const credits = useCredits();
   const [industry, setIndustry] = useState(initial.industry);
   const [ownUrl, setOwnUrl] = useState(initial.ownUrl);
@@ -171,6 +175,7 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
                     {busy ? <LoaderCircle aria-hidden className="size-4 animate-spin" /> : <Search aria-hidden className="size-4" />}
                     {busy ? "Starting…" : `Start teardown · up to ${credits.words(quote.maxCents)}`}
                   </Button>
+                  {model ? <ModelSwitch {...model} /> : null}
                   {!quote.ready && !quote.industry ? <span className="text-xs text-muted-foreground">Name the industry first.</span> : null}
                   {!quote.ready && quote.industry && quote.maxPages === 0 ? <span className="text-xs text-muted-foreground">Add a page, or tick the box to find some.</span> : null}
                 </div>
@@ -189,7 +194,7 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
 }
 
 /** The Pages workspace, drawn from data so the screen and its story are the same component. */
-export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, view, page, onSelect, onSelectPage, decisions, tryActions, review, briefJson, initialAsk }: PagesTabProps) {
+export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, model, view, page, onSelect, onSelectPage, decisions, tryActions, review, briefJson, initialAsk }: PagesTabProps) {
   const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialAsk));
   const close = () => {
@@ -213,7 +218,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
         }
       />
 
-      {form ? <StartForm initial={initialAsk ?? EMPTY_ASK} quote={quote} onAskChange={onAskChange} onStart={onStart} onClose={close} /> : null}
+      {form ? <StartForm initial={initialAsk ?? EMPTY_ASK} quote={quote} onAskChange={onAskChange} onStart={onStart} onClose={close} model={model} /> : null}
 
       {tab.running.length > 0 ? (
         <section className="grid gap-2" aria-label="Running now">
@@ -308,6 +313,7 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
   const [pageId, setPageId] = useState<string | null>(null);
   const [ask, setAsk] = useState<TeardownAsk | null>(null);
   const start = useMutation(api.landingTeardown.start);
+  const modelChoice = useModelChoice(workspaceId, "landing-page-teardown");
   const review = useReviewActions(workspaceId);
 
   const assetId = (selected ?? tab?.results[0]?.id ?? null) as Id<"assets"> | null;
@@ -315,7 +321,7 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
   const shownPage = pageId && view?.pages.some((row) => row.id === pageId) ? pageId : (view?.pages[0]?.id ?? null);
   const page = useQuery(api.landingTeardown.page, assetId && shownPage ? { workspaceId, assetId, pageId: shownPage } : "skip");
   const brief = useQuery(api.landingTeardown.brief, assetId && view?.hasBrief ? { workspaceId, assetId } : "skip");
-  const quote = useQuery(api.landingTeardown.quote, ask ? { workspaceId, industry: ask.industry, ownUrl: ask.ownUrl || undefined, urls: ask.urls, find: ask.find } : "skip");
+  const quote = useQuery(api.landingTeardown.quote, ask ? { workspaceId, industry: ask.industry, ownUrl: ask.ownUrl || undefined, urls: ask.urls, find: ask.find, ...(modelChoice.picked ? { model: modelChoice.picked } : {}) } : "skip");
   const { byIndex, actions } = useItemDecisions(workspaceId, assetId);
 
   if (!tab) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -326,8 +332,9 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
       tab={tab}
       quote={quote ?? null}
       onAskChange={setAsk}
+      model={editor ? modelChoice.props : null}
       onStart={async (next, confirmedCents) => {
-        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents, clientId });
+        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents, clientId, ...(modelChoice.picked ? { model: modelChoice.picked } : {}) });
       }}
       view={view ?? null}
       page={page ?? null}

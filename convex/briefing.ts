@@ -19,6 +19,7 @@ import { selfMutation, workspaceQuery } from "./lib/builders";
 import { creditWords } from "./lib/credits";
 import { BASIS_LABEL } from "./lib/evidence";
 import { BRIEFING_KINDS, briefingKind, type BriefingKind } from "./lib/taskShapes";
+import { markOfRef } from "./lib/modelMarks";
 
 const FEED_LIMIT = 150;
 const PREVIEW_CHARS = 1400;
@@ -126,6 +127,8 @@ export const feed = workspaceQuery({
         href: await hrefOf(ctx, row),
         sources: row.sources ?? [],
         credits: row.credits ?? null,
+        /** The model behind a post about a run or about something a run made. Null for every other post. */
+        model: await markOfRef(ctx, ctx.workspaceId, row.refTable, row.refId),
         /** Three rows written in code, with the evidence label of the "changed" row when it states the business's own figures. Null on older posts and on anything a model wrote. */
         digest: row.digest ? { changed: row.digest.changed, means: row.digest.means, todo: row.digest.todo, changedLabel: row.digest.firstParty ? BASIS_LABEL.firstParty : null } : null,
         approval: approval && approval.workspaceId === ctx.workspaceId ? await approvalView(ctx, approval) : null,

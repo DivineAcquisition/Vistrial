@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { ChatComposer, type ComposerFile } from "@/components/chat/chat-composer";
 import { StartChat } from "@/components/chat/start-chat";
+import { useConversationModel } from "@/components/models/use-model-choice";
 import { IntakeChatView, type IntakeView } from "@/components/sessions/intake-chat-view";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { api } from "../../../convex/_generated/api";
@@ -44,6 +45,8 @@ export function IntakeChat({
   const remember = useMutation(api.intake.remember);
   const editPlan = useMutation(api.intake.editPlan);
   const setMode = useMutation(api.intake.setMode);
+  const intakeModel = (view as IntakeView | null | undefined)?.intake ?? null;
+  const model = useConversationModel(workspaceId, intakeId && intakeModel ? { id: intakeId, route: "market-intelligence", model: intakeModel.model ?? null, started: intakeModel.status === "started" } : null);
   const markStarted = useMutation(api.intake.markStarted);
   const createProject = useMutation(api.research.createProject);
   const startRun = useMutation(api.runs.start);
@@ -85,6 +88,7 @@ export function IntakeChat({
         disabled={intake.status === "thinking"}
         agent={{ value: agentSlug, options: [{ slug: agentSlug, name: agentName, live: true }], locked: true }}
         mode={{ value: intake.mode ?? "thorough", onChange: (mode) => void setMode({ workspaceId, intakeId, mode }), locked }}
+        model={editor ? model : null}
         sources={{
           value: intake.slots.origins.platforms === "you" ? intake.slots.platforms : null,
           onChange: (value) => void editPlan({ workspaceId, intakeId, ...(value ? { platforms: value } : { everywhere: true }) }),
@@ -183,7 +187,7 @@ export function IntakeChat({
             // The research is for whoever the conversation was started for.
             ...(view?.intake.clientId ? { clientId: view.intake.clientId } : {}),
           });
-          await startRun({ workspaceId, agentSlug, skillSlug: "market-intelligence", projectId, mode: intake.mode ?? "thorough" });
+          await startRun({ workspaceId, agentSlug, skillSlug: "market-intelligence", projectId, mode: intake.mode ?? "thorough", ...(intake.model ? { model: intake.model } : {}) });
           await markStarted({ workspaceId, intakeId, projectId });
           router.push(`${base}/work/research/${projectId}`);
         },

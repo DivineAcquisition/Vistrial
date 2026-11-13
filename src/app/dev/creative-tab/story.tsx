@@ -5,6 +5,7 @@ import { CreativeTabView } from "@/components/work/creative-tab";
 import type { AddedReference, CreativeImageList, CreativeOptions, CreativeTabData, CreativeView } from "@/components/work/types";
 
 import { StoryFrame } from "../work-tabs/story-frame";
+import { SAMPLE_MODELS } from "@/components/models/sample";
 
 const noop = async () => undefined;
 const AT = Date.UTC(2026, 10, 9);
@@ -68,6 +69,7 @@ function view(status: CreativeView["status"], test: CreativeView["test"] = null)
   const passed = status !== "needsReview";
   return {
     assetId: id("a1"),
+    model: { family: "gemini", name: "Gemini 4 Carbon" },
     title: 'Northside Dental: ad set from "BrightSmile: nervous about the dentist?"',
     status,
     createdAt: AT,
@@ -156,6 +158,7 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
       <CreativeTabView
         base="/app/agents/growth-architect"
         editor={state !== "rep"}
+        model={{ options: SAMPLE_MODELS, value: "google/gemini-4-carbon" }}
         options={OPTIONS}
         references={state === "form" ? REFERENCES : []}
         referenceActions={{ addLink: async () => null, upload: async () => null, remove: noop }}

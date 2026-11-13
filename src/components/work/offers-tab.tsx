@@ -29,6 +29,8 @@ import type { ItemDecision, OfferAnalysisView, OfferCardFull, OfferCardRow, Revi
 import { useReviewActions } from "./use-review";
 import { OffersCanvas } from "./work-canvases";
 import { RefineInChat, ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
+import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
+import { useModelChoice } from "@/components/models/use-model-choice";
 
 export type OffersTabProps = {
   base: string;
@@ -42,6 +44,8 @@ export type OffersTabProps = {
   onSaveCard: (cardId: string | null, offer: OfferInput, note: string, copyOf: string | null) => Promise<void>;
   /** "Analyse this offer": runs Offer Intelligence on the card's saved version. */
   onAnalyse: (cardId: string) => Promise<void>;
+  /** The model switch for work started here. Left out where no model can be chosen. */
+  model?: ModelSwitchProps | null;
   analysis: OfferAnalysisView | null;
   analysisId: string | null;
   onSelectAnalysis: (assetId: string) => void;
@@ -62,7 +66,7 @@ function contentOf(row: OfferContent): OfferContent {
 
 /** The offer workspace: the builder, the card, its versions and a comparison of any two, and the analysis under it. */
 function CardsPanel(props: OffersTabProps & { onBuilderClosed?: () => void }) {
-  const { base, editor, tab, cards, card, starter, onSelectCard, onSaveCard, onAnalyse, initialBuilder } = props;
+  const { base, editor, tab, cards, card, starter, onSelectCard, onSaveCard, onAnalyse, model, initialBuilder } = props;
   const [building, setBuilding] = useState<"new" | "edit" | null>(initialBuilder?.mode ?? null);
   const [viewing, setViewing] = useState<number | null>(null);
   const [compare, setCompare] = useState<[number, number] | null>(null);
@@ -186,6 +190,7 @@ function CardsPanel(props: OffersTabProps & { onBuilderClosed?: () => void }) {
                 >
                   <ScaleIcon aria-hidden className="size-4" /> {running ? "Analysing…" : analysing ? "Starting…" : "Analyse this offer"}
                 </Button>
+                {model ? <ModelSwitch {...model} /> : null}
                 <Button size="sm" variant="outline" onClick={() => setBuilding("edit")}>
                   <PenLine aria-hidden className="size-4" /> Edit
                 </Button>
@@ -320,7 +325,7 @@ function AnalysisPanel({ base, tab, analysis, analysisId, onSelectAnalysis, onCa
               { value: String(glance.changes), words: glance.changes === 1 ? "change to test" : "changes to test" },
             ]}
           >
-            <ModelMark />
+            <ModelMark model={analysis.model} />
           </VerdictStrip>
           <CompetitorSideBySide ours={analysis.ours} competitors={analysis.competitors} />
           {editor && analysis.ours.basis !== "insufficient" ? (
@@ -444,6 +449,7 @@ export function OffersTab({ workspaceId, base, editor, analysisId: linked }: { w
   const analysis = useQuery(api.offers.analysis, chosenAnalysis ? { workspaceId, assetId: chosenAnalysis } : "skip");
   const save = useMutation(api.offers.saveVersion);
   const analyse = useMutation(api.offerRuns.analyse);
+  const modelChoice = useModelChoice(workspaceId, "offer-intelligence");
   const fromAnalysis = useMutation(api.offers.fromAnalysis);
   const { byIndex, actions } = useItemDecisions(workspaceId, chosenAnalysis);
   const review = useReviewActions(workspaceId);
@@ -464,8 +470,9 @@ export function OffersTab({ workspaceId, base, editor, analysisId: linked }: { w
         const result = await save({ workspaceId, ...(id ? { cardId: id as Id<"offerCards"> } : {}), ...offer, note, ...(copyOf && !id ? { copyOf: copyOf as Id<"offerCards"> } : {}), ...(!id && !copyOf && clientId ? { clientId } : {}) });
         setCardId(result.cardId);
       }}
+      model={editor ? modelChoice.props : null}
       onAnalyse={async (id) => {
-        await analyse({ workspaceId, cardId: id as Id<"offerCards"> });
+        await analyse({ workspaceId, cardId: id as Id<"offerCards">, ...(modelChoice.picked ? { model: modelChoice.picked } : {}) });
         setAnalysisId(null);
       }}
       analysis={analysis ?? null}

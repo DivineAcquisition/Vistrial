@@ -130,7 +130,7 @@ function StallSummary({ diagnosis, decisions }: { diagnosis: DiagnosisView; deci
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SectionTitle icon={Gauge}>Where growth stalls</SectionTitle>
         <span className="flex flex-wrap items-center gap-2">
-          <ModelMark />
+          <ModelMark model={diagnosis.model} />
           <StatusBadge
             label={diagnosis.status === "approved" ? "Approved" : diagnosis.status === "needsReview" ? "Needs review" : "Waiting for approval"}
             tone={diagnosis.status === "approved" ? "good" : "warning"}

@@ -199,7 +199,7 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
           <span>{when(post.at, now)}</span>
           {post.unread ? <span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 font-medium text-primary-foreground">New</span> : null}
           {waiting ? <StatusChip tone="partly" label={post.approval?.canDecide ? "Needs your decision" : "Waiting for a decision"} /> : null}
-          <ModelMark />
+          <ModelMark model={post.model} />
         </p>
         <h2 className="text-sm font-medium break-words text-card-foreground">{post.title}</h2>
         {post.digest ? (

@@ -20,12 +20,13 @@ const CHATS: LibraryRow[] = [
   row("i5", "Is our growth retainer priced right?", null, { route: "offer-intelligence", page: "Home", status: "ready" }),
 ];
 
-const message = (key: string, role: "you" | "agent", text: string, extra: Partial<ChatDetail["messages"][number]> = {}): ChatDetail["messages"][number] => ({ id: id<"intakeMessages">(key), role, kind: role === "you" ? "text" : "question", text, chips: [], data: null, at: NOW, ...extra });
+const message = (key: string, role: "you" | "agent", text: string, extra: Partial<ChatDetail["messages"][number]> = {}): ChatDetail["messages"][number] => ({ id: id<"intakeMessages">(key), role, kind: role === "you" ? "text" : "question", text, chips: [], data: null, model: null, at: NOW, ...extra });
 
 function chatFor(state: string): ChatDetail {
   const base: ChatDetail = {
     id: id<"intakes">("i7"),
     route: "growth-diagnostics",
+    model: null,
     checklist: true,
     title: "Why did Aster's booked calls stop turning into clients?",
     status: "chatting",

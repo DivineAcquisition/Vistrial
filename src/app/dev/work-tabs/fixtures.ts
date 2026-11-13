@@ -39,8 +39,8 @@ export function storyTab(skillSlug: TabData["skillSlug"], state: string): TabDat
     results: empty
       ? []
       : [
-          { id: id("a1"), title: kind, status: "draft", currentVersion: 1, createdAt: NOW - 2 * 3_600_000, runId: id("run1"), projectId: id("p1") },
-          { id: id("a0"), title: kind.replace("2026-11-08", "2026-10-12"), status: "approved", currentVersion: 2, createdAt: NOW - 20 * DAY, runId: id("run0"), projectId: id("p0") },
+          { id: id("a1"), title: kind, status: "draft", model: { family: "gpt" as const, name: "GPT-6.1 Sol" }, currentVersion: 1, createdAt: NOW - 2 * 3_600_000, runId: id("run1"), projectId: id("p1") },
+          { id: id("a0"), title: kind.replace("2026-11-08", "2026-10-12"), status: "approved", model: null, currentVersion: 2, createdAt: NOW - 20 * DAY, runId: id("run0"), projectId: id("p0") },
         ],
     suggestions: empty
       ? [{ id: "research-first", title: "Approve a report to unlock the next steps", detail: "Offers and Diagnostics build on research you have approved.", tab: "research" }]
@@ -123,6 +123,7 @@ export function storyCards(state: string): { cards: OfferCardRow[]; card: OfferC
 export function storyAnalysis(): OfferAnalysisView {
   return {
     assetId: id("a1"),
+    model: { family: "gpt" as const, name: "GPT-6.1 Sol" },
     title: "Offer analysis: Lead generation retainer",
     status: "draft",
     createdAt: NOW - 2 * 3_600_000,
@@ -173,7 +174,7 @@ export function storyDecisions(): Map<number, ItemDecision> {
 
 export function storyOfferChat(state: string): SkillChatData | null {
   if (state === "empty") return null;
-  const msg = (n: number, role: "you" | "agent", kind: string, text: string, extra: { chips?: string[]; data?: unknown } = {}) => ({ id: id<SkillChatData["messages"][number]["id"]>(`m${n}`), role, kind, text, chips: extra.chips ?? [], data: extra.data ?? null, at: NOW + n });
+  const msg = (n: number, role: "you" | "agent", kind: string, text: string, extra: { chips?: string[]; data?: unknown } = {}) => ({ id: id<SkillChatData["messages"][number]["id"]>(`m${n}`), role, kind, text, chips: extra.chips ?? [], model: null, data: extra.data ?? null, at: NOW + n });
   return {
     intake: { id: id("i1"), skillSlug: "offer-intelligence", status: "ready", asking: null, answers: {}, runId: null, projectId: null, questions: [] },
     messages: [
@@ -219,6 +220,7 @@ export function storyDiagnostics(state: string): DiagnosticsData {
     data: { meta: true, resultsFiles: 2, outcomes: 0 },
     diagnosis: {
       assetId: id("g1"),
+      model: { family: "gpt" as const, name: "GPT-6.1 Sol" },
       title: "Growth diagnosis, 2026-11-08",
       status: "draft",
       createdAt: NOW - 3_600_000,
@@ -276,6 +278,7 @@ export function storyReportPdf(): ReportPdfData {
   const src = (n: number, platform: ReportPdfData["sources"][number]["platform"], title: string, url: string, publisher: string, offer: string | null, cta: string | null) => ({ id: `s${n}`, platform, title, url, publisher, offer, callToAction: cta });
   return {
     title: "Home-service lead generation: market report",
+    model: { family: "claude" as const, name: "Claude Opus 5.5" },
     status: "approved",
     version: 2,
     createdAt: NOW - 20 * DAY,
@@ -323,7 +326,7 @@ export function storyChats(): ChatRow[] {
   ];
 }
 
-const chatMsg = (n: number, role: "you" | "agent", kind: string, text: string, extra: { chips?: string[]; data?: unknown } = {}) => ({ id: id<ChatDetail["messages"][number]["id"]>(`cm${n}`), role, kind, text, chips: extra.chips ?? [], data: extra.data ?? null, at: NOW + n });
+const chatMsg = (n: number, role: "you" | "agent", kind: string, text: string, extra: { chips?: string[]; data?: unknown } = {}) => ({ id: id<ChatDetail["messages"][number]["id"]>(`cm${n}`), role, kind, text, chips: extra.chips ?? [], data: extra.data ?? null, model: null, at: NOW + n });
 
 /** An unclear first message: the chat asks which of the three skills the person wants. */
 export function storyUndecidedChat(): ChatDetail {
@@ -335,6 +338,7 @@ export function storyUndecidedChat(): ChatDetail {
   return {
     id: id("i1"),
     page: null,
+    model: null,
     route: null,
     checklist: false,
     title: "I want more clients",
@@ -363,7 +367,7 @@ export function storyFinishedChat(): { chat: ChatDetail; data: SkillChatData } {
     }),
   ];
   return {
-    chat: { id: id("i3"), page: null, route: "growth-diagnostics", checklist: true, title: "Why did we stop adding retained clients this quarter?", status: "started", mine: true, context: null, result: storyChats()[2].result, messages },
+    chat: { id: id("i3"), page: null, model: null, route: "growth-diagnostics", checklist: true, title: "Why did we stop adding retained clients this quarter?", status: "started", mine: true, context: null, result: storyChats()[2].result, messages },
     data: { intake: { id: id("i3"), skillSlug: "growth-diagnostics", status: "started", asking: null, answers: {}, runId: id("run9"), projectId: id("p9"), questions: [] }, messages },
   };
 }
@@ -372,7 +376,7 @@ export function storyFinishedChat(): { chat: ChatDetail; data: SkillChatData } {
 export function storyPlanChat(): { chat: ChatDetail; data: SkillChatData } {
   const data = storyOfferChat("full")!;
   return {
-    chat: { id: id("i2"), page: null, route: "offer-intelligence", checklist: true, title: "Is our $2,500/mo lead generation retainer strong enough?", status: "ready", mine: true, context: { kind: "offer", id: "c1", title: "Done-for-you lead generation retainer" }, result: null, messages: data.messages },
+    chat: { id: id("i2"), page: null, model: null, route: "offer-intelligence", checklist: true, title: "Is our $2,500/mo lead generation retainer strong enough?", status: "ready", mine: true, context: { kind: "offer", id: "c1", title: "Done-for-you lead generation retainer" }, result: null, messages: data.messages.map((row) => ({ ...row, model: null })) },
     data,
   };
 }

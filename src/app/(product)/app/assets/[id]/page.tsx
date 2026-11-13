@@ -64,8 +64,8 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
           ) : (
             "Added by a person."
           )}{" "}
-          <ModelMark />
-        </p>
+          </p>
+        <ModelMark model={asset.model} />
         {status === "needsReview" ? (
           <p className="text-sm text-destructive">
             This draft did not pass its checks. Edit it to add a new version, or reject it with a reason.

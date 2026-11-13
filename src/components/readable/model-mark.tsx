@@ -1,17 +1,15 @@
-import { BotIcon } from "@/components/icons";
+import { ModelMark as Mark, type ModelMarkData } from "@/components/models/model-mark";
 
 /**
- * The place in a result's header for "which model ran". It draws nothing until a result carries a model name:
- * the model picker and the saved model belong to another piece of work (branch claude/models-openrouter).
- * Whoever lands that only has to pass `model` here; every result header already renders this slot.
+ * The place in a result's header for "which model ran": the maker's mark and the model's plain name. It
+ * draws nothing for a result that carries no model (work from before models were recorded, or work no
+ * model did), so every result header can render this slot.
  */
-export function ModelMark({ model }: { model?: string | null }) {
+export function ModelMark({ model }: { model?: ModelMarkData | null }) {
   if (!model) return <span data-slot="model-mark" hidden />;
   return (
-    <span data-slot="model-mark" className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-      <BotIcon aria-hidden className="size-3.5" />
-      <span className="sr-only">Model: </span>
-      {model}
+    <span data-slot="model-mark" className="inline-flex">
+      <Mark model={model} />
     </span>
   );
 }

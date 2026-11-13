@@ -13,7 +13,7 @@
  */
 import type { QueryCtx } from "../_generated/server";
 import { userError } from "./errors";
-import { CANNOT_RUN_WORDS, cannotRun, parseChoice, routesFor, type CannotRun, type Family, type Gate, type Needs } from "./models";
+import { CANNOT_RUN_WORDS, cannotRunModel, parseChoice, routesFor, type CannotRun, type Family, type Gate, type Needs } from "./models";
 import type { ModelRoute } from "./modelRouter";
 import { openRouterKey, openRouterWebSearchOn } from "./openrouter";
 import { devSkillsEnabled, type WorkKind } from "./registry";
@@ -26,7 +26,7 @@ export function modelGate(): Gate {
     .split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
-  return { openRouter: Boolean(openRouterKey()), families, webSearch: openRouterWebSearchOn() };
+  return { openRouter: Boolean(openRouterKey()), families, webSearch: openRouterWebSearchOn(), haikuWeb: process.env.CLAUDE_HAIKU_WEB?.trim().toLowerCase() === "on" };
 }
 
 /** The platform's route for a kind of work: the row a Platform Admin set, else the fake model where dev skills are on, else none. */
@@ -52,7 +52,7 @@ export async function resolveRoute(ctx: Pick<QueryCtx, "db">, workKind: WorkKind
   if (!spec) return { route: base };
   const mine = routesFor(spec)[workKind];
   if (base && base.provider === mine.provider && base.model === mine.model) return { route: base };
-  const reason = cannotRun(spec.family, needs, modelGate());
+  const reason = cannotRunModel(spec, needs, modelGate());
   if (reason) return { route: base, setAside: { model: spec.id, family: spec.family, reason } };
   return { route: mine };
 }
@@ -62,6 +62,6 @@ export function assertCanRun(choice: string | null | undefined, needs: Needs) {
   if (!choice) return;
   const spec = parseChoice(choice);
   if (!spec) throw userError("That model is not offered. Choose another model.");
-  const reason = cannotRun(spec.family, needs, modelGate());
+  const reason = cannotRunModel(spec, needs, modelGate());
   if (reason) throw userError(`${spec.name} cannot run this: ${CANNOT_RUN_WORDS[reason].toLowerCase()}. Choose another model.`);
 }

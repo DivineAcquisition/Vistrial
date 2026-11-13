@@ -85,6 +85,10 @@ function priceOf(model: string) {
 export function usageSpend(model: string, usage: Anthropic.Usage, provider = "claude"): { spent: Spend; webSearches: number; webFetches: number } {
   const cacheWrite = usage.cache_creation_input_tokens ?? 0;
   const cacheRead = usage.cache_read_input_tokens ?? 0;
+  // A step that searches the web sums several server-side turns into one usage. For a model with a dearer
+  // long-prompt rate (Haiku 5.5) that sum can pass the limit when no single prompt did, so such a step may be
+  // counted at the dearer rate: too much, never too little. Haiku is not offered for web work until a real
+  // call has shown what Anthropic bills (lib/models.ts `webUnproven`).
   const price = ratesFor(priceOf(model), usage.input_tokens + cacheWrite + cacheRead);
   const webSearches = usage.server_tool_use?.web_search_requests ?? 0;
   const webFetches = usage.server_tool_use?.web_fetch_requests ?? 0;

@@ -49,10 +49,9 @@ async function capturesOf(ctx: QueryCtx, workspaceId: Id<"workspaces">, clientId
     .take(take);
 }
 
-/** The organization's first capture of its own site is on Vistrial. A client's, and any later one, uses credits. */
+/** The first capture of a site, the organization's own or each client's, is on Vistrial. Any later one uses credits. */
 async function isFree(ctx: QueryCtx, workspaceId: Id<"workspaces">, clientId: Id<"clients"> | undefined) {
-  if (clientId) return false;
-  return (await capturesOf(ctx, workspaceId, undefined)).length === 0;
+  return (await capturesOf(ctx, workspaceId, clientId)).length === 0;
 }
 
 /**
@@ -126,12 +125,13 @@ export const startForClient = internalMutation({
     const client = await ctx.db.get(args.clientId);
     if (!client || client.status !== "active" || !client.business?.website) return null;
     if (!homeOf(client.business.website)) return null;
-    if (billingOn()) {
+    const free = await isFree(ctx, client.workspaceId, client._id);
+    if (!free && billingOn()) {
       const account = await accountFor(ctx, client.workspaceId);
       if (!account || account.balanceCents < priceFor(CAPTURE_MAX_CENTS)) return null;
     }
     if ((await readToday(ctx, client.workspaceId)) + 1 + MORE_PAGES > READ_LIMITS.pagesPerDay) return null;
-    await startCaptureFor(ctx, { workspaceId: client.workspaceId, clientId: client._id, url: client.business.website, userId: args.userId, free: false });
+    await startCaptureFor(ctx, { workspaceId: client.workspaceId, clientId: client._id, url: client.business.website, userId: args.userId, free });
     return null;
   },
 });

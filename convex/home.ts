@@ -167,7 +167,7 @@ export const overview = workspaceQuery({
     for (const run of running) bump(run.agentSlug, "working");
     for (const row of asked) bump(row.run.agentSlug, "waiting");
     for (const asset of reports) bump(await agentOf(ctx, asset.createdByRun), "waiting");
-    // Decisions come from Growth Architect reports.
+    // Decisions come from Strategist reports.
     for (let index = 0; index < due.length; index += 1) bump(GROWTH_ARCHITECT, "waiting");
 
     // Per skill, for the agent's work tabs: runs going (or waiting on a question) and results to review.

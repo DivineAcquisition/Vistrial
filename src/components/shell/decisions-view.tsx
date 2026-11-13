@@ -53,22 +53,22 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
         <PageHeader
           eyebrow="First sign-in"
           title="Set up the organization"
-          description="Confirm the business profile, then turn on Growth Architect. Nothing runs until you do."
+          description="Confirm the business profile, then turn on Strategist. Nothing runs until you do."
         />
         <ol className="grid gap-2 text-sm">
           <li>{profile.confirmed ? "Profile: done." : "Profile: not done."}</li>
-          <li>{architectOn ? "Growth Architect: done." : "Growth Architect: not done."}</li>
+          <li>{architectOn ? "Strategist: done." : "Strategist: not done."}</li>
         </ol>
         <ProfileEditor workspaceId={shell.workspaceId} role={shell.role} />
         <Panel className="grid gap-3 p-4 sm:p-6">
-          <h2 className="font-heading text-base text-card-foreground">Growth Architect</h2>
-          <p className={bodyText}>{architectOn ? "Growth Architect is on. It still cannot publish anything." : "Growth Architect is off."}</p>
+          <h2 className="font-heading text-base text-card-foreground">Strategist</h2>
+          <p className={bodyText}>{architectOn ? "Strategist is on. It still cannot publish anything." : "Strategist is off."}</p>
           {shell.role === "owner" ? (
             <Button type="button" variant="secondary" onClick={() => void turnOn({ workspaceId: shell.workspaceId, slug: GROWTH_ARCHITECT, state: "on" })}>
-              Turn on Growth Architect
+              Turn on Strategist
             </Button>
           ) : (
-            <p className={bodyText}>An owner turns Growth Architect on.</p>
+            <p className={bodyText}>An owner turns Strategist on.</p>
           )}
           {shell.role === "owner" ? (
             <Button type="button" onClick={() => void finish({ workspaceId: shell.workspaceId })}>

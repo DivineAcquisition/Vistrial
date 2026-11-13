@@ -4,8 +4,8 @@
   "maxPages": 6,
   "results": [
    {
-    "createdAt": 1794330784561,
-    "id": "00000000000000000000010107assets",
+    "createdAt": 1794531535171,
+    "id": "00000000000000000000010109assets",
     "industry": "Marketing agencies for coaches",
     "pages": 3,
     "status": "draft",
@@ -18,7 +18,7 @@
   "stopped": []
  },
  "view": {
-  "assetId": "00000000000000000000010107assets",
+  "assetId": "00000000000000000000010109assets",
   "checks": {
    "passed": true,
    "results": [
@@ -66,7 +66,7 @@
     }
    ]
   },
-  "createdAt": 1794330784561,
+  "createdAt": 1794531535171,
   "framework": [
    {
     "expected": true,
@@ -189,6 +189,7 @@
    {
     "analysed": true,
     "driver": "fetch",
+    "droppedLines": 0,
     "droppedQuotes": 0,
     "facts": {
      "ctaCount": 4,
@@ -232,6 +233,7 @@
    {
     "analysed": true,
     "driver": "fetch",
+    "droppedLines": 0,
     "droppedQuotes": 0,
     "facts": {
      "ctaCount": 4,
@@ -276,6 +278,7 @@
    {
     "analysed": true,
     "driver": "fetch",
+    "droppedLines": 0,
     "droppedQuotes": 0,
     "facts": {
      "ctaCount": 4,
@@ -368,7 +371,7 @@
     "whyItMayWork": "A recognisable moment may land harder than a general complaint."
    }
   ],
-  "projectId": "0000000000010040researchProjects",
+  "projectId": "0000000000010042researchProjects",
   "status": "draft",
   "suggestions": [
    {
@@ -600,6 +603,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Keep the next step always one tap away.",
+     "headline": "One button, no menu",
      "job": "nav",
      "name": "Nav",
      "note": "One button and no menu, so the only way forward is the call. A coach skimming on a phone has nothing else to tap.",
@@ -630,6 +634,7 @@
      ],
      "does": "yes",
      "frameworkJob": "In 5 seconds, tell the right person \"this is for you\" and the wrong person \"this isn't\".",
+     "headline": "Names who it is for, then the outcome",
      "job": "hero",
      "name": "Hero",
      "note": "The badge turns away anyone under $10K a month before they read further, and the headline is the outcome a coach wants in their own words.",
@@ -656,6 +661,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Make the reader feel understood, then feel the cost of waiting.",
+     "headline": "Three recognisable pains, each with a cost",
      "job": "problem",
      "name": "Problem agitation",
      "note": "Each pain is a moment a coach will recognise, with a cost beside it, rather than a general complaint.",
@@ -682,6 +688,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Resolve every pain, one for one.",
+     "headline": "One fix per pain, in the same order",
      "job": "solution",
      "name": "Solution",
      "note": "Three fixes for three pains, in the same order, so each worry is closed where it was opened.",
@@ -724,6 +731,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Show exactly what they get so the price feels small next to it.",
+     "headline": "Deliverables, an effort line and a stated price",
      "job": "offer",
      "name": "The offer",
      "note": "Every deliverable is a thing, the effort line takes the work off the buyer, and the price is stated instead of hidden behind the call.",
@@ -754,6 +762,7 @@
      ],
      "does": "partly",
      "frameworkJob": "Kill the fear of a long, messy project.",
+     "headline": "Four steps; the last has no time on it",
      "job": "process",
      "name": "Process timeline",
      "note": "Four steps with the client's time on most of them. The last step has no time on it.",
@@ -796,6 +805,7 @@
      ],
      "does": "partly",
      "frameworkJob": "Catch the reader who scrolled the whole page and is still deciding.",
+     "headline": "Restates the outcome but asks for an application",
      "job": "finalCta",
      "name": "Final CTA",
      "note": "It restates the outcome and repeats the scarcity line, but asks for an application where every other button says Book a call.",
@@ -828,7 +838,8 @@
     "An application screens out anyone under your minimum before they see your calendar."
    ],
    "title": "Brightside Agency | Booked calls for coaches and consultants",
-   "url": "https://brightside-agency.example.com/"
+   "url": "https://brightside-agency.example.com/",
+   "verdict": "Qualifies its reader and states a price, but shows no proof and leaves the remaining questions unanswered."
   },
   {
    "driver": "fetch",
@@ -927,6 +938,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Keep the next step always one tap away.",
+     "headline": "One button, no menu",
      "job": "nav",
      "name": "Nav",
      "note": "One button and no menu, so the only way forward is the call. A coach skimming on a phone has nothing else to tap.",
@@ -957,6 +969,7 @@
      ],
      "does": "yes",
      "frameworkJob": "In 5 seconds, tell the right person \"this is for you\" and the wrong person \"this isn't\".",
+     "headline": "Names who it is for, then the outcome",
      "job": "hero",
      "name": "Hero",
      "note": "The badge turns away anyone under $10K a month before they read further, and the headline is the outcome a coach wants in their own words.",
@@ -1007,6 +1020,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Prove it works before you explain how.",
+     "headline": "Three numbered results with named quotes",
      "job": "results",
      "name": "Results",
      "note": "Numbers come first and each quote has a name and a role, which may matter to coaches who have been burned by agencies before.",
@@ -1033,6 +1047,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Make the reader feel understood, then feel the cost of waiting.",
+     "headline": "Three recognisable pains, each with a cost",
      "job": "problem",
      "name": "Problem agitation",
      "note": "Each pain is a moment a coach will recognise, with a cost beside it, rather than a general complaint.",
@@ -1059,6 +1074,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Resolve every pain, one for one.",
+     "headline": "One fix per pain, in the same order",
      "job": "solution",
      "name": "Solution",
      "note": "Three fixes for three pains, in the same order, so each worry is closed where it was opened.",
@@ -1101,6 +1117,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Show exactly what they get so the price feels small next to it.",
+     "headline": "Deliverables, an effort line and a stated price",
      "job": "offer",
      "name": "The offer",
      "note": "Every deliverable is a thing, the effort line takes the work off the buyer, and the price is stated instead of hidden behind the call.",
@@ -1139,6 +1156,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Make the status quo look like a choice with a cost.",
+     "headline": "Matched rows, with and without",
      "job": "compare",
      "name": "With vs without",
      "note": "Short matched pairs make doing nothing look like a choice with a cost.",
@@ -1181,6 +1199,7 @@
      ],
      "does": "partly",
      "frameworkJob": "Handle the objections that remain, so nobody leaves to \"think about it\".",
+     "headline": "Covers price, timing and fit; no guarantee",
      "job": "faq",
      "name": "FAQ",
      "note": "Price, timing and fit are answered in the buyer's voice. There is no question about a guarantee or what happens if it does not work.",
@@ -1223,6 +1242,7 @@
      ],
      "does": "partly",
      "frameworkJob": "Catch the reader who scrolled the whole page and is still deciding.",
+     "headline": "Restates the outcome but asks for an application",
      "job": "finalCta",
      "name": "Final CTA",
      "note": "It restates the outcome and repeats the scarcity line, but asks for an application where every other button says Book a call.",
@@ -1249,7 +1269,8 @@
     "An application screens out anyone under your minimum before they see your calendar."
    ],
    "title": "Rival Growth | Booked calls for coaches and consultants",
-   "url": "https://rival-growth.example.com/apply"
+   "url": "https://rival-growth.example.com/apply",
+   "verdict": "Qualifies its reader, proves results before explaining how, and states a price. The last button changes what it asks for."
   },
   {
    "driver": "fetch",
@@ -1348,6 +1369,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Keep the next step always one tap away.",
+     "headline": "One button, no menu",
      "job": "nav",
      "name": "Nav",
      "note": "One button and no menu, so the only way forward is the call. A coach skimming on a phone has nothing else to tap.",
@@ -1378,6 +1400,7 @@
      ],
      "does": "yes",
      "frameworkJob": "In 5 seconds, tell the right person \"this is for you\" and the wrong person \"this isn't\".",
+     "headline": "Names who it is for, then the outcome",
      "job": "hero",
      "name": "Hero",
      "note": "The badge turns away anyone under $10K a month before they read further, and the headline is the outcome a coach wants in their own words.",
@@ -1428,6 +1451,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Prove it works before you explain how.",
+     "headline": "Three numbered results with named quotes",
      "job": "results",
      "name": "Results",
      "note": "Numbers come first and each quote has a name and a role, which may matter to coaches who have been burned by agencies before.",
@@ -1454,6 +1478,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Make the reader feel understood, then feel the cost of waiting.",
+     "headline": "Three recognisable pains, each with a cost",
      "job": "problem",
      "name": "Problem agitation",
      "note": "Each pain is a moment a coach will recognise, with a cost beside it, rather than a general complaint.",
@@ -1480,6 +1505,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Resolve every pain, one for one.",
+     "headline": "One fix per pain, in the same order",
      "job": "solution",
      "name": "Solution",
      "note": "Three fixes for three pains, in the same order, so each worry is closed where it was opened.",
@@ -1522,6 +1548,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Show exactly what they get so the price feels small next to it.",
+     "headline": "Deliverables, an effort line and a stated price",
      "job": "offer",
      "name": "The offer",
      "note": "Every deliverable is a thing, the effort line takes the work off the buyer, and the price is stated instead of hidden behind the call.",
@@ -1560,6 +1587,7 @@
      ],
      "does": "yes",
      "frameworkJob": "Make the status quo look like a choice with a cost.",
+     "headline": "Matched rows, with and without",
      "job": "compare",
      "name": "With vs without",
      "note": "Short matched pairs make doing nothing look like a choice with a cost.",
@@ -1590,6 +1618,7 @@
      ],
      "does": "partly",
      "frameworkJob": "Kill the fear of a long, messy project.",
+     "headline": "Four steps; the last has no time on it",
      "job": "process",
      "name": "Process timeline",
      "note": "Four steps with the client's time on most of them. The last step has no time on it.",
@@ -1632,6 +1661,7 @@
      ],
      "does": "partly",
      "frameworkJob": "Handle the objections that remain, so nobody leaves to \"think about it\".",
+     "headline": "Covers price, timing and fit; no guarantee",
      "job": "faq",
      "name": "FAQ",
      "note": "Price, timing and fit are answered in the buyer's voice. There is no question about a guarantee or what happens if it does not work.",
@@ -1674,6 +1704,7 @@
      ],
      "does": "partly",
      "frameworkJob": "Catch the reader who scrolled the whole page and is still deciding.",
+     "headline": "Restates the outcome but asks for an application",
      "job": "finalCta",
      "name": "Final CTA",
      "note": "It restates the outcome and repeats the scarcity line, but asks for an application where every other button says Book a call.",
@@ -1694,7 +1725,8 @@
     "An application screens out anyone under your minimum before they see your calendar."
    ],
    "title": "Northlight Growth | Booked calls for coaches and consultants",
-   "url": "https://northlight-growth.example.com/"
+   "url": "https://northlight-growth.example.com/",
+   "verdict": "Qualifies its reader, proves results before explaining how, and states a price. The last button changes what it asks for."
   }
  ],
  "quote": {
@@ -1823,7 +1855,7 @@
     "name": "The offer"
    }
   ],
-  "teardownAssetId": "00000000000000000000010107assets",
+  "teardownAssetId": "00000000000000000000010109assets",
   "version": 1
  }
 }

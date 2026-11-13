@@ -216,7 +216,7 @@ export const finishSetup = workspaceMutation({
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", sales._id))
       .unique();
-    if (!link || link.state === "off") throw userError("Turn on Growth Architect.");
+    if (!link || link.state === "off") throw userError("Turn on Strategist.");
     const settings = await ctx.db
       .query("workspaceSettings")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))

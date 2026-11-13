@@ -36,7 +36,7 @@ describe("privacy policy stays inside verified behavior", () => {
   });
 
   it("describes the current product and its research rules", () => {
-    expect(text).toContain("Growth Architect");
+    expect(text).toContain("Strategist");
     expect(text).toContain("official access only");
     expect(text).toContain("does not store copies of ad images or video files");
     expect(text).toContain("We do not currently use Google Analytics or the Meta pixel");

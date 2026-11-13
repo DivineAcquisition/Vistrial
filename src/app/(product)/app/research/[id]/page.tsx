@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-/** Research projects are sessions now; they live in the Growth Architect's folder. */
+/** Research projects are sessions now; they live in the Strategist's folder. */
 export default function ResearchProjectRedirect() {
   const params = useParams<{ id: string }>();
   const router = useRouter();

@@ -75,6 +75,28 @@ The same labels as every other skill (`convex/lib/evidence.ts`):
 
 Each page read becomes a source on the teardown's project, so every sourced claim links to the page.
 
+## At-a-glance lines (added 2026-11-13)
+
+The Pages tab leads with the answer (see `readable-output.md`). Two optional fields in the page reading
+carry the words for it:
+
+- `verdict`: the page in one or two sentences, 280 characters at most.
+- `sections[].headline`: the section in a dozen words, 90 characters at most.
+
+Both are a reading of the page, so the screen labels them Inference; the label is set in code. Both pass
+the same refusal as the findings: when the reading is applied, a line that claims a cause or a result
+("proven", "will increase bookings", "best-performing") is blanked and counted in `droppedLines`, and the
+teardown's limits say a line was removed. Neither is a quote, so the quote check does not apply to them.
+
+A teardown saved before these fields existed, or one whose line was blanked, shows words written in code
+instead: for the page, a sentence of counts ("This page has a section for 7 of the framework's 11 jobs:
+5 do their job and 2 partly. It skips ..."); for a section, the objection it answers. No model is called
+again for an old teardown.
+
+The same refusal covers a section's `note`, `proof.note` and `goal` (owner's decision, 2026-11-13). A
+blanked note is simply absent; nothing is written in its place. This applies when a reading is applied,
+so teardowns saved earlier keep the notes they have.
+
 ## Page content is untrusted
 
 Pages are written by strangers. Hidden text, comments and scripts never leave the page reader. Visible

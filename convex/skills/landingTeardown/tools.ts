@@ -159,6 +159,7 @@ const apply: MutationTool = async (ctx, run, steps) => {
       analysis: cleaned?.analysis ?? null,
       ...orderOf(cleaned?.analysis ?? null),
       droppedQuotes: cleaned?.droppedQuotes ?? 0,
+      droppedLines: cleaned?.droppedLines ?? 0,
     });
   }
   const value: PagesRecord = { industry: request.industry, pages, unread, table: patternTable(pages), ownId: pages.find((page) => page.own)?.id ?? null };

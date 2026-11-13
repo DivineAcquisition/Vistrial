@@ -7,8 +7,8 @@ import { ChatComposer, type ComposerFile, type ComposerMode } from "@/components
 import { FollowUpsView, type FollowUpMessage } from "@/components/sessions/session-thread";
 
 const AGENTS = [
-  { slug: "growth-architect", name: "Growth Architect", live: true },
-  { slug: "sales-conversion", name: "Sales Conversion", live: false },
+  { slug: "growth-architect", name: "Strategist", live: true },
+  { slug: "sales-conversion", name: "Dealmaker", live: false },
   { slug: "customer-success", name: "Customer Success", live: false },
 ];
 
@@ -67,7 +67,7 @@ export function ChatStory() {
       </section>
       <section className="grid gap-4">
         <h2 className="text-sm font-medium text-muted-foreground">Follow-ups after a report</h2>
-        <FollowUpsView messages={MESSAGES} agentName="Growth Architect" editor onRun={() => undefined} onDecline={() => undefined} />
+        <FollowUpsView messages={MESSAGES} agentName="Strategist" editor onRun={() => undefined} onDecline={() => undefined} />
         <ChatComposer
           placeholder="Ask about this report, or ask for more research…"
           mode={{ value: mode, onChange: setMode }}

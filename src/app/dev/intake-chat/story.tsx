@@ -75,7 +75,7 @@ export function IntakeChatStory({ state }: { state: string }) {
       <IntakeChatView
         view={viewFor(state)}
         editor
-        agentName="Growth Architect"
+        agentName="Strategist"
         onFirstMessage={wait}
         actions={{ send: wait, remember: wait, removeCompetitor: wait, addCompetitor: wait, setPlatforms: wait, start: wait }}
       />

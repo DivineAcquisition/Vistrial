@@ -17,8 +17,8 @@ const SHELL: WorkspaceShell = {
   role: "owner",
   setupDone: true,
   agents: [
-    { slug: "growth-architect", name: "Growth Architect", department: "growth", status: "live", job: "Research, strategy and campaigns that bring in demand.", promise: "", sort: 0, state: "on" },
-    { slug: "sales-conversion", name: "Sales Conversion", department: "sales", status: "planned", job: "", promise: "", sort: 1, state: "off" },
+    { slug: "growth-architect", name: "Strategist", department: "growth", status: "live", job: "Research, strategy and campaigns that bring in demand.", promise: "", sort: 0, state: "on" },
+    { slug: "sales-conversion", name: "Dealmaker", department: "sales", status: "planned", job: "", promise: "", sort: 1, state: "off" },
     { slug: "customer-success", name: "Customer Success", department: "customer-success", status: "planned", job: "", promise: "", sort: 2, state: "off" },
   ],
 };
@@ -72,7 +72,7 @@ export function AgentSessionStory({ state }: { state: string }) {
               <SessionThread
                 workspaceId={WS}
                 editor
-                agentName="Growth Architect"
+                agentName="Strategist"
                 base="/app/agents/growth-architect"
                 data={{
                   studio,

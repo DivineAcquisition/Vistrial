@@ -885,7 +885,7 @@ export function BusinessCard({
       <div className="flex items-center gap-3 rounded-2xl border border-overlay/[0.08] bg-card/70 px-4 py-3 backdrop-blur-xl">
         <VistrialMark size="sm" />
         <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-strong">Growth Architect</span>{" "}
+          <span className="font-medium text-strong">Strategist</span>{" "}
           {stage === "review" ? "is ready to start your first research." : "fills this in as you go. You won’t be asked again."}
         </p>
       </div>

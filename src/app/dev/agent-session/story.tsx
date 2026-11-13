@@ -27,14 +27,14 @@ function folder(state: string): FolderData {
   const now = Date.now();
   return ({
     sessions: [
-      { id: "p1", title: "Austin deep cleaning", objective: "", geography: "Austin, TX", state: state === "done" ? "done" : state === "review" ? "review" : state, updatedAt: now - 60_000, costCents: 82 },
+      { id: "p1", title: "Agencies for coaches", objective: "", geography: "Austin, TX", state: state === "done" ? "done" : state === "review" ? "review" : state, updatedAt: now - 60_000, costCents: 82 },
       { id: "p2", title: "Bay Area offers", objective: "", geography: "San Francisco, CA", state: "review", updatedAt: now - 3_600_000, costCents: 96 },
-      { id: "p3", title: "Move-out pricing", objective: "", geography: "Austin, TX", state: "done", updatedAt: now - 86_400_000, costCents: 74 },
+      { id: "p3", title: "Retainer pricing", objective: "", geography: "Austin, TX", state: "done", updatedAt: now - 86_400_000, costCents: 74 },
     ],
     sessionCount: 3,
     counts: { facts: 12, reports: 3, reportsWaiting: 1, runsOpen: state === "working" ? 1 : 0 },
     connections: [
-      { key: "meta", label: "Meta ads", state: "on", detail: "Bay Area Cleaning Professionals" },
+      { key: "meta", label: "Meta ads", state: "on", detail: "Northlight Growth" },
       { key: "youtube", label: "YouTube", state: "on", detail: null },
       { key: "instagram", label: "Instagram", state: "attention", detail: "Waiting for Meta approval" },
       { key: "adLibrary", label: "Meta Ad Library", state: "attention", detail: "EU and UK ads only" },
@@ -89,7 +89,7 @@ export function AgentSessionStory({ state }: { state: string }) {
                         ],
                   sources,
                   counts: new Map(key === "waiting" ? [] : [["web", 2], ["youtube", 1], ["tiktok", 1]]),
-                  reportAsset: key === "done" || key === "review" ? { id: "a1", title: "Market report: Austin deep cleaning", status: key === "review" ? "needsReview" : "draft", currentVersion: key === "review" ? 2 : 1 } : null,
+                  reportAsset: key === "done" || key === "review" ? { id: "a1", title: "Market report: agencies for coaches", status: key === "review" ? "needsReview" : "draft", currentVersion: key === "review" ? 2 : 1 } : null,
                   assetStatus: key === "review" ? "needsReview" : key === "done" ? "draft" : null,
                   capCents: 300,
                 }}

@@ -28,8 +28,8 @@ const UPLOADS: ResultsUploadView[] = [
       totals: { spend: 2140.5, impressions: 58200, clicks: 1912, conversions: 41, revenue: 9840 },
       groupBy: "Campaign",
       groups: [
-        { name: "Search - Deep cleaning Austin", spend: 1320.25, impressions: 31000, clicks: 1204, conversions: 29, revenue: 7010 },
-        { name: "Search - Move-out", spend: 640.25, impressions: 19400, clicks: 560, conversions: 10, revenue: 2480 },
+        { name: "Search - Coaching leads Austin", spend: 1320.25, impressions: 31000, clicks: 1204, conversions: 29, revenue: 7010 },
+        { name: "Search - Consulting leads", spend: 640.25, impressions: 19400, clicks: 560, conversions: 10, revenue: 2480 },
         { name: "Search - Brand", spend: 180, impressions: 7800, clicks: 148, conversions: 2, revenue: 350 },
       ],
       otherGroups: 0,

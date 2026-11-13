@@ -87,7 +87,7 @@ export function VisualsStory({ part }: { part: string }) {
               <Banner tone="warning" role="alert" icon={<WifiOff aria-hidden />} title="Reconnecting">
                 This page may be out of date until the connection returns.
               </Banner>
-              <Banner compact tone="good" title="Connected to Bay Area Cleaning Professionals. Reading ads only." />
+              <Banner compact tone="good" title="Connected to Northlight Growth. Reading ads only." />
             </section>
           ) : null}
 
@@ -105,7 +105,7 @@ export function VisualsStory({ part }: { part: string }) {
             <section className="grid gap-3">
               <h2 className="text-sm font-medium text-muted-foreground">Staggered cards with hover lift</h2>
               <Stagger as="div" className="grid gap-3 sm:grid-cols-3">
-                {["Austin deep cleaning", "Bay Area offers", "Move-out pricing"].map((title) => (
+                {["Agencies for coaches", "Bay Area offers", "Retainer pricing"].map((title) => (
                   <StaggerItem as="div" key={title}>
                     <HoverLift>
                       <div className="grid gap-2 rounded-xl border border-border bg-card p-4">

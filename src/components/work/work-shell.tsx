@@ -1,5 +1,7 @@
 "use client";
 
+import { EvidenceLabel } from "@/components/readable/evidence-label";
+import { reportGlance } from "@/lib/readable/report";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -153,6 +155,22 @@ export function RunningNow({ running, finished, sessionHref }: { running: Runnin
  * This skill's results: drafts waiting for review first, each with approve, request changes and reject.
  * `extra` adds a tab's own action to a row (the PDF on a research report).
  */
+/**
+ * What a report found, on its row: the report's own summary paragraph and the weakest evidence label among
+ * its claims. Read out of the report's current version; a row with no summary shows nothing.
+ */
+function RowAnswer({ answer }: { answer: ResultRow["answer"] | undefined }) {
+  if (!answer) return null;
+  const glance = reportGlance(answer.lead, answer.labels.map((basisLabel) => ({ basisLabel })));
+  if (!glance.summary) return null;
+  return (
+    <p className="flex flex-wrap items-start gap-x-2 gap-y-1 text-sm text-card-foreground">
+      {glance.weakest ? <EvidenceLabel label={glance.weakest} /> : null}
+      <span className="line-clamp-2 min-w-0 flex-1 basis-64">{glance.summary}</span>
+    </p>
+  );
+}
+
 export function ResultsList({
   results,
   actions,
@@ -195,6 +213,7 @@ export function ResultsList({
                   </Link>
                   <AssetStatusBadge status={row.status as "draft"} />
                 </div>
+                <RowAnswer answer={row.answer} />
                 {(pending && editor) || extra || (refineHref && editor) ? (
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     {pending && editor ? <ReviewBar assetId={row.id} actions={actions} needsReview={row.status === "needsReview"} /> : <span />}

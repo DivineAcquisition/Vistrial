@@ -404,8 +404,9 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
         <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div className="grid min-w-0 content-start gap-5">
             {top}
-            {diagnosis ? <StallSummary diagnosis={diagnosis} decisions={decisions} /> : null}
+            {/* The owner's order (2026-11-13): what the diagnosis could read first, then what it found. */}
             <DataChecklist data={data} base={base} />
+            {diagnosis ? <StallSummary diagnosis={diagnosis} decisions={decisions} /> : null}
           </div>
           {/* On a wide screen the rail sits beside the top; on a phone it comes after the roadmap. */}
           <aside className="hidden min-w-0 content-start gap-5 lg:grid">{rail}</aside>

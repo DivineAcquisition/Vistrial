@@ -294,8 +294,8 @@ the words "A competitor states this". Gaps, risks and each change carry an evide
 "how to tell" and the evidence sentence are one step away; the first change nobody is trying is held as
 "what to do next".
 
-**Growth diagnosis** (Diagnostics tab; story `/dev/diagnostics-tab?state=full`). "Where growth stalls" now
-comes before the data checklist and leads with the stage and its reason, labelled by the rule the skill
+**Growth diagnosis** (Diagnostics tab; story `/dev/diagnostics-tab?state=full`). "Where growth stalls"
+(placed after the data checklist; see the follow-ups below) leads with the stage and its reason, labelled by the rule the skill
 saves its evidence with (Your data when figures stand behind the stage, otherwise Not enough data), the
 stage's own figures, steps under way, and steps with no figures behind them. Findings, which the tab did
 not show before, are one step away with their figures. Each roadmap step carries its label (Inference when
@@ -358,6 +358,21 @@ business's own figures (results dropped) carries "Your data". Posts saved before
 model wrote, have no digest and show their body as before.
 
 Pictures: `briefing-before-*`, `briefing-after-*`, `tasks-before-*`, `tasks-after-*`.
+
+## After the merge: the owner's four follow-ups (2026-11-13)
+
+1. **Diagnostics is data-first again.** "Your data" comes first, then "Where growth stalls" with the
+   answer panel and labels unchanged. The owner chose this order over the answer-first one built in part 3.
+2. **Each report row on the Research tab says what the report found.** The row shows the report's own
+   summary paragraph and the weakest evidence label among its claims. `workTabs.tab` returns, for market
+   reports only, the opening of the report's current version (up to its first section) and each claim's
+   label; the screen picks the summary out with the same `reportGlance` the report page uses. Nothing is
+   rewritten, and a report with no text shows no line. Because the label is the weakest among all the
+   report's claims, one untested idea among the opportunities labels the whole row "Untested hypothesis".
+3. **Sample data.** The dev stories no longer show a cleaning business as the Vistrial customer. The
+   customer is a marketing agency that serves coaches; the competitors are made-up agencies on
+   `example.com`. Test fixtures under `convex/` are untouched.
+4. **The report PDF** follows the new layout in its own change.
 
 ## Not done, not tested
 

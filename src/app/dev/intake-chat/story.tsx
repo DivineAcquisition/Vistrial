@@ -2,17 +2,17 @@
 
 import { IntakeChatView, type IntakeMessage, type IntakeView } from "@/components/sessions/intake-chat-view";
 
-/** Words and competitors from a live dev conversation with Claude (London end-of-tenancy cleaning). */
-const OBJECTIVE = "I want to know why we're not getting more move-out cleaning jobs compared to other cleaners";
+/** A made-up marketing agency that serves coaches. The competitors are invented; none is a real business. */
+const OBJECTIVE = "I want to know why we're not signing more coaching clients compared to other agencies";
 const FOUND = [
-  { name: "Housekeep", url: "https://housekeep.com/", origin: "found" },
-  { name: "Helpmate Services", url: "https://helpmateservices.co.uk/", origin: "found" },
-  { name: "Pure Home Services", url: "https://purehomeservices.co.uk/", origin: "found" },
-  { name: "Cleaners of London", url: "https://www.cleanersoflondon.co.uk/", origin: "found" },
-  { name: "Tenanclean", url: "https://tenanclean.com/", origin: "found" },
-  { name: "Samyx Cleaning", url: "https://samyxcleaning.com/", origin: "found" },
+  { name: "Rival Growth", url: "https://rival-growth.example.com/", origin: "found" },
+  { name: "Northbank Funnels", url: "https://northbank-funnels.example.com/", origin: "found" },
+  { name: "Coach Funnel Co", url: "https://coachfunnelco.example.com/", origin: "found" },
+  { name: "Calendar Full", url: "https://calendar-full.example.com/", origin: "found" },
+  { name: "Brightside Agency", url: "https://brightside-agency.example.com/", origin: "found" },
+  { name: "Signal and Scale", url: "https://signal-and-scale.example.com/", origin: "found" },
 ];
-const NOTE = "For London move-out cleaning, web search and Instagram likely matter most, with Meta ads close behind, since renters and busy professionals look for local cleaners when they need one. Vistrial will still look at all of them until it knows where your audience is.";
+const NOTE = "For agencies that serve coaches, web search and Instagram likely matter most, with Meta ads close behind, since coaches look for help where they already post. Vistrial will still look at all of them until it knows where your audience is.";
 
 const m = (id: string, role: "you" | "agent", kind: string, text: string, extra: Partial<IntakeMessage> = {}): IntakeMessage => ({ id, role, kind, text, chips: [], data: null, at: Number(id.slice(1)), ...extra });
 
@@ -21,18 +21,18 @@ function viewFor(state: string): IntakeView | null {
   const messages: IntakeMessage[] = [
     m("m1", "you", "text", OBJECTIVE),
     m("m2", "agent", "known", "Here's what I already know about your business.", {
-      data: { items: [{ label: "What you sell", value: "Domestic and end-of-tenancy cleaning, fixed prices" }, { label: "Area", value: "London, UK" }] },
+      data: { items: [{ label: "What you sell", value: "Done-for-you lead generation for coaches, fixed monthly price" }, { label: "Area", value: "London, UK" }] },
     }),
-    m("m3", "agent", "text", "Thanks, that's clear: you want to know why move-out jobs are going to other cleaners."),
+    m("m3", "agent", "text", "Thanks, that's clear: you want to know why coaching clients are signing with other agencies."),
   ];
   if (state === "remember") {
-    messages[1] = m("m2", "agent", "known", "Here's what I already know about your business.", { data: { items: [{ label: "What you sell", value: "Domestic and end-of-tenancy cleaning, fixed prices" }] } });
+    messages[1] = m("m2", "agent", "known", "Here's what I already know about your business.", { data: { items: [{ label: "What you sell", value: "Done-for-you lead generation for coaches, fixed monthly price" }] } });
     messages.push(m("m4", "agent", "question", "Which area should I look at? Your profile doesn't say yet.", { chips: ["London", "Greater London", "Manchester"] }));
     messages.push(m("m5", "you", "text", "Greater London"));
     messages.push(m("m6", "agent", "remember", 'Remember your area ("Greater London") for future sessions?', { chips: ["Yes, remember", "Just this session"], data: { factKey: "researchGeography" } }));
-    messages.push(m("m7", "agent", "question", "Which other cleaners do you most often lose move-out jobs to? Names or websites are great.", { chips: ["I'm not sure, find them"] }));
+    messages.push(m("m7", "agent", "question", "Which other agencies do you most often lose coaching clients to? Names or websites are great.", { chips: ["I'm not sure, find them"] }));
   } else {
-    messages.push(m("m4", "agent", "question", "Which other cleaners do you most often lose move-out jobs to? Names or websites are great.", { chips: ["I don't know any"] }));
+    messages.push(m("m4", "agent", "question", "Which other agencies do you most often lose coaching clients to? Names or websites are great.", { chips: ["I don't know any"] }));
   }
   if (state === "plan") {
     messages.push(m("m5", "you", "text", "I don't know any"));
@@ -45,8 +45,8 @@ function viewFor(state: string): IntakeView | null {
       id: "i1",
       status: state === "plan" ? "ready" : "chatting",
       slots: {
-        objective: "Find out why we're not winning more move-out cleaning jobs compared to other cleaners",
-        market: "Domestic and end-of-tenancy cleaning, fixed prices",
+        objective: "Find out why we're not signing more coaching clients compared to other agencies",
+        market: "Done-for-you lead generation for coaches, fixed monthly price",
         geography: state === "remember" ? "Greater London" : "London, UK",
         competitors: state === "plan" ? FOUND : [],
         competitorsUnknown: false,

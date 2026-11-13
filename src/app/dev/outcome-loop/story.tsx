@@ -13,7 +13,7 @@ export function OutcomeLoopStory() {
     <main className="mx-auto grid max-w-3xl gap-4 p-4 sm:p-8">
       <h1 className="font-heading text-xl text-foreground">Outcome loop</h1>
       <Panel className="grid gap-3 p-4 sm:p-5">
-        <h2 className="font-heading text-base text-card-foreground">Lead with a first-clean discount</h2>
+        <h2 className="font-heading text-base text-card-foreground">Lead with a first-month pilot price</h2>
         <p className="text-sm text-muted-foreground">Check-in due now. Starting figures saved from Meta ads, Jobber bookings.</p>
         <OutcomeForm
           onSubmit={async (result, note) => {
@@ -27,7 +27,7 @@ export function OutcomeLoopStory() {
           <StatusBadge label={RESULT_WORDS.better.label} tone={RESULT_WORDS.better.tone} className="[&_span]:normal-case" />
           <span className="text-xs text-muted-foreground">Recorded Nov 8, 2026. The next research session builds on this.</span>
         </div>
-        <p className="text-sm text-card-foreground">&ldquo;Ran 20% off the first clean for four weeks.&rdquo;</p>
+        <p className="text-sm text-card-foreground">&ldquo;Ran 20% off the first month for four weeks.&rdquo;</p>
         <MeasuredChanges
           changes={[
             { label: "Meta ads", metric: "spend", before: 1200, after: 1100, percent: -8.3 },

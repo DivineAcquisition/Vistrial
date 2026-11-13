@@ -14,26 +14,26 @@ const AGENTS = [
 ];
 
 const MESSAGES: FollowUpMessage[] = [
-  { id: "q1", role: "you", kind: "question", text: "Which competitor promises the deposit back?", status: "done", costCents: 0 },
+  { id: "q1", role: "you", kind: "question", text: "Which competitor states a guarantee?", status: "done", costCents: 0 },
   {
     id: "a1",
     role: "agent",
     kind: "answer",
-    text: "Housekeep is the only one that promises it in writing: a free re-clean, and a refund if the landlord still keeps part of the deposit.",
+    text: "Rival Growth is the only one that states it in writing: 20 booked calls in 60 days, or the next month is free.",
     status: "done",
-    data: { cited: [{ id: "s1", title: "Housekeep end of tenancy cleaning", url: "https://housekeep.com/end-of-tenancy", platform: "web" }] },
+    data: { cited: [{ id: "s1", title: "Rival Growth: apply for a call", url: "https://rival-growth.example.com/apply", platform: "web" }] },
     costCents: 3,
     model: SAMPLE_MARKS.sol,
   },
-  { id: "q2", role: "you", kind: "question", text: "Who is cheapest for a two-bed flat?", status: "done", costCents: 0 },
-  { id: "a2", role: "agent", kind: "answer", text: "This session only has Housekeep's price (from £200), so I can't compare yet.", status: "done", data: { cited: [] }, costCents: 2, model: SAMPLE_MARKS.sol },
+  { id: "q2", role: "you", kind: "question", text: "Who is cheapest for a monthly retainer?", status: "done", costCents: 0 },
+  { id: "a2", role: "agent", kind: "answer", text: "This session only has Rival Growth's price (from $1,950 a month), so I can't compare yet.", status: "done", data: { cited: [] }, costCents: 2, model: SAMPLE_MARKS.sol },
   {
     id: "p2",
     role: "agent",
     kind: "proposal",
     text: "To compare two-bed prices I'd check each competitor's pricing page.",
     status: "proposed",
-    data: { searches: ["Tenanclean two bed end of tenancy price", "Fantastic Services end of tenancy price London"], low: 30, high: 90 },
+    data: { searches: ["Coach Funnel Co monthly retainer price", "Calendar Full agency pricing"], low: 30, high: 90 },
     costCents: 0,
   },
 ];
@@ -43,7 +43,7 @@ export function ChatStory() {
   const [mode, setMode] = useState<ComposerMode>("thorough");
   const [family, setFamily] = useState("openai/gpt-6.1-sol");
   const [sources, setSources] = useState<string[] | null>(null);
-  const [links, setLinks] = useState<string[]>(["https://housekeep.com/"]);
+  const [links, setLinks] = useState<string[]>(["https://rival-growth.example.com/"]);
   const [files, setFiles] = useState<ComposerFile[]>([
     { key: "f1", name: "meta-results.csv", kind: "csv", status: "read" },
     { key: "f2", name: "competitor-flyer.png", kind: "image", status: "reading" },

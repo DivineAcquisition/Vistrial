@@ -39,8 +39,8 @@ export function storyTab(skillSlug: TabData["skillSlug"], state: string): TabDat
     results: empty
       ? []
       : [
-          { id: id("a1"), title: kind, status: "draft", model: { family: "gpt" as const, name: "GPT-6.1 Sol" }, currentVersion: 1, createdAt: NOW - 2 * 3_600_000, runId: id("run1"), projectId: id("p1") },
-          { id: id("a0"), title: kind.replace("2026-11-08", "2026-10-12"), status: "approved", model: null, currentVersion: 2, createdAt: NOW - 20 * DAY, runId: id("run0"), projectId: id("p0") },
+          { id: id("a1"), title: kind, status: "draft", model: { family: "gpt" as const, name: "GPT-6.1 Sol" }, currentVersion: 1, createdAt: NOW - 2 * 3_600_000, runId: id("run1"), projectId: id("p1"), answer: skillSlug === "market-intelligence" ? { lead: "# Market report\n\n**Objective:** Find what agencies selling lead generation to home-service brands lead with.\n\nFive of the eight agencies read lead with a booked-call promise and three state a guarantee. None shows a monthly price on the page an ad leads to.", labels: ["Observed", "Observed", "Inference", "Untested hypothesis"] } : null },
+          { id: id("a0"), title: kind.replace("2026-11-08", "2026-10-12"), status: "approved", model: null, currentVersion: 2, createdAt: NOW - 20 * DAY, runId: id("run0"), projectId: id("p0"), answer: skillSlug === "market-intelligence" ? { lead: "# Market report\n\n**Objective:** What do agencies charge roofers and HVAC brands for paid ads management?\n\nThe four agencies that state a price charge between $1,500 and $3,000 a month. Not enough data on setup fees: only one page states one.", labels: ["Observed", "Not enough data"] } : null },
         ],
     suggestions: empty
       ? [{ id: "research-first", title: "Approve a report to unlock the next steps", detail: "Offers and Diagnostics build on research you have approved.", tab: "research" }]

@@ -350,9 +350,12 @@ is unchanged.
 | Count beside each list of the weekly report | lines of that list in the post's own body |
 | Evidence label on a task | `expectedReturn.basis`, as saved |
 
-The `Digest` block (what changed, what it means, what to do) from part 1 is not used here. A post has a
-title, a body and a link, not three separate fields, and splitting a body into "what it means" would need
-either new words from a model or a guess. It stays in the kit for a post kind that gains those fields.
+**Posts written in code** (a check-in due, a connection that stopped, results that dropped, credits
+running low) carry three rows: what changed, what it means, what to do (owner's decision, 2026-11-13).
+The words are fixed templates in `convex/briefing.ts`, filled with the same figures the body already had;
+no model writes them. They are saved in an optional `digest` field on the post. The row that states the
+business's own figures (results dropped) carries "Your data". Posts saved before this, and every post a
+model wrote, have no digest and show their body as before.
 
 Pictures: `briefing-before-*`, `briefing-after-*`, `tasks-before-*`, `tasks-after-*`.
 

@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { BellRing, Check, CheckCircle2, ExternalLink, FileSearch, Newspaper, ShieldCheck, TrendingUp, type LucideIcon } from "@/components/icons";
 import { useClientScope, useWorkspaceShell } from "@/components/shell/shell-context";
-import { Detail, LongText, ModelMark, StatusChip } from "@/components/readable";
+import { Detail, Digest, LongText, ModelMark, StatusChip } from "@/components/readable";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -202,7 +202,11 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
           <ModelMark />
         </p>
         <h2 className="text-sm font-medium break-words text-card-foreground">{post.title}</h2>
-        {post.body ? <PostBody body={post.body} /> : null}
+        {post.digest ? (
+          <Digest changed={{ text: post.digest.changed, label: post.digest.changedLabel }} means={{ text: post.digest.means }} todo={{ text: post.digest.todo }} />
+        ) : post.body ? (
+          <PostBody body={post.body} />
+        ) : null}
         {post.draft?.text ? (
           <blockquote className="grid gap-1 border-l-2 border-border pl-3">
             <p className="text-[11px] tracking-wide text-muted-foreground uppercase">The draft, version {post.draft.version}</p>

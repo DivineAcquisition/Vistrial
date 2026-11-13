@@ -409,7 +409,7 @@ export function OffersTabView(props: OffersTabProps) {
   // The canvas takes the full width: the board needs the room. What sat beside it moves underneath.
   if (canvas && props.card) {
     return (
-      <div className="grid min-w-0 gap-5">
+      <div className="grid min-w-0 grid-cols-1 gap-5">
         {hero}
         <OffersCanvas card={props.card} analysis={props.analysis} decisions={props.decisions} tryActions={props.tryActions} editor={editor} />
         {results}

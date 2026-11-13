@@ -18,7 +18,7 @@ export function JoinWorkspace() {
   return (
     <main className="mx-auto grid min-h-screen w-full max-w-md content-center gap-4 px-4 py-10">
       <Panel className="grid gap-4 p-6">
-        <h1 className="font-heading text-xl text-foreground">Join a Vistrial workspace</h1>
+        <h1 className="font-heading text-xl text-foreground">Join a Vistrial organization</h1>
         {!token ? (
           <p className="text-sm text-muted-foreground">This link is missing its invite. Ask the owner to send it again.</p>
         ) : !ready ? (

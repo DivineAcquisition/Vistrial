@@ -402,7 +402,7 @@ export const startFree = signedInMutation({
       .withIndex("by_user", (q) => q.eq("userId", ctx.userId))
       .filter((q) => q.and(q.eq(q.field("workspaceId"), row.workspaceId), q.eq(q.field("active"), true)))
       .first();
-    if (!member || !isOwner(member.role)) throw userError("Only the workspace owner can start the free session.", "not_allowed");
+    if (!member || !isOwner(member.role)) throw userError("Only the organization's Owner can start the free session.", "not_allowed");
 
     const previous = row.freeRunId ? await ctx.db.get(row.freeRunId) : null;
     if (previous && row.freeProjectId) {

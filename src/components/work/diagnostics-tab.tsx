@@ -397,11 +397,11 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
     </>
   );
   return (
-    <div className="grid min-w-0 gap-5">
+    <div className="grid min-w-0 grid-cols-1 gap-5">
       {canvas ? (
-        <div className="grid min-w-0 gap-5">{top}</div>
+        <div className="grid min-w-0 grid-cols-1 gap-5">{top}</div>
       ) : (
-        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div className="grid min-w-0 content-start gap-5">
             {top}
             {diagnosis ? <StallSummary diagnosis={diagnosis} decisions={decisions} /> : null}

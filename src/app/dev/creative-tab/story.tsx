@@ -134,7 +134,7 @@ const IMAGE_MODELS = {
 const GPT_NOTICE = "GPT images are made by OpenAI, reached through OpenRouter. Unlike the other models here, OpenAI is not on a no-retention agreement for image requests: it may keep the request for a time. The price is an upper limit: you are charged what each image really cost, never more.";
 const RETAKE = { cents: 16, upTo: false, model: "gemini" as const };
 const SETUP_ADMIN = "Image making needs a key. Set OPENROUTER_API_KEY or GEMINI_API_KEY in this Convex deployment's environment variables (Settings, Environment Variables). Neither is set.";
-const SETUP_EVERYONE = "Image making is not set up on this workspace yet, so no image was made and nothing was charged. Your ad copy is ready to use as it is. Ask your Vistrial contact to switch images on, or write to contact@vistrial.io.";
+const SETUP_EVERYONE = "Image making is not set up for this organization yet, so no image was made and nothing was charged. Your ad copy is ready to use as it is. Ask your Vistrial contact to switch images on, or write to contact@vistrial.io.";
 
 const IMAGES: CreativeImageList = {
   eachCents: { photo: 16, designed: 42 },

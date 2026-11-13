@@ -75,7 +75,7 @@ describe("workspace isolation", () => {
     );
 
     await expect(ownerA.mutation(api.workspace.create, { name: "Second" })).rejects.toThrow(
-      "You already belong to a workspace.",
+      "You already belong to an organization.",
     );
 
     const viewerInvite = await ownerA.mutation(api.workspace.invite, {

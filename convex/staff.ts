@@ -33,7 +33,7 @@ export const grant = staffMutation({
       .query("workspaceSettings")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
       .unique();
-    if (settings?.serviceTeamAccess === false) throw userError("The owner has turned off service team access for this workspace.");
+    if (settings?.serviceTeamAccess === false) throw userError("The owner has turned off service team access for this organization.");
     const reason = args.reason.trim();
     if (reason.length < 8) throw userError("A reason is required.");
     if (args.hours < 1 || args.hours > 72) throw userError("Choose a grant between 1 and 72 hours.");

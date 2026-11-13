@@ -378,7 +378,7 @@ function StartForm({ base, options, references, referenceActions, initialSource,
           <Sparkles aria-hidden className="size-4" /> {starting ? "Starting…" : "Write the ad set"}
         </Button>
         {model ? <ModelSwitch {...model} /> : null}
-        <span className="text-xs text-muted-foreground">Writes a brief, four copy variations, a script and captions. Usually under $1 of credits. Nothing is published.</span>
+        <span className="text-xs text-muted-foreground">Writes a brief, four copy variations, a script and captions. Usually under 100 credits. Nothing is published.</span>
       </div>
     </Panel>
   );
@@ -611,7 +611,7 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
   const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialForm || initialSource));
   return (
-    <div className="grid min-w-0 gap-5">
+    <div className="grid min-w-0 grid-cols-1 gap-5">
       <WorkHero
         icon={Megaphone}
         eyebrow="Creative"

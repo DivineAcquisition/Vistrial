@@ -107,7 +107,7 @@ export function imageVia(): ImageVia | null {
  */
 export const IMAGE_SETUP_WORDS = {
   admin: "Image making needs a key. Set OPENROUTER_API_KEY or GEMINI_API_KEY in this Convex deployment's environment variables (Settings, Environment Variables). Neither is set.",
-  everyone: "Image making is not set up on this workspace yet, so no image was made and nothing was charged. Your ad copy is ready to use as it is. Ask your Vistrial contact to switch images on, or write to contact@vistrial.io.",
+  everyone: "Image making is not set up for this organization yet, so no image was made and nothing was charged. Your ad copy is ready to use as it is. Ask your Vistrial contact to switch images on, or write to contact@vistrial.io.",
 } as const;
 
 /** The same split for an image that failed for a reason only a Platform Admin can fix. Other reasons read the same for everyone. */

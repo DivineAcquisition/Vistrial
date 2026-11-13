@@ -207,6 +207,7 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
             <div className="grid gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <SegmentedRadioGroup
+                  wrap
                   aria-label="How the picture is made"
                   value={look}
                   onValueChange={(value) => {

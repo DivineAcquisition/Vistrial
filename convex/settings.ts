@@ -151,7 +151,7 @@ export const renameWorkspace = adminMutation({
   args: { name: v.string() },
   handler: async (ctx, args) => {
     const name = args.name.trim();
-    if (!name) throw userError("Name the workspace.");
+    if (!name) throw userError("Name the organization.");
     if (name.length > 80) throw userError("Keep the name under 80 characters.");
     const workspace = await ctx.db.get(ctx.workspaceId);
     await ctx.db.patch(ctx.workspaceId, { name });

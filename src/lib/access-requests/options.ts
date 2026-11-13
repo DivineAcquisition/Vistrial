@@ -48,7 +48,7 @@ export const OFFER_PRICES = [
   { value: "above_10000", label: "Above $10,000" },
 ] as const;
 
-/** One per Growth Architect skill that is available today, in the reader's words. */
+/** One per Strategist skill that is available today, in the reader's words. */
 export const FIRST_WANTS = [
   { value: "market_research", label: "Research on my market and competitors" },
   { value: "offer_analysis", label: "My offer set beside competitors'" },

@@ -131,7 +131,7 @@ export function ResearchStudioHero() {
 
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className={eyebrow}>Growth Architect · Research Studio</p>
+          <p className={eyebrow}>Strategist · Research Studio</p>
           <p className="mt-1 font-heading text-xl tracking-tight text-strong sm:text-2xl">Home-service lead generation</p>
         </div>
         <span className="hidden shrink-0 items-center gap-1.5 text-xs text-muted-foreground sm:inline-flex">
@@ -466,7 +466,7 @@ export function DoctrineFlow() {
 }
 
 /* ---------------------------------------------------------------------------
- * Growth Architect: its skills, available ones first
+ * Strategist: its skills, available ones first
  * ------------------------------------------------------------------------- */
 
 export function SkillMap() {

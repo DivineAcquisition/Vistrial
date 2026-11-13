@@ -23,7 +23,7 @@ export function isReportKind(kind: string): kind is ReportKind {
 
 /** Where the report sits in the app, in the words the sidebar uses. */
 export function tabWords(kind: ReportKind): string {
-  return `Growth Architect, ${KIND_TAB[kind]} tab`;
+  return `Strategist, ${KIND_TAB[kind]} tab`;
 }
 
 function escapeHtml(text: string): string {

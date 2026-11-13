@@ -10,7 +10,7 @@ const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 const identity = (subject: string) => ({ subject, issuer: "https://clerk.test", tokenIdentifier: `x|${subject}`, name: subject, email: `${subject}@example.com` });
 
 describe("agent folders", () => {
-  it("lists the Growth Architect's sessions with their state, and keeps them to the workspace", async () => {
+  it("lists the Strategist's sessions with their state, and keeps them to the workspace", async () => {
     const t = convexTest(schema, modules);
     const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
     await t.run(async (ctx) => {

@@ -268,7 +268,7 @@ export const readSiteNow = internalAction({
 
 /**
  * Finishes the wizard: creates the workspace named after the business, writes the confirmed profile and the
- * facts the intake reads, turns Growth Architect on, and moves to the free research session.
+ * facts the intake reads, turns Strategist on, and moves to the free research session.
  */
 export const finish = signedInMutation({
   args: { serviceTeamAccess: v.optional(v.boolean()) },

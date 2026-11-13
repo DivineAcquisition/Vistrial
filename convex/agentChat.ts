@@ -1,5 +1,5 @@
 /**
- * The Growth Architect's one chat. A first message is routed in code to the skill it is for: research goes
+ * The Strategist's one chat. A first message is routed in code to the skill it is for: research goes
  * to Market Intelligence (the research intake), offer questions to Offer Intelligence, "why am I not
  * growing" to Growth Diagnostics (both on the skill intake). Each then asks its follow-up questions and
  * shows the plan and budget before anything runs. When the intent is unclear the chat asks which of the
@@ -137,7 +137,7 @@ async function begin(ctx: Access, route: ChatRoute, input: Choices & { text: str
 }
 
 /**
- * Starts a conversation with the Growth Architect: on the skill named, otherwise on the skill the text is
+ * Starts a conversation with the Strategist: on the skill named, otherwise on the skill the text is
  * clearly about, otherwise it asks which. Shared by the chat box and by approving a task that asks an agent
  * for work, so both start work the same way. The caller has checked the client.
  */

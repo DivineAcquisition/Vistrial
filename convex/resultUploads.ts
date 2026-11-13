@@ -24,7 +24,7 @@ const MAX_FILE_NAME = 120;
 const MAX_LABEL = 60;
 const LIST_LIMIT = 20;
 
-/** The agents an upload is granted to. Missing means the Growth Architect only. */
+/** The agents an upload is granted to. Missing means the Strategist only. */
 export function uploadAgents(upload: Pick<Doc<"resultUploads">, "agents">) {
   return upload.agents ?? [GROWTH_ARCHITECT];
 }

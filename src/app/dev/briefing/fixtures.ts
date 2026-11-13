@@ -8,7 +8,7 @@ const DAY = 24 * HOUR;
 let count = 0;
 function item(input: Partial<Post> & Pick<Post, "kind" | "kindLabel" | "title" | "at">): Post {
   count += 1;
-  return { id: `b${count}` as Id<"briefingItems">, agentSlug: "growth-architect", client: null, body: null, unread: false, href: null, sources: [], credits: null, model: null, approval: null, draft: null, ...input };
+  return { id: `b${count}` as Id<"briefingItems">, agentSlug: "growth-architect", client: null, body: null, unread: false, href: null, sources: [], credits: null, model: null, digest: null, approval: null, draft: null, ...input };
 }
 
 type Approval = NonNullable<Post["approval"]>;
@@ -82,6 +82,7 @@ export function storyFeed(state: string, kind: string | null): Feed {
       kindLabel: "Alert",
       title: "Results dropped: Harbor bookings",
       body: "Conversions went from 64 to 47 (-27%) between the last two results files.",
+      digest: { changed: "Conversions went from 64 to 47 (-27%) between the last two results files.", means: "This compares two files you uploaded. It shows that the count fell, not why.", todo: "Check that both files cover the same length of time, then run a diagnosis to see where the drop is.", changedLabel: "Your data" },
       client: "Harbor Dental Group",
       agentSlug: null,
       at: NOW - 5 * HOUR,
@@ -90,8 +91,8 @@ export function storyFeed(state: string, kind: string | null): Feed {
     }),
     item({ kind: "finished", kindLabel: "Finished work", model: { family: "claude", name: "Claude Opus 5.5" }, title: "Finished: Page teardown: danareyes.example", client: "Dana Reyes", at: NOW - 9 * HOUR, unread: true, href: "/app/assets/a7" }),
     item({ kind: "weeklyReport", kindLabel: "Weekly growth report", title: "Weekly growth report: November 2 to 8", body: WEEKLY, at: NOW - 3 * DAY, href: "/app/tasks", credits: 84 }),
-    item({ kind: "alert", kindLabel: "Alert", title: "A check-in is due", body: "You said you would try this: Send a pre-call video before Aster's sales calls. Say what happened, and the next proposal builds on it.", client: "Aster Coaching", agentSlug: null, at: NOW - 1 * DAY, href: "/app/tasks" }),
-    item({ kind: "alert", kindLabel: "Alert", title: "Meta ads needs reconnecting", body: "Results from Meta have stopped updating. An Owner or Admin can reconnect it in Settings, Data.", agentSlug: null, at: NOW - 2 * DAY, href: "/app/settings?section=data" }),
+    item({ kind: "alert", kindLabel: "Alert", title: "A check-in is due", body: "You said you would try this: Send a pre-call video before Aster's sales calls. Say what happened, and the next proposal builds on it.", digest: { changed: "The check-in date has come for a change you said you would try: Send a pre-call video before Aster's sales calls.", means: "Nothing is measured until you say what happened, and the next proposal builds on what you record.", todo: "Record what happened: it helped, it did not, or it is too early to tell.", changedLabel: null }, client: "Aster Coaching", agentSlug: null, at: NOW - 1 * DAY, href: "/app/tasks" }),
+    item({ kind: "alert", kindLabel: "Alert", title: "Meta ads needs reconnecting", body: "Results from Meta have stopped updating. An Owner or Admin can reconnect it in Settings, Data.", digest: { changed: "Results from Meta have stopped updating.", means: "Figures from Meta stay as they were at the last update, so anything that reads them is reading old numbers.", todo: "An Owner or Admin reconnects Meta in Settings, Data.", changedLabel: null }, agentSlug: null, at: NOW - 2 * DAY, href: "/app/settings?section=data" }),
     item({
       kind: "trend",
       kindLabel: "Industry trend",

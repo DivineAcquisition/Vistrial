@@ -20,7 +20,7 @@ function Projects({ shell }: { shell: WorkspaceShell }) {
   return (
     <div className="mx-auto grid w-full max-w-4xl min-w-0 gap-6">
       <PageHeader
-        eyebrow="Growth Architect"
+        eyebrow="Strategist"
         title="Research"
         description="Market Intelligence studies your market before it recommends anything, and shows the sources behind every claim."
         actions={canStart ? <Button render={<Link href="/app/research/new" />}>New assignment</Button> : undefined}

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { BellRing, Check, CheckCircle2, ExternalLink, FileSearch, Newspaper, ShieldCheck, TrendingUp, type LucideIcon } from "@/components/icons";
 import { useClientScope, useWorkspaceShell } from "@/components/shell/shell-context";
+import { Detail, Digest, LongText, ModelMark, StatusChip } from "@/components/readable";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -15,11 +16,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { creditWords } from "@/lib/credits";
 import { showError } from "@/lib/errors/show-error";
+import { splitPost } from "@/lib/readable/post";
 import { selectClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { ModelMark } from "@/components/models/model-mark";
 
 export type Feed = FunctionReturnType<typeof api.briefing.feed>;
 export type Post = Feed["items"][number];
@@ -131,10 +132,55 @@ export function ApprovalBlock({ approval, needsReview = false, decide }: { appro
   );
 }
 
+/**
+ * A post's body at small size. A body written as a summary and titled lists (the weekly growth report) shows
+ * the summary, then each list as its title and a count with its lines one step away; "Proposed for next week",
+ * the part that says what to do, starts open. Any other body is shown as it is and folds when it is long.
+ */
+function PostBody({ body }: { body: string }) {
+  const parts = splitPost(body);
+  if (parts.sections.length === 0) return <LongText text={body} className="text-sm leading-relaxed text-muted-foreground" />;
+  return (
+    <div className="grid gap-2">
+      {parts.lead.map((text) => (
+        <p key={text} className="text-sm leading-relaxed break-words text-card-foreground">
+          {text}
+        </p>
+      ))}
+      <ul className="grid gap-1.5">
+        {parts.sections.map((section) => (
+          <li key={section.title} className="rounded-lg border border-border px-3 py-2">
+            {section.items.length === 0 ? (
+              <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+                <span className="text-card-foreground">{section.title}</span>
+                <span className="text-xs text-muted-foreground">{section.note}</span>
+              </p>
+            ) : (
+              <Detail summary={<span className="text-card-foreground">{section.title}</span>} aside={<span className="tabular-nums">{section.items.length}</span>} defaultOpen={/^proposed/i.test(section.title)}>
+                <ul className="grid list-disc gap-1 pl-5 text-sm leading-relaxed text-muted-foreground">
+                  {section.items.map((item) => (
+                    <li key={item} className="break-words">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </Detail>
+            )}
+          </li>
+        ))}
+      </ul>
+      {parts.tail.map((text) => (
+        <p key={text} className="text-xs leading-relaxed break-words text-muted-foreground">
+          {text}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function PostCard({ post, now, agentName, decide }: { post: Post; now: number; agentName: (slug: string) => string; decide: Decide }) {
   const kind = KIND[post.kind];
-  const [open, setOpen] = useState(false);
-  const long = (post.body?.length ?? 0) > 420;
+  const waiting = post.approval?.status === "waiting";
   return (
     <li className="flex min-w-0 gap-3 rounded-xl border border-border bg-card p-4">
       <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", kind.tone)}>
@@ -152,22 +198,19 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
           {post.client ? <span className="rounded-md border border-primary/30 px-1.5 text-primary">{post.client}</span> : null}
           <span>{when(post.at, now)}</span>
           {post.unread ? <span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 font-medium text-primary-foreground">New</span> : null}
+          {waiting ? <StatusChip tone="partly" label={post.approval?.canDecide ? "Needs your decision" : "Waiting for a decision"} /> : null}
+          <ModelMark model={post.model} />
         </p>
         <h2 className="text-sm font-medium break-words text-card-foreground">{post.title}</h2>
-        {post.body ? (
-          <div className="grid gap-1">
-            <p className={cn("text-sm leading-relaxed break-words whitespace-pre-line text-muted-foreground", long && !open && "line-clamp-4")}>{post.body}</p>
-            {long ? (
-              <button type="button" onClick={() => setOpen((value) => !value)} className="w-fit text-xs text-primary underline-offset-2 hover:underline">
-                {open ? "Show less" : "Read all of it"}
-              </button>
-            ) : null}
-          </div>
+        {post.digest ? (
+          <Digest changed={{ text: post.digest.changed, label: post.digest.changedLabel }} means={{ text: post.digest.means }} todo={{ text: post.digest.todo }} />
+        ) : post.body ? (
+          <PostBody body={post.body} />
         ) : null}
         {post.draft?.text ? (
           <blockquote className="grid gap-1 border-l-2 border-border pl-3">
             <p className="text-[11px] tracking-wide text-muted-foreground uppercase">The draft, version {post.draft.version}</p>
-            <p className="text-sm leading-relaxed break-words whitespace-pre-line text-card-foreground">{post.draft.text}</p>
+            <LongText text={post.draft.text} lines={3} more="Read the rest of this preview" className="text-sm leading-relaxed text-card-foreground" />
           </blockquote>
         ) : null}
         {post.sources.length > 0 ? (
@@ -189,9 +232,24 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
             </Link>
           ) : null}
           {post.credits && !post.approval ? <span>Used {creditWords(post.credits)}</span> : null}
-          <ModelMark model={post.model} />
         </p>
       </div>
+    </li>
+  );
+}
+
+/** The feed's answer, counted from the posts shown: how many wait for a decision (and whether it is yours), and how many are new. */
+function FeedGlance({ items }: { items: Post[] }) {
+  const waiting = items.filter((post) => post.approval?.status === "waiting");
+  const mine = waiting.filter((post) => post.approval?.canDecide).length;
+  const fresh = items.filter((post) => post.unread).length;
+  if (waiting.length === 0 && fresh === 0) return null;
+  return (
+    <li className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <span>Of the {items.length} shown:</span>
+      {mine > 0 ? <StatusChip tone="partly" label={`${mine} ${mine === 1 ? "needs" : "need"} your decision`} /> : null}
+      {waiting.length - mine > 0 ? <StatusChip tone="quiet" label={`${waiting.length - mine} waiting for an Owner or Admin`} /> : null}
+      {fresh > 0 ? <StatusChip tone="quiet" label={`${fresh} new`} /> : null}
     </li>
   );
 }
@@ -272,6 +330,7 @@ export function BriefingView({
         )
       ) : (
         <ul className="grid gap-3">
+          <FeedGlance items={feed.items} />
           {feed.items.map((post) => (
             <PostCard key={post.id} post={post} now={now} agentName={agentName} decide={decide} />
           ))}

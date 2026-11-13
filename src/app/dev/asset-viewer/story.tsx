@@ -5,7 +5,11 @@ import { useState } from "react";
 import { EvidenceList, VersionCompare, VersionHistory, type EvidenceView } from "@/components/assets/asset-parts";
 import { AssetRow, type AssetRowView } from "@/components/assets/asset-row";
 import { ReportBody } from "@/components/assets/report-body";
+import { ReportGlanceView } from "@/components/assets/report-glance";
+import { reportGlance } from "@/lib/readable/report";
 import { Panel } from "@/components/ui/panel";
+
+import { StoryTheme } from "../story-theme";
 
 const T0 = Date.UTC(2026, 9, 27, 14, 0, 0);
 
@@ -55,13 +59,15 @@ const ROWS: AssetRowView[] = [
 ];
 
 /** Asset screen parts from fake data. Development only. */
-export function AssetViewerStory() {
+export function AssetViewerStory({ theme = "light" }: { theme?: string }) {
   const [selected, setSelected] = useState(2);
   return (
     <div className="mx-auto grid min-h-screen w-full max-w-5xl gap-6 bg-background p-4 sm:p-8">
+      <StoryTheme theme={theme} />
       <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
         Asset screen parts. Fake data, development only.
       </p>
+      <ReportGlanceView glance={reportGlance(MARKET_REPORT, BASIS_EVIDENCE.map((claim) => ({ basisLabel: claim.basisLabel, sources: claim.sources, missing: claim.sourceMissing })))} />
       <Panel className="grid gap-3 p-4 sm:p-6">
         <h2 className="font-heading text-base text-card-foreground">Market report body</h2>
         <ReportBody body={MARKET_REPORT} />

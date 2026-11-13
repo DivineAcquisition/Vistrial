@@ -1785,6 +1785,27 @@
   animation: live-shimmer 2.8s linear infinite;
 }
 
+/* The public page's app tour: the tab in view fills from the left as its turn runs. */
+.tour-fill {
+  transform-origin: left;
+  animation: tour-fill linear both;
+}
+
+@keyframes tour-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-fill {
+    animation: none;
+  }
+}
+
 /* A short light travelling along an SVG beam. Paths set pathLength="100". */
 .beam-dash {
   stroke-dasharray: 10 110;

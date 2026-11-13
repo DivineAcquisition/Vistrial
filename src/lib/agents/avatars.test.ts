@@ -27,7 +27,11 @@ describe("agent avatars", () => {
 
   it("finds an agent by the name a screen prints", () => {
     for (const agent of CATALOG) expect(agentSlugForName(agent.name)).toBe(agent.slug);
+    expect(agentSlugForName("  strategist ")).toBe("growth-architect");
+    expect(CATALOG.map((agent) => agent.name)).toEqual(["Strategist", "Marketer", "Dealmaker", "Starter", "Keeper", "Expander", "Operator"]);
+    // A name saved before the agents were renamed still finds the same agent.
     expect(agentSlugForName("  growth architect ")).toBe("growth-architect");
+    expect(agentSlugForName("Retention")).toBe("retention");
     expect(agentSlugForName("Someone else")).toBeNull();
     expect(agentSlugForName(undefined)).toBeNull();
   });

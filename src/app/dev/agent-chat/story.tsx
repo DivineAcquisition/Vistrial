@@ -19,7 +19,7 @@ function NewChat({ editor, preset, attached }: { editor: boolean; preset: ChatRo
   const [context, setContext] = useState<ChatContext | null>(attached);
   return (
     <NewChatView
-      agentName="Growth Architect"
+      agentName="Strategist"
       editor={editor}
       preset={route}
       onPreset={setRoute}

@@ -3,7 +3,7 @@ import { formatTrustDate, type TrustPublic } from "@/lib/trust/model";
 import type { PolicyBlock, PolicySection } from "@/lib/trust/privacy-policy";
 
 /**
- * Public terms for the current product (Growth Architect). A sentence is
+ * Public terms for the current product (Strategist). A sentence is
  * included only when the product does that thing today. The operator and
  * address come from settings, with the filled-in values as the fallback.
  */
@@ -101,7 +101,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Vistrial is an agentic workforce for business growth: specialized AI agents that research a business's market, sharpen its strategy, and prepare the work to grow. The first agent, Growth Architect, studies competitors, offers, ads, and content from public sources and from the business's own results, and prepares market reports, strategy, ad copy, scripts, briefs, and landing page drafts for a person to review. Skills are released one at a time, and the product shows which are available.",
+          text: "Vistrial is an agentic workforce for business growth: specialized AI agents that research a business's market, sharpen its strategy, and prepare the work to grow. The first agent, Strategist, studies competitors, offers, ads, and content from public sources and from the business's own results, and prepares market reports, strategy, ad copy, scripts, briefs, and landing page drafts for a person to review. Skills are released one at a time, and the product shows which are available.",
         },
         {
           kind: "p",
@@ -151,7 +151,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Growth Architect uses official access only: public web pages, official platform APIs, and links you provide. It does not log in to a platform for you and does not get around blocks or limits. You must not ask it to, and you must not use Vistrial to collect content you do not have the right to access.",
+          text: "Strategist uses official access only: public web pages, official platform APIs, and links you provide. It does not log in to a platform for you and does not get around blocks or limits. You must not ask it to, and you must not use Vistrial to collect content you do not have the right to access.",
         },
         {
           kind: "p",
@@ -213,7 +213,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Growth Architect reads from third-party platforms, such as YouTube, the Meta Ad Library, TikTok, Instagram, and public websites. We do not control those platforms and are not responsible for their content, availability, changes, or errors. A platform can change or limit its access at any time, which can affect what Vistrial can research. Each report shows which sources were available.",
+          text: "Strategist reads from third-party platforms, such as YouTube, the Meta Ad Library, TikTok, Instagram, and public websites. We do not control those platforms and are not responsible for their content, availability, changes, or errors. A platform can change or limit its access at any time, which can affect what Vistrial can research. Each report shows which sources were available.",
         },
         {
           kind: "p",

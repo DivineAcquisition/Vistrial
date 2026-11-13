@@ -45,7 +45,7 @@ const TRANSCRIPTS: TranscriptRow[] = [
   },
 ];
 const AGENTS = [
-  { slug: "growth-architect", name: "Growth Architect" },
+  { slug: "growth-architect", name: "Strategist" },
   { slug: "brand-studio", name: "Brand Studio" },
 ];
 

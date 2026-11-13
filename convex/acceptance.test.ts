@@ -325,7 +325,7 @@ describe("first-party results in research", () => {
     expect(context?.body).toContain('"origin":"connection"');
   });
 
-  it("uses nothing when the connection is not granted to the Growth Architect", async () => {
+  it("uses nothing when the connection is not granted to the Strategist", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha", ALPHA);
     await connectMeta(t, a.workspaceId, ["sales-conversion"]);

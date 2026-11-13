@@ -162,7 +162,7 @@ function OnUsCard() {
 // ------------------------------------------------------------------------------------------- session
 
 /**
- * Onboarding's free research session: the live show while Growth Architect works, the full report when it is
+ * Onboarding's free research session: the live show while Strategist works, the full report when it is
  * done, then the paywall. Plain data in, so the story page can show every state without a backend.
  */
 export function FreeSession({ data, actions, startError }: { data: FreeSessionData; actions: FreeSessionActions; startError?: unknown }) {
@@ -193,11 +193,11 @@ function SessionView({ data, actions, startError }: { data: FreeSessionData; act
 
   const hero =
     phase === "starting" ? (
-      <Hero eyebrow="Free research session" title={<>Getting Growth Architect ready for {business.name}</>}>
+      <Hero eyebrow="Free research session" title={<>Getting Strategist ready for {business.name}</>}>
         <p>It reads what you told us, writes a plan, then starts researching. This takes a few seconds.</p>
       </Hero>
     ) : phase === "report" ? (
-      <Hero eyebrow="Your report is ready" title={<>What Growth Architect found for {business.name}</>}>
+      <Hero eyebrow="Your report is ready" title={<>What Strategist found for {business.name}</>}>
         <p>Every opportunity below is backed by sources you can open. Read it, then unlock Vistrial to act on it.</p>
       </Hero>
     ) : phase === "stopped" ? (
@@ -209,7 +209,7 @@ function SessionView({ data, actions, startError }: { data: FreeSessionData; act
         </p>
       </Hero>
     ) : (
-      <Hero eyebrow="Free research session · live" title={<>Growth Architect is researching {business.name}</>}>
+      <Hero eyebrow="Free research session · live" title={<>Strategist is researching {business.name}</>}>
         <p>
           Watch it work. It searches the web, video and social platforms and ad libraries, keeps the sources it trusts, and writes a report with three opportunities
           for you. It usually takes a few minutes.
@@ -241,7 +241,7 @@ function SessionView({ data, actions, startError }: { data: FreeSessionData; act
             ) : null}
 
             {phase === "waiting" && session ? (
-              <Section icon={Search} title="Growth Architect needs one answer to go on">
+              <Section icon={Search} title="Strategist needs one answer to go on">
                 <QuestionCard workspaceId={data.workspaceId} studio={session.studio} canAnswer />
               </Section>
             ) : null}
@@ -330,7 +330,7 @@ function UnlockTeaser({ data, onUnlock, busy }: { data: FreeSessionData; onUnloc
         <div className="grid gap-1">
           <h2 className="font-heading text-lg text-card-foreground">Turn this report into results</h2>
           <p className="text-sm text-muted-foreground">
-            With Vistrial unlocked, Growth Architect plans each opportunity with you, answers follow-up questions from these sources, and runs new research
+            With Vistrial unlocked, Strategist plans each opportunity with you, answers follow-up questions from these sources, and runs new research
             whenever you need it.
           </p>
         </div>
@@ -390,7 +390,7 @@ function Paywall({ data, actions }: { data: FreeSessionData; actions: FreeSessio
       <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-8 px-4 py-6 sm:px-10 lg:px-14 lg:py-10">
         <Header step={2} />
         <div className="grid max-w-xl gap-8 lg:mt-6">
-          <Hero eyebrow="Unlock Vistrial" title={<>Keep Growth Architect working for {data.business.name}</>}>
+          <Hero eyebrow="Unlock Vistrial" title={<>Keep Strategist working for {data.business.name}</>}>
             <p>Your free report is yours to keep. Unlock Vistrial to act on it and keep going.</p>
           </Hero>
 

@@ -329,7 +329,7 @@ export function Teardown({ view, page, editor, onSelectPage, decisions, tryActio
         label={view.summary ? (label ?? "Inference") : "Not enough data"}
         counts={[
           { value: String(view.pages.length), words: view.pages.length === 1 ? "page read" : "pages read" },
-          ...(compare.hasOwn && others > 0 ? [{ value: String(compare.lacking), words: compare.lacking === 1 ? "section yours lacks that others have" : "sections yours lack that others have" }] : []),
+          ...(compare.hasOwn && others > 0 ? [{ value: String(compare.lacking), words: compare.lacking === 1 ? "section yours lacks that others have" : "sections yours lacks that others have" }] : []),
           { value: String(view.patterns.length), words: view.patterns.length === 1 ? "shared pattern" : "shared patterns" },
           { value: String(view.suggestions.length), words: view.suggestions.length === 1 ? "change to try" : "changes to try" },
         ]}

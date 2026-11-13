@@ -21,7 +21,7 @@ export function NextStep({ title, label, note, href, action, look = "sticky", cl
           {label ? <EvidenceLabel label={label} className="tracking-normal normal-case" /> : null}
         </p>
         <p className="text-sm font-medium text-card-foreground">{title}</p>
-        {note ? <p className="text-xs text-muted-foreground">{note}</p> : null}
+        {note ? <p className={cn("text-xs text-muted-foreground", look === "sticky" && "hidden sm:block")}>{note}</p> : null}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {action}

@@ -37,7 +37,7 @@ import {
 } from "./lib/intake";
 import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
-import { rememberedModel, resolveRoute, skillNeeds } from "./lib/modelChoice";
+import { capsFor, rememberedModel, resolveRoute, skillNeeds } from "./lib/modelChoice";
 import { markOf, parseChoice } from "./lib/models";
 import { completeWithTools } from "./lib/toolRouter";
 import { moveFilesToProject } from "./files";
@@ -95,6 +95,18 @@ type Message = { role: "you" | "agent"; kind: string; text: string; chips?: stri
 
 // ---------- What screens read ----------
 
+/**
+ * The most the research this conversation leads to may cost: the run's cap for its mode, raised for the
+ * model it will run on (the conversation's own pick, else the one its person last chose for research),
+ * exactly as the run's caps are raised when it starts.
+ */
+async function researchCap(ctx: { db: import("./_generated/server").QueryCtx["db"] }, row: Doc<"intakes">) {
+  const needs = skillNeeds("market-intelligence");
+  const choice = row.modelChoice ?? (await rememberedModel(ctx, row.workspaceId, row.createdBy, needs));
+  const caps = await capsFor(ctx, { workspaceId: row.workspaceId, agentSlug: row.agentSlug, skillSlug: "market-intelligence", choice, mode: row.mode ?? "thorough" });
+  return caps.maxCostCentsPerRun;
+}
+
 function intakeView(row: Doc<"intakes">) {
   return {
     id: row._id,
@@ -131,7 +143,7 @@ export const get = workspaceQuery({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.intakeId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
-    return { intake: intakeView(row), messages: await messagesOf(ctx, row._id) };
+    return { intake: { ...intakeView(row), researchCapCents: await researchCap(ctx, row) }, messages: await messagesOf(ctx, row._id) };
   },
 });
 
@@ -144,7 +156,7 @@ export const forProject = workspaceQuery({
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
       .first();
     if (!row || row.workspaceId !== ctx.workspaceId) return null;
-    return { intake: intakeView(row), messages: await messagesOf(ctx, row._id) };
+    return { intake: { ...intakeView(row), researchCapCents: await researchCap(ctx, row) }, messages: await messagesOf(ctx, row._id) };
   },
 });
 
@@ -667,6 +679,6 @@ export const devView = internalQuery({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.intakeId);
     if (!row) return null;
-    return { intake: intakeView(row), messages: await messagesOf(ctx, row._id) };
+    return { intake: { ...intakeView(row), researchCapCents: await researchCap(ctx, row) }, messages: await messagesOf(ctx, row._id) };
   },
 });

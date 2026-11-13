@@ -87,6 +87,9 @@ export function isMode(value: unknown): value is Mode {
 /**
  * How much further work on a chosen model may spend than the caps say (lib/caps.ts `capScale`). Fast work
  * runs on the model's lighter companion, so that model's price decides. 1 when nothing was chosen.
+ *
+ * Pass only a choice that will really run (lib/modelChoice.ts `runnableChoice`, or `capsFor`): a choice that
+ * is set aside runs on the platform's route and must not raise anything.
  */
 export function choiceScale(choice: string | null | undefined, mode?: string): number {
   const spec = parseChoice(choice);

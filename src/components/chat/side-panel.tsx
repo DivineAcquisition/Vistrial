@@ -441,7 +441,7 @@ function OpenPanel({ panel, workspaceId }: { panel: PanelState; workspaceId: Id<
   const send = useMutation(api.agentChat.send);
   // A new chat carries the model picked here; a chat that exists keeps its own, changeable until its work starts.
   const fresh = useModelChoice(workspaceId);
-  const ongoing = useConversationModel(workspaceId, intakeId && detail ? { id: intakeId, route: detail.route, model: detail.model, started: detail.status === "started" } : null);
+  const ongoing = useConversationModel(workspaceId, intakeId && detail ? { id: intakeId, route: detail.route, model: detail.model, started: detail.status === "started", mine: detail.mine } : null);
 
   // What a new chat is told. Removing a chip lasts until the page or the record changes.
   const page: ChatPage | null = here.page && hidePage !== pathname ? here.page : null;

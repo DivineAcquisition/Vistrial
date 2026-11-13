@@ -13,14 +13,14 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { addDaySpend } from "./lib/capRows";
+import { addDaySpend, choiceScale } from "./lib/capRows";
 import { dayKey } from "./lib/caps";
 import { writeAudit } from "./lib/audit";
 import { creditWords, priceFor } from "./lib/credits";
 import { notFound, userError } from "./lib/errors";
 import type { ModelRoute } from "./lib/modelRouter";
 import { wrapUntrusted } from "./lib/registry";
-import { choiceFor, resolveRoute } from "./lib/modelChoice";
+import { choiceFor, resolveRoute, runnableChoice } from "./lib/modelChoice";
 import { markOf } from "./lib/models";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { completeWithTools } from "./lib/toolRouter";
@@ -30,6 +30,11 @@ const SKILL = "market-intelligence";
 /** Per answer and per approved research, so one follow-up can never run away. */
 export const ESTIMATE = { thorough: { low: 30, high: 90, maxSearches: 5 }, fast: { low: 10, high: 40, maxSearches: 3 } } as const;
 const MAX_FOLLOWUP_CENTS = 400;
+
+/** An estimate in cents, for research on the model it will run on. A model that cannot search the web here is set aside, and changes nothing. */
+export function estimateOn(cents: number, choice: string | undefined, mode: string | undefined) {
+  return Math.ceil(cents * choiceScale(runnableChoice(choice, { webSearch: true }), mode));
+}
 
 function assertEditor(role: string) {
   requireWork(role);
@@ -261,6 +266,9 @@ export const save = internalMutation({
     if (args.costCents > 0) await addDaySpend(ctx, row.workspaceId, GROWTH_ARCHITECT, SKILL, dayKey(), args.costCents);
     await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents: args.costCents, source: "followup", ref: row._id });
     if (args.proposal) {
+      // The estimate a person is shown before they tap Run is for the model the research will run on: a
+      // dearer one raises it in step with its price. A model that cannot search here is set aside and raises nothing.
+      const scaled = (cents: number) => estimateOn(cents, row.modelChoice, row.mode);
       await ctx.db.insert("sessionChats", {
         workspaceId: row.workspaceId,
         projectId: row.projectId,
@@ -268,7 +276,7 @@ export const save = internalMutation({
         kind: "proposal",
         text: args.proposal.why,
         status: "proposed",
-        data: { searches: args.proposal.searches, low: args.proposal.low, high: args.proposal.high },
+        data: { searches: args.proposal.searches, low: scaled(args.proposal.low), high: scaled(args.proposal.high) },
         mode: row.mode,
         ...(row.modelChoice ? { modelChoice: row.modelChoice } : {}),
         costCents: 0,

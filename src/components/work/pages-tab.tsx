@@ -321,7 +321,7 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
   const shownPage = pageId && view?.pages.some((row) => row.id === pageId) ? pageId : (view?.pages[0]?.id ?? null);
   const page = useQuery(api.landingTeardown.page, assetId && shownPage ? { workspaceId, assetId, pageId: shownPage } : "skip");
   const brief = useQuery(api.landingTeardown.brief, assetId && view?.hasBrief ? { workspaceId, assetId } : "skip");
-  const quote = useQuery(api.landingTeardown.quote, ask ? { workspaceId, industry: ask.industry, ownUrl: ask.ownUrl || undefined, urls: ask.urls, find: ask.find } : "skip");
+  const quote = useQuery(api.landingTeardown.quote, ask ? { workspaceId, industry: ask.industry, ownUrl: ask.ownUrl || undefined, urls: ask.urls, find: ask.find, ...(modelChoice.picked ? { model: modelChoice.picked } : {}) } : "skip");
   const { byIndex, actions } = useItemDecisions(workspaceId, assetId);
 
   if (!tab) return <p className="text-sm text-muted-foreground">Loading…</p>;

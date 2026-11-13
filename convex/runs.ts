@@ -9,14 +9,14 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap, scaleCaps } from "./lib/caps";
-import { addDaySpend, choiceScale, daySpend, loadCaps, runCaps } from "./lib/capRows";
+import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from "./lib/caps";
+import { addDaySpend, daySpend } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
-import { choiceFor, resolveRoute, skillNeeds } from "./lib/modelChoice";
+import { capsFor, choiceFor, resolveRoute, runnableChoice, skillNeeds } from "./lib/modelChoice";
 import { markOf, parseModelRoute } from "./lib/models";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isActionTool, isCollectTool, wrapUntrusted } from "./lib/registry";
 import { collectResult, type Platform } from "./lib/researchShapes";
@@ -222,7 +222,7 @@ export const get = workspaceQuery({
       .query("assets")
       .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("createdByRun", run._id))
       .take(20);
-    const caps = await runCaps(ctx, run);
+    const caps = await capsOfRun(ctx, run);
     const day = dayKey(run.startedAt);
     const starter = await ctx.db
       .query("members")
@@ -330,6 +330,8 @@ export async function startRunFor(
     model?: string;
     /** Nobody started this by hand (the weekly plan): it runs on the platform's route, whatever `userId` last chose. */
     unattended?: boolean;
+    /** A model already settled before this call (a conversation's): used as it is, if it can run the skill, and never remembered for anyone. */
+    fixedModel?: string;
   },
 ) {
   if (checkCredit && !free) await assertCanSpend(ctx, workspaceId);
@@ -353,7 +355,11 @@ export async function startRunFor(
   if (skill.needsProject && !projectId) throw userError("Choose a research project first.");
   // The free session and work nobody started by hand run on the platform's route. Otherwise: the model picked
   // by hand, refused here if it cannot run this skill, else the one this person last chose for this kind of work.
-  const modelChoice = free ? undefined : await choiceFor(ctx, { workspaceId, userId: args.unattended ? undefined : userId, picked: args.model, needs: skillNeeds(args.skillSlug) });
+  const modelChoice = free
+    ? undefined
+    : args.fixedModel !== undefined
+      ? runnableChoice(args.fixedModel, skillNeeds(args.skillSlug))
+      : await choiceFor(ctx, { workspaceId, userId: args.unattended ? undefined : userId, picked: args.model, needs: skillNeeds(args.skillSlug) });
   const agent = await ctx.db
     .query("agents")
     .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
@@ -368,7 +374,7 @@ export async function startRunFor(
   if (skill.agentSlug !== agent.slug) notFound();
   const gate = await controls(ctx, workspaceId);
   // A dearer chosen model may spend more, in step with its price, and the spending limit is judged against that.
-  const caps = scaleCaps(await loadCaps(ctx, workspaceId, args.agentSlug, args.skillSlug), choiceScale(modelChoice, args.mode));
+  const caps = await capsFor(ctx, { workspaceId, agentSlug: args.agentSlug, skillSlug: args.skillSlug, choice: modelChoice, mode: args.mode });
   const spent = await daySpend(ctx, workspaceId, args.agentSlug, args.skillSlug, dayKey());
   const blocked = gate.paused || gate.halted || spent >= caps.maxCostCentsPerDay;
   // Work above the organization's spending limit waits for an Owner or Admin (lib/approvals.ts). The free session spends nothing.
@@ -445,7 +451,7 @@ export const expire = internalMutation({
     if (!run || !OPEN.has(run.status)) return null;
     // Waiting does not count against the time cap. A wait pushes the stop back by its length.
     if (run.status === "waiting") return null;
-    const caps = await runCaps(ctx, run);
+    const caps = await capsOfRun(ctx, run);
     const left = caps.maxDurationMs - (Date.now() - run.startedAt - (run.waitedMs ?? 0));
     if (left > 0) {
       await ctx.scheduler.runAfter(left, internal.runs.expire, { runId: run._id });
@@ -461,6 +467,11 @@ export const expire = internalMutation({
  * the starter's membership, pause, halt, every cap, and the model route. Then the skill
  * module names the next step; the runtime checks it against the skill's declared tools.
  */
+/** A run's caps, raised only for a chosen model that will really run it. */
+function capsOfRun(ctx: Pick<QueryCtx, "db">, run: Doc<"agentRuns">) {
+  return capsFor(ctx, { workspaceId: run.workspaceId, agentSlug: run.agentSlug, skillSlug: run.skillSlug, choice: run.modelChoice, mode: run.mode });
+}
+
 export const prepare = internalMutation({
   args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
@@ -477,7 +488,13 @@ export const prepare = internalMutation({
       await stopRun(ctx, run, "cancelled", "stopped");
       return { done: true as const };
     }
-    const caps = await runCaps(ctx, run);
+    // A chosen model that can no longer run this skill here (its family was switched off) is dropped from the
+    // run: the platform's route runs from here on, under the plain caps, not the chosen model's raised ones.
+    if (run.modelChoice !== undefined && !runnableChoice(run.modelChoice, skillNeeds(run.skillSlug))) {
+      await ctx.db.patch(run._id, { modelChoice: undefined });
+      run.modelChoice = undefined;
+    }
+    const caps = await capsOfRun(ctx, run);
     const steps = await stepCount(ctx, run);
     const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey());
     const activeSince = run.startedAt + (run.waitedMs ?? 0);
@@ -952,7 +969,7 @@ export const commitModel = internalMutation({
       await stopRun(ctx, current, "cancelled", "stopped", nextCost);
       return { status: "stopped" as const };
     }
-    const caps = await runCaps(ctx, run);
+    const caps = await capsOfRun(ctx, run);
     const steps = await stepCount(ctx, run);
     if (overCap({ caps, runCost: nextCost, dayCost: nextDay, steps: steps.length, startedAt: run.startedAt, now: Date.now() })) {
       await stopRun(ctx, current, "cap", "stopped", nextCost);
@@ -1006,7 +1023,7 @@ export const commitAction = internalMutation({
       await stopRun(ctx, current, "cancelled", "stopped", runCost);
       return { status: "stopped" as const };
     }
-    const caps = await runCaps(ctx, run);
+    const caps = await capsOfRun(ctx, run);
     const steps = await stepCount(ctx, run);
     if (overCap({ caps, runCost, dayCost, steps: steps.length, startedAt: run.startedAt + (run.waitedMs ?? 0), now: Date.now() })) {
       await stopRun(ctx, current, "cap", "stopped", runCost);

@@ -19,7 +19,7 @@ import { writeAudit } from "./lib/audit";
 import { accountFor, billingOn, priceFor } from "./lib/billing";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { defaultCapsFor } from "./lib/caps";
-import { loadCaps } from "./lib/capRows";
+import { capsFor, previewChoice, skillNeeds } from "./lib/modelChoice";
 import { BASIS_LABEL } from "./lib/evidence";
 import { notFound, userError } from "./lib/errors";
 import type { PageSnapshot } from "./lib/pageReader/extract";
@@ -82,11 +82,21 @@ async function pagesToday(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
  * The plan and the budget, before anything runs: the pages that will be opened, how, the steps, the limits
  * and the most a teardown can cost (the run's cap, which covers reading and analysis together).
  */
+/**
+ * The caps a teardown started now would run under: raised for the model it will run on, which is the one
+ * picked, else the one this person last chose for this kind of work. `startRunFor` settles the model the
+ * same way, so the budget shown, the budget confirmed and the budget the run gets are one figure.
+ */
+async function budgetCaps(ctx: QueryCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } }, picked: string | undefined) {
+  const choice = await previewChoice(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, picked, needs: skillNeeds(SKILL_SLUG) });
+  return capsFor(ctx, { workspaceId: ctx.workspaceId, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, choice });
+}
+
 export const quote = workspaceQuery({
-  args: { industry: v.string(), ownUrl: v.optional(v.string()), urls: v.array(v.string()), find: v.boolean() },
+  args: { industry: v.string(), ownUrl: v.optional(v.string()), urls: v.array(v.string()), find: v.boolean(), /** The model picked in the switch, if one was. */ model: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const asked = plan(args);
-    const caps = await loadCaps(ctx, ctx.workspaceId, GROWTH_ARCHITECT, SKILL_SLUG);
+    const caps = await budgetCaps(ctx, args.model);
     const driver = plannedDriver();
     const account = billingOn() ? await accountFor(ctx, ctx.workspaceId) : null;
     const maxCents = priceFor(caps.maxCostCentsPerRun);
@@ -140,7 +150,9 @@ export const start = workspaceMutation({
     if ((await pagesToday(ctx, ctx.workspaceId)) + asked.maxPages > READ_LIMITS.pagesPerDay) throw userError(`Up to ${READ_LIMITS.pagesPerDay} pages a day. Try again tomorrow.`, "limit");
     const note = (args.note ?? "").replace(/\s+/g, " ").trim();
     if (note.length > MAX_NOTE) throw userError(`Keep the note under ${MAX_NOTE} characters.`);
-    const caps = await loadCaps(ctx, ctx.workspaceId, GROWTH_ARCHITECT, SKILL_SLUG);
+    // The same budget the quote showed for this model, and the one the run will get. A person who changed
+    // the model after seeing a budget confirmed the old figure, and is asked to confirm the new one.
+    const caps = await budgetCaps(ctx, args.model);
     if (args.confirmedCents !== priceFor(caps.maxCostCentsPerRun)) throw userError("The budget changed. Check the new one and confirm again.");
 
     const now = Date.now();

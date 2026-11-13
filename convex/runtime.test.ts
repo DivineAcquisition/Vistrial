@@ -611,6 +611,7 @@ describe("step 4 runtime", () => {
       delete process.env.MODEL_FAMILIES;
       delete process.env.OPENROUTER_API_KEY;
       delete process.env.OPENROUTER_WEB_SEARCH;
+      delete process.env.CLAUDE_HAIKU_WEB;
     });
 
     it("refuses a family that is not switched on, before anything starts", async () => {
@@ -671,8 +672,13 @@ describe("step 4 runtime", () => {
       expect(row("openai/gpt-6-astra")).toMatchObject({ cost: "Usually costs more", capScale: 2.5, fastCapScale: 1, fastName: "GPT-6.1 Terra" });
       expect(row("openai/gpt-6.1-sol")).toMatchObject({ cost: "Usually costs less", capScale: 1 });
       // Research searches the web, which is not proven through OpenRouter yet: those models are not listed.
-      expect(await ids("market-intelligence")).toEqual(claude);
+      // Claude Haiku 5.5 is not proven to search the web through the router's tools either, so it waits too.
+      const proven = ["claude-opus-5-5", "claude-sonnet-5-5"];
+      expect(await ids("market-intelligence")).toEqual(proven);
       process.env.OPENROUTER_WEB_SEARCH = "on";
+      expect(await ids("market-intelligence")).toHaveLength(10);
+      expect(await ids("market-intelligence")).not.toContain("claude-haiku-5-5");
+      process.env.CLAUDE_HAIKU_WEB = "on";
       expect(await ids("market-intelligence")).toHaveLength(11);
     });
 

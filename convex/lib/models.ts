@@ -23,7 +23,16 @@ export const FAMILY_NAME: Record<Family, string> = { claude: "Claude", gpt: "GPT
  * - `fallback`: the model tried when the chosen one fails. Always in the same family, so a person who chose
  *   GPT is never silently given Claude.
  */
-export type ModelSpec = { id: string; family: Family; name: string; provider: "claude" | "openrouter"; light: string; fallback: string };
+export type ModelSpec = {
+  id: string;
+  family: Family;
+  name: string;
+  provider: "claude" | "openrouter";
+  light: string;
+  fallback: string;
+  /** Not yet proven, by a real call, to search or read the web through the tools the router declares. Offered for such work only once `Gate.haikuWeb` is set. */
+  webUnproven?: boolean;
+};
 
 const model = (family: Family, id: string, name: string, light: string, fallback: string): ModelSpec => ({
   id,
@@ -43,7 +52,7 @@ const model = (family: Family, id: string, name: string, light: string, fallback
 export const MODELS: readonly ModelSpec[] = [
   model("claude", "claude-opus-5-5", "Claude Opus 5.5", "claude-sonnet-5-5", "claude-sonnet-5-5"),
   model("claude", "claude-sonnet-5-5", "Claude Sonnet 5.5", "claude-sonnet-5-5", "claude-opus-5-5"),
-  model("claude", "claude-haiku-5-5", "Claude Haiku 5.5", "claude-haiku-5-5", "claude-sonnet-5-5"),
+  { ...model("claude", "claude-haiku-5-5", "Claude Haiku 5.5", "claude-haiku-5-5", "claude-sonnet-5-5"), webUnproven: true },
   model("gpt", "openai/gpt-6-astra", "GPT-6 Astra", "openai/gpt-6.1-terra", "openai/gpt-6.1-sol"),
   model("gpt", "openai/gpt-6.1-sol", "GPT-6.1 Sol", "openai/gpt-6.1-terra", "openai/gpt-6.1-terra"),
   model("gpt", "openai/gpt-6.1-terra", "GPT-6.1 Terra", "openai/gpt-6-luna", "openai/gpt-6.1-sol"),
@@ -102,6 +111,8 @@ export type Gate = {
   families: readonly string[];
   /** OPENROUTER_WEB_SEARCH=on: a real call has shown web search results come back. */
   webSearch: boolean;
+  /** CLAUDE_HAIKU_WEB=on: a real call has shown Claude Haiku 5.5 searches and reads the web through the router's tools, and is counted at the right rate. */
+  haikuWeb?: boolean;
 };
 
 export type CannotRun = "not_switched_on" | "no_web_search" | "no_web_fetch";
@@ -116,6 +127,20 @@ export function cannotRun(family: Family, needs: Needs, gate: Gate): CannotRun |
   if (!gate.openRouter || !gate.families.includes(family)) return "not_switched_on";
   if (needs.webFetch) return "no_web_fetch";
   if (needs.webSearch && !gate.webSearch) return "no_web_search";
+  return null;
+}
+
+/**
+ * Why one model cannot run a piece of work here, or null when it can: its family's reason, and for a model
+ * whose web tools are unproven, work that searches or reads the web until that is proven.
+ */
+export function cannotRunModel(spec: ModelSpec, needs: Needs, gate: Gate): CannotRun | null {
+  const family = cannotRun(spec.family, needs, gate);
+  if (family) return family;
+  if (spec.webUnproven && !gate.haikuWeb) {
+    if (needs.webSearch) return "no_web_search";
+    if (needs.webFetch) return "no_web_fetch";
+  }
   return null;
 }
 

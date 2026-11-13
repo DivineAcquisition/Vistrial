@@ -7,7 +7,7 @@ import { v } from "convex/values";
 import { workspaceQuery } from "./lib/builders";
 import { capScale } from "./lib/caps";
 import { modelGate, platformRoute, rememberedModel, skillNeeds } from "./lib/modelChoice";
-import { COST_HINT_WORDS, FAMILY_NAME, MODELS, MODEL_NAMES, cannotRun, costHint } from "./lib/models";
+import { COST_HINT_WORDS, FAMILY_NAME, MODELS, MODEL_NAMES, cannotRunModel, costHint } from "./lib/models";
 import { PRICES } from "./lib/modelRouter";
 import { OPENROUTER_FEE } from "./lib/openrouter";
 import { canWork } from "./lib/roles";
@@ -33,7 +33,7 @@ export const options = workspaceQuery({
     const needs = args.skillSlug ? skillNeeds(args.skillSlug) : {};
     const base = await platformRoute(ctx, "research");
     const basePrice = priced(base?.model, base?.provider);
-    const models = MODELS.filter((row) => !cannotRun(row.family, needs, gate)).map((row) => {
+    const models = MODELS.filter((row) => !cannotRunModel(row, needs, gate)).map((row) => {
       const hint = base?.model === row.id ? null : costHint(priced(row.id, row.provider), basePrice);
       return {
         id: row.id,

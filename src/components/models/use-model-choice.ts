@@ -31,7 +31,7 @@ export function useModelChoice(workspaceId: Id<"workspaces">, skillSlug?: string
  */
 export function useConversationModel(
   workspaceId: Id<"workspaces">,
-  chat: { id: Id<"intakes">; route: string | null; model: string | null; started: boolean } | null,
+  chat: { id: Id<"intakes">; route: string | null; model: string | null; started: boolean; /** False on a conversation someone else started: only its own person changes its model. */ mine?: boolean } | null,
 ): ModelSwitchProps | null {
   const options = useQuery(api.models.options, chat ? { workspaceId, ...(chat.route ? { skillSlug: chat.route } : {}) } : "skip");
   const setModel = useMutation(api.agentChat.setModel);
@@ -39,7 +39,7 @@ export function useConversationModel(
   return {
     options: options.models,
     value: chat.model ?? options.current,
-    locked: chat.started || !options.canChoose,
+    locked: chat.started || chat.mine === false || !options.canChoose,
     onChange: (model) => void setModel({ workspaceId, intakeId: chat.id, model }).catch((error: unknown) => void showError(error, "The model was not changed.")),
   };
 }

@@ -86,10 +86,15 @@ export function openRouterToolBudget(maxUses: number) {
   return { stop_server_tools_when: [{ type: "step_count_is", step_count: maxUses }] };
 }
 
-/** What OpenRouter says the call cost, in cents, before its fee, or null when it reports none. `usage.cost` is in US dollars and includes search fees. */
+/**
+ * What OpenRouter says the call cost, in cents, before its fee, or null when it reports none. `usage.cost`
+ * is in US dollars and includes search fees. A cost of zero is read as "not reported", never as "free": no
+ * model here is free, and trusting a zero would mean no charge and nothing counted against a cap. The price
+ * table then decides.
+ */
 export function reportedCents(usage: unknown): number | null {
   const cost = (usage as { cost?: unknown } | null | undefined)?.cost;
-  if (typeof cost !== "number" || !Number.isFinite(cost) || cost < 0) return null;
+  if (typeof cost !== "number" || !Number.isFinite(cost) || cost <= 0) return null;
   return Math.round(cost * 100 * 10_000) / 10_000;
 }
 

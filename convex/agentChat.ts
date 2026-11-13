@@ -21,7 +21,7 @@ import { notFound, userError } from "./lib/errors";
 import { assertCanRun, choiceFor, skillNeeds } from "./lib/modelChoice";
 import { markOf, parseChoice } from "./lib/models";
 import { SKILL_TAB } from "./lib/workTabs";
-import { beginSkill, isChatSkill, replySkill, type ChatSkill } from "./skillIntake";
+import { beginSkill, isChatSkill, redrawPlan, replySkill, type ChatSkill } from "./skillIntake";
 
 const OPEN_RUN = ["queued", "running", "waiting", "needsInput"];
 const MAX_TEXT = 1000;
@@ -116,17 +116,26 @@ type Access = MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject
  * conversation is on, or the message is refused with the reason; while the chat is still asking which skill,
  * it is checked when the skill is chosen. `picked` undefined leaves the conversation as it is.
  */
-async function pickModel(ctx: MutationCtx, intakeId: Id<"intakes">, picked: string | undefined, route: ChatRoute | null) {
+async function pickModel(ctx: MutationCtx & { identity: { subject: string } }, intakeId: Id<"intakes">, picked: string | undefined, route: ChatRoute | null) {
   const row = await ctx.db.get(intakeId);
   if (!row) return;
   const needs = route ? skillNeeds(route) : {};
+  // Only the person who started a conversation chooses its model. Anyone else in the organization may read
+  // and reply, but cannot change what its work runs on, and so can never change what is remembered for them.
+  if (picked !== undefined && row.createdBy !== ctx.identity.subject) throw userError("Only the person who started this conversation can change its model.");
   if (picked === undefined) {
     // An earlier pick must still be able to run the skill the conversation has now reached.
     if (row.modelChoice !== undefined) assertCanRun(row.modelChoice, needs);
     return;
   }
-  const choice = await choiceFor(ctx, { workspaceId: row.workspaceId, userId: row.createdBy, picked, needs });
-  if (choice !== row.modelChoice && row.status !== "started") await ctx.db.patch(row._id, { modelChoice: choice });
+  // Remembered for the caller, who is the conversation's own person (checked above).
+  const choice = await choiceFor(ctx, { workspaceId: row.workspaceId, userId: ctx.identity.subject, picked, needs });
+  if (choice !== row.modelChoice && row.status !== "started") {
+    await ctx.db.patch(row._id, { modelChoice: choice });
+    // A plan with its budget may already be on screen. It is drawn again for the new model.
+    const fresh = await ctx.db.get(row._id);
+    if (fresh?.skillSlug && isChatSkill(fresh.skillSlug)) await redrawPlan(ctx, fresh as Doc<"intakes"> & { skillSlug: ChatSkill });
+  }
 }
 type Choices = { mode?: "thorough" | "fast"; platforms?: string[]; links?: string[] };
 

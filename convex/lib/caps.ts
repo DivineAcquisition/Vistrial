@@ -123,17 +123,17 @@ export function capScale(price: { input: number; output: number } | null | undef
 }
 
 /**
- * A run's caps on a dearer model: both cost caps raised by the scale, and never past the platform ceiling.
- * Steps and run time do not change. The day cap rises with the run cap because some skills set them equal.
+ * A run's caps on a dearer model: the run's cost cap raised by the scale, never past the platform ceiling.
+ * Steps and run time do not change.
+ *
+ * The day cap is an organization's own budget, so it is not multiplied. It rises only as far as one run on
+ * this model needs to fit (some skills set the day cap equal to the run cap), and never past the ceiling.
  */
 export function scaleCaps(caps: Caps, scale: number): Caps {
   if (!(scale > 1)) return caps;
-  const raise = (cents: number, ceiling: number) => Math.max(cents, Math.min(Math.ceil(cents * scale), ceiling));
-  return {
-    ...caps,
-    maxCostCentsPerRun: raise(caps.maxCostCentsPerRun, PLATFORM_CEILING.maxCostCentsPerRun),
-    maxCostCentsPerDay: raise(caps.maxCostCentsPerDay, PLATFORM_CEILING.maxCostCentsPerDay),
-  };
+  const run = Math.max(caps.maxCostCentsPerRun, Math.min(Math.ceil(caps.maxCostCentsPerRun * scale), PLATFORM_CEILING.maxCostCentsPerRun));
+  const day = Math.max(caps.maxCostCentsPerDay, Math.min(run, PLATFORM_CEILING.maxCostCentsPerDay));
+  return { ...caps, maxCostCentsPerRun: run, maxCostCentsPerDay: day };
 }
 
 export function dayKey(now = Date.now()) {

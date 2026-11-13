@@ -1,7 +1,7 @@
 "use client";
 
 import { CalculatorIcon, CircleAlertIcon, FileSearchIcon } from "@/components/icons";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { EvidenceLabel } from "@/components/readable/evidence-label";
 
 import { cn } from "@/lib/utils";
 import { lineDiff } from "@/lib/diff";
@@ -38,15 +38,6 @@ export function claimMissing(claim: EvidenceView) {
 export type VersionSummary = { version: number; createdBy: "agent" | "person" | string; createdAt: number };
 
 /** Each claim with its evidence beside it. A claim whose source cannot be found says so in red. */
-/** How each basis reads at a glance. The label itself is set on the server, never by the model. */
-const BASIS_TONE: Record<string, "good" | "brand" | "warning" | "neutral"> = {
-  observed: "good",
-  inferred: "brand",
-  hypothesis: "warning",
-  firstParty: "good",
-  insufficient: "neutral",
-};
-
 export function EvidenceList({ evidence }: { evidence: EvidenceView[] }) {
   if (evidence.length === 0) return <p className="text-sm text-muted-foreground">This version makes no claims.</p>;
   return (
@@ -59,7 +50,7 @@ export function EvidenceList({ evidence }: { evidence: EvidenceView[] }) {
           <li key={claim.claimKey} className="grid gap-1.5 rounded-lg border border-border p-3">
             {claim.basisLabel ? (
               <div>
-                <StatusBadge label={claim.basisLabel} tone={BASIS_TONE[claim.basis ?? ""] ?? "neutral"} className="[&_span]:normal-case" />
+                <EvidenceLabel label={claim.basisLabel} />
               </div>
             ) : null}
             <p className="text-sm text-card-foreground">{claim.statement ?? claim.claimKey}</p>

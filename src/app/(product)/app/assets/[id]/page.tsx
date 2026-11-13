@@ -14,6 +14,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Panel } from "@/components/ui/panel";
 import { Textarea } from "@/components/ui/textarea";
 import { ReportBody, reportMarkdown } from "@/components/assets/report-body";
+import { ReportGlanceView } from "@/components/assets/report-glance";
+import { ModelMark } from "@/components/readable";
+import { reportGlance } from "@/lib/readable/report";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
 import { showError } from "@/lib/errors/show-error";
@@ -60,7 +63,8 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
             </Link>
           ) : (
             "Added by a person."
-          )}
+          )}{" "}
+          <ModelMark />
         </p>
         {status === "needsReview" ? (
           <p className="text-sm text-destructive">
@@ -128,10 +132,11 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_18rem]">
         <div className="grid min-w-0 gap-6">
+          {shown && !comparing && shown.body && /^#{1,3}\s/m.test(shown.body) ? <ReportGlanceView glance={reportGlance(shown.body, (shown.evidence as EvidenceView[]).map((claim) => ({ basisLabel: claim.basisLabel, sources: claim.sources, missing: claimMissing(claim) })))} /> : null}
           <Panel className="grid gap-3 p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-heading text-base text-card-foreground">
-                {viewingOld ? `Version ${selected} (older)` : `Version ${selected}`}
+                {viewingOld ? `The full report, version ${selected} (older)` : `The full report, version ${selected}`}
               </h2>
               <div className="flex flex-wrap gap-2 print:hidden">
                 {selected > 1 ? (
@@ -176,7 +181,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
             ) : null}
           </Panel>
           <Panel className="grid gap-3 p-4 sm:p-6">
-            <h2 className="font-heading text-base text-card-foreground">Claims and evidence</h2>
+            <h2 id="report-claims" className="scroll-mt-24 font-heading text-base text-card-foreground">Claims and evidence</h2>
             {shown ? <EvidenceList evidence={shown.evidence as EvidenceView[]} /> : null}
           </Panel>
         </div>

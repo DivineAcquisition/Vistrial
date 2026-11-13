@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Detail, EvidenceLabel, ModelMark, NextStep, VerdictStrip } from "@/components/readable";
 import { showError } from "@/lib/errors/show-error";
+import { diagnosisGlance, stepLabel } from "@/lib/readable/analysis";
 import { shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
@@ -114,36 +116,77 @@ export function GoalCard({ goal, editor, onSave }: { goal: GoalView; editor: boo
   );
 }
 
-/** Where growth stalls, from the business's own figures. */
-function StallSummary({ diagnosis }: { diagnosis: DiagnosisView }) {
+/**
+ * Where growth stalls: the answer first. The stage and the reason it was named, its evidence label, the
+ * figures behind it and counts of the plan, then what to do next. The summary paragraph and what is missing
+ * sit under it; nothing the earlier panel showed is gone.
+ */
+function StallSummary({ diagnosis, decisions }: { diagnosis: DiagnosisView; decisions: Map<number, ItemDecision> }) {
+  const glance = diagnosisGlance(diagnosis, (index) => decisions.has(index));
+  const named = diagnosis.hasData && diagnosis.stage !== "unknown";
+  const next = diagnosis.status === "rejected" || diagnosis.status === "archived" ? null : glance.next;
   return (
     <Panel className="grid gap-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SectionTitle icon={Gauge}>Where growth stalls</SectionTitle>
-        <StatusBadge
-          label={diagnosis.status === "approved" ? "Approved" : diagnosis.status === "needsReview" ? "Needs review" : "Waiting for approval"}
-          tone={diagnosis.status === "approved" ? "good" : "warning"}
-          className="[&_span]:normal-case"
-        />
+        <span className="flex flex-wrap items-center gap-2">
+          <ModelMark />
+          <StatusBadge
+            label={diagnosis.status === "approved" ? "Approved" : diagnosis.status === "needsReview" ? "Needs review" : "Waiting for approval"}
+            tone={diagnosis.status === "approved" ? "good" : "warning"}
+            className="[&_span]:normal-case"
+          />
+        </span>
       </div>
-      {diagnosis.hasData ? (
-        <>
-          <div className="flex flex-wrap items-baseline gap-2">
-            <span className="font-heading text-2xl text-card-foreground">{STAGE_WORDS[diagnosis.stage] ?? diagnosis.stage}</span>
-            <span className="text-sm text-muted-foreground">{diagnosis.stageReason}</span>
+      <VerdictStrip
+        text={named ? `${STAGE_WORDS[diagnosis.stage] ?? diagnosis.stage}. ${diagnosis.stageReason}` : "Not enough data. Connect Meta or upload a results file, then run the diagnosis again."}
+        label={glance.label}
+        counts={
+          named
+            ? [
+                ...diagnosis.stageFigures.slice(0, 2).map((figure) => ({ value: figure.display, words: figure.label, hint: figure.formula ? `Worked out: ${figure.formula}` : "As reported" })),
+                ...(glance.steps ? [{ value: `${glance.underWay} of ${glance.steps}`, words: "roadmap steps under way" }] : []),
+                ...(glance.thin ? [{ value: String(glance.thin), words: glance.thin === 1 ? "step without figures behind it" : "steps without figures behind them" }] : []),
+              ]
+            : []
+        }
+      >
+        {named && diagnosis.stageFigures.length > 2 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {diagnosis.stageFigures.slice(2).map((figure) => (
+              <FigureChip key={figure.id} figure={figure} />
+            ))}
           </div>
-          {diagnosis.stageFigures.length ? (
-            <div className="flex flex-wrap gap-1.5">
-              {diagnosis.stageFigures.map((figure) => (
-                <FigureChip key={figure.id} figure={figure} />
-              ))}
-            </div>
-          ) : null}
-          {diagnosis.summary ? <p className="text-sm text-card-foreground">{diagnosis.summary}</p> : null}
-        </>
-      ) : (
-        <p className="text-sm text-card-foreground">Not enough data. Connect Meta or upload a results file, then run the diagnosis again.</p>
-      )}
+        ) : null}
+        {named ? <p className="text-xs text-muted-foreground">The figures are your own, read as they are. No outside benchmark is used.</p> : null}
+      </VerdictStrip>
+      {diagnosis.hasData && diagnosis.summary ? (
+        <p className="text-sm text-card-foreground">
+          <EvidenceLabel label="Inference" className="mr-1.5 align-middle" />
+          {diagnosis.summary}
+        </p>
+      ) : null}
+      {diagnosis.findings.length ? (
+        <Detail summary="What the figures show" aside={`${diagnosis.findings.length} ${diagnosis.findings.length === 1 ? "finding" : "findings"}`}>
+          <ul className="grid gap-2">
+            {diagnosis.findings.map((row) => (
+              <li key={row.statement} className="grid gap-1.5 rounded-xl border border-border p-3">
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-card-foreground">
+                  <EvidenceLabel label={row.figures.length ? "Your data" : "Not enough data"} />
+                  {row.statement}
+                </p>
+                {row.figures.length ? (
+                  <div className="flex flex-wrap gap-1">
+                    {row.figures.map((figure) => (
+                      <FigureChip key={figure.id} figure={figure} />
+                    ))}
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </Detail>
+      ) : null}
       {diagnosis.missing.length ? (
         <ul className="grid gap-1">
           {diagnosis.missing.map((row) => (
@@ -154,6 +197,7 @@ function StallSummary({ diagnosis }: { diagnosis: DiagnosisView }) {
           ))}
         </ul>
       ) : null}
+      {next ? <NextStep look="inline" title={next.action} label={stepLabel(next)} note={`${PHASES.find((phase) => phase.key === next.phase)?.name ?? "Roadmap"}, ${PHASES.find((phase) => phase.key === next.phase)?.weeks ?? ""}: the first step nobody is trying yet.`} href={`#roadmap-step-${next.index + 1}`} /> : null}
     </Panel>
   );
 }
@@ -191,12 +235,6 @@ export function Roadmap({ diagnosis, goal, decisions, actions, editor }: { diagn
           </p>
         </div>
         <dl className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-          {diagnosis.stageFigures.slice(0, 2).map((figure) => (
-            <div key={figure.id} className="grid">
-              <dd className="font-heading text-xl text-card-foreground tabular-nums">{figure.display}</dd>
-              <dt className="max-w-44 truncate">{figure.label}</dt>
-            </div>
-          ))}
           <div className="grid">
             <dd className="font-heading text-xl text-card-foreground tabular-nums">
               {trying} of {diagnosis.roadmap.length}
@@ -228,12 +266,11 @@ export function Roadmap({ diagnosis, goal, decisions, actions, editor }: { diagn
                   const thin = step.figures.length === 0;
                   const status = stepStatus(decisions.get(step.index));
                   return (
-                    <article key={step.index} className={cn("grid gap-2.5 rounded-2xl border p-4", thin ? "border-warning/50 bg-warning/[0.06]" : status?.tone === "accent" ? "border-primary/40 bg-card" : "border-border bg-card")}>
-                      {thin || status ? (
-                        <span className={cn("w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold", thin ? "bg-warning/20 text-card-foreground" : status?.tone === "accent" ? "bg-primary/[0.14] text-card-foreground" : "bg-muted text-muted-foreground")}>
-                          {thin ? "Not enough data" : status?.label}
-                        </span>
-                      ) : null}
+                    <article key={step.index} id={`roadmap-step-${step.index + 1}`} className={cn("grid scroll-mt-24 gap-2.5 rounded-2xl border p-4 target:border-primary", thin ? "border-warning/50 bg-warning/[0.06]" : status?.tone === "accent" ? "border-primary/40 bg-card" : "border-border bg-card")}>
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        <EvidenceLabel label={stepLabel(step)} />
+                        {status ? <span className={cn("w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold", status.tone === "accent" ? "bg-primary/[0.14] text-card-foreground" : "bg-muted text-muted-foreground")}>{status.label}</span> : null}
+                      </span>
                       <h4 className="font-heading text-base leading-snug text-card-foreground">{step.action}</h4>
                       <p className="text-sm text-muted-foreground">{step.problem}</p>
                       {step.figures.length ? (
@@ -367,8 +404,8 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
         <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div className="grid min-w-0 content-start gap-5">
             {top}
+            {diagnosis ? <StallSummary diagnosis={diagnosis} decisions={decisions} /> : null}
             <DataChecklist data={data} base={base} />
-            {diagnosis ? <StallSummary diagnosis={diagnosis} /> : null}
           </div>
           {/* On a wide screen the rail sits beside the top; on a phone it comes after the roadmap. */}
           <aside className="hidden min-w-0 content-start gap-5 lg:grid">{rail}</aside>

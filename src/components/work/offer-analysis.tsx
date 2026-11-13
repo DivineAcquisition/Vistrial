@@ -1,6 +1,7 @@
 "use client";
 
-import { AlertTriangle, ExternalLink, Gauge, Lightbulb } from "@/components/icons";
+import { ExternalLink } from "@/components/icons";
+import { Detail, EvidenceLabel, StatusChip } from "@/components/readable";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 
@@ -13,8 +14,9 @@ type Competitor = OfferAnalysisView["competitors"][number];
 function Cell({ value, gap }: { value: string; gap?: boolean }) {
   const missing = !value.trim() || /^not stated/i.test(value);
   return (
-    <span className={cn("block text-sm", missing ? "text-muted-foreground italic" : "text-card-foreground", gap && "rounded-md bg-warning/15 px-1.5 py-0.5 not-italic")}>
+    <span className={cn("block text-sm", missing ? "text-muted-foreground italic" : "text-card-foreground")}>
       {missing ? "Not stated" : value}
+      {gap ? <StatusChip tone="partly" label="A competitor states this" className="mt-1 flex not-italic" /> : null}
     </span>
   );
 }
@@ -116,9 +118,7 @@ export function CompetitorSideBySide({ ours, competitors }: { ours: Ours; compet
           </li>
         ))}
       </ul>
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <span aria-hidden className="inline-block size-2.5 rounded-sm bg-warning/40" /> Highlighted: a competitor states this and your offer does not.
-      </p>
+      <p className="text-xs text-muted-foreground">&ldquo;A competitor states this&rdquo; marks a field at least one competitor states and your offer does not. It says nothing about which offer sells better.</p>
     </div>
   );
 }
@@ -130,12 +130,12 @@ export function GapsList({ gaps }: { gaps: OfferAnalysisView["gapsAndRisks"] }) 
     <ul className="grid gap-2">
       {gaps.map((row) => (
         <li key={row.statement} className="flex gap-2 rounded-xl border border-border bg-card p-3 text-sm">
-          {row.kind === "risk" ? <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" /> : <Lightbulb aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />}
-          <span className="grid gap-1">
-            <span className="text-card-foreground">{row.statement}</span>
-            <span className="text-xs text-muted-foreground">
-              {row.kind === "risk" ? "Risk" : "Gap"} · {row.basisLabel ?? "No basis"}
+          <span className="grid gap-1.5">
+            <span className="flex flex-wrap items-center gap-1.5">
+              <StatusChip tone={row.kind === "risk" ? "partly" : "absent"} label={row.kind === "risk" ? "Risk" : "Gap"} />
+              {row.basisLabel ? <EvidenceLabel label={row.basisLabel} /> : <StatusChip tone="quiet" label="No basis" />}
             </span>
+            <span className="text-card-foreground">{row.statement}</span>
           </span>
         </li>
       ))}
@@ -152,27 +152,23 @@ export function TestPlan({ changes, decisions, actions, editor, ready }: { chang
   return (
     <ol className="grid gap-3">
       {changes.map((row) => (
-        <li key={row.index} className="grid gap-3 rounded-2xl border border-border bg-card p-4">
+        <li key={row.index} id={`offer-change-${row.index + 1}`} className="grid scroll-mt-24 gap-3 rounded-2xl border border-border bg-card p-4 target:border-primary">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <h4 className="flex items-start gap-2 font-medium text-card-foreground">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs text-primary tabular-nums">{row.index + 1}</span>
               {row.title}
             </h4>
             <span className="flex flex-wrap gap-1">
+              {row.basisLabel ? <EvidenceLabel label={row.basisLabel} /> : <StatusChip tone="quiet" label="No basis" />}
               {row.channel ? <StatusBadge label={row.channel} tone="neutral" className="[&_span]:normal-case" /> : null}
               {row.newChannel ? <StatusBadge label="New channel" tone="warning" className="[&_span]:normal-case" /> : null}
             </span>
           </div>
           <p className="text-sm text-card-foreground">{row.proposedChange}</p>
-          <div className="grid gap-1 rounded-xl bg-muted/40 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Gauge aria-hidden className="size-3.5 text-primary" /> How to tell if it worked
-            </p>
-            <p className="text-sm text-card-foreground">{row.validationMethod}</p>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Evidence: {row.evidence} <span className="whitespace-nowrap">({row.basisLabel ?? "No basis"})</span>
-          </p>
+          <Detail summary="How to tell if it worked, and the evidence">
+            <p className="text-sm text-card-foreground">How to tell: {row.validationMethod}</p>
+            <p className="text-sm text-muted-foreground">Evidence: {row.evidence}</p>
+          </Detail>
           {ready ? (
             <div className="border-t border-border pt-3">
               <TryThis index={row.index} decision={decisions.get(row.index)} editor={editor} actions={actions} />

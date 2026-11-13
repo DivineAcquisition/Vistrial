@@ -315,14 +315,19 @@ describe("what code counts on a page", () => {
       goal: "Book a call",
       verdict: "This page is proven and will increase bookings.",
       sections: [
-        { job: "hero", from: 2, to: 6, does: "yes", headline: "Names who it is for, then the outcome", note: "Clear." },
-        { job: "offer", from: 10, to: 12, does: "partly", headline: "The best-performing offer box in the industry", note: "Boxed." },
+        { job: "hero", from: 2, to: 6, does: "yes", headline: "Names who it is for, then the outcome", note: "This hero converts better than any other." },
+        { job: "offer", from: 10, to: 12, does: "partly", headline: "The best-performing offer box in the industry", note: "Boxed, with the price stated." },
       ],
+      proof: { kind: "none", named: false, quotes: [], note: "Adding proof will increase bookings." },
     })!;
     const cleaned = sanitise(raw, snapshot);
     expect(cleaned.analysis.verdict).toBe("");
     expect(cleaned.analysis.sections.map((row) => row.headline)).toEqual(["Names who it is for, then the outcome", ""]);
-    expect(cleaned.droppedLines).toBe(2);
+    // The notes and the proof note are screened the same way: a claim of a result goes, a plain reading stays.
+    expect(cleaned.analysis.sections.map((row) => row.note)).toEqual(["", "Boxed, with the price stated."]);
+    expect(cleaned.analysis.proof.note).toBe("");
+    expect(cleaned.analysis.goal).toBe("Book a call");
+    expect(cleaned.droppedLines).toBe(4);
 
     const plain = sanitise(readAnalysis({ ...base, goal: "Book a call", verdict: "Qualifies its reader and states a price, but shows no proof.", sections: [] })!, snapshot);
     expect(plain.analysis.verdict).toBe("Qualifies its reader and states a price, but shows no proof.");

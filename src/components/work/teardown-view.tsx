@@ -544,7 +544,7 @@ export function Teardown({ view, page, editor, onSelectPage, decisions, tryActio
               <li key={limit}>{limit}</li>
             ))}
             {dropped > 0 ? <li>{plural(dropped, "quote")} the agent gave {dropped === 1 ? "was" : "were"} not on the page and {dropped === 1 ? "was" : "were"} removed.</li> : null}
-            {view.pages.some((row) => row.droppedLines > 0) ? <li>A summary line the agent wrote claimed a result and was removed; a plain sentence of counts is shown in its place.</li> : null}
+            {view.pages.some((row) => row.droppedLines > 0) ? <li>A line the agent wrote about a page claimed a result and was removed. Where it was a summary, a plain sentence of counts is shown in its place.</li> : null}
             {view.pages.some((row) => row.partial) ? <li>At least one page was read only in part (too large, or built by scripts a plain request cannot run).</li> : null}
           </ul>
           <EvidenceLegend only={[...view.patterns, ...view.gaps, ...view.suggestions].map((row) => row.basisLabel).concat(["Observed", "Inference"])} />

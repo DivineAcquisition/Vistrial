@@ -283,7 +283,6 @@ export function BriefCard({ studio, capCents, reserveCents = 50 }: { studio: Stu
   const credits = useCredits();
   const brief = studio.brief;
   const context = studio.context;
-  const spent = studio.run?.costCents ?? 0;
   const row = "grid gap-1 border-t border-border pt-3 first:border-0 first:pt-0";
   const label = "text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase";
   return (
@@ -350,7 +349,7 @@ export function BriefCard({ studio, capCents, reserveCents = 50 }: { studio: Stu
         <div className={row}>
           <dt className={label}>Research budget</dt>
           <dd className="text-card-foreground">
-            Up to {credits.cost(capCents)} for this run, with {credits.cost(reserveCents)} held back to check the report and fix it once. Spent so far: {credits.cost(spent)}.
+            Up to {credits.cost(capCents)} for this run, with {credits.cost(reserveCents)} held back to check the report and fix it once.
           </dd>
         </div>
         {brief && brief.researchQuestions.length > 0 ? (

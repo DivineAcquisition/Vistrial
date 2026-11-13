@@ -67,7 +67,9 @@ describe("privacy policy stays inside verified behavior", () => {
 
   it("says what is read from HighLevel, what about leads is kept, and how it is deleted", () => {
     expect(text).toContain("L. Connected HighLevel accounts");
-    expect(text).toContain("Vistrial never creates, edits, moves or deletes anything in HighLevel, and never messages, calls or emails anyone");
+    expect(text).toContain("nothing changes in HighLevel until an Owner or Admin approves that one change");
+    expect(text).toContain("Vistrial never deletes anything in HighLevel and does not message, call or email the business's leads");
+    expect(text).toContain("An Owner can turn this off at any time");
     expect(text).toContain("Vistrial keeps only the name, email address, phone number, where the lead came from");
     expect(text).toContain("It does not keep what a message said, email subjects, call recordings or transcripts");
     expect(text).toContain("Disconnecting the sub-account in Connections deletes the tokens and everything read from it");

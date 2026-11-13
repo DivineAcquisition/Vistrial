@@ -236,7 +236,11 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         { kind: "h", text: "L. Connected HighLevel accounts" },
         {
           kind: "p",
-          text: "If a workspace Owner connects a HighLevel (also called LeadConnector) sub-account, for the organization or for one of its clients, Vistrial reads it with read-only access. It reads the sales pipelines and their stages; each deal's stage, status, value, source and dates, but not the deal's name, notes or custom fields; the business's leads; and what happened to them: calls, text messages, emails, chats and appointments. Vistrial never creates, edits, moves or deletes anything in HighLevel, and never messages, calls or emails anyone.",
+          text: "If a workspace Owner connects a HighLevel (also called LeadConnector) sub-account, for the organization or for one of its clients, Vistrial reads it with read-only access. It reads the sales pipelines and their stages; each deal's stage, status, value, source and dates, but not the deal's name, notes or custom fields; the business's leads; and what happened to them: calls, text messages, emails, chats and appointments. It does not change anything in HighLevel unless an Owner of the workspace allows it, as the next paragraphs describe.",
+        },
+        {
+          kind: "p",
+          text: "If an Owner allows it, Vistrial may also act in the connected sub-account: move a deal to another stage, mark a deal won, lost or abandoned, add or remove a tag on a lead, add a note to a lead, or create a task. An agent or a person on the team proposes each change, and nothing changes in HighLevel until an Owner or Admin approves that one change; marking a deal won, lost or abandoned needs an Owner. Each change is recorded with who proposed it, who approved it and when, and what HighLevel answered. An Owner can turn this off at any time, which cancels everything still waiting. Vistrial never deletes anything in HighLevel and does not message, call or email the business's leads. A change can start an automation the business set up in HighLevel, which may contact the lead; that automation is the business's own.",
         },
         {
           kind: "p",
@@ -244,7 +248,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Vistrial keeps this information to show the workspace how its sales process is doing and, where the Owner allows it, so an agent can help the business convert more of its leads. It is stored for that workspace only. If the connection is for a client, only the people in the workspace who may see that client can see it. Vistrial handles this information on the business's behalf, as Section 13 describes; the business is responsible for having collected it lawfully.",
+          text: "Vistrial keeps this information to show the workspace how its sales process is doing, so an agent can help the business convert more of its leads, and to propose the changes described above. A note or task Vistrial adds is kept in its record of that change while the account stays connected. It is stored for that workspace only. If the connection is for a client, only the people in the workspace who may see that client can see it. Vistrial handles this information on the business's behalf, as Section 13 describes; the business is responsible for having collected it lawfully.",
         },
         {
           kind: "p",

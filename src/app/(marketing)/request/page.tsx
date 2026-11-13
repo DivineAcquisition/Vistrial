@@ -12,6 +12,7 @@ export const metadata: Metadata = publicPageMetadata({
   title: FORMS.accessTitle,
   description: FORMS.accessLead,
   path: "/request",
+  index: false,
 });
 
 export default function RequestPage() {

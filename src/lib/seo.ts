@@ -20,8 +20,6 @@ type PublicPage = {
 
 export const PUBLIC_PAGES: readonly PublicPage[] = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
-  { path: "/request", changeFrequency: "monthly", priority: 0.8 },
-  { path: "/contact", changeFrequency: "monthly", priority: 0.6 },
   { path: "/security", changeFrequency: "monthly", priority: 0.6 },
   { path: "/security/subprocessors", changeFrequency: "monthly", priority: 0.4 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3, gate: "privacy" },
@@ -49,6 +47,9 @@ export const PRIVATE_PREFIXES = [
   "/join",
   "/accept-invite",
   "/login",
+  // The access and contact forms stay out of search (owner decision, 2026-11-13).
+  "/request",
+  "/contact",
   "/thanks",
   "/dev/",
   "/security/review",

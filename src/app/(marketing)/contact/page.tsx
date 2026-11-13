@@ -13,6 +13,7 @@ export const metadata: Metadata = publicPageMetadata({
   title: FORMS.customTitle,
   description: FORMS.customLead,
   path: "/contact",
+  index: false,
 });
 
 export default function ContactPage() {

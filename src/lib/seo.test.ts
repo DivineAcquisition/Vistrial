@@ -7,12 +7,14 @@ const ORIGIN = "https://vistrial.io";
 const LIVE = { privacyLive: true, termsLive: true };
 
 describe("sitemap", () => {
-  it("lists the public pages the owner named", () => {
+  it("lists the public pages, without the access and contact forms", () => {
     const urls = sitemapEntries(ORIGIN, LIVE).map((row) => row.url);
-    for (const path of ["/request", "/contact", "/security", "/security/subprocessors", "/privacy", "/terms", "/cookies", "/disclaimer", "/bot"]) {
+    for (const path of ["/security", "/security/subprocessors", "/privacy", "/terms", "/cookies", "/disclaimer", "/bot"]) {
       expect(urls).toContain(`${ORIGIN}${path}`);
     }
     expect(urls).toContain(ORIGIN);
+    expect(urls).not.toContain(`${ORIGIN}/request`);
+    expect(urls).not.toContain(`${ORIGIN}/contact`);
   });
 
   it("never lists the app or sign-in", () => {
@@ -33,7 +35,7 @@ describe("sitemap", () => {
 describe("robots", () => {
   it("keeps the app out, lets sign-in be fetched so its noindex is seen, and does not block a listed page", () => {
     const disallow = robotsDisallow(LIVE);
-    expect(disallow).toEqual(expect.arrayContaining(["/app", "/admin", "/dev/"]));
+    expect(disallow).toEqual(expect.arrayContaining(["/app", "/admin", "/dev/", "/request", "/contact"]));
     expect(disallow).not.toContain("/sign-in");
     for (const page of PUBLIC_PAGES) {
       if (page.path === "/") continue;

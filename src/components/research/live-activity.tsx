@@ -40,7 +40,6 @@ import {
 import { PLATFORM_LABEL, STAGES } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { SourceIcon } from "@/components/research/source-icon";
-import { useCredits } from "@/lib/credits";
 
 const ICONS: Record<ActivityIcon, LucideIcon> = {
   memory: BookOpen,
@@ -186,19 +185,13 @@ export function LiveActivity({
   status,
   startedAt,
   finishedAt,
-  costCents,
-  free = false,
 }: {
   steps: ActivityStep[];
   sources: (ActivitySource & { url?: string })[];
   status: string | null;
   startedAt: number | null;
   finishedAt: number | null;
-  costCents: number;
-  /** The free onboarding session: the person pays nothing, so the counter says so instead of the spend. */
-  free?: boolean;
 }) {
-  const credits = useCredits();
   const working = status === "running" || status === "queued";
   const open = working || status === "waiting";
   const now = useNow(working);
@@ -248,7 +241,7 @@ export function LiveActivity({
           <Counter label="Searches" value={totals.searches} />
           <Counter label="Pages read" value={totals.pages} />
           <Counter label="Sources kept" value={sources.length} />
-          {free ? <Counter label="Credits used (free)" value={0} /> : <Counter label="Credits used" value={credits.ofCost(costCents)} />}
+          <Counter label="Steps" value={steps.length} />
         </div>
 
         <ol className="relative grid gap-3 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-px before:bg-border" aria-label="What it did">

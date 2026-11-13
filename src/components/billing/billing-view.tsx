@@ -65,7 +65,7 @@ export function BillingView({
   const low = data.on && balance <= data.autoRefillDefaults.thresholdCents;
   return (
     <div className="mx-auto grid w-full max-w-5xl min-w-0 gap-6">
-      <PageHeader eyebrow={data.accountName ? `${data.accountName} · account` : "Account"} title="Billing" description={`One balance for the whole account: every organization spends from it. Credits pay for the AI work your agents do. Each piece of work costs what it really cost Vistrial, times ${data.markup}. Nothing is charged until work runs.`} />
+      <PageHeader eyebrow={data.accountName ? `${data.accountName} · account` : "Account"} title="Billing" description={`One balance for the whole account: every organization spends from it. Credits pay for the AI work your agents do, in whole credits for what each piece of work used. Nothing is charged until work runs. Usage breaks down where every credit went.`} />
 
       {data.testMode ? (
         <Banner compact tone="brand" title="Test mode">

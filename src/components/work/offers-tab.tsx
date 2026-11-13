@@ -17,7 +17,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { EMPTY_OFFER, cleanOffer, compareOffers, type OfferContent, type OfferInput } from "../../../convex/lib/offerCards";
 
 import { ViewSwitch, useWorkView, type WorkView } from "./board-canvas";
-import { ModelMark, NextStep, VerdictStrip } from "@/components/readable";
+import { NextStep, VerdictStrip } from "@/components/readable";
 import { offerGlance } from "@/lib/readable/analysis";
 
 import { CompetitorSideBySide, GapsList, TestPlan } from "./offer-analysis";
@@ -324,9 +324,7 @@ function AnalysisPanel({ base, tab, analysis, analysisId, onSelectAnalysis, onCa
               { value: String(glance.risks), words: glance.risks === 1 ? "risk" : "risks" },
               { value: String(glance.changes), words: glance.changes === 1 ? "change to test" : "changes to test" },
             ]}
-          >
-            <ModelMark model={analysis.model} />
-          </VerdictStrip>
+          />
           <CompetitorSideBySide ours={analysis.ours} competitors={analysis.competitors} />
           {editor && analysis.ours.basis !== "insufficient" ? (
             <div className="flex flex-wrap items-center gap-2">

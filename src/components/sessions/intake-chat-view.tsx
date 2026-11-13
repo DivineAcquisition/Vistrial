@@ -30,7 +30,7 @@ import { SourceIcon } from "@/components/research/source-icon";
 import { Banner } from "@/components/ui/banner";
 import { showError } from "@/lib/errors/show-error";
 import { useCredits } from "@/lib/credits";
-import { ModelMark, type ModelMarkData } from "@/components/models/model-mark";
+import type { ModelMarkData } from "@/components/models/model-mark";
 
 export type IntakeSlots = {
   objective: string;
@@ -99,14 +99,13 @@ function Avatar() {
   return agentSlugForName(speaker) ? <AgentAvatar name={speaker} size="sm" className="mt-0.5" /> : <VistrialMark className="mt-0.5" />;
 }
 
-function Agent({ children, name, model }: { children: React.ReactNode; name?: string; /** The model that wrote this turn. Turns written in code, and older ones, have none. */ model?: ModelMarkData | null }) {
+function Agent({ children, name }: { children: React.ReactNode; name?: string }) {
   return (
     <motion.li initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex min-w-0 gap-3">
       <Avatar />
       <div className="grid min-w-0 flex-1 gap-2">
         {name ? <span className="text-xs font-medium text-muted-foreground">{name}</span> : null}
         {children}
-        <ModelMark model={model} />
       </div>
     </motion.li>
   );
@@ -285,7 +284,7 @@ function PlanCard({ view, actions, editor }: { view: IntakeView; actions: Intake
         <span className="flex items-start gap-2 text-xs text-muted-foreground">
           <Wallet aria-hidden className="mt-0.5 size-3.5 shrink-0" />
           <span>
-            {intake.mode === "fast" ? "Fast (Sonnet 5.5)" : "Thorough (Opus 5.5)"}. This conversation: {credits.cost(intake.costCents)} of {credits.cost(intake.capCents)}. Research: up to{" "}
+            {intake.mode === "fast" ? "Fast" : "Thorough"}. Research: up to{" "}
             {credits.cost(intake.researchCapCents ?? 300)}, with {credits.cost(50)} held back to check and fix the report once.
           </span>
         </span>
@@ -333,7 +332,6 @@ export function IntakeChatView({
   /** The shared chat box, used in place of the plain one. */
   composer?: React.ReactNode;
 }) {
-  const credits = useCredits();
   const [text, setText] = useState(initialText);
   const [sending, setSending] = useState(false);
   const end = useRef<HTMLDivElement>(null);
@@ -394,7 +392,7 @@ export function IntakeChatView({
             if (message.kind === "known") {
               const items = (message.data as { items?: { label: string; value: string }[] } | null)?.items ?? [];
               return (
-                <Agent key={message.id} model={message.model}>
+                <Agent key={message.id}>
                   <p className="text-sm text-card-foreground">{message.text}</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {items.map((item) => (
@@ -412,7 +410,7 @@ export function IntakeChatView({
             if (message.kind === "question") {
               const current = message.id === lastQuestion?.id && status === "chatting";
               return (
-                <Agent key={message.id} model={message.model}>
+                <Agent key={message.id}>
                   <p className="rounded-2xl rounded-tl-md bg-muted px-4 py-2.5 text-sm text-card-foreground">{message.text}</p>
                   {current && editor ? <Chips chips={message.chips} onPick={(chip) => void send(chip)} disabled={busy} /> : null}
                 </Agent>
@@ -422,7 +420,7 @@ export function IntakeChatView({
               const factKey = (message.data as { factKey?: string } | null)?.factKey ?? "";
               const open = view?.intake.pendingRemember.some((row) => row.factKey === factKey) ?? false;
               return (
-                <Agent key={message.id} model={message.model}>
+                <Agent key={message.id}>
                   <div className="grid gap-2 rounded-xl border border-border bg-card p-3">
                     <p className="flex items-center gap-2 text-sm text-card-foreground">
                       <Brain aria-hidden className="size-4 text-primary" /> {message.text}
@@ -444,7 +442,7 @@ export function IntakeChatView({
             if (message.kind === "found") {
               const found = (message.data as { competitors?: { name: string; url?: string }[] } | null)?.competitors ?? [];
               return (
-                <Agent key={message.id} model={message.model}>
+                <Agent key={message.id}>
                   <p className="text-sm text-card-foreground">{message.text}</p>
                   <div className="flex flex-wrap gap-2">
                     {found.map((row) => (
@@ -459,14 +457,14 @@ export function IntakeChatView({
             if (message.kind === "plan") {
               const latestPlan = [...(view?.messages ?? [])].reverse().find((row) => row.kind === "plan")?.id === message.id;
               return (
-                <Agent key={message.id} model={message.model}>
+                <Agent key={message.id}>
                   <p className="text-sm text-card-foreground">{message.text}</p>
                   {latestPlan && view ? <PlanCard view={view} actions={actions} editor={editor} /> : null}
                 </Agent>
               );
             }
             return (
-              <Agent key={message.id} model={message.model}>
+              <Agent key={message.id}>
                 <p className="text-sm text-card-foreground">{message.text}</p>
               </Agent>
             );
@@ -511,7 +509,7 @@ export function IntakeChatView({
           </div>
           <p className="px-1 text-[11px] text-muted-foreground">
             {view
-              ? `Question ${Math.min(view.intake.questionsAsked, view.intake.maxQuestions)} of up to ${view.intake.maxQuestions} · this conversation ${credits.cost(view.intake.costCents)} of ${credits.cost(view.intake.capCents)}`
+              ? `Question ${Math.min(view.intake.questionsAsked, view.intake.maxQuestions)} of up to ${view.intake.maxQuestions}`
               : "Nothing runs or spends until you press Start research on the plan."}
           </p>
         </form>

@@ -17,7 +17,6 @@ import type { DesignStyle, Look, Tone } from "../../../convex/lib/creativeImages
 import type { CreativeImageList, CreativeImageQuote } from "./types";
 import { SectionTitle } from "./work-shell";
 import { useCredits } from "@/lib/credits";
-import { ModelMark } from "@/components/models/model-mark";
 import { ModelSwitch } from "@/components/models/model-switch";
 import { Banner } from "@/components/ui/banner";
 
@@ -149,7 +148,6 @@ function Tile({ image, copy, brand, placement, editor, onRetake }: { image: Imag
             {image.status === "generating" && image.url ? " · making a new one" : ""}
             {image.stale && image.status !== "generating" ? <span className="text-warning"> · the words were edited after this was made</span> : null}
           </span>
-          <ModelMark model={image.model} />
         </span>
         {image.url ? (
           <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => void save()}>

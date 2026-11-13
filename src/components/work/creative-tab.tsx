@@ -27,10 +27,8 @@ import { ReviewBar } from "./review-bar";
 import type { AddedReference, CreativeOptions, CreativeTabData, CreativeView, ReviewActions } from "./types";
 import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
-import { useCredits } from "@/lib/credits";
 import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
 import { useModelChoice } from "@/components/models/use-model-choice";
-import { ModelMark } from "@/components/models/model-mark";
 
 export type CreativeStart = { kitId: string; sourceRefId: string | null; referenceId: string | null; offerCardId: string | null; dial: string; note: string };
 
@@ -418,7 +416,6 @@ function AdSet({ view, editor, review, images, test, onEdit, initialEdit }: { vi
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h3 className="min-w-0 font-heading text-lg text-card-foreground">{view.title}</h3>
           <span className="flex flex-wrap items-center gap-3">
-            <ModelMark model={view.model} />
             <AssetStatusBadge status={view.status} />
           </span>
         </div>
@@ -608,7 +605,6 @@ function AdSet({ view, editor, review, images, test, onEdit, initialEdit }: { vi
 
 /** The Creative workspace: the ask, what is running, and the ad sets with the one chosen opened. */
 export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, model, review, initialSource, initialForm, images, test, onEdit, initialEdit }: CreativeTabProps) {
-  const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialForm || initialSource));
   return (
     <div className="grid min-w-0 grid-cols-1 gap-5">
@@ -640,7 +636,6 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
                     <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin text-primary motion-reduce:animate-none" />
                     <span className="truncate">{run.words}</span>
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{credits.cost(run.costCents)}</span>
                 </Link>
               </li>
             ))}

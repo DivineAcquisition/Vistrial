@@ -189,5 +189,7 @@ export function explainAccountError(error: unknown, field: AuthProblem["field"],
   if (currentPassword && problem.message === "That password is not right.") {
     return { field: "form", message: "The current password is not right." };
   }
+  // The sign-up wording points at "sign in instead", which makes no sense to someone already signed in.
+  if (problem.action === "sign-in") return { field: "email", message: "Another account already uses that email. Choose a different one." };
   return { field: problem.field, message: problem.message };
 }

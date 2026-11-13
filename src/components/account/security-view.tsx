@@ -3,14 +3,15 @@
 import qrcode from "qrcode-generator";
 import { useMemo, useState } from "react";
 
-import { AuthTextButton, CodeInput, PasswordInput, ProblemLine, ResendCode } from "@/components/auth/auth-parts";
-import { Globe, Lock, ShieldCheck } from "@/components/icons";
+import { AuthInput, AuthTextButton, CodeInput, PasswordInput, ProblemLine, ResendCode } from "@/components/auth/auth-parts";
+import { Globe, Lock, Mail, ShieldCheck, UserX } from "@/components/icons";
 import { StatusCard } from "@/components/settings/settings-parts";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "@/components/ui/dialog";
 import { groupSecret, type ConfirmSecondMethod, type ConfirmStep, type DeviceRow } from "@/lib/auth/account";
 import type { AuthProblem } from "@/lib/auth/errors";
-import { CODE_LENGTH, cleanBackupCode, cleanCode } from "@/lib/auth/flow";
+import { CODE_LENGTH, cleanBackupCode, cleanCode, looksLikeEmail } from "@/lib/auth/flow";
+import { CONTACT_EMAIL } from "@/lib/constants";
 
 /**
  * Password, two-step sign-in and signed-in devices, in Vistrial's own design. Clerk keeps the
@@ -21,11 +22,14 @@ import { CODE_LENGTH, cleanBackupCode, cleanCode } from "@/lib/auth/flow";
 export type SecurityPanel =
   | null
   | { kind: "password" }
+  | { kind: "email" }
+  | { kind: "email-code"; email: string }
+  | { kind: "delete" }
   | { kind: "totp-setup"; uri: string; secret: string }
   | { kind: "backup-codes"; codes: string[]; fresh: boolean }
   | { kind: "totp-off" };
 
-export type SecurityBusy = null | "password" | "totp-start" | "totp-verify" | "totp-off" | "backup" | `device:${string}`;
+export type SecurityBusy = null | "password" | "email-start" | "email-verify" | "email-resend" | "delete" | "totp-start" | "totp-verify" | "totp-off" | "backup" | `device:${string}`;
 
 export type ConfirmState = { step: ConfirmStep; problem: AuthProblem | null; busy: boolean; sentCount: number };
 
@@ -37,6 +41,14 @@ export type SecurityViewProps = {
   hasBackupCodes: boolean;
   /** null while the list is loading. */
   devices: DeviceRow[] | null;
+  /** The address the person signs in with. Empty until Clerk has the account. */
+  email: string;
+  /** Goes up each time an email code is sent, to restart the wait before the next one. */
+  emailSentCount: number;
+  /** False when the Clerk instance does not let people delete their own account. */
+  canDelete: boolean;
+  /** What deleting would do to their organizations. null while that is loading. */
+  closing: { leaves: string[]; blockedBy: string[] } | null;
   panel: SecurityPanel;
   busy: SecurityBusy;
   problem: AuthProblem | null;
@@ -52,6 +64,12 @@ export type SecurityViewProps = {
   onTurnOff: () => void;
   onClosePanel: () => void;
   onSignOutDevice: (id: string) => void;
+  onOpenEmail: () => void;
+  onEmail: (email: string) => void;
+  onEmailCode: (code: string) => void;
+  onEmailResend: () => void;
+  onOpenDelete: () => void;
+  onDelete: () => void;
   onConfirmSubmit: (value: string) => void;
   onConfirmResend: () => void;
   onConfirmSwitch: (to: "password" | "code" | ConfirmSecondMethod) => void;
@@ -81,6 +99,197 @@ export function SetupCode({ uri }: { uri: string }) {
     >
       <path d={path.d} fill="#07070b" />
     </svg>
+  );
+}
+
+function EmailForm({ props }: { props: SecurityViewProps }) {
+  const [email, setEmail] = useState("");
+  const [local, setLocal] = useState<AuthProblem | null>(null);
+  const shown = local ?? props.problem;
+  const working = props.busy === "email-start";
+  return (
+    <form
+      noValidate
+      className="grid max-w-md gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (working) return;
+        const value = email.trim();
+        if (!looksLikeEmail(value)) return setLocal({ field: "email", message: "That does not look like an email address." });
+        if (value.toLowerCase() === props.email.toLowerCase()) return setLocal({ field: "email", message: "That is the address you already use." });
+        setLocal(null);
+        props.onEmail(value);
+      }}
+    >
+      <AuthInput
+        label="New email"
+        type="email"
+        name="email"
+        autoComplete="email"
+        inputMode="email"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        autoFocus
+        hint="We send a code there to check it is yours. Nothing changes until you enter it."
+        value={email}
+        onChange={(event) => {
+          setEmail(event.target.value);
+          setLocal(null);
+        }}
+        problem={shown?.field === "email" ? shown : null}
+      />
+      <ProblemLine problem={shown && shown.field !== "email" ? shown : null} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="primary" loading={working} loadingLabel="Sending">
+          Send code
+        </Button>
+        <Button variant="ghost" disabled={working} onClick={props.onClosePanel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function EmailCodeForm({ props, email }: { props: SecurityViewProps; email: string }) {
+  const [code, setCode] = useState("");
+  const [local, setLocal] = useState<AuthProblem | null>(null);
+  const shown = local ?? props.problem;
+  const working = props.busy === "email-verify";
+  return (
+    <form
+      noValidate
+      className="grid max-w-md gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (working) return;
+        if (code.length < CODE_LENGTH) return setLocal({ field: "code", message: `The code has ${CODE_LENGTH} digits.` });
+        setLocal(null);
+        props.onEmailCode(code);
+      }}
+    >
+      <p className="text-sm leading-6 text-foreground">
+        We sent a 6-digit code to <span className="font-medium wrap-anywhere text-strong">{email}</span>. Enter it to make that your email.
+      </p>
+      <CodeInput
+        label="Code"
+        name="code"
+        autoFocus
+        value={code}
+        onChange={(event) => {
+          setCode(cleanCode(event.target.value));
+          setLocal(null);
+        }}
+        problem={shown?.field === "code" ? shown : null}
+      />
+      <ProblemLine problem={shown && shown.field !== "code" ? shown : null} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="primary" loading={working} loadingLabel="Checking">
+          Use this email
+        </Button>
+        <Button variant="ghost" disabled={working} onClick={props.onClosePanel}>
+          Cancel
+        </Button>
+      </div>
+      <ResendCode sentCount={props.emailSentCount} busy={props.busy === "email-resend"} onResend={props.onEmailResend} />
+    </form>
+  );
+}
+
+/** The word the person types to show they mean it. */
+export const DELETE_WORD = "DELETE";
+
+function listWords(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+function DeleteForm({ props }: { props: SecurityViewProps }) {
+  const [typed, setTyped] = useState("");
+  const [local, setLocal] = useState<AuthProblem | null>(null);
+  const shown = local ?? props.problem;
+  const working = props.busy === "delete";
+  const mail = (
+    <a className="font-medium text-brand-300 underline-offset-4 hover:underline" href={`mailto:${CONTACT_EMAIL}`}>
+      {CONTACT_EMAIL}
+    </a>
+  );
+  if (props.closing === null) return <p className="text-sm text-muted-foreground">Checking your organizations.</p>;
+  if (props.closing.blockedBy.length > 0) {
+    return (
+      <div className="grid gap-3">
+        <p className="text-sm leading-6 text-foreground">
+          You are the only Owner of {listWords(props.closing.blockedBy)}. An organization always needs an Owner, so first make someone else an Owner under People, or write to {mail} and we will close it for you. Then you can delete your account.
+        </p>
+        <div>
+          <Button variant="outline" onClick={props.onClosePanel}>
+            Close
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  if (!props.canDelete) {
+    return (
+      <div className="grid gap-3">
+        <p className="text-sm leading-6 text-foreground">Deleting your own account is not switched on yet. Write to {mail} from {props.email || "your sign-in email"} and we will delete it for you.</p>
+        <div>
+          <Button variant="outline" onClick={props.onClosePanel}>
+            Close
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <form
+      noValidate
+      className="grid max-w-md gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (working) return;
+        if (typed.trim().toUpperCase() !== DELETE_WORD) return setLocal({ field: "form", message: `Type ${DELETE_WORD} to confirm.` });
+        setLocal(null);
+        props.onDelete();
+      }}
+    >
+      <div className="grid gap-2 text-sm leading-6 text-foreground">
+        <p>This cannot be undone. Deleting your account:</p>
+        <ul className="grid list-disc gap-1 ps-5">
+          <li>deletes your sign-in ({props.email}), so you can no longer open Vistrial;</li>
+          <li>
+            {props.closing.leaves.length > 0
+              ? `removes you from ${listWords(props.closing.leaves)};`
+              : "removes you from every organization;"}
+          </li>
+          <li>leaves the work you did there with the organization. It is not deleted.</li>
+        </ul>
+      </div>
+      <AuthInput
+        label={`Type ${DELETE_WORD} to confirm`}
+        name="confirm-delete"
+        autoComplete="off"
+        autoCapitalize="characters"
+        autoCorrect="off"
+        spellCheck={false}
+        autoFocus
+        value={typed}
+        onChange={(event) => {
+          setTyped(event.target.value);
+          setLocal(null);
+        }}
+      />
+      <ProblemLine problem={shown} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="destructive" loading={working} loadingLabel="Deleting">
+          Delete my account
+        </Button>
+        <Button variant="ghost" disabled={working} onClick={props.onClosePanel}>
+          Keep my account
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -355,6 +564,23 @@ export function SecurityView(props: SecurityViewProps) {
       </p>
 
       <StatusCard
+        icon={Mail}
+        title="Email"
+        sentence={props.email ? <>You sign in with <span className="font-medium wrap-anywhere text-strong">{props.email}</span>. Codes and notices go there.</> : "The address you sign in with."}
+        footer={
+          panel?.kind === "email" || panel?.kind === "email-code" ? undefined : (
+            <Button size="sm" variant="outline" disabled={!idle} onClick={props.onOpenEmail}>
+              Change email
+            </Button>
+          )
+        }
+      >
+        {panel?.kind === "email" ? <EmailForm props={props} /> : null}
+        {panel?.kind === "email-code" ? <EmailCodeForm props={props} email={panel.email} /> : null}
+        {props.notice && panel === null && props.notice.startsWith("Email") ? <p className="text-sm text-foreground">{props.notice}</p> : null}
+      </StatusCard>
+
+      <StatusCard
         icon={Lock}
         title="Password"
         sentence={
@@ -385,7 +611,7 @@ export function SecurityView(props: SecurityViewProps) {
             : "Off. With it on, signing in also needs a code from an app on your phone, so a stolen password is not enough."
         }
         footer={
-          panel !== null && panel.kind !== "password" ? undefined : props.twoStepOn ? (
+          panel?.kind === "totp-setup" || panel?.kind === "backup-codes" || panel?.kind === "totp-off" ? undefined : props.twoStepOn ? (
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" disabled={!idle} loading={busy === "backup"} loadingLabel="Making codes" onClick={props.onNewBackupCodes}>
                 {props.hasBackupCodes ? "New backup codes" : "Get backup codes"}
@@ -455,6 +681,21 @@ export function SecurityView(props: SecurityViewProps) {
             ))}
           </ul>
         )}
+      </StatusCard>
+
+      <StatusCard
+        icon={UserX}
+        title="Delete account"
+        sentence="Removes you from every organization and deletes your sign-in for good."
+        footer={
+          panel?.kind === "delete" ? undefined : (
+            <Button size="sm" variant="destructive-outline" disabled={!idle} onClick={props.onOpenDelete}>
+              Delete account
+            </Button>
+          )
+        }
+      >
+        {panel?.kind === "delete" ? <DeleteForm props={props} /> : null}
       </StatusCard>
 
       <Dialog

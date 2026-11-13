@@ -36,10 +36,11 @@ function makeMock(config) {
   const log = [];
   const state = { signIn: null, signUp: null, sessions: [], account: null, lastSession: null, users: {} };
   // The signed-in person's own settings, for the account cards.
-  const acct = { password: 'old password', totp: false, backup: false, pendingTotp: false, others: ['sess_2', 'sess_3'], reverified: !config.reverify, ...(config.user || {}) };
-  const user = (email) => ({ object: 'user', id: 'user_1', first_name: 'Jay', last_name: 'Brooks', username: null, image_url: '', has_image: false, primary_email_address_id: 'idn_1',
-    email_addresses: [{ object: 'email_address', id: 'idn_1', email_address: email, verification: verification('verified', 'email_code'), linked_to: [] }], phone_numbers: [], web3_wallets: [], external_accounts: [], passkeys: [], enterprise_accounts: [], organization_memberships: [],
-    password_enabled: acct.password !== null, two_factor_enabled: acct.totp, totp_enabled: acct.totp, backup_code_enabled: acct.backup, public_metadata: {}, unsafe_metadata: {}, created_at: now(), updated_at: now(), last_sign_in_at: now(), legal_accepted_at: null, create_organization_enabled: false, delete_self_enabled: false });
+  const acct = { password: 'old password', totp: false, backup: false, pendingTotp: false, others: ['sess_2', 'sess_3'], reverified: !config.reverify, emails: [{ id: 'idn_1', email: null, verified: true }], primary: 'idn_1', canDelete: true, deleted: false, ...(config.user || {}) };
+  const emailJson = (fallback) => (e) => ({ object: 'email_address', id: e.id, email_address: e.email ?? fallback, verification: e.verified ? verification('verified', 'email_code') : verification('unverified', 'email_code'), linked_to: [] });
+  const user = (email) => ({ object: 'user', id: 'user_1', first_name: 'Jay', last_name: 'Brooks', username: null, image_url: '', has_image: false, primary_email_address_id: acct.primary,
+    email_addresses: acct.emails.map(emailJson(email)), phone_numbers: [], web3_wallets: [], external_accounts: [], passkeys: [], enterprise_accounts: [], organization_memberships: [],
+    password_enabled: acct.password !== null, two_factor_enabled: acct.totp, totp_enabled: acct.totp, backup_code_enabled: acct.backup, public_metadata: {}, unsafe_metadata: {}, created_at: now(), updated_at: now(), last_sign_in_at: now(), legal_accepted_at: null, create_organization_enabled: false, delete_self_enabled: acct.canDelete });
   const session = (email) => ({ object: 'session', id: 'sess_1', status: 'active', expire_at: now() + 86400000, abandon_at: now() + 86400000 * 7, last_active_at: now(), last_active_organization_id: null, actor: null, tasks: null,
     user: user(email), public_user_data: { first_name: 'Jay', last_name: 'Brooks', image_url: '', has_image: false, identifier: email }, factor_verification_age: [0, -1], created_at: now(), updated_at: now(),
     last_active_token: { object: 'token', jwt: fakeJwt() } });
@@ -175,6 +176,33 @@ function makeMock(config) {
       const blocked = sensitive(); if (blocked) return blocked;
       acct.backup = true; refresh();
       return { status: 200, body: wrap({ object: 'backup_code', id: 'bc_1', codes: ['eeee5555', 'ffff6666', 'gggg7777', 'hhhh8888'], created_at: now(), updated_at: now() }) };
+    }
+    if (pathname === '/v1/me/email_addresses' && method === 'POST') {
+      const blocked = sensitive(); if (blocked) return blocked;
+      if (form.email_address === 'taken@example.com') return err(422, 'form_identifier_exists', 'email_address');
+      const row = { id: 'idn_' + (acct.emails.length + 1), email: form.email_address, verified: false };
+      acct.emails.push(row); refresh();
+      return { status: 200, body: wrap(emailJson(state.email)(row)) };
+    }
+    if ((m = pathname.match(/^\/v1\/me\/email_addresses\/([^/]+)(\/(prepare_verification|attempt_verification))?$/))) {
+      const row = acct.emails.find((e) => e.id === m[1]);
+      if (!row) return err(404, 'resource_not_found');
+      if (method === 'DELETE') { acct.emails = acct.emails.filter((e) => e.id !== m[1]); refresh(); return { status: 200, body: wrap({ object: 'email_address', id: m[1], deleted: true }) }; }
+      if (m[3] === 'prepare_verification') acct.emailCodesSent = (acct.emailCodesSent || 0) + 1;
+      if (m[3] === 'attempt_verification') { if (form.code !== CODE) return err(422, 'form_code_incorrect', 'code'); row.verified = true; }
+      refresh();
+      return { status: 200, body: wrap(emailJson(state.email)(row)) };
+    }
+    if (pathname === '/v1/me' && method === 'PATCH') {
+      const blocked = sensitive(); if (blocked) return blocked;
+      if (form.primary_email_address_id) { acct.primary = form.primary_email_address_id; state.email = acct.emails.find((e) => e.id === acct.primary)?.email ?? state.email; }
+      refresh();
+      return { status: 200, body: wrap(user(state.email)) };
+    }
+    if (pathname === '/v1/me' && method === 'DELETE') {
+      const blocked = sensitive(); if (blocked) return blocked;
+      acct.deleted = true; state.sessions = [];
+      return { status: 200, body: wrap({ object: 'user', id: 'user_1', deleted: true }) };
     }
     // The "confirm it is you" check before a sensitive change.
     if ((m = pathname.match(/^\/v1\/client\/sessions\/[^/]+\/verify(\/(prepare_first_factor|attempt_first_factor|prepare_second_factor|attempt_second_factor))?$/))) {

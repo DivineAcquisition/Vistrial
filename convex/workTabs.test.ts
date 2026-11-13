@@ -1,7 +1,7 @@
 /**
  * @vitest-environment edge-runtime
  *
- * The Growth Architect work tabs: the growth goal, offer cards and their versions, the outcome loop for
+ * The Strategist work tabs: the growth goal, offer cards and their versions, the outcome loop for
  * offer changes and roadmap steps, the skill-scoped chat, and each tab's results and suggestions. Every
  * test checks roles and that one workspace never reads or writes another's.
  */

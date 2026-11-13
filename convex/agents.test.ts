@@ -35,7 +35,7 @@ describe("the seven-agent workforce", () => {
     delete process.env.ALLOW_DEV_SKILLS;
   });
 
-  it("seeds four departments and seven agents, with only Growth Architect live", async () => {
+  it("seeds four departments and seven agents, with only Strategist live", async () => {
     const t = convexTest(schema, modules);
     const owner = t.withIdentity(person("owner"));
     const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
@@ -60,7 +60,7 @@ describe("the seven-agent workforce", () => {
     const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
     await expect(
       owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "retention", state: "on" }),
-    ).rejects.toThrow("Retention is not available yet.");
+    ).rejects.toThrow("Keeper is not available yet.");
     await expect(
       owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "retention", state: "suggesting" }),
     ).rejects.toThrow("not available yet");
@@ -77,7 +77,7 @@ describe("the seven-agent workforce", () => {
     });
     await expect(
       owner.mutation(api.runs.start, { workspaceId, agentSlug: "retention", skillSlug: "test-echo" }),
-    ).rejects.toThrow("Retention is not available yet.");
+    ).rejects.toThrow("Keeper is not available yet.");
     await expect(
       owner.mutation(api.runs.start, { workspaceId, agentSlug: "operations", skillSlug: "test-echo" }),
     ).rejects.toThrow(NOT_FOUND);

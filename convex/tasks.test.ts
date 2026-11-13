@@ -517,6 +517,15 @@ describe("the Briefing", () => {
     expect(alerts.map((row) => row.title).sort()).toEqual(["A check-in is due", "Meta ads needs reconnecting", "Results dropped: Aster bookings"]);
     expect(alerts.find((row) => row.title.startsWith("Results dropped"))).toMatchObject({ client: "Aster Coaching", body: "Conversions went from 40 to 28 (-30%) between the last two results files.", href: "/app/connections/results" });
     // The Member is not assigned to Harbor, so its check-in is not in their Briefing.
+    // Posts written in code carry three rows; the row that states the business's own figures is labelled so.
+    expect(alerts.find((row) => row.title.startsWith("Results dropped"))?.digest).toEqual({
+      changed: "Conversions went from 40 to 28 (-30%) between the last two results files.",
+      means: "This compares two files you uploaded. It shows that the count fell, not why.",
+      todo: "Check that both files cover the same length of time, then run a diagnosis to see where the drop is.",
+      changedLabel: "Your data",
+    });
+    expect(alerts.find((row) => row.title === "Meta ads needs reconnecting")?.digest).toMatchObject({ changed: "Results from Meta have stopped updating.", changedLabel: null });
+    expect(alerts.find((row) => row.title === "A check-in is due")?.digest?.todo).toBe("Record what happened: it helped, it did not, or it is too early to tell.");
     expect((await member.query(api.briefing.feed, { workspaceId, kind: "alert" })).items.map((row) => row.title).sort()).toEqual(["Meta ads needs reconnecting", "Results dropped: Aster bookings"]);
   });
 

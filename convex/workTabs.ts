@@ -1,5 +1,5 @@
 /**
- * What each Growth Architect work tab shows, read on the server: this skill's runs that are going now,
+ * What each Strategist work tab shows, read on the server: this skill's runs that are going now,
  * its results (drafts waiting for review first), and the next steps it suggests. Plus the Diagnostics tab's
  * goal and roadmap, and the data a research report's PDF is built from. Every read is this workspace's.
  */

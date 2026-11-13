@@ -24,6 +24,8 @@ export type BriefingPost = {
   approvalId?: Id<"approvals">;
   sources?: { title: string; url: string }[];
   credits?: number;
+  /** Three short rows for a post written in code: what changed, what it means, what to do. Never model text. */
+  digest?: { changed: string; means: string; todo: string; firstParty?: boolean };
   /** A post with a key is written once per organization. */
   key?: string;
 };
@@ -63,6 +65,7 @@ export async function post(ctx: MutationCtx, item: BriefingPost): Promise<Id<"br
     ...(item.approvalId ? { approvalId: item.approvalId } : {}),
     ...(item.sources?.length ? { sources: item.sources.slice(0, 8).map((source) => ({ title: clip(source.title, 160), url: source.url.slice(0, 500) })) } : {}),
     ...(item.credits !== undefined ? { credits: item.credits } : {}),
+    ...(item.digest ? { digest: { changed: clip(item.digest.changed, 400), means: clip(item.digest.means, 300), todo: clip(item.digest.todo, 300), ...(item.digest.firstParty ? { firstParty: true } : {}) } } : {}),
     ...(item.key ? { key: item.key } : {}),
     at: Date.now(),
   });

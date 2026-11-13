@@ -36,7 +36,7 @@ export function ResearchTabView({ base, editor, tab, sessions, review, pdf }: Re
         <>
           <WorkHero
             icon={FileSearch}
-            eyebrow="Growth Architect · Market Intelligence"
+            eyebrow="Strategist · Market Intelligence"
             title="Research"
             promise="Your reports library: every report with its sources, ready to approve, send back or export as a PDF."
             action={

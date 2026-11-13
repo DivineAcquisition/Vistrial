@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ResultsUploadCard, type ResultsUploadView } from "@/components/connections/results-files";
 
 const AGENTS = [
-  { slug: "growth-architect", name: "Growth Architect" },
+  { slug: "growth-architect", name: "Strategist" },
   { slug: "brand-studio", name: "Brand Studio" },
 ];
 

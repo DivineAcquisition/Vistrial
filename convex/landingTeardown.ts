@@ -277,6 +277,7 @@ export const view = workspaceQuery({
         order: page.order,
         skipped: page.skipped,
         droppedQuotes: page.droppedQuotes,
+        droppedLines: page.droppedLines ?? 0,
       })),
       unread: saved.unread,
       /** For each framework job, how many of the other pages have it. Counted in code. */
@@ -327,6 +328,8 @@ export const page = workspaceQuery({
         phone: row?.workspaceId === ctx.workspaceId && row.phoneShot ? await ctx.storage.getUrl(row.phoneShot) : null,
       },
       goal: analysis?.goal ?? "",
+      /** The page in a sentence or two, when the teardown has one. Empty on older teardowns; the screen then writes a sentence of counts. */
+      verdict: analysis?.verdict ?? "",
       /** The page top to bottom. The content is the page's own words, shown as data. */
       sections: (analysis?.sections ?? []).map((section) => ({
         job: section.job,
@@ -334,6 +337,8 @@ export const page = workspaceQuery({
         frameworkJob: section.job === "other" ? null : SECTION_BY_KEY[section.job].job,
         objection: section.job === "other" ? null : SECTION_BY_KEY[section.job].objection,
         does: section.does,
+        /** The section in a dozen words, when the teardown has it. Empty on older teardowns. */
+        headline: section.headline ?? "",
         note: section.note,
         blocks: Array.from({ length: Math.min(40, section.to - section.from + 1) }, (_, offset) => words(section.from + offset)).filter((block) => block !== null),
       })),

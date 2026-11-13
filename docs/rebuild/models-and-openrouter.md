@@ -20,35 +20,86 @@ point at a section there. Model IDs, prices and capabilities come from
 <https://openrouter.ai/api/v1/images/models> and <https://openrouter.ai/api/v1/endpoints/zdr> as they
 answered that day.
 
-**What was not checked.** No OpenRouter key exists in this environment, so no real call was made. Anything
-the docs do not state is marked "not stated" and listed in section 8 as something the first real call must
-prove. Where a decision rests on something unproven, the product keeps that path closed until it is proven.
+**What was not checked.** When this was written no OpenRouter key existed, so no real call had been made.
+Later the same day a key was set on the dev deployment and the check action (`modelCheck:run`) was run
+there once. It proved three things: the key is accepted, a made-up key answers `auth_failed`, and an
+account with no bought credit answers `no_credit` in words a person can act on. Every model call answered
+`no_credit`, because the account had no credit. So everything in section 8 that needs a paid call is still
+unproven, and the product keeps each of those paths closed until it is proven.
 
 ---
 
-## Questions for the owner, first
+## What the owner decided (2026-11-13)
 
-Each has a recommendation. Nothing below is switched on until these are answered; the build in PRs 2 to 4
-follows the recommendations and each is one small change to reverse.
+These were open questions in the first version of this document. The owner answered them the same day, and
+PRs 2 to 4 are built to the answers. **Where a later section of this document says something different,
+this section is right.**
 
-1. **Who may choose the model for a piece of work?** Proposed: Owners, Admins and Members (anyone who may
-   start the work). The organization's default: Owners and Admins only. Or should Members always get the
-   default?
-2. **One default per organization, or per person?** Proposed: per organization, with the choice per piece
-   of work on top. A person's last choice is not remembered.
-3. **Strongest or sensible GPT?** Proposed: GPT-6.1 Sol ($2 / $10), because GPT-6 Astra ($10 / $50) would
-   hit today's run caps before a research run finished. Offering Astra means raising caps for it, which is
-   a spending decision.
-4. **Gemini 4 Carbon or Argon** for the Thorough slot? Same price. Proposed: Carbon (section 1).
-5. **Which stays the platform default?** Proposed: Claude direct, unchanged.
-6. **GPT images.** Offer them later with an "up to N credits" price and no 4:5 shape, once a real call has
-   measured what one costs? Proposed: not now.
-7. **Gemini's Safety Retention** (section 4): acceptable for customer content? If not, Gemini text is not
-   offered and images stay on the direct Google key only.
-8. **When does the privacy policy change go live,** and are the three sub-processors added to the public
-   list the same day? GPT and Gemini stay off (`MODEL_FAMILIES`) until then.
-9. **OpenRouter's 5.5% fee on credit purchases** is not in any call's reported cost. Leave the markup as it
-   is, or raise it for OpenRouter work?
+1. **Who may choose a model.** Owners, Admins and Members: anyone who may start the work.
+2. **The default is per person.** Each person's last choice is remembered, per organization and per kind of
+   work, and their next piece of that kind of work starts on it. The kinds are: work that only writes, work
+   that searches the web, work that reads web pages, and making images. They are kept apart because not
+   every model can do every kind. There is no organization default and no setting for one. Work nobody
+   starts by hand (the weekly plan, trend posts, reading a file) always runs on the platform's own route.
+3. **The platform default** stays Claude, direct at Anthropic, unchanged.
+4. **Every major current text model is offered,** not one pair per family. A choice is a model, not a
+   family. The list, with prices in US dollars per million tokens (input / output) as read on 2026-11-13:
+
+   | Family | Model | Price | Runs at | Lighter companion | Falls back to |
+   | - | - | - | - | - | - |
+   | Claude | Claude Opus 5.5 | 4 / 20 | Anthropic, direct | Sonnet 5.5 | Sonnet 5.5 |
+   | Claude | Claude Sonnet 5.5 | 2 / 10 | Anthropic, direct | itself | Opus 5.5 |
+   | Claude | Claude Haiku 5.5 | 0.10 / 0.50 (0.50 / 2.50 for a prompt over 100,000 tokens) | Anthropic, direct | itself | Sonnet 5.5 |
+   | GPT | GPT-6 Astra | 10 / 50 | OpenRouter (Azure) | GPT-6.1 Terra | GPT-6.1 Sol |
+   | GPT | GPT-6.1 Sol | 2 / 10 | OpenRouter (Azure) | GPT-6.1 Terra | GPT-6.1 Terra |
+   | GPT | GPT-6.1 Terra | 1 / 5 | OpenRouter (Azure) | GPT-6 Luna | GPT-6.1 Sol |
+   | GPT | GPT-6 Luna | 0.10 / 0.50 | OpenRouter (Azure) | itself | GPT-6.1 Terra |
+   | Gemini | Gemini 4 Argon | 2 / 10 | OpenRouter (Google Cloud) | Gemini 4 Hydrogen | Gemini 4 Carbon |
+   | Gemini | Gemini 4 Carbon | 2 / 10 | OpenRouter (Google Cloud) | Gemini 4 Hydrogen | Gemini 4 Hydrogen |
+   | Gemini | Gemini 4 Hydrogen | 1.50 / 7.50 | OpenRouter (Google Cloud) | Gemini 3.8 Flash | Gemini 4 Carbon |
+   | Gemini | Gemini 3.8 Flash | 0.825 / 4.125 | OpenRouter (Google Cloud) | itself | Gemini 4 Hydrogen |
+
+   Claude prices are from Anthropic's pricing page; the others from OpenRouter's models endpoint. The
+   chosen model does the research and the writing. Its lighter companion does the sorting and summarizing
+   around it, and is what Fast work runs on. A fallback never leaves the family. Every model in the list
+   has a row in the price table, and a test holds that.
+
+   **Left out on purpose:** previews, deprecated models, speciality variants, and anything that cannot
+   return structured output. Also **Claude Fable 5.2**: Anthropic serves it only with 30 days of retention,
+   and OpenRouter lists no zero-retention host for it, so offering it would change what the privacy policy
+   promises. That is the owner's call to make separately. On the day this was read, the Google Cloud hosts
+   for Gemini 4 Argon were marked degraded on OpenRouter; if none can serve a request it falls back to
+   Carbon, and the result shows the model that ran.
+5. **Only models that can do the task are listed.** No greyed-out rows with reasons. A family that is not
+   switched on is not in the list. Research lists only models proven to search the web with sources:
+   Claude today, GPT and Gemini once the web-search check passes and `OPENROUTER_WEB_SEARCH=on` is set. A
+   last line in the menu says more models are coming.
+6. **A dearer model raises the limit with its price.** Every cap was sized for Claude Opus 5.5 ($4 / $20).
+   A run on a chosen model may spend `max(1, price ÷ Opus price)` times its caps, where the ratio is the
+   mean of the input and output ratios. A cheaper model never lowers a cap. Both cost caps (per run and
+   per day) rise together, because some skills set them equal; steps and run time do not change; nothing
+   passes the platform ceiling of 1,000 cents a run. Fast work runs on the lighter companion, so its price
+   decides. Today only GPT-6 Astra is dearer: 2.5 times. The switch says "Usually costs more" beside it, the
+   budget shown before a run starts is the raised one, and the organization's spending limit is judged
+   against the raised cap. One small function, `capScale` with `scaleCaps` in `convex/lib/caps.ts`, tested.
+7. **GPT images are offered beside Gemini.** Only in the shapes the model lists: it has no 4:5, so that
+   placement cannot be chosen with it. It is priced by the token, so there is no list price. A person is
+   quoted "up to N credits", where N comes from a measured cost (with OpenRouter's fee, plus half again as
+   headroom), and is charged what each image really cost, never more than the quote. It stays closed until
+   a real call has measured a price: `modelCheck:run` reports it, and a Platform Admin sets
+   `GPT_IMAGE_MEASURED_CENTS`. GPT image requests go to OpenAI, which is not on OpenRouter's no-retention
+   list; the screen and the privacy policy both say so.
+8. **Gemini's Safety Retention is accepted.** The privacy policy describes it plainly.
+9. **The privacy policy change is real and is its own pull request,** separate from this stack and left
+   unmerged until the owner says the keys are in. It names OpenRouter, Microsoft and Google, covers image
+   making through Google, and a Platform Admin adds the three sub-processors to the public list the same
+   day. `MODEL_FAMILIES` stays the switch that keeps GPT and Gemini off until then.
+10. **OpenRouter's 5.5% fee is added to cost.** One constant, `OPENROUTER_FEE` in
+    `convex/lib/openrouter.ts`, applied in one function, `openRouterCents`: every cost from OpenRouter,
+    reported or worked out from the price table, text or image, is multiplied by 1.055 before anything else
+    sees it. So a run's recorded cost, its caps and the credits charged all include the fee. The fee is on
+    the spending side of a cap: a 300-cent cap buys about 284 cents of model use through OpenRouter. The
+    worst-case estimate before a step includes it too.
 
 ---
 
@@ -459,9 +510,9 @@ new access rule is written by hand.
 
 ## 7. Open questions for the owner
 
-Moved to the top of this document: "Questions for the owner, first".
-
----
+Answered on 2026-11-13. See "What the owner decided" at the top. One new question came out of the answers:
+whether to offer Claude Fable 5.2, which needs 30 days of retention at Anthropic. It is left out until the
+owner decides.
 
 ## 8. What the first real calls must prove
 
@@ -491,6 +542,7 @@ from the Convex dashboard once the key is set. It makes one small call per line,
 | `OPENROUTER_API_KEY` | Convex dashboard, the deployment's environment variables | The same |
 | `MODEL_FAMILIES=gpt,gemini` | Convex environment variables | Offering GPT and Gemini in the picker. Set it when the privacy policy is live. |
 | `OPENROUTER_WEB_SEARCH=on` | Convex environment variables | Research on GPT and Gemini. Set it after check 5 passes. |
+| `GPT_IMAGE_MEASURED_CENTS` | Convex environment variables | GPT images. Set it to the figure `modelCheck:run` reports as `gptImage.setTo`, once it has run with credit. Also needs `gpt` in `MODEL_FAMILIES`. |
 | `GEMINI_API_KEY` (optional) | <https://aistudio.google.com/apikey>, then Convex environment variables | Images and reference videos direct from Google. Reference videos need this key; images do not if OpenRouter is set. |
 
 ## 10. The four PRs

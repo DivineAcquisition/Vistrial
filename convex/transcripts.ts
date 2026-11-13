@@ -25,7 +25,7 @@ const LIST_LIMIT = 30;
 const SOURCES_PER_RUN = 5;
 export const MAX_PER_WORKSPACE = 200;
 
-/** The agents a transcript is granted to. Missing means the Growth Architect only. */
+/** The agents a transcript is granted to. Missing means the Strategist only. */
 export function transcriptAgents(row: Pick<Doc<"callTranscripts">, "agents">) {
   return row.agents ?? [GROWTH_ARCHITECT];
 }

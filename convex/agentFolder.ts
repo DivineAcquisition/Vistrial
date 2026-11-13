@@ -28,7 +28,7 @@ export const tree = workspaceQuery({
   args: { agentSlug: v.string(), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const shown = Math.max(1, Math.min(40, args.limit ?? SESSIONS_SHOWN));
-    // Research sessions belong to the Growth Architect, the only agent with a project-based skill today.
+    // Research sessions belong to the Strategist, the only agent with a project-based skill today.
     const ownsSessions = args.agentSlug === GROWTH_ARCHITECT;
 
     const projects = ownsSessions

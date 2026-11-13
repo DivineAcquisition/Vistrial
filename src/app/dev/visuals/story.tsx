@@ -39,8 +39,8 @@ export function VisualsStory({ part }: { part: string }) {
         <div className="grid gap-12">
           {show("planned") ? (
             <section className="grid gap-6">
-              <PlannedAgentView slug="sales-conversion" name="Sales Conversion" job="Will help turn leads into customers: follow-ups, calls and pipeline." joined={joined} onToggle={() => setJoined(!joined)} />
-              <PlannedAgentView slug="retention" name="Retention" job="Will spot risk early and suggest plays to keep customers." joined onToggle={() => undefined} />
+              <PlannedAgentView slug="sales-conversion" name="Dealmaker" job="Will help turn leads into customers: follow-ups, calls and pipeline." joined={joined} onToggle={() => setJoined(!joined)} />
+              <PlannedAgentView slug="retention" name="Keeper" job="Will spot risk early and suggest plays to keep customers." joined onToggle={() => undefined} />
             </section>
           ) : null}
 

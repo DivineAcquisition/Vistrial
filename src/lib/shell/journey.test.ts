@@ -9,7 +9,7 @@ const agents: RailAgent[] = CATALOG.map((row) => ({ ...row, skills: row.skills }
 describe("journey tabs", () => {
   it("groups catalog agents by lifecycle", () => {
     expect(agentsForTab(agents, "attract").map((row) => row.slug)).toEqual(["growth-architect", "campaign-execution"]);
-    // Operations Intelligence sits under Convert.
+    // Operator sits under Convert.
     expect(agentsForTab(agents, "convert").map((row) => row.slug)).toEqual(["sales-conversion", "operations-intelligence"]);
     expect(agentsForTab(agents, "keep").map((row) => row.slug)).toEqual(["activation", "retention", "expansion"]);
     expect(agentsOffJourney(agents)).toEqual([]);

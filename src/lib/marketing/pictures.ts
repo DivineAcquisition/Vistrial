@@ -9,7 +9,7 @@ export const APP_SCREENS = {
   eyebrow: "Inside Vistrial",
   headline: "Where the work shows up.",
   lead: "Agents propose the work. You see what each piece is expected to return, what it may cost in credits, and the evidence behind it, and you approve.",
-  agent: "Growth Architect",
+  agent: "Strategist",
   app: "Vistrial",
   tourLabel: "Screens from the app",
   /** Above the three pictures of a skill's finished work. */
@@ -101,7 +101,7 @@ export const PICTURES: Picture[] = [
     width: 1412,
     height: 522,
     title: "Briefing: approve where you read",
-    alt: "A Briefing post from Growth Architect for a client: a proposed task with its reason, marked as needing approval because an agent wants to run it, with Approve and Decline buttons.",
+    alt: "A Briefing post from Strategist for a client: a proposed task with its reason, marked as needing approval because an agent wants to run it, with Approve and Decline buttons.",
   },
   {
     id: "home",

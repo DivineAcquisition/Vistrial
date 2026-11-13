@@ -202,7 +202,7 @@ describe("Growth Diagnostics", () => {
     delete (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel;
   });
 
-  it("is available in the catalog and runs on the Growth Architect", () => {
+  it("is available in the catalog and runs on the Strategist", () => {
     const skill = CATALOG.find((row) => row.slug === AGENT)!.skills.find((row) => row.slug === GD)!;
     expect(skill.status).toBe("available");
     expect(skill.promise).toBe("It does not change your accounts.");

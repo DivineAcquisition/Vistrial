@@ -226,7 +226,7 @@ function Conversation({ chat, base, canSend, onSend }: { chat: ChatDetail; base:
           <p className="flex items-center gap-1.5 text-card-foreground">
             <look.icon aria-hidden className="size-3.5 shrink-0 text-primary" />
             <span>
-              Handed to Growth Architect · {look.skill}
+              Handed to Strategist · {look.skill}
             </span>
           </p>
         ) : (
@@ -312,7 +312,7 @@ export type ChatPanelViewProps = {
   onSelect: (id: string | null) => void;
   onSend: (text: string) => Promise<void>;
   onClose: () => void;
-  /** The Growth Architect's pages, for links to the full conversation and results. */
+  /** The Strategist's pages, for links to the full conversation and results. */
   base: string;
   problem?: string;
 };

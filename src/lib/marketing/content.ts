@@ -31,9 +31,9 @@ export const HERO = {
   /** Chosen draft. The other options are in HEADLINE_OPTIONS for review. */
   headline: "The agentic workforce for business growth.",
   supporting:
-    "AI agents for agencies, consultants, coaches and info sellers. They research your market, sharpen your offer, and draft the ads to test. Starting with Growth Architect.",
+    "AI agents for agencies, consultants, coaches and info sellers. They research your market, sharpen your offer, and draft the ads to test. Starting with Strategist.",
   primaryCta: "Request private access",
-  secondaryCta: "See Growth Architect",
+  secondaryCta: "See Strategist",
   trust: "Every claim shows its source. Nothing is published without a person's approval. Each customer's data is kept separate.",
   exampleLabel: "Example with sample data",
 } as const;
@@ -53,7 +53,7 @@ export const NAV = {
   request: "Request private access",
   links: [
     { href: "/#how", label: "How it works" },
-    { href: "/#growth-architect", label: "Growth Architect" },
+    { href: "/#growth-architect", label: "Strategist" },
     { href: "/#agents", label: "Agents" },
     { href: "/#pricing", label: "Pricing" },
     { href: "/#faq", label: "FAQ" },
@@ -79,7 +79,7 @@ export const SOURCES = {
 
 /** The strip under the hero: sources flow into the agent, and the agent hands back a draft. */
 export const AGENT_FLOW = {
-  agent: "Growth Architect",
+  agent: "Strategist",
   agentRole: "Agent 01",
   statuses: [
     "Reading competitor offer pages",
@@ -266,7 +266,7 @@ export const HOW = {
 export const GROWTH_ARCHITECT = {
   id: "growth-architect",
   eyebrow: "Agent 01",
-  headline: "Growth Architect",
+  headline: "Strategist",
   lead: "One agent for market research, offers, diagnosis, creative, and landing pages. Each skill hands back finished work for you to approve. Then you pick what to try, set a check-in, and record what happened.",
   skills: [
     {
@@ -360,7 +360,7 @@ export const GROWTH_ARCHITECT = {
 export const EVIDENCE = {
   id: "evidence",
   headline: "Every claim shows its source.",
-  lead: "Growth Architect labels how much it knows. Popular is not the same as profitable, and a page that keeps running is not proof that it works.",
+  lead: "Strategist labels how much it knows. Popular is not the same as profitable, and a page that keeps running is not proof that it works.",
   kinds: [
     { id: "observed", label: "Observed", body: "Seen directly in a source you can open." },
     { id: "inferred", label: "Inference", body: "A reasonable reading of what was seen." },
@@ -376,34 +376,34 @@ export const EVIDENCE = {
 export const AGENTS_SECTION = {
   id: "agents",
   headline: "Seven specialists across the customer journey.",
-  lead: "Vistrial groups its agents by where they help: Attract, Convert, Keep. Growth Architect is live today. The others are planned and do not run yet.",
+  lead: "Vistrial groups its agents by where they help: Attract, Convert, Keep. Strategist is live today. The others are planned and do not run yet.",
   departments: [
     {
       id: "attract",
       name: "Attract",
       agents: [
-        { number: "01", name: "Growth Architect", job: "Research, offers, diagnosis, creative, and landing pages.", live: true },
-        { number: "02", name: "Campaign Execution", job: "Approved launches, testing, and reporting.", live: false },
+        { number: "01", name: "Strategist", job: "Research, offers, diagnosis, creative, and landing pages.", live: true },
+        { number: "02", name: "Marketer", job: "Approved launches, testing, and reporting.", live: false },
       ],
     },
     {
       id: "convert",
       name: "Convert",
-      agents: [{ number: "03", name: "Sales Conversion", job: "Qualification, follow-up drafts, and pipeline.", live: false }],
+      agents: [{ number: "03", name: "Dealmaker", job: "Qualification, follow-up drafts, and pipeline.", live: false }],
     },
     {
       id: "keep",
       name: "Keep",
       agents: [
-        { number: "04", name: "Activation", job: "Onboarding and first value.", live: false },
-        { number: "05", name: "Retention", job: "Customer health and save plans.", live: false },
-        { number: "06", name: "Expansion", job: "Upsell, referrals, and account growth.", live: false },
+        { number: "04", name: "Starter", job: "Onboarding and first value.", live: false },
+        { number: "05", name: "Keeper", job: "Customer health and save plans.", live: false },
+        { number: "06", name: "Expander", job: "Upsell, referrals, and account growth.", live: false },
       ],
     },
     {
       id: "run",
       name: "Across all three",
-      agents: [{ number: "07", name: "Operations Intelligence", job: "Briefings, reporting, and coordination.", live: false }],
+      agents: [{ number: "07", name: "Operator", job: "Briefings, reporting, and coordination.", live: false }],
     },
   ],
   liveLabel: "Live",
@@ -484,7 +484,7 @@ export const SAFETY = {
     "Every important action is recorded.",
   ],
   run: {
-    agent: "Growth Architect",
+    agent: "Strategist",
     skill: "Market Intelligence run",
     workspace: "Northlight Growth",
     workspaceNote: "Private workspace",
@@ -534,7 +534,7 @@ export const FAQ = {
   headline: "Frequently asked questions",
   items: [
     {
-      q: "What is Growth Architect?",
+      q: "What is Strategist?",
       a: "The first Vistrial agent, and the only one that runs today. It researches your market, sets your offer beside what competitors lead with, finds where growth stalls from your own figures, reads landing pages in your industry section by section, and drafts ad sets with designed ads. Campaign Strategy and Funnel Architect are not available yet.",
     },
     {
@@ -547,7 +547,7 @@ export const FAQ = {
     },
     {
       q: "Will it post or spend on its own?",
-      a: "No. Growth Architect produces reports and drafts for review. It does not publish, post, or contact anyone, and its connection to your Meta ad account is read-only.",
+      a: "No. Strategist produces reports and drafts for review. It does not publish, post, or contact anyone, and its connection to your Meta ad account is read-only.",
     },
     {
       q: "What happens after it recommends something?",
@@ -575,7 +575,7 @@ export const FAQ = {
 export const FINAL_CTA = {
   id: "final",
   headline: "Request access. We review each team.",
-  body: "Growth Architect is opening to a limited number of teams at a time, so each one is set up properly.",
+  body: "Strategist is opening to a limited number of teams at a time, so each one is set up properly.",
   primary: "Request private access",
   secondary: "Contact us about Custom",
   secondaryHref: "/contact",
@@ -649,14 +649,14 @@ export const FORMS = {
       { title: "You send this form", body: "It takes a few minutes. A phone number is optional." },
       { title: "A person reads it", body: "We review every request ourselves to check the fit." },
       { title: "We reply by email", body: "If it is a fit, we set up your private workspace with you." },
-      { title: "Growth Architect starts", body: "Your first market report is drafted, then waits for your approval." },
+      { title: "Strategist starts", body: "Your first market report is drafted, then waits for your approval." },
     ],
     custom: [
       { title: "You send this form", body: "Tell us what your team needs." },
       { title: "We reply by email", body: "A person on our team sets up a short call." },
       { title: "We plan your setup", body: "Seats, sources, and limits that fit how you work." },
     ],
-    sourcesLabel: "Growth Architect researches across",
+    sourcesLabel: "Strategist researches across",
   },
   errors: {
     required: "This field is required.",
@@ -703,11 +703,11 @@ export const EMAIL_DEFAULTS = {
  */
 export const CLAIMS: Array<{ statement: string; support: string }> = [
   {
-    statement: "Growth Architect is the one agent that runs today. The other six are planned.",
-    support: "convex/catalog.ts: Growth Architect has status live. The six other agents have status planned and the promise \"It does not run yet.\"",
+    statement: "Strategist is the one agent that runs today. The other six are planned.",
+    support: "convex/catalog.ts: Strategist has status live. The six other agents have status planned and the promise \"It does not run yet.\"",
   },
   {
-    statement: "Five Growth Architect skills are available: Market Intelligence, Offer Intelligence, Growth Diagnostics, Creative Production, and Landing Page Teardown. Campaign Strategy and Funnel Architect are coming soon.",
+    statement: "Five Strategist skills are available: Market Intelligence, Offer Intelligence, Growth Diagnostics, Creative Production, and Landing Page Teardown. Campaign Strategy and Funnel Architect are coming soon.",
     support: "convex/catalog.ts AVAILABLE_SKILLS lists those five slugs. Every other skill in the catalog is comingSoon. content.test.ts compares this page with that list.",
   },
   {

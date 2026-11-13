@@ -80,7 +80,7 @@ export const createReviewerAccount = internalAction({
   },
 });
 
-/** The reviewer's workspace: Growth Architect on, setup done, and a confirmed London business profile. */
+/** The reviewer's workspace: Strategist on, setup done, and a confirmed London business profile. */
 export const setUpReviewerWorkspace = internalMutation({
   args: { userId: v.string() },
   handler: async (ctx, args) => {

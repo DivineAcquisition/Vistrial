@@ -229,7 +229,7 @@ export function BoardView({
               aria-label="Save to"
               density="compact"
               value={target}
-              options={[{ value: "", label: "Choose a collection to save to" }, ...collections.map((row) => ({ value: row.id, label: `${row.name}${row.shared ? " (workspace)" : ""}` }))]}
+              options={[{ value: "", label: "Choose a collection to save to" }, ...collections.map((row) => ({ value: row.id, label: `${row.name}${row.shared ? " (shared)" : ""}` }))]}
               onChange={(e) => setTarget(e.target.value)}
             />
             <form

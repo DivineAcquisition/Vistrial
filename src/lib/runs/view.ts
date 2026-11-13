@@ -242,7 +242,7 @@ export const RESULT_CODE_WORDS: Record<string, string> = {
   no_research_sources: "The approved market reports cite no competitor sources, so there is nothing to compare the offer against.",
   no_creative_request: "This run has nothing to make a creative from. Start it from the Creative tab.",
   brand_missing: "The brand this creative was for is gone or was put away.",
-  reference_missing: "The reference ad is no longer in this workspace.",
+  reference_missing: "The reference ad is no longer in this organization.",
   offer_missing: "The offer this creative was for is gone.",
   missing_context: "Something the research needs is missing.",
   waiting_for_user: "Asked a question and waited for an answer.",

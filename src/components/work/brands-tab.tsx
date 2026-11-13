@@ -547,7 +547,7 @@ export function BrandsTabView({ editor, kits, kit, onSelectKit, onSave, onArchiv
   if (editing) {
     const edit = editing === "edit" && kit && latest ? { name: latest.name, nextVersion: Math.max(...versions.map((row) => row.version)) + 1 } : null;
     return (
-      <div className="grid min-w-0 gap-5">
+      <div className="grid min-w-0 grid-cols-1 gap-5">
         {hero}
         <BrandEditor
           key={edit ? `edit-${kit?.id}` : "new"}
@@ -569,7 +569,7 @@ export function BrandsTabView({ editor, kits, kit, onSelectKit, onSave, onArchiv
   }
 
   return (
-    <div className="grid min-w-0 gap-5">
+    <div className="grid min-w-0 grid-cols-1 gap-5">
       {hero}
       <section className="grid gap-3" aria-label="Your brands">
         <SectionTitle icon={Building2}>Your brands</SectionTitle>

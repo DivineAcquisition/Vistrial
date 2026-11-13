@@ -4,7 +4,7 @@ import Link from "next/link";
 import { MarketingShell } from "@/components/marketing/chrome";
 import { ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { Button } from "@/components/ui/button";
-import { aiLines, glanceCards, neverDo, underTheHood } from "@/lib/trust/security-copy";
+import { aiLines, choiceLines, glanceCards, neverDo, sourceLines, underTheHood } from "@/lib/trust/security-copy";
 import { formatTrustDate } from "@/lib/trust/model";
 import { loadTrustPublic } from "@/lib/trust/public";
 import { marketingDisplayTitle, marketingLead, marketingPageGutter, marketingSectionTitle, marketingShell } from "@/lib/marketing/ui";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Security",
-  description: "How Vistrial protects lead data: where it comes from, who can see it, and what we never do.",
+  description: "What Vistrial reads, who can see it, what needs your approval, and what we never do.",
 };
 
 export default async function SecurityPage() {
@@ -27,9 +27,9 @@ export default async function SecurityPage() {
         <section className={cn(marketingPageGutter, "pb-12 pt-14 sm:pt-20")}>
           <div className={marketingShell}>
             <ShinyLabel>Security</ShinyLabel>
-            <h1 className={marketingDisplayTitle}>Your leads are your business. We handle them like it.</h1>
+            <h1 className={marketingDisplayTitle}>What Vistrial can see, and what it can never do.</h1>
             <p className={cn(marketingLead, "mt-6")}>
-              Vistrial brings together calls, touches, and outcomes for each lead. Here is where that data comes from, how it is protected, and what we never do.
+              Vistrial researches public sources and reads the accounts you connect, then drafts work for you to approve. Here is where that information comes from, how it is kept apart, and what we never do.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button variant="gradient" className="h-12! rounded-[8px]! before:rounded-[7px]!" render={<Link href="/security/review" />}>
@@ -60,24 +60,24 @@ export default async function SecurityPage() {
 
         <section id="sources" className={cn(marketingPageGutter, "scroll-mt-24 py-12")}>
           <div className={marketingShell}>
-            <h2 className={marketingSectionTitle}>Where your data comes from</h2>
-            <p className={cn(marketingLead, "mt-4")}>One lead can show up in more than one tool. Vistrial reads the sources you connect.</p>
+            <h2 className={marketingSectionTitle}>What Vistrial reads</h2>
+            <p className={cn(marketingLead, "mt-4")}>Public sources for research, and only the accounts and files your team connects or adds.</p>
             <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
-              <li>CRM: GoHighLevel works today. Contacts, stages, and call activity that the connection is allowed to read. Other CRMs are not listed here until they are built.</li>
-              <li>Call transcripts, when a recording source is connected. The case file is built from that text.</li>
-              <li>Calendar bookings, when a calendar is connected: booked, rescheduled, canceled, and no-show events that connection can see.</li>
-              <li>Form events sent to a webhook address that belongs to one workspace.</li>
-              <li>Notes and corrections your team types in Vistrial.</li>
+              {sourceLines().map((line) => (
+                <li key={line}>{line}</li>
+              ))}
             </ul>
-            <p className="mt-4 text-sm text-muted-foreground">Airtable is not a live connector. HubSpot is not a live connector.</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              The <Link href="/privacy" className="text-brand-300 underline">Privacy Policy</Link> has the detail, and <Link href="/bot" className="text-brand-300 underline">VistrialBot</Link> says how public pages are read.
+            </p>
           </div>
         </section>
 
-        <section id="follow-up" className={cn(marketingPageGutter, "scroll-mt-24 py-12")}>
+        <section id="approval" className={cn(marketingPageGutter, "scroll-mt-24 py-12")}>
           <div className={marketingShell}>
-            <h2 className={marketingSectionTitle}>Safe follow-up</h2>
+            <h2 className={marketingSectionTitle}>Approval before anything is used</h2>
             <p className={cn(marketingLead, "mt-4")}>
-              Relay prepares drafts. Your team approves each one. Right before sending, Vistrial checks consent and opt-outs, do-not-contact markers, and quiet hours (no messages between 8 pm and 8 am in the local time of the lead, by default). If a check fails, nothing is sent.
+              Work you ask for shows its plan and the most it can cost first, and starts when a person presses Start. The weekly plan and trend posts are written on a schedule, inside the same credit limits. A report, an analysis or an ad set is a draft until a person approves it. Vistrial does not publish or send anything for you.
             </p>
           </div>
         </section>
@@ -108,9 +108,11 @@ export default async function SecurityPage() {
           <div className={marketingShell}>
             <h2 className={marketingSectionTitle}>Your choices</h2>
             <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
-              <li>Disconnect a source. New data from that source stops. Existing case files stay until you ask for deletion.</li>
+              {choiceLines().map((line) => (
+                <li key={line}>{line}</li>
+              ))}
               <li>
-                <Link href="/privacy/requests" className="text-brand-300 underline">Ask for an export, a correction, or deletion</Link>. A person verifies the request. Nothing is deleted or exported automatically.
+                <Link href="/privacy/requests" className="text-brand-300 underline">Ask for an export, a correction, or deletion</Link>. A person verifies the request before anything is deleted or sent.
               </li>
             </ul>
           </div>

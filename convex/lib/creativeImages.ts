@@ -166,7 +166,7 @@ export function missingText(expected: string[], seen: string[]): string[] {
 
 /** What a failed image says, in plain words. */
 export const IMAGE_FAIL_WORDS: Record<string, string> = {
-  no_key: "Image making is not set up on this workspace yet, so this image was not made and nothing was charged. Ask your Vistrial contact to switch images on.",
+  no_key: "Image making is not set up for this organization yet, so this image was not made and nothing was charged. Ask your Vistrial contact to switch images on.",
   no_credit: "The image service could not be paid for on our side, so this image was not made and nothing was charged. Your Vistrial contact has to fix this.",
   blocked: "The image service did not allow this request. Nothing was charged.",
   unpriced_model: "The image model has no price set, so it cannot run.",

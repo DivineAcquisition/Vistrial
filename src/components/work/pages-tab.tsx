@@ -95,15 +95,15 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose, model }: { m
 
   const refused = quote?.pages.filter((row) => !row.ok) ?? [];
   return (
-    <Panel className="grid gap-4 p-4 sm:p-6">
+    <Panel className="grid grid-cols-1 gap-4 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-heading text-base text-card-foreground">Tear down landing pages</h2>
         <Button type="button" size="sm" variant="ghost" onClick={onClose} aria-label="Close">
           <X aria-hidden className="size-4" />
         </Button>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="grid content-start gap-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 content-start gap-3">
           <label className="grid gap-1 text-sm text-card-foreground">
             Industry
             <Input value={industry} maxLength={80} placeholder="Marketing agencies for coaches" onChange={(event) => setIndustry(event.target.value)} />
@@ -129,7 +129,7 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose, model }: { m
           </label>
         </div>
 
-        <div className="grid content-start gap-3 rounded-xl border border-border p-3 sm:p-4" aria-live="polite">
+        <div className="grid min-w-0 grid-cols-1 content-start gap-3 rounded-xl border border-border p-3 sm:p-4" aria-live="polite">
           <p className="flex items-center gap-2 text-sm font-medium text-card-foreground">
             <ListChecks aria-hidden className="size-4 text-primary" /> The plan, before anything runs
           </p>
@@ -171,8 +171,9 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose, model }: { m
               <Honest words={quote.honest} />
               {quote.canStart ? (
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button type="button" disabled={!quote.ready || busy} onClick={() => void start()}>
-                    {busy ? <LoaderCircle aria-hidden className="size-4 animate-spin" /> : <Search aria-hidden className="size-4" />}
+                  {/* The label can wrap, so on the narrowest phones the button stays inside its card. */}
+                  <Button type="button" className="h-auto min-h-9 max-w-full py-1.5 text-left whitespace-normal" disabled={!quote.ready || busy} onClick={() => void start()}>
+                    {busy ? <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin" /> : <Search aria-hidden className="size-4 shrink-0" />}
                     {busy ? "Starting…" : `Start teardown · up to ${credits.words(quote.maxCents)}`}
                   </Button>
                   {model ? <ModelSwitch {...model} /> : null}
@@ -203,7 +204,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, m
   };
   const empty = tab.results.length === 0 && tab.running.length === 0;
   return (
-    <div className="grid min-w-0 gap-5">
+    <div className="grid min-w-0 grid-cols-1 gap-5">
       <WorkHero
         icon={FileSearch}
         eyebrow="Landing Page Teardown"
@@ -221,11 +222,12 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, m
       {form ? <StartForm initial={initialAsk ?? EMPTY_ASK} quote={quote} onAskChange={onAskChange} onStart={onStart} onClose={close} model={model} /> : null}
 
       {tab.running.length > 0 ? (
-        <section className="grid gap-2" aria-label="Running now">
+        <section className="grid grid-cols-1 gap-2" aria-label="Running now">
           <SectionTitle icon={LoaderCircle}>Running now</SectionTitle>
-          <ul className="grid gap-2">
+          {/* One column that can shrink, so a long line is cut with "..." instead of widening the page on a phone. */}
+          <ul className="grid grid-cols-1 gap-2">
             {tab.running.map((run) => (
-              <li key={run.id}>
+              <li key={run.id} className="min-w-0">
                 <Link href={`/app/runs/${run.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-3 py-2 text-sm hover:border-primary/50">
                   <span className="flex min-w-0 items-center gap-2 text-card-foreground">
                     <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin text-primary" />

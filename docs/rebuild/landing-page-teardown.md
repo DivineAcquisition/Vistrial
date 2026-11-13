@@ -93,9 +93,9 @@ instead: for the page, a sentence of counts ("This page has a section for 7 of t
 5 do their job and 2 partly. It skips ..."); for a section, the objection it answers. No model is called
 again for an old teardown.
 
-Not checked for claims of a result, before or after this change: a section's `note`, `proof.note` and
-`goal`. They sit in the detail layer, labelled Inference. Extending the refusal to them would blank text
-that is shown today, so it is left for the owner to decide.
+The same refusal covers a section's `note`, `proof.note` and `goal` (owner's decision, 2026-11-13). A
+blanked note is simply absent; nothing is written in its place. This applies when a reading is applied,
+so teardowns saved earlier keep the notes they have.
 
 ## Page content is untrusted
 

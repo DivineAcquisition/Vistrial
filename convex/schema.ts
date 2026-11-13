@@ -6,6 +6,9 @@ import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
 import { approvalKind, approvalStatus, briefingKind, expectedReturn, proposedBy, taskEvidence, taskStatus, taskTry, taskWork } from "./lib/taskShapes";
 import { availability, basis, classification, embed, platform, projectStatus, sourceKind, sourceState } from "./lib/researchShapes";
 
+/** What a credit charge paid for: the `source` of a ledger row. */
+const ledgerSource = v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative"), v.literal("page"));
+
 const resultFigureFields = {
   spend: v.optional(v.number()),
   impressions: v.optional(v.number()),
@@ -366,6 +369,8 @@ export default defineSchema({
     planStatus: v.optional(v.string()),
     nextResetAt: v.optional(v.number()),
     autoRefill: v.optional(v.object({ enabled: v.boolean(), thresholdCents: v.number(), amountCents: v.number() })),
+    /** Credits bought in packs, as Autumn reports its top-up purchases. Missing until a refresh has seen them. */
+    packsCents: v.optional(v.number()),
     refreshedAt: v.number(),
   })
     .index("by_workspace", ["workspaceId"])
@@ -377,7 +382,7 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     /** The client the work was for, when it was for one: so the cost of serving a client can be measured. */
     clientId: v.optional(v.id("clients")),
-    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative"), v.literal("page")),
+    source: ledgerSource,
     ref: v.string(),
     costCents: v.number(),
     priceCents: v.number(),
@@ -386,9 +391,50 @@ export default defineSchema({
     /** Set once Autumn has the usage. Unsynced rows are retried. */
     syncedAt: v.optional(v.number()),
     syncError: v.optional(v.string()),
+    /**
+     * Who and what the charge was for, read from `ref` when it was written (lib/usage.ts). Rows from before
+     * 2026-11-13 lack these; the usage backfill reads them from `ref` instead. docs/rebuild/usage-page.md.
+     */
+    startedBy: v.optional(v.string()),
+    agentSlug: v.optional(v.string()),
+    skillSlug: v.optional(v.string()),
+    /** The model id that did this step. Missing for tool calls and page reading, and on older rows. */
+    model: v.optional(v.string()),
+    /** Already folded into `usageItems` when it was written. The backfill skips these. */
+    inUsage: v.optional(v.boolean()),
   })
     .index("by_workspace_at", ["workspaceId", "at"])
     .index("by_synced", ["syncedAt"]),
+
+  /**
+   * What the usage page reads: everything one piece of work (a run, a chat, an image...) spent on one UTC day
+   * on one model, in credits. Kept in step with the ledger by chargeUsage. Holds no cost and no markup, so
+   * nothing read from it can show what Vistrial pays. docs/rebuild/usage-page.md, section 3.2.
+   */
+  usageItems: defineTable({
+    workspaceId: v.id("workspaces"),
+    source: ledgerSource,
+    ref: v.string(),
+    /** "2026-11-13", UTC: the same day key as the caps (lib/caps.ts). */
+    day: v.string(),
+    /** The model id, or "" for tools and page reading, and for older charges whose model was not kept. */
+    model: v.string(),
+    priceCents: v.number(),
+    charges: v.number(),
+    firstAt: v.number(),
+    lastAt: v.number(),
+    startedBy: v.optional(v.string()),
+    agentSlug: v.optional(v.string()),
+    skillSlug: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
+    /** What the work was, in a few words, for the list of work. */
+    title: v.optional(v.string()),
+    /** Written by the backfill from an older ledger row. */
+    backfilled: v.optional(v.boolean()),
+  })
+    .index("by_workspace_day", ["workspaceId", "day"])
+    .index("by_workspace_person_day", ["workspaceId", "startedBy", "day"])
+    .index("by_key", ["workspaceId", "source", "ref", "day", "model"]),
 
   /**
    * A new customer's way in: the wizard before paying (about you, the business, what you sell, your goal),

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
+  BarChart3,
   Bell,
   BookOpen,
   ChevronRight,
@@ -500,6 +501,9 @@ export function JourneySidebarView({
             <Coins aria-hidden className="size-4 shrink-0 text-muted-foreground" />
             <span className="truncate tabular-nums">{credits?.on && credits.balanceCents !== null ? creditCount(credits.balanceCents) : "Billing"}</span>
             {credits?.on ? <span className="text-[11px] text-muted-foreground">credits</span> : null}
+          </Link>
+          <Link href="/app/usage" onClick={onNavigate} aria-label="Usage: where credits went" aria-current={isActive(pathname, "/app/usage") ? "page" : undefined} className={cn(row, "size-8 justify-center px-0", isActive(pathname, "/app/usage") && "bg-accent")}>
+            <BarChart3 aria-hidden className="size-4 text-muted-foreground" />
           </Link>
           <Link href="/app/settings" onClick={onNavigate} aria-label="Settings" className={cn(row, "size-8 justify-center px-0")}>
             <Settings aria-hidden className="size-4 text-muted-foreground" />

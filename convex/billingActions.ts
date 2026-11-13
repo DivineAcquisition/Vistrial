@@ -39,8 +39,17 @@ async function requireRole(ctx: ActionCtx, workspaceId: Id<"workspaces">, userId
 type CustomerShape = {
   balances?: Record<string, { remaining?: number; nextResetAt?: number | null } | undefined>;
   subscriptions?: { planId?: string; status?: string; quantity?: number }[];
+  /** One-off purchases such as credit packs. The shape is read defensively: not yet checked against live Autumn. */
+  purchases?: { planId?: string; quantity?: number }[];
   billingControls?: { autoTopups?: { featureId: string; enabled: boolean; threshold: number; quantity: number }[] };
 };
+
+/** Credits bought in packs, from the top-up rows Autumn lists. Undefined when it lists none, so the page says "not reported yet". */
+function packsFrom(customer: CustomerShape): number | undefined {
+  const rows = [...(customer.purchases ?? []), ...(customer.subscriptions ?? [])].filter((row) => row.planId === TOPUP_ID());
+  if (rows.length === 0) return undefined;
+  return rows.reduce((sum, row) => sum + Math.max(0, Math.round(row.quantity ?? 0)), 0);
+}
 
 /**
  * Reads the account's customer from Autumn (creating it the first time) and mirrors balance, plan, refill
@@ -63,6 +72,7 @@ async function refreshFrom(ctx: ActionCtx, workspaceId: Id<"workspaces">, paidEx
     planStatus: plan?.status,
     nextResetAt: balance?.nextResetAt ?? undefined,
     autoRefill: refill ? { enabled: refill.enabled, thresholdCents: refill.threshold, amountCents: refill.quantity } : undefined,
+    packsCents: packsFrom(customer),
   });
 }
 

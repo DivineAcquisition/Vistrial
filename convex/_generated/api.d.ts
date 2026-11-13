@@ -138,6 +138,8 @@ import type * as lib_taskShapes from "../lib/taskShapes.js";
 import type * as lib_token from "../lib/token.js";
 import type * as lib_toolRouter from "../lib/toolRouter.js";
 import type * as lib_transcriptText from "../lib/transcriptText.js";
+import type * as lib_usage from "../lib/usage.js";
+import type * as lib_usageReport from "../lib/usageReport.js";
 import type * as lib_workTabs from "../lib/workTabs.js";
 import type * as lib_zip from "../lib/zip.js";
 import type * as merges from "../merges.js";
@@ -217,6 +219,7 @@ import type * as staff from "../staff.js";
 import type * as staffAdmin from "../staffAdmin.js";
 import type * as studio from "../studio.js";
 import type * as transcripts from "../transcripts.js";
+import type * as usage from "../usage.js";
 import type * as workTabs from "../workTabs.js";
 import type * as workspace from "../workspace.js";
 
@@ -357,6 +360,8 @@ declare const fullApi: ApiFromModules<{
   "lib/token": typeof lib_token;
   "lib/toolRouter": typeof lib_toolRouter;
   "lib/transcriptText": typeof lib_transcriptText;
+  "lib/usage": typeof lib_usage;
+  "lib/usageReport": typeof lib_usageReport;
   "lib/workTabs": typeof lib_workTabs;
   "lib/zip": typeof lib_zip;
   merges: typeof merges;
@@ -436,6 +441,7 @@ declare const fullApi: ApiFromModules<{
   staffAdmin: typeof staffAdmin;
   studio: typeof studio;
   transcripts: typeof transcripts;
+  usage: typeof usage;
   workTabs: typeof workTabs;
   workspace: typeof workspace;
 }>;

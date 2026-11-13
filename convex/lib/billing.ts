@@ -8,6 +8,7 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { markup, priceFor } from "./credits";
+import { addToUsage, attributionFor, type LedgerSource } from "./usage";
 
 export { markup, priceFor };
 import { userError } from "./errors";
@@ -110,28 +111,44 @@ export async function assertCanSpend(ctx: QueryCtx, workspaceId: Id<"workspaces"
 
 /**
  * Charges real AI cost to the workspace: a ledger row, the mirrored balance lowered at once, and the usage
- * sent to Autumn in the background. Never blocks; a run that is already going is always charged.
+ * sent to Autumn in the background. Never blocks; a run that is already going is always charged. Each row
+ * says who and what it was for, and is folded into the usage page's rollup (lib/usage.ts).
  */
 export async function chargeUsage(
   ctx: MutationCtx,
-  args: { workspaceId: Id<"workspaces">; costCents: number; source: "run" | "followup" | "intake" | "file" | "creative" | "page"; ref: string },
+  args: {
+    workspaceId: Id<"workspaces">;
+    costCents: number;
+    source: LedgerSource;
+    ref: string;
+    /** The model that did this step, when the caller knows it better than the record does (a run's steps). */
+    model?: string;
+  },
 ) {
   if (args.costCents <= 0) return null;
   const factor = markup();
   const priceCents = priceFor(args.costCents, factor);
   // Work for a client is marked with it, so what a client costs to serve can be added up later.
-  const runId = ctx.db.normalizeId("agentRuns", args.ref);
-  const run = runId ? await ctx.db.get(runId) : null;
+  const who = await attributionFor(ctx, args.workspaceId, args.source, args.ref);
+  // A run's own record keeps only the model that wrote, so a step's model comes from the step; a tool call has none.
+  const model = args.model ?? (args.source === "run" ? undefined : who.model);
+  const at = Date.now();
   const ledgerId = await ctx.db.insert("billingLedger", {
     workspaceId: args.workspaceId,
-    ...(run?.clientId && run.workspaceId === args.workspaceId ? { clientId: run.clientId } : {}),
+    ...(who.clientId ? { clientId: who.clientId } : {}),
     source: args.source,
     ref: args.ref,
     costCents: args.costCents,
     priceCents,
     markup: factor,
-    at: Date.now(),
+    at,
+    ...(who.startedBy ? { startedBy: who.startedBy } : {}),
+    ...(who.agentSlug ? { agentSlug: who.agentSlug } : {}),
+    ...(who.skillSlug ? { skillSlug: who.skillSlug } : {}),
+    ...(model ? { model } : {}),
+    inUsage: true,
   });
+  await addToUsage(ctx, { workspaceId: args.workspaceId, source: args.source, ref: args.ref, priceCents, at, model }, who);
   const account = await accountFor(ctx, args.workspaceId);
   if (account) await ctx.db.patch(account._id, { balanceCents: account.balanceCents - priceCents });
   if (billingOn()) await ctx.scheduler.runAfter(0, internal.billingActions.push, { ledgerId });

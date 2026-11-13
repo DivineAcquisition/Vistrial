@@ -44,6 +44,7 @@ import {
   type Deal,
   type HlStepKey,
   type Pipeline,
+  type Summary,
 } from "./lib/highLevel";
 import { isAdmin, isOwner } from "./lib/roles";
 
@@ -100,6 +101,12 @@ export const status = workspaceQuery({
       .withIndex("by_connection", (q) => q.eq("connectionId", connection._id))
       .unique();
     const total = connection.callsOk + connection.callsFailed;
+    // Everyone who sees the card sees that a read is running; only the Owner sees what it did.
+    const latest = await ctx.db
+      .query("crmSyncRuns")
+      .withIndex("by_connection", (q) => q.eq("connectionId", connection._id))
+      .order("desc")
+      .first();
     const runs = owner
       ? await ctx.db
           .query("crmSyncRuns")
@@ -130,10 +137,10 @@ export const status = workspaceQuery({
         scopes: connection.scopes,
         lastSyncAt: connection.lastSyncAt ?? null,
         lastSyncCode: connection.lastSyncCode ?? null,
-        running: runs[0]?.status === "running",
+        running: latest?.status === "running",
         calls: { ok: connection.callsOk, failed: connection.callsFailed, successRate: total > 0 ? connection.callsOk / total : null },
       },
-      summary: summary ? { syncedAt: summary.syncedAt, ...(summary.summary as object) } : null,
+      summary: summary ? { syncedAt: summary.syncedAt, ...(summary.summary as Summary) } : null,
       runs: runs.map((row) => ({
         id: row._id,
         trigger: row.trigger,

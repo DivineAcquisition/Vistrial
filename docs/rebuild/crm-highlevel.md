@@ -1,6 +1,6 @@
 # Connect HighLevel (read-only CRM)
 
-Date: 2026-11-13. The first of three CRM connections (HighLevel now; HubSpot and Salesforce later). A
+Date: 2026-11-13. Status: **built, unproven against a real HighLevel app** (see the end). The first of three CRM connections (HighLevel now; HubSpot and Salesforce later). A
 workspace connects a HighLevel **sub-account** so Vistrial can learn how the business sells: its
 pipelines and stages, what moves, what is won and for how much, where leads come from, and what happens
 to a lead (calls, messages, appointments, stage changes). Onboarding uses it for business context; the
@@ -78,8 +78,8 @@ change when a deal's stage differs from the last read, dated by HighLevel's `las
   or Admin presses **Read again**. A read that is already running is not started twice.
 - **What one read does** (each a recorded step the Owner can watch, like Meta's): `access` (location),
   `pipelines`, `deals`, `contacts`, `activity` (conversations + messages), `appointments`, `save`.
-- **Windows**: deals updated in the last **365 days** plus every open deal; contacts linked to those deals or
-  active in the last **90 days**; conversations and messages from the last **30 days**; appointments from 30
+- **Windows**: deals updated in the last **365 days** plus every open deal; contacts linked to those deals, and
+  leads added in the last **90 days**; conversations and messages from the last **30 days**; appointments from 30
   days back to 30 days ahead.
 - **Caps per read**: deals 2,000 (20 pages), contacts 2,000, conversations 200 with up to 20 messages each,
   10 calendars. At most **400 calls per read**, which is 0.2% of the daily budget, and far less with the
@@ -99,7 +99,7 @@ for (missing means the organization itself) and the connection it came from.
 | `crmConnections` | location id, name, currency, time zone, company id, tokens, scopes, who connected, counts | the installing HighLevel user's details | until disconnect |
 | `crmPipelines` | pipeline id, name, stages (id, name, order) | | replaced each read |
 | `crmDeals` | deal id, pipeline, stage, status (open, won, lost, abandoned), value, currency, source, contact id, assigned user id, created / updated / last stage change / last status change | **deal name** (usually the person's name), notes, tasks, custom fields, followers | open deals while open; others 365 days after their last update |
-| `crmContacts` | contact id, name, email, phone, source, up to 10 tags, date added, last activity | address, date of birth, company details, custom fields, notes, DND settings, attachments | while linked to a kept deal or to activity in the last 90 days |
+| `crmContacts` | contact id, name, email, phone, source, up to 10 tags, date added, last activity | address, date of birth, company details, custom fields, notes, DND settings, attachments | while linked to a kept deal or added in the last 90 days (re-checked every read) |
 | `crmActivities` | kind (call, sms, email, chat, social, appointment, stage change, status change), direction, time, contact id, deal id, short facts (call seconds, message status, appointment status, from-stage → to-stage) | **message bodies, email subjects, call recordings and transcripts, attachments** | 90 days |
 | `crmSummaries` | counts and value per stage, won count and revenue (30 / 90 / 365 days), lead sources, activity counts | | replaced each read |
 | `crmSyncRuns`, `crmCallDays` | what each read did, call counts | | last 30 reads; 30 days |
@@ -134,8 +134,11 @@ The privacy policy change is its own pull request (section 9).
 - **Uninstalled in HighLevel**: the app's webhook receives `UNINSTALL` with the `locationId`; Vistrial deletes
   every connection to that location and its data, exactly as on disconnect. If the webhook does not arrive,
   the next read's refusal marks the connection **Reconnect needed**, and 30 days later it is deleted.
-- **Client archived or organization deleted**: the connection goes with it (existing deletion paths call the
-  same removal).
+- **Signed out for 30 days** (**Reconnect needed** and not reconnected): the six-hourly job removes the
+  connection and its data.
+- **Client archived**: the connection stays (an archived client can be brought back) but an Owner can
+  disconnect it. Deleting an organization's data is not built for any connection yet; when it is, it must
+  call `removeData` for every `crmConnections` row.
 - The audit log keeps that a connection was made or removed (who, when, location id), never contact data.
 
 ## 8. What the Owner sees
@@ -198,6 +201,42 @@ customer's processor. It publishes when merged, so it is kept apart from the cod
 
 No Vercel setting is needed: every HighLevel call is made from Convex.
 
+## What was built
+
+| Piece | File |
+|---|---|
+| Tables `crmConnections` (tokens server-only), `crmOauthStates`, `crmPipelines`, `crmDeals`, `crmContacts`, `crmActivities`, `crmSummaries`, `crmSyncRuns`, `crmCallDays`. All carry `clientId` and are in the client guard | `convex/schema.ts`, `convex/lib/clientGuard.ts` |
+| Install, callback, token renewal, the paced read, disconnect, uninstall, the 30-day removal | `convex/highLevel.ts` |
+| Pure helpers: scopes, install address, error codes, parsers that drop what is not kept, stage-change detection, the summary, Ed25519 webhook check | `convex/lib/highLevel.ts` |
+| `GET /crm/hl/callback`, `POST /crm/hl/webhook` | `convex/http.ts` |
+| Every 6 hours: `refresh CRM data` | `convex/crons.ts` |
+| Card (display) and Convex container; `HighLevelConnectSlot` for onboarding | `src/components/connections/highlevel-view.tsx`, `highlevel.tsx` |
+| Page with a switcher for the organization and each client | `src/app/(product)/app/connections/highlevel/page.tsx` |
+| Settings → Data card | `src/components/settings/settings-sections.tsx` |
+| Story: `/dev/highlevel-connection?state=none\|notsetup\|admin\|connected\|reading\|reconnect\|ratelimited\|slot\|slot-connected`; screenshots at 390 and 1280 | `src/app/dev/highlevel-connection/`, `docs/screenshots/crm-highlevel/` |
+| Tests against a fake HighLevel (no real call) | `convex/highLevel.test.ts`, `convex/lib/highLevel.test.ts` |
+
+Who can do what: an **Owner** connects and disconnects, and alone sees *What Vistrial did* (each read,
+step by step, and calls per day). **Owners and Admins** press *Read again*. Any member who may see the
+client sees the card's numbers; a Member not assigned to that client sees nothing of it.
+
+The onboarding slot:
+
+```tsx
+import { HighLevelConnectSlot } from "@/components/connections/highlevel";
+
+<HighLevelConnectSlot
+  workspaceId={workspaceId}
+  clientId={clientId}               // omit for the organization itself
+  returnPath="/app/onboarding?step=crm"
+  returned={searchParams.get("highlevel")}
+/>
+```
+
+It follows Convex live, so it switches to the connected numbers on its own after the first read.
+
+`HIGHLEVEL_CALL_GAP_MS` (default 150) is the pause between calls; the tests set it to 0. Leave it unset.
+
 ## Unproven until a real app exists
 
 - Whether `chooselocation` passes our `state` back unchanged. The external-auth docs say HighLevel keeps
@@ -209,6 +248,10 @@ No Vercel setting is needed: every HighLevel call is made from Convex.
 - Field formats in real answers (dates as ISO strings or milliseconds, `monetaryValue` currency) are taken
   from the OpenAPI specs; the parser accepts both date forms.
 - Real rate-limit headers and 429 bodies; the version header needed by each endpoint.
+- The body of `POST /contacts/search` (`locationId`, `page`, `pageLimit`, `sort`): the OpenAPI spec leaves it
+  empty; this is HighLevel's documented search shape, but untested.
+- Where a call's length sits in a message's `meta` (`meta.call.duration` or `meta.callDuration`): both are read.
+- Whether a refresh needs `user_type` and `redirect_uri` (sent, as HighLevel's sample does).
 
 ## Sources
 

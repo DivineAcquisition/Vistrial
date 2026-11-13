@@ -201,8 +201,8 @@ describe("HighLevel connection", () => {
     expect(JSON.stringify(status)).not.toMatch(/ACCESS-TOKEN|REFRESH-TOKEN|HL-APP-SECRET/);
     expect(status.connection).toMatchObject({ accountName: "Northlight Cleaning", status: "connected", lastSyncCode: "ok" });
     expect(status.summary).toMatchObject({ open: { count: 1, value: 1200 }, won: { d30: { count: 1, value: 4800 } }, counts: { deals: 2, contacts: 2 } });
-    expect(status.summary.activity30).toMatchObject({ calls: 1, messages: 1, appointments: 0, inbound: 1, outbound: 1 });
-    expect(status.summary.upcoming).toBe(1);
+    expect(status.summary?.activity30).toMatchObject({ calls: 1, messages: 1, appointments: 0, inbound: 1, outbound: 1 });
+    expect(status.summary?.upcoming).toBe(1);
     expect(status.runs[0]).toMatchObject({ trigger: "connect", status: "done" });
     expect(status.runs[0].steps.map((step: { key: string }) => step.key)).toEqual(["access", "pipelines", "deals", "contacts", "activity", "appointments", "save"]);
     expect(status.usage?.ok).toBeGreaterThan(5);
@@ -295,8 +295,8 @@ describe("HighLevel connection", () => {
     expect(moves.find((row) => row.kind === "stage_change")).toMatchObject({ fromStage: "stNew", toStage: "stWon", dealId: "opp1" });
     expect(moves.find((row) => row.kind === "status_change")).toMatchObject({ status: "won" });
     const status = await s.owner.query(api.highLevel.status, { workspaceId: s.workspaceId });
-    expect(status.summary.activity30.stageChanges).toBe(1);
-    expect(status.summary.won.d30).toEqual({ count: 2, value: 6000 });
+    expect(status.summary?.activity30.stageChanges).toBe(1);
+    expect(status.summary?.won.d30).toEqual({ count: 2, value: 6000 });
   });
 
   it("renews an ending token once, keeping the new one-use renewal token", async () => {

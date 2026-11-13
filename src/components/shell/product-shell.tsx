@@ -59,7 +59,7 @@ function ProductShellInner({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-background text-foreground">
+    <div data-app-text className="min-h-dvh overflow-x-hidden bg-background text-foreground">
       <a
         href="#workspace-main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-background focus:px-3 focus:py-2"

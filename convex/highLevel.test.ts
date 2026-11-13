@@ -97,6 +97,12 @@ function fakeHighLevel(options: { userType?: string; scope?: string; refresh?: "
     }
     if (p === "/calendars/") return json({ calendars: [{ id: "cal1", name: "Sales calls" }] });
     if (p === "/calendars/events") return json({ events: [{ id: "ev1", startTime: new Date(now + DAY).toISOString(), appointmentStatus: "confirmed", contactId: "cont2", notes: "SECRET NOTE", title: "Call with Omar" }] });
+    // Writes: only reached after a person approved an action.
+    if (method === "PUT" && /^\/opportunities\/opp\d$/.test(p)) return json({ opportunity: { id: p.split("/")[2] } });
+    if (method === "PUT" && /^\/opportunities\/opp\d\/status$/.test(p)) return json({ succeded: true });
+    if ((method === "POST" || method === "DELETE") && /^\/contacts\/cont\d\/tags$/.test(p)) return json({ tags: [] });
+    if (method === "POST" && /^\/contacts\/cont\d\/notes$/.test(p)) return json({ note: { id: "note1" } });
+    if (method === "POST" && /^\/contacts\/cont\d\/tasks$/.test(p)) return json({ task: { id: "task1" } });
     return json({ message: "not found" }, 404);
   });
   return { fake, calls };
@@ -173,7 +179,7 @@ describe("HighLevel connection", () => {
     const { url } = await s.owner.mutation(api.highLevel.startConnect, { workspaceId: s.workspaceId, clientId: s.acme, returnOrigin: "https://evil.example.com" });
     const params = new URL(url).searchParams;
     expect(params.get("redirect_uri")).toBe("https://example.convex.site/crm/hl/callback");
-    expect(params.get("scope")!.split(" ").every((scope) => scope.endsWith(".readonly"))).toBe(true);
+    expect(params.get("scope")!.split(" ")).toEqual([...HL_SCOPES]);
     const nonce = params.get("state")!;
     expect(await s.t.mutation(internal.highLevel.consumeState, { nonce })).toMatchObject({ workspaceId: s.workspaceId, clientId: s.acme, returnOrigin: null });
     expect(await s.t.mutation(internal.highLevel.consumeState, { nonce })).toBeNull();
@@ -397,5 +403,153 @@ describe("HighLevel connection", () => {
     const rows = await allCrmRows(s.t);
     expect(rows.connections).toHaveLength(0);
     expect(rows.deals).toHaveLength(0);
+  });
+});
+
+describe("acting in HighLevel, with approval", () => {
+  async function connected(clientId?: Id<"clients">) {
+    const s = await setup();
+    const hl = fakeHighLevel();
+    vi.stubGlobal("fetch", hl.fake);
+    await connectThroughCallback(s, clientId);
+    await settle(s.t);
+    return { ...s, hl, writes: () => hl.calls.filter((call) => call.method !== "GET" && call.path !== "/oauth/token" && call.path !== "/contacts/search") };
+  }
+  const move = { kind: "move_stage" as const, dealId: "opp1", stageId: "stBooked", why: "She booked an estimate on the phone." };
+
+  it("does nothing until an Owner turns acting on, and only an Owner can", async () => {
+    const s = await connected();
+    await expect(s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move })).rejects.toThrow(/not let Vistrial act/);
+    await expect(s.admin.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true })).rejects.toThrow();
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    expect((await s.member.query(api.crmActions.list, { workspaceId: s.workspaceId })).enabled).toBe(true);
+    expect(s.writes()).toHaveLength(0);
+  });
+
+  it("sends nothing on a proposal; an Admin's approval in the shared queue sends exactly one write", async () => {
+    const s = await connected();
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    await expect(s.viewer.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move })).rejects.toThrow();
+    const actionId = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move });
+    await settle(s.t);
+    expect(s.writes()).toHaveLength(0);
+
+    const queue = await s.admin.query(api.approvals.waiting, { workspaceId: s.workspaceId });
+    const item = queue.items.find((row) => row.summary.includes("from New lead to Booked"))!;
+    expect(item).toMatchObject({ kind: "accountChange", ownerOnly: false, canDecide: true });
+    expect(item.summary).not.toContain("Jane");
+    await expect(s.member.mutation(api.approvals.decide, { workspaceId: s.workspaceId, approvalId: item.id, approve: true })).rejects.toThrow();
+    await s.admin.mutation(api.approvals.decide, { workspaceId: s.workspaceId, approvalId: item.id, approve: true });
+    await settle(s.t);
+
+    expect(s.writes()).toEqual([expect.objectContaining({ method: "PUT", path: "/opportunities/opp1", body: JSON.stringify({ pipelineId: "pipe1", pipelineStageId: "stBooked" }) })]);
+    const rows = await s.t.run(async (ctx) => ({ action: await ctx.db.get(actionId), deal: await ctx.db.query("crmDeals").withIndex("by_connection").filter((q) => q.eq(q.field("externalId"), "opp1")).first(), approval: await ctx.db.get(item.id) }));
+    expect(rows.action).toMatchObject({ state: "done", decidedBy: "user_admin", resultCode: "ok", before: { stageId: "stNew", pipelineId: "pipe1" } });
+    expect(rows.deal?.stageId).toBe("stBooked");
+    expect(rows.approval).toMatchObject({ status: "approved", decidedBy: "user_admin" });
+  });
+
+  it("makes changing a deal's outcome the Owner's alone, with the typed word", async () => {
+    const s = await connected();
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    const actionId = await s.admin.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "set_status", dealId: "opp1", status: "won", why: "Signed today." });
+    await expect(s.admin.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true, confirmWord: "VALUE" })).rejects.toThrow(/Only an Owner/);
+    await expect(s.owner.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true })).rejects.toThrow(/Type VALUE/);
+    await s.owner.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true, confirmWord: "VALUE" });
+    await settle(s.t);
+    expect(s.writes()).toEqual([expect.objectContaining({ method: "PUT", path: "/opportunities/opp1/status", body: JSON.stringify({ status: "won" }) })]);
+  });
+
+  it("undoes a stage move by proposing the reverse, which is approved like any other", async () => {
+    const s = await connected();
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    const first = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move });
+    await s.admin.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId: first, approve: true });
+    await settle(s.t);
+    const reverse = await s.member.mutation(api.crmActions.undo, { workspaceId: s.workspaceId, actionId: first });
+    await settle(s.t);
+    expect(s.writes()).toHaveLength(1);
+    await s.owner.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId: reverse, approve: true });
+    await settle(s.t);
+    expect(s.writes()[1]).toMatchObject({ method: "PUT", path: "/opportunities/opp1", body: JSON.stringify({ pipelineId: "pipe1", pipelineStageId: "stNew" }) });
+    const list = await s.owner.query(api.crmActions.list, { workspaceId: s.workspaceId });
+    expect(list.actions.find((row) => row.id === first)).toMatchObject({ undone: true, canUndo: false });
+    await expect(s.member.mutation(api.crmActions.undo, { workspaceId: s.workspaceId, actionId: first })).rejects.toThrow();
+  });
+
+  it("adds a tag, a note and a task with HighLevel's request shapes, and cannot undo a note", async () => {
+    const s = await connected();
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    const due = Date.now() + 2 * DAY;
+    const ids = [
+      await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_tag", contactId: "cont1", tag: "estimate-booked", why: "Booked." }),
+      await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_note", contactId: "cont1", body: "Prefers mornings.", why: "From the call." }),
+      await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "create_task", contactId: "cont1", title: "Send the estimate", dueAt: due, why: "Promised by Friday." }),
+    ];
+    for (const actionId of ids) await s.admin.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true });
+    await settle(s.t);
+    expect(s.writes().map((call) => [call.method, call.path, JSON.parse(call.body ?? "{}")])).toEqual([
+      ["POST", "/contacts/cont1/tags", { tags: ["estimate-booked"] }],
+      ["POST", "/contacts/cont1/notes", { body: "Prefers mornings." }],
+      ["POST", "/contacts/cont1/tasks", { title: "Send the estimate", dueDate: new Date(due).toISOString(), completed: false }],
+    ]);
+    const list = await s.owner.query(api.crmActions.list, { workspaceId: s.workspaceId });
+    expect(list.leads.find((row) => row.id === "cont1")?.tags).toContain("estimate-booked");
+    expect(list.actions.find((row) => row.id === ids[1])).toMatchObject({ state: "done", canUndo: false });
+    await expect(s.member.mutation(api.crmActions.undo, { workspaceId: s.workspaceId, actionId: ids[1] })).rejects.toThrow(/cannot undo/);
+  });
+
+  it("refuses a deal, lead or stage Vistrial has not read from this sub-account", async () => {
+    const s = await connected();
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    await expect(s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move, dealId: "oppINVENTED" })).rejects.toThrow(/has not read that deal/);
+    await expect(s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move, stageId: "stElsewhere" })).rejects.toThrow(/not in this deal's pipeline/);
+    await expect(s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_note", contactId: "contX", body: "x", why: "x" })).rejects.toThrow(/has not read that lead/);
+    expect(s.writes()).toHaveLength(0);
+  });
+
+  it("sends nothing when declined, expired, or when acting is switched off after approval", async () => {
+    const s = await connected();
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    const declined = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move });
+    await s.admin.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId: declined, approve: false });
+    const old = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_tag", contactId: "cont2", tag: "cold", why: "No answer." });
+    await s.t.run(async (ctx) => ctx.db.patch(old, { proposedAt: Date.now() - 25 * 3_600_000 }));
+    expect(await s.admin.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId: old, approve: true })).toEqual({ state: "expired" });
+    // Approved, then acting switched off before it ran: it is cancelled, not sent.
+    const raced = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move });
+    await s.admin.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId: raced, approve: true });
+    const waiting = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_tag", contactId: "cont1", tag: "vip", why: "Big job." });
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: false });
+    await settle(s.t);
+    expect(s.writes()).toHaveLength(0);
+    const states = await s.t.run(async (ctx) => Promise.all([declined, old, raced, waiting].map(async (id) => (await ctx.db.get(id))?.state)));
+    expect(states).toEqual(["declined", "expired", "cancelled", "cancelled"]);
+    expect((await s.admin.query(api.approvals.waiting, { workspaceId: s.workspaceId })).items.filter((row) => row.summary.startsWith("HighLevel"))).toHaveLength(0);
+  });
+
+  it("keeps a client's actions from a member who may not see that client", async () => {
+    const s = await setup();
+    vi.stubGlobal("fetch", fakeHighLevel().fake);
+    await connectThroughCallback(s, s.acme);
+    await settle(s.t);
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, clientId: s.acme, on: true });
+    // The member is assigned Beta only.
+    await expect(s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, clientId: s.acme, ...move })).rejects.toThrow();
+    await s.admin.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, clientId: s.acme, ...move });
+    expect((await s.member.query(api.crmActions.list, { workspaceId: s.workspaceId, clientId: s.acme })).actions).toHaveLength(0);
+    expect((await s.member.query(api.approvals.waiting, { workspaceId: s.workspaceId })).items).toHaveLength(0);
+    expect((await s.admin.query(api.crmActions.list, { workspaceId: s.workspaceId, clientId: s.acme })).actions).toHaveLength(1);
+  });
+
+  it("closes waiting approvals and deletes actions on disconnect", async () => {
+    const s = await connected();
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...move });
+    await s.owner.mutation(api.highLevel.disconnect, { workspaceId: s.workspaceId });
+    await settle(s.t);
+    expect((await s.admin.query(api.approvals.waiting, { workspaceId: s.workspaceId })).items.filter((row) => row.summary.startsWith("HighLevel"))).toHaveLength(0);
+    expect(await s.t.run((ctx) => ctx.db.query("crmActions").collect())).toHaveLength(0);
+    expect(s.writes()).toHaveLength(0);
   });
 });

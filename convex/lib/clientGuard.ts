@@ -29,6 +29,7 @@ const DIRECT: readonly TableNames[] = [
   "callTranscripts",
   "clientAssignments",
   "creativeRequests",
+  "crmActions",
   "crmActivities",
   "crmConnections",
   "crmContacts",

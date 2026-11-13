@@ -5,7 +5,7 @@ import { HighLevelConnectionStory } from "./story";
 export const metadata = { title: "HighLevel connection story", robots: { index: false, follow: false } };
 
 /**
- * ?state=none|notsetup|admin|connected|reading|reconnect|ratelimited|slot|slot-connected opens a state
+ * ?state=none|notsetup|admin|connected|reading|reconnect|ratelimited|slot|slot-connected|acting-off|acting|acting-admin opens a state
  * directly, for screenshots.
  */
 export default async function HighLevelConnectionStoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

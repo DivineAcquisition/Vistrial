@@ -1,14 +1,14 @@
 /**
- * HighLevel (LeadConnector) API v2, read-only. Pure helpers: the install address, short error codes,
- * and shaping what HighLevel returns into the little Vistrial keeps. Nothing here writes to HighLevel:
- * every scope is `.readonly` and no function builds a request that changes anything there.
+ * HighLevel (LeadConnector) API v2. Pure helpers for reading: the install address, short error codes,
+ * and shaping what HighLevel returns into the little Vistrial keeps. Nothing here writes to HighLevel;
+ * the only writes are the approved actions in convex/lib/crmActions.ts.
  * docs/rebuild/crm-highlevel.md explains each choice.
  */
 
 export const HL_API = "https://services.leadconnectorhq.com";
 
-/** The smallest set that covers what the owner asked for. Every one is a sub-account read scope. */
-export const HL_SCOPES = [
+/** What reading needs: the smallest set that covers what the owner asked for. All sub-account scopes. */
+export const HL_READ_SCOPES = [
   "locations.readonly",
   "opportunities.readonly",
   "contacts.readonly",
@@ -17,6 +17,14 @@ export const HL_SCOPES = [
   "calendars.readonly",
   "calendars/events.readonly",
 ] as const;
+
+/**
+ * What the actions built so far need (convex/lib/crmActions.ts): moving and closing deals, and tags, notes
+ * and tasks on leads. Messaging and appointments are not built, so their write scopes are not asked for.
+ */
+export const HL_WRITE_SCOPES = ["opportunities.write", "contacts.write"] as const;
+
+export const HL_SCOPES = [...HL_READ_SCOPES, ...HL_WRITE_SCOPES] as const;
 
 /** HighLevel refuses to save a redirect URI that contains "highlevel", so the paths say "hl". */
 export const HL_CALLBACK_PATH = "/crm/hl/callback";

@@ -1607,6 +1607,10 @@ export default defineSchema({
     lastSyncCode: v.optional(v.string()),
     callsOk: v.number(),
     callsFailed: v.number(),
+    /** An Owner let Vistrial act in this sub-account, each action still approved by a person. Missing means off. */
+    actingEnabled: v.optional(v.boolean()),
+    actingChangedBy: v.optional(v.string()),
+    actingChangedAt: v.optional(v.number()),
   })
     .index("by_workspace_client", ["workspaceId", "clientId"])
     .index("by_account", ["provider", "accountId"]),
@@ -1731,6 +1735,59 @@ export default defineSchema({
     callsOk: v.number(),
     callsFailed: v.number(),
   }).index("by_connection", ["connectionId", "startedAt"]),
+
+  /**
+   * One change Vistrial may make in a connected CRM: proposed by an agent or a person, approved by an Owner or
+   * Admin (an Owner with a typed word when restricted), carried out once, and kept as the record of who
+   * decided. docs/rebuild/crm-highlevel.md, section 2A.
+   */
+  crmActions: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    connectionId: v.id("crmConnections"),
+    kind: v.union(v.literal("move_stage"), v.literal("set_status"), v.literal("add_tag"), v.literal("remove_tag"), v.literal("add_note"), v.literal("create_task")),
+    dealId: v.optional(v.string()),
+    contactId: v.optional(v.string()),
+    pipelineId: v.optional(v.string()),
+    stageId: v.optional(v.string()),
+    status: v.optional(v.string()),
+    tag: v.optional(v.string()),
+    title: v.optional(v.string()),
+    body: v.optional(v.string()),
+    dueAt: v.optional(v.number()),
+    /** What was there before, so the action can be undone. */
+    before: v.optional(v.object({ pipelineId: v.optional(v.string()), stageId: v.optional(v.string()), status: v.optional(v.string()) })),
+    /** Owner only, with a typed word: "value" changes a deal's outcome. */
+    restricted: v.optional(v.union(v.literal("value"), v.literal("message"))),
+    summary: v.string(),
+    why: v.string(),
+    /** A person's user id, or "agent". */
+    proposedBy: v.string(),
+    agentSlug: v.optional(v.string()),
+    state: v.union(
+      v.literal("proposed"),
+      v.literal("approved"),
+      v.literal("running"),
+      v.literal("done"),
+      v.literal("failed"),
+      v.literal("declined"),
+      v.literal("expired"),
+      v.literal("cancelled"),
+    ),
+    proposedAt: v.number(),
+    decidedBy: v.optional(v.string()),
+    decidedAt: v.optional(v.number()),
+    doneAt: v.optional(v.number()),
+    /** HighLevel's answer as a short code. Never its words. */
+    resultCode: v.optional(v.string()),
+    /** The id HighLevel gave what was made (a note, a task). */
+    externalId: v.optional(v.string()),
+    /** The action this one reverses, and the one that reversed this. */
+    undoOf: v.optional(v.id("crmActions")),
+    undoneBy: v.optional(v.id("crmActions")),
+  })
+    .index("by_connection", ["connectionId", "proposedAt"])
+    .index("by_connection_state", ["connectionId", "state"]),
 
   /** CRM API calls per connection per UTC day. */
   crmCallDays: defineTable({

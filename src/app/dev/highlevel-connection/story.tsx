@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import type { SyncRun } from "@/components/connections/meta-effort";
+import { HighLevelActionsView, type HighLevelActionsData } from "@/components/connections/highlevel-actions-view";
 import { HighLevelView, type HighLevelStatus } from "@/components/connections/highlevel-view";
 import { summarize, type Activity, type Contact, type Deal } from "../../../../convex/lib/highLevel";
 
@@ -105,12 +106,44 @@ function statusFor(state: string, now: number): HighLevelStatus {
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+/** Acting fixtures: made-up leads and deals. */
+function actingFor(state: string, now: number): HighLevelActionsData {
+  const owner = state !== "acting-admin";
+  const enabled = state !== "acting-off";
+  const base = { id: "", why: "", lead: null, body: null, restricted: null, mayTriggerAutomation: true, proposedBy: "dealmaker", decidedAt: null, doneAt: null, resultCode: null, canUndo: false, undone: false };
+  const actions: HighLevelActionsData["actions"] = enabled
+    ? [
+        { ...base, id: "a1", kind: "move_stage", summary: "HighLevel: move a deal from Contacted to Estimate booked", why: "She booked a site visit for Thursday in her last text.", lead: "Lead 12", state: "proposed", proposedAt: now - 12 * 60_000 },
+        { ...base, id: "a2", kind: "set_status", summary: "HighLevel: mark a deal won (now open)", why: "The signed estimate came back by email this morning.", lead: "Lead 4", state: "proposed", restricted: { word: "VALUE", why: "It changes a deal's outcome, and so the revenue your team reports." }, proposedAt: now - 40 * 60_000 },
+        { ...base, id: "a3", kind: "add_note", summary: "HighLevel: add a note to a lead", why: "From Tuesday's call.", lead: "Lead 9", body: "Prefers mornings. Asked about financing for the deck.", state: "done", mayTriggerAutomation: false, proposedBy: "person", proposedAt: now - 5 * 3_600_000, decidedAt: now - 4 * 3_600_000, doneAt: now - 4 * 3_600_000, resultCode: "ok" },
+        { ...base, id: "a4", kind: "add_tag", summary: 'HighLevel: add the tag "estimate-sent" to a lead', why: "Estimate sent Monday.", lead: "Lead 21", state: "done", proposedAt: now - 26 * 3_600_000, doneAt: now - 25 * 3_600_000, resultCode: "ok", canUndo: true },
+        { ...base, id: "a5", kind: "create_task", summary: 'HighLevel: create the task "Call back about the quote" on a lead', why: "No reply in three days.", lead: "Lead 30", state: "declined", proposedAt: now - 30 * 3_600_000 },
+      ]
+    : [];
+  return {
+    connected: true,
+    enabled,
+    can: { toggle: owner, propose: true, approve: true, approveRestricted: owner },
+    actions,
+    deals: [
+      { id: "d1", pipelineId: "pipe1", stage: "Contacted", stageId: "s2", value: 4200, lead: "Lead 12" },
+      { id: "d4", pipelineId: "pipe1", stage: "Estimate sent", stageId: "s4", value: 3100, lead: "Lead 4" },
+    ],
+    leads: [
+      { id: "c12", name: "Lead 12", tags: ["facebook"] },
+      { id: "c21", name: "Lead 21", tags: ["estimate-sent"] },
+    ],
+    stages: PIPELINES.map((pipeline) => ({ pipelineId: pipeline.externalId, name: pipeline.name, stages: pipeline.stages.map((stage) => ({ id: stage.id, name: stage.name })) })),
+  };
+}
+
 export function HighLevelConnectionStory({ state }: { state: string }) {
   const [now] = useState(() => Date.now());
   const slot = state.startsWith("slot");
+  const acting = state.startsWith("acting");
   const view = (
     <HighLevelView
-      status={statusFor(state === "slot-connected" ? "connected" : state, now)}
+      status={statusFor(state === "slot-connected" || acting ? (state === "acting-admin" ? "admin" : "connected") : state, now)}
       returned={state === "reading" ? "connected" : null}
       forName={slot ? null : "Brightside Home Services"}
       compact={slot}
@@ -122,9 +155,16 @@ export function HighLevelConnectionStory({ state }: { state: string }) {
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <div className={slot ? "mx-auto grid max-w-xl gap-4" : "mx-auto grid max-w-6xl gap-4"}>
         <p className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">
-          HighLevel connection story. Made-up fixtures. States: none, notsetup, admin, connected, reading, reconnect, ratelimited, slot, slot-connected.
+          HighLevel connection story. Made-up fixtures. States: none, notsetup, admin, connected, reading, reconnect, ratelimited, slot, slot-connected, acting-off, acting, acting-admin.
         </p>
-        {view}
+        {acting ? (
+          <HighLevelActionsView
+            data={actingFor(state, now)}
+            handlers={{ setActing: async () => wait(300), propose: async () => (await wait(300), null), decide: async () => (await wait(300), null), undo: async () => (await wait(300), null) }}
+          />
+        ) : (
+          view
+        )}
       </div>
     </div>
   );

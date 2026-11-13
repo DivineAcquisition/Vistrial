@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
-import { HighLevel } from "@/components/connections/highlevel";
+import { HighLevel, HighLevelActions } from "@/components/connections/highlevel";
 import { useClientScope, useWorkspaceShell } from "@/components/shell/shell-context";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
@@ -48,6 +48,7 @@ function ManageHighLevel() {
         </nav>
       ) : null}
       <HighLevel key={clientId ?? "own"} workspaceId={shell.workspaceId} clientId={clientId} forName={name} returned={query.get("highlevel")} />
+      <HighLevelActions key={`actions-${clientId ?? "own"}`} workspaceId={shell.workspaceId} clientId={clientId} />
     </div>
   );
 }

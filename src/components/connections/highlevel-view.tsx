@@ -52,6 +52,8 @@ export type HighLevelStatus = {
     lastSyncAt: number | null;
     lastSyncCode: string | null;
     running: boolean;
+    /** An Owner let Vistrial act here, each change approved by a person. */
+    acting?: boolean;
     calls: { ok: number; failed: number; successRate: number | null };
   } | null;
   summary: (Summary & { syncedAt: number }) | null;
@@ -121,11 +123,12 @@ const CAN = [
   "Read where leads come from",
   "Read leads' names, emails and phone numbers",
   "Note calls, texts, emails and appointments: when, which way, and the outcome",
+  "With approval: move deals, tag leads, add notes and create tasks",
 ];
 const CANNOT = [
-  "Create, edit, move or delete anything",
-  "Message, call or email anyone",
-  "Book or cancel appointments",
+  "Change anything unless an Owner turns acting on, and then only what a person approves",
+  "Delete anything",
+  "Message, call or email your leads, or book appointments",
   "Keep what a message said, recordings or notes",
 ];
 
@@ -263,7 +266,7 @@ function CallDays({ usage }: { usage: NonNullable<HighLevelStatus["usage"]> }) {
       </div>
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <ShieldCheck aria-hidden className="mt-0.5 size-3.5 shrink-0 text-success" />
-        Every call was a read. Vistrial has never written to HighLevel.
+        Changes Vistrial made are listed under Acting in HighLevel, each with who approved it.
       </p>
     </Panel>
   );
@@ -338,13 +341,15 @@ export function HighLevelView({
           <div className="min-w-0">
             <h2 className="font-heading text-lg text-card-foreground">HighLevel</h2>
             <p className="text-sm text-muted-foreground">
-              {compact && connection ? connection.accountName : "Pipelines, deals and lead activity"}, read-only{forName ? ` · for ${forName}` : ""}.
+              {compact && connection ? connection.accountName : "Pipelines, deals and lead activity"}
+              {connection?.acting ? ", changes only with approval" : ", read-only"}
+              {forName ? ` · for ${forName}` : ""}.
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
-            <ShieldCheck aria-hidden className="size-3.5" /> Read-only
+            <ShieldCheck aria-hidden className="size-3.5" /> {connection?.acting ? "Acts with approval" : "Read-only"}
           </span>
           <StatusBadge label={badge.label} tone={badge.tone} className="[&_span]:normal-case" />
         </div>
@@ -373,7 +378,7 @@ export function HighLevelView({
               <p className="text-sm text-muted-foreground">An Owner connects HighLevel for {who}.</p>
             )
           ) : null}
-          {compact ? <p className="text-xs text-muted-foreground">Vistrial only reads. It never messages your leads or changes your CRM.</p> : null}
+          {compact ? <p className="text-xs text-muted-foreground">Vistrial reads first. It changes your CRM only if an Owner allows it and a person approves each change, and it never messages your leads.</p> : null}
         </div>
       ) : null}
 

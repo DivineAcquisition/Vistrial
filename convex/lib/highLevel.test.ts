@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   changesSince,
+  HL_READ_SCOPES,
   HL_SCOPES,
   hlErrorCode,
   installUrl,
@@ -41,8 +42,10 @@ function deal(over: Partial<Deal> = {}): Deal {
 }
 
 describe("HighLevel helpers", () => {
-  it("asks only for read scopes, at HighLevel's install page, with the state", () => {
-    expect(HL_SCOPES.every((scope) => scope.endsWith(".readonly"))).toBe(true);
+  it("asks for the read scopes and two write scopes, at HighLevel's install page, with the state", () => {
+    expect(HL_READ_SCOPES.every((scope) => scope.endsWith(".readonly"))).toBe(true);
+    // Writing asks only for what the built actions need: no messaging, appointments or agency scope.
+    expect(HL_SCOPES.filter((scope) => !scope.endsWith(".readonly"))).toEqual(["opportunities.write", "contacts.write"]);
     const url = new URL(installUrl({ clientId: "app-id", redirectUri: "https://x.convex.site/crm/hl/callback", state: "abc" }));
     expect(url.origin).toBe("https://marketplace.gohighlevel.com");
     expect(url.pathname).toBe("/oauth/chooselocation");

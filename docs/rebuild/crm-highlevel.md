@@ -317,12 +317,17 @@ No Vercel setting is needed: every HighLevel call is made from Convex.
 | Card (display) and Convex container; `HighLevelConnectSlot` for onboarding | `src/components/connections/highlevel-view.tsx`, `highlevel.tsx` |
 | Page with a switcher for the organization and each client | `src/app/(product)/app/connections/highlevel/page.tsx` |
 | Settings → Data card | `src/components/settings/settings-sections.tsx` |
-| Story: `/dev/highlevel-connection?state=none\|notsetup\|admin\|connected\|reading\|reconnect\|ratelimited\|slot\|slot-connected`; screenshots at 390 and 1280 | `src/app/dev/highlevel-connection/`, `docs/screenshots/crm-highlevel/` |
-| Tests against a fake HighLevel (no real call) | `convex/highLevel.test.ts`, `convex/lib/highLevel.test.ts` |
+| Story: `/dev/highlevel-connection?state=none\|notsetup\|admin\|connected\|reading\|reconnect\|ratelimited\|slot\|slot-connected\|acting-off\|acting\|acting-admin`; screenshots at 390 and 1280 | `src/app/dev/highlevel-connection/`, `docs/screenshots/crm-highlevel/` |
+| Acting: the action rules (kinds, Owner-only `VALUE`, the write allow-list, undo, summaries) | `convex/lib/crmActions.ts` |
+| Acting: propose (people and agents), decide (also from the shared approvals queue), carry out once, undo, the Owner's switch, expiry after 24 hours. Table `crmActions` (in the client guard) | `convex/crmActions.ts`, `convex/approvals.ts` |
+| Acting panel: the switch, propose a change, every action with approve, decline and undo | `src/components/connections/highlevel-actions-view.tsx`, `HighLevelActions` in `highlevel.tsx` |
+| Tests against a fake HighLevel (no real call), reading and acting | `convex/highLevel.test.ts`, `convex/lib/highLevel.test.ts`, `convex/lib/crmActions.test.ts` |
 
 Who can do what: an **Owner** connects and disconnects, and alone sees *What Vistrial did* (each read,
 step by step, and calls per day). **Owners and Admins** press *Read again*. Any member who may see the
-client sees the card's numbers; a Member not assigned to that client sees nothing of it.
+client sees the card's numbers; a Member not assigned to that client sees nothing of it. For acting: an
+**Owner** turns it on or off; Owners, Admins and Members **propose**; **Owners and Admins approve**, except a
+deal's outcome, which only an **Owner** approves by typing `VALUE`; a Viewer reads.
 
 The onboarding slot:
 

@@ -2,7 +2,9 @@
 
 import { useAction, useMutation, useQuery } from "convex/react";
 
+import { HighLevelActionsView, type HighLevelActionsData } from "@/components/connections/highlevel-actions-view";
 import { HighLevelView, type HighLevelStatus } from "@/components/connections/highlevel-view";
+import { describeError } from "@/lib/errors/user-error";
 import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -65,4 +67,50 @@ export function HighLevel({ workspaceId, clientId, forName, returned, returnPath
 export function HighLevelConnectSlot(props: Omit<Props, "compact" | "manageHref">) {
   const manage = `/app/connections/highlevel${props.clientId ? `?client=${props.clientId}` : ""}`;
   return <HighLevel {...props} compact manageHref={manage} />;
+}
+
+/** The reason a request was refused, in the person's words, or null when it worked. */
+async function reasonOf(work: () => Promise<unknown>) {
+  try {
+    await work();
+    return null;
+  } catch (problem) {
+    return describeError(problem, "That did not work. Try again in a moment.").message;
+  }
+}
+
+/** Acting in HighLevel for one client (or the organization): the Owner's switch, proposals and decisions. */
+export function HighLevelActions({ workspaceId, clientId }: { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> }) {
+  const data = useQuery(api.crmActions.list, { workspaceId, clientId });
+  const setActing = useMutation(api.crmActions.setActing);
+  const propose = useMutation(api.crmActions.propose);
+  const decide = useMutation(api.crmActions.decide);
+  const undo = useMutation(api.crmActions.undo);
+  if (data === undefined) return null;
+  return (
+    <HighLevelActionsView
+      data={data as HighLevelActionsData}
+      handlers={{
+        setActing: async (on) => {
+          try {
+            await setActing({ workspaceId, clientId, on });
+          } catch (problem) {
+            showError(problem);
+          }
+        },
+        propose: (input) => reasonOf(() => propose({ workspaceId, clientId, ...input })),
+        decide: async (actionId, approve, confirmWord) => {
+          let state: string | null = null;
+          const problem = await reasonOf(async () => {
+            state = (await decide({ workspaceId, actionId: actionId as Id<"crmActions">, approve, confirmWord })).state;
+          });
+          if (problem) return problem;
+          if (state === "expired") return "This waited more than a day and expired. Nothing was done in HighLevel.";
+          if (state === "cancelled") return "Acting is off or the connection is gone, so this was cancelled. Nothing was done in HighLevel.";
+          return null;
+        },
+        undo: (actionId) => reasonOf(() => undo({ workspaceId, actionId: actionId as Id<"crmActions"> })),
+      }}
+    />
+  );
 }

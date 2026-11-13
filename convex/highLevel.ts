@@ -10,6 +10,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type ActionCtx, type MutationCtx } from "./_generated/server";
+import { closeOpenActions } from "./crmActions";
 import { writeAudit } from "./lib/audit";
 import { memberAction, ownerMutation, workspaceQuery } from "./lib/builders";
 import { notAllowed, notFound, userError } from "./lib/errors";
@@ -46,6 +47,7 @@ import {
   type Pipeline,
   type Summary,
 } from "./lib/highLevel";
+import { isAllowedWrite } from "./lib/crmActions";
 import { isAdmin, isOwner } from "./lib/roles";
 
 const STATE_MS = 10 * 60 * 1000;
@@ -138,6 +140,7 @@ export const status = workspaceQuery({
         lastSyncAt: connection.lastSyncAt ?? null,
         lastSyncCode: connection.lastSyncCode ?? null,
         running: latest?.status === "running",
+        acting: connection.actingEnabled === true,
         calls: { ok: connection.callsOk, failed: connection.callsFailed, successRate: total > 0 ? connection.callsOk / total : null },
       },
       summary: summary ? { syncedAt: summary.syncedAt, ...(summary.summary as Summary) } : null,
@@ -398,7 +401,7 @@ export const refreshFailed = internalMutation({
 type Live = { ok: true; token: string; connection: Doc<"crmConnections"> } | { ok: false; code: string };
 
 /** A token that works now, renewed first when it is about to end. It must not leave the server. */
-async function liveToken(ctx: ActionCtx, connectionId: Id<"crmConnections">): Promise<Live> {
+export async function liveToken(ctx: ActionCtx, connectionId: Id<"crmConnections">): Promise<Live> {
   for (let attempt = 0; attempt < 4; attempt++) {
     const connection: Doc<"crmConnections"> | null = await ctx.runQuery(internal.highLevel.connectionById, { connectionId });
     if (!connection) return { ok: false, code: "not_connected" };
@@ -424,7 +427,7 @@ async function liveToken(ctx: ActionCtx, connectionId: Id<"crmConnections">): Pr
 
 // ---------- HighLevel, read-only ----------
 
-type Counter = { ok: number; failed: number; lastCode: string | null };
+export type Counter = { ok: number; failed: number; lastCode: string | null };
 
 /**
  * One call to HighLevel. GET, or POST only for `/contacts/search`, which is a search that changes nothing.
@@ -452,6 +455,35 @@ async function hlRequest(token: string, path: string, counter: Counter, search?:
   }
   const body = (await response.json().catch(() => null)) as unknown;
   await wait(pauseAfter(response.headers, callGap()));
+  if (!response.ok) {
+    counter.failed++;
+    counter.lastCode = hlErrorCode(response.status);
+    return { ok: false as const, code: counter.lastCode, body: null };
+  }
+  counter.ok++;
+  return { ok: true as const, code: "ok", body };
+}
+
+/**
+ * One approved write. Only a request built by `writeRequest` (convex/lib/crmActions.ts) for an approved
+ * action reaches here, and the method and path are checked again against the allow-list before sending.
+ */
+export async function hlWrite(token: string, request: { method: string; path: string; body: Record<string, unknown> }, counter: Counter) {
+  if (!isAllowedWrite(request.method, request.path)) throw new Error("Refused: not an allowed HighLevel write.");
+  let response: Response;
+  try {
+    response = await fetch(`${HL_API}${request.path}`, {
+      method: request.method,
+      headers: { Authorization: `Bearer ${token}`, Version: apiVersion(request.path), Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(request.body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch {
+    counter.failed++;
+    counter.lastCode = "connection_failed";
+    return { ok: false as const, code: "connection_failed", body: null };
+  }
+  const body = (await response.json().catch(() => null)) as unknown;
   if (!response.ok) {
     counter.failed++;
     counter.lastCode = hlErrorCode(response.status);
@@ -1019,6 +1051,8 @@ export const syncOne = internalAction({
  * everything read through it. Nothing changes in HighLevel.
  */
 async function removeConnection(ctx: MutationCtx, connection: Doc<"crmConnections">, actorId: string, action: string) {
+  // Nothing waiting can be approved once the connection is gone: its approvals are closed first.
+  await closeOpenActions(ctx, connection._id, actorId === "system" ? "system" : actorId, "cancelled");
   await ctx.db.delete(connection._id);
   await ctx.scheduler.runAfter(0, internal.highLevel.removeData, { connectionId: connection._id });
   await writeAudit(ctx, { workspaceId: connection.workspaceId, actorType: actorId === "system" ? "system" : "user", actorId, action, subject: `highlevel:${connection.accountId}` });
@@ -1038,7 +1072,7 @@ export const disconnect = ownerMutation({
   },
 });
 
-const DATA_TABLES = ["crmPipelines", "crmDeals", "crmContacts", "crmActivities", "crmSummaries", "crmSyncRuns", "crmCallDays"] as const;
+const DATA_TABLES = ["crmActions", "crmPipelines", "crmDeals", "crmContacts", "crmActivities", "crmSummaries", "crmSyncRuns", "crmCallDays"] as const;
 
 /** Deletes everything read through a removed connection, a batch at a time, until none is left. */
 export const removeData = internalMutation({
@@ -1112,6 +1146,7 @@ export const syncAll = internalAction({
   handler: async (ctx): Promise<{ scheduled: number; removed: number }> => {
     const due: { live: Id<"crmConnections">[]; expired: Id<"crmConnections">[] } = await ctx.runQuery(internal.highLevel.connectionsToSync, {});
     for (const connectionId of due.expired) await ctx.runMutation(internal.highLevel.removeExpired, { connectionId });
+    await ctx.runMutation(internal.crmActions.expireStale, {});
     for (const [index, connectionId] of due.live.entries()) {
       await ctx.scheduler.runAfter(index * 5000, internal.highLevel.syncOne, { connectionId, trigger: "schedule" });
     }

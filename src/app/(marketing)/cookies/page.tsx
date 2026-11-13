@@ -21,7 +21,6 @@ export default async function CookiesPage() {
         <div className="mt-6 space-y-4 text-sm leading-relaxed text-muted-foreground">
           <p>Cookies and similar tools remember a setting or measure a visit. Essential ones keep the site working. Analytics and advertising stay off until you allow them.</p>
           <p>Essential covers sign-in, security, the form abuse check when it is configured, and the cookie that stores this choice. Analytics covers our own page counts and, when switched on, Google Analytics. Advertising covers the Meta pixel, when switched on. The signed-in application does not use analytics or advertising tools.</p>
-          <p>The booking calendar is from GoHighLevel. It does not load until you click to open it, and it may set its own cookies after that.</p>
           <p>If your browser sends Global Privacy Control, we keep analytics and advertising off unless you deliberately turn a category on here. We do not respond to Do Not Track beyond that.</p>
           <p>Your choice applies to this browser. An explicit choice lasts {catalog.settings.lifetimeDays} days. Closing the banner without choosing is treated as reject for {catalog.settings.dismissDays} days.</p>
           <OpenConsentButton label="Change cookie preferences" />

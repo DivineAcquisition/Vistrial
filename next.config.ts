@@ -39,6 +39,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "9mb",
     },
   },
+  // The old booking form is gone. Anyone with an old link lands on the private access request instead.
+  async redirects() {
+    return [
+      { source: "/book", destination: "/request", permanent: true },
+      { source: "/book/:path*", destination: "/request", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

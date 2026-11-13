@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-import { MAX_TOKENS, ModelError, NO_SPEND, PRICES, addSpend, toModelError, type ModelRoute, type Spend } from "./modelRouter";
+import { MAX_TOKENS, ModelError, NO_SPEND, PRICES, addSpend, ratesFor, toModelError, type ModelRoute, type Spend } from "./modelRouter";
+import { openRouterCreate, openRouterToolBudget, openRouterWebSearchOn, openRouterCents, openRouterWebSearchTool } from "./openrouter";
 import type { WorkKind } from "./registry";
 
 /**
@@ -10,7 +11,7 @@ import type { WorkKind } from "./registry";
  * output and as short, attributed citations.
  */
 
-/** Web search is $10 per 1,000 searches. Web fetch has no fee; fetched pages count as input tokens. */
+/** Anthropic's web search is $10 per 1,000 searches; another model's own search has its fee in PRICES. Web fetch has no fee; fetched pages count as input tokens. */
 export const WEB_SEARCH_CENTS = 1;
 
 /** Server-side tool loops and client tool round trips one call may take before it stops. */
@@ -75,34 +76,47 @@ function priceOf(model: string) {
   return price;
 }
 
-/** What one response cost: tokens at the model's rates, cache tokens, and search fees. */
-export function usageSpend(model: string, usage: Anthropic.Usage): { spent: Spend; webSearches: number; webFetches: number } {
-  const price = priceOf(model);
+/**
+ * What one response cost. Through OpenRouter it is the cost OpenRouter reports for the request, which
+ * already holds search fees, plus OpenRouter's own fee (`openRouterCents`). Otherwise, and when OpenRouter
+ * reports none, it is worked out from the price table: tokens at the model's rates, cache tokens, and
+ * search fees.
+ */
+export function usageSpend(model: string, usage: Anthropic.Usage, provider = "claude"): { spent: Spend; webSearches: number; webFetches: number } {
   const cacheWrite = usage.cache_creation_input_tokens ?? 0;
   const cacheRead = usage.cache_read_input_tokens ?? 0;
+  // A step that searches the web sums several server-side turns into one usage. For a model with a dearer
+  // long-prompt rate (Haiku 5.5) that sum can pass the limit when no single prompt did, so such a step may be
+  // counted at the dearer rate: too much, never too little. Haiku is not offered for web work until a real
+  // call has shown what Anthropic bills (lib/models.ts `webUnproven`).
+  const price = ratesFor(priceOf(model), usage.input_tokens + cacheWrite + cacheRead);
   const webSearches = usage.server_tool_use?.web_search_requests ?? 0;
   const webFetches = usage.server_tool_use?.web_fetch_requests ?? 0;
   const dollars =
     (usage.input_tokens * price.input +
       usage.output_tokens * price.output +
-      cacheWrite * price.input * 1.25 +
+      cacheWrite * (price.cacheWrite ?? price.input * 1.25) +
       cacheRead * price.cacheRead) /
     1_000_000;
   const tokenCents = Math.round(dollars * 100 * 10_000) / 10_000;
+  const tableCents = tokenCents + webSearches * (price.searchCents ?? WEB_SEARCH_CENTS);
   return {
     spent: {
       inputTokens: usage.input_tokens + cacheWrite + cacheRead,
       outputTokens: usage.output_tokens,
-      costCents: tokenCents + webSearches * WEB_SEARCH_CENTS,
+      costCents: provider === "openrouter" ? openRouterCents(usage, tableCents) : tableCents,
     },
     webSearches,
     webFetches,
   };
 }
 
-function toolList(request: ToolRequest): Anthropic.Messages.ToolUnion[] {
+function toolList(request: ToolRequest, provider: string, model: string): Anthropic.Messages.ToolUnion[] {
   const tools: Anthropic.Messages.ToolUnion[] = [];
-  if (request.webSearch) {
+  if (request.webSearch && provider === "openrouter") {
+    // OpenRouter's own search tool, on the model host's search. Its shape is not one of Anthropic's tool types.
+    tools.push(openRouterWebSearchTool(model, request.webSearch) as unknown as Anthropic.Messages.ToolUnion);
+  } else if (request.webSearch) {
     tools.push({
       type: "web_search_20260209",
       name: "web_search",
@@ -127,7 +141,8 @@ function toolList(request: ToolRequest): Anthropic.Messages.ToolUnion[] {
   return tools;
 }
 
-function collect(content: Anthropic.ContentBlock[], sources: Map<string, FoundSource>, citations: Citation[]) {
+/** Reads the pages a web tool found, and the lines the model cited, out of one response. Exported for the provider check. */
+export function collect(content: Anthropic.ContentBlock[], sources: Map<string, FoundSource>, citations: Citation[]) {
   for (const block of content) {
     if (block.type === "web_search_tool_result" && Array.isArray(block.content)) {
       for (const result of block.content) {
@@ -145,6 +160,8 @@ function collect(content: Anthropic.ContentBlock[], sources: Map<string, FoundSo
       for (const citation of block.citations ?? []) {
         if (citation.type === "web_search_result_location") {
           citations.push({ url: citation.url, title: citation.title ?? null, citedText: citation.cited_text });
+          // A host that returns its search results only as citations still names every page it used.
+          if (!sources.has(citation.url)) sources.set(citation.url, { url: citation.url, title: citation.title ?? null, pageAge: null });
         }
       }
     }
@@ -160,7 +177,8 @@ async function attempt(
   request: ToolRequest,
   tally: Tally,
 ): Promise<ToolCompletion> {
-  const tools = toolList(request);
+  const tools = toolList(request, provider, model);
+  const budget = provider === "openrouter" && request.webSearch ? openRouterToolBudget(request.webSearch.maxUses) : {};
   const declared = new Map((request.clientTools ?? []).map((tool) => [tool.name, tool]));
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: request.attachments?.length ? [...request.attachments, { type: "text", text: request.input }] : request.input },
@@ -179,18 +197,19 @@ async function attempt(
         messages,
         ...(tools.length > 0 ? { tools } : {}),
         ...(request.outputSchema ? { output_config: { format: { type: "json_schema", schema: request.outputSchema } } } : {}),
+        ...budget,
       });
     } catch (error) {
       throw toModelError(error, tally.spent);
     }
-    const used = usageSpend(model, response.usage);
+    const used = usageSpend(model, response.usage, provider);
     tally.spent = addSpend(tally.spent, used.spent);
     tally.webSearches += used.webSearches;
     tally.webFetches += used.webFetches;
     collect(response.content, sources, citations);
 
     if (response.stop_reason === "refusal") throw new ModelError("refused", true, tally.spent);
-    if (response.stop_reason === "max_tokens") throw new ModelError("max_tokens", false, tally.spent);
+    if (response.stop_reason === "max_tokens" || response.stop_reason === "model_context_window_exceeded") throw new ModelError("max_tokens", false, tally.spent);
     if (response.stop_reason === "pause_turn") {
       // The server stopped its own tool loop. Sending the turn back resumes it; no extra user text.
       messages.push({ role: "assistant", content: response.content });
@@ -251,6 +270,12 @@ async function callWithTools(
   create: CreateMessage,
 ): Promise<ToolCompletion> {
   const tally: Tally = { spent: NO_SPEND, webSearches: 0, webFetches: 0 };
+  if (provider === "openrouter") {
+    // Refused before any call, so nothing is spent. No model there reads a web page itself, and web search
+    // stays off until a real call has shown its results come back (lib/openrouter.ts).
+    if (request.webFetch) throw new ModelError("unsupported_tool", false);
+    if (request.webSearch && !openRouterWebSearchOn()) throw new ModelError("web_search_off", false);
+  }
   try {
     return await attempt(create, provider, model, workKind, request, tally);
   } catch (error) {
@@ -261,6 +286,7 @@ async function callWithTools(
 
 function clientFor(provider: string, model: string): CreateMessage {
   if (provider === "fake") return fakeCreate(model);
+  if (provider === "openrouter") return openRouterCreate(model);
   if (provider !== "claude") throw new ModelError("unknown_provider", false);
   if (!process.env.ANTHROPIC_API_KEY) throw new ModelError("no_key", false);
   if (!PRICES[model]) throw new ModelError("unpriced_model", false);

@@ -19,7 +19,8 @@ import { writeAudit } from "./lib/audit";
 import { creditWords, priceFor } from "./lib/credits";
 import { notFound, userError } from "./lib/errors";
 import type { ModelRoute } from "./lib/modelRouter";
-import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
+import { wrapUntrusted } from "./lib/registry";
+import { platformRoute } from "./lib/modelChoice";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { completeWithTools } from "./lib/toolRouter";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
@@ -187,11 +188,7 @@ export const context = internalQuery({
       .query("sessionChats")
       .withIndex("by_project", (q) => q.eq("projectId", project._id))
       .take(40);
-    const routeFor = async (workKind: string) =>
-      (await ctx.db
-        .query("modelRoutes")
-        .withIndex("by_workKind", (q) => q.eq("workKind", workKind))
-        .unique()) ?? (devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null);
+    const routeFor = (workKind: string) => platformRoute(ctx, workKind);
     const mode: Mode = message.mode ?? "thorough";
     return {
       message,

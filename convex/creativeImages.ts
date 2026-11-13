@@ -19,7 +19,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { CHECK_COST_CENTS, IMAGE_FAIL_WORDS, IMAGE_SIZE, DESIGN_STYLES, LOOKS, LOOK_WORDS, MAX_IMAGES_PER_BATCH, MAX_IMAGES_PER_DAY, PLACEMENT_ASPECT, designStyleWords, designedPrompt, imagePrompt, isDesignStyle, isLook, isPlacement, isTone, type DesignStyle, type Look, type Tone } from "./lib/creativeImages";
 import { notFound, userError } from "./lib/errors";
 import { designModel, imageCostCents, imageModel } from "./lib/gemini";
-import { devSkillsEnabled } from "./lib/registry";
+import { platformRoute } from "./lib/modelChoice";
 import { savedRecord } from "./lib/savedRecords";
 import { EMPTY_DESIGN, EXAMPLE_NOTE, designText, exampleFigures, type CreativeRecord, type Variation } from "./skills/creativeProduction/shapes";
 
@@ -249,10 +249,7 @@ export const forMake = internalQuery({
     const design = designOf(variation);
     const fresh = row.style === "fresh";
     const refs = (kit?.styleRefsOwned && !fresh ? kit.styleRefs : []).map((ref) => ref.storageId as Id<"_storage">);
-    const route = await ctx.db
-      .query("modelRoutes")
-      .withIndex("by_workKind", (q) => q.eq("workKind", "classify"))
-      .unique();
+    const route = await platformRoute(ctx, "classify");
     return {
       ...base,
       look: "designed" as const,
@@ -268,7 +265,7 @@ export const forMake = internalQuery({
       /** Every line the picture must show. The action reads the picture back and compares. */
       expected: designText({ ...variation, design }),
       styleRefs: refs,
-      checkRoute: route ? { provider: route.provider, model: route.model, fallbackProvider: route.fallbackProvider, fallbackModel: route.fallbackModel } : devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null,
+      checkRoute: route,
     };
   },
 });

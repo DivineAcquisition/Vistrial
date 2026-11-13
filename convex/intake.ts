@@ -37,6 +37,7 @@ import {
 } from "./lib/intake";
 import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
+import { platformRoute } from "./lib/modelChoice";
 import { completeWithTools } from "./lib/toolRouter";
 import { moveFilesToProject } from "./files";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
@@ -397,10 +398,7 @@ export const load = internalQuery({
       .order("desc")
       .first();
     const facts = await factsForRun(ctx, row.workspaceId);
-    const route = await ctx.db
-      .query("modelRoutes")
-      .withIndex("by_workKind", (q) => q.eq("workKind", "classify"))
-      .unique();
+    const route = await platformRoute(ctx, "classify");
     const files = await ctx.db
       .query("sessionFiles")
       .withIndex("by_intake", (q) => q.eq("intakeId", row._id))
@@ -414,7 +412,7 @@ export const load = internalQuery({
         ...facts.slice(0, 20).map((row) => `${row.factKey}: ${row.value} (${row.status})`),
         ...(row.context ? [`The owner attached this ${CONTEXT_NOUN[row.context.kind]}${row.context.kind === "asset" || row.context.kind === "offer" ? " to refine" : ""}: ${row.context.title}`] : []),
       ],
-      route: route ?? (devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null),
+      route,
     };
   },
 });

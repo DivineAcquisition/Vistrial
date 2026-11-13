@@ -139,18 +139,18 @@ const IMAGES: CreativeImageList = {
   eachCents: { photo: 16, designed: 42 },
   brand: { name: "Northside Dental", accent: "#0f8b8d", headingFont: "Poppins", logoUrl: LOGO },
   images: [
-    { id: id("i1"), variationKey: "A", placement: "1:1", look: "photo", status: "ready", url: picture("#f2e9dc", "#0f8b8d"), problem: null, model: BANANA },
-    { id: id("i2"), variationKey: "A", look: "photo", placement: "9:16", status: "ready", url: picture("#dff3f1", "#12263a"), problem: null, model: BANANA },
-    { id: id("i3"), variationKey: "A", look: "photo", placement: "1.91:1", status: "ready", url: picture("#f2e9dc", "#12263a"), problem: null, model: BANANA },
-    { id: id("i4"), variationKey: "B", look: "photo", placement: "1:1", status: "generating", url: null, problem: null, model: null },
-    { id: id("i5"), variationKey: "B", look: "photo", placement: "9:16", status: "failed", url: null, problem: "The image service declined to make this one. Try again, or edit the image direction.", model: null },
+    { id: id("i1"), variationKey: "A", placement: "1:1", look: "photo", status: "ready", stale: false, url: picture("#f2e9dc", "#0f8b8d"), problem: null, model: BANANA },
+    { id: id("i2"), variationKey: "A", look: "photo", placement: "9:16", status: "ready", stale: false, url: picture("#dff3f1", "#12263a"), problem: null, model: BANANA },
+    { id: id("i3"), variationKey: "A", look: "photo", placement: "1.91:1", status: "ready", stale: false, url: picture("#f2e9dc", "#12263a"), problem: null, model: BANANA },
+    { id: id("i4"), variationKey: "B", look: "photo", placement: "1:1", status: "generating", stale: false, url: null, problem: null, model: null },
+    { id: id("i5"), variationKey: "B", look: "photo", placement: "9:16", status: "failed", stale: false, url: null, problem: "The image service declined to make this one. Try again, or edit the image direction.", model: null },
   ],
 };
 
 const FIGURES = { source: "meta" as const, label: "Meta ads", currency: "USD", dateStart: "2026-10-10", dateStop: "2026-11-08", spend: 1200, conversions: 31, capturedAt: AT };
 const TEST = { id: id<NonNullable<CreativeView["test"]>["id"]>("t1"), assetId: id<CreativeView["assetId"]>("a1"), title: "Northside Dental: ad set", checkInAt: AT - 86_400_000, createdAt: AT - 15 * 86_400_000, due: true, baseline: [FIGURES], outcome: null };
 
-/** The Creative workspace with fixture data. `state`: full, review (did not pass), empty, rep, form, running, approved, due, won. */
+/** The Creative workspace with fixture data. `state`: full, review (did not pass), empty, rep, form, running, approved, due, won, edit. */
 export function CreativeTabStory({ state, theme }: { state: string; theme: string }) {
   const empty = state === "empty" || state === "form";
   const live = state === "approved" || state === "due" || state === "won";
@@ -181,6 +181,8 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
         onStart={noop}
         review={{ approve: noop, reject: noop, requestChanges: noop }}
         test={{ start: noop, record: noop, remove: noop }}
+        onEdit={async () => ({ passed: true })}
+        initialEdit={state === "edit" ? "A" : null}
         initialSource={state === "form" ? "s1" : null}
         images={
           <CreativeImagesView
@@ -192,7 +194,9 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
             onLook={() => undefined}
             tone="dark"
             onTone={() => undefined}
-            quote={{ models: IMAGE_MODELS, setup: state === "noimages" ? { words: SETUP_EVERYONE, admin: false } : state === "noimages-admin" ? { words: SETUP_ADMIN, admin: true } : null, look: "designed", looks: [{ value: "designed", label: "Designed ad", what: "The whole ad is drawn with your words in it, in the style of your own past ads, then read back to check every word.", eachCents: 42 }, { value: "photo", label: "Photo with text on top", what: "A picture with no words. Your headline, button and real logo file are placed on top.", eachCents: 16 }], styleRefs: 2, count: 12, eachCents: 42, totalCents: 504, variations: 4, placements: ["1:1", "9:16", "1.91:1"], kitPlacements: ["1:1", "9:16"], availableCents: state === "review" ? 40 : 14_250, canAfford: state !== "review", blocked: state === "review" ? "This ad set did not pass its checks. Fix it before spending on images." : null }}
+            style={state === "approved" ? "fresh" : "brand"}
+            onStyle={() => undefined}
+            quote={{ models: IMAGE_MODELS, setup: state === "noimages" ? { words: SETUP_EVERYONE, admin: false } : state === "noimages-admin" ? { words: SETUP_ADMIN, admin: true } : null, look: "designed", looks: [{ value: "designed", label: "Designed ad", what: "The whole ad is drawn with your words in it, then read back to check every word.", eachCents: 42 }, { value: "photo", label: "Photo with text on top", what: "A picture with no words. Your headline, button and real logo file are placed on top.", eachCents: 16 }], styleRefs: 2, styles: [{ value: "brand", label: "Like your past ads", what: "Follows the look of the 2 ads saved in your brand kit." }, { value: "fresh", label: "New design", what: "A new layout for each variation, in your colours and fonts. Your past ads are not shown to the designer. Your words stay exactly as written." }], count: 12, eachCents: 42, totalCents: 504, variations: 4, placements: ["1:1", "9:16", "1.91:1"], kitPlacements: ["1:1", "9:16"], availableCents: state === "review" ? 40 : 14_250, canAfford: state !== "review", blocked: state === "review" ? "This ad set did not pass its checks. Fix it before spending on images." : null }}
             list={state === "running" || state.startsWith("noimages") ? { ...IMAGES, images: [] } : IMAGES}
             onGenerate={noop}
             onRetake={noop}

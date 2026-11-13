@@ -16,12 +16,12 @@ import { writeAudit } from "./lib/audit";
 import { OUT_OF_CREDITS, accountFor, billingOn, chargeUsage, priceFor } from "./lib/billing";
 import { PLACEMENTS, type Placement } from "./lib/brandKits";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { CHECK_COST_CENTS, IMAGE_FAIL_WORDS, IMAGE_SIZE, LOOKS, LOOK_WORDS, MAX_IMAGES_PER_BATCH, MAX_IMAGES_PER_DAY, PLACEMENT_ASPECT, designedPrompt, imagePrompt, isLook, isPlacement, isTone, type Look, type Tone } from "./lib/creativeImages";
+import { CHECK_COST_CENTS, IMAGE_FAIL_WORDS, IMAGE_SIZE, DESIGN_STYLES, LOOKS, LOOK_WORDS, MAX_IMAGES_PER_BATCH, MAX_IMAGES_PER_DAY, PLACEMENT_ASPECT, designStyleWords, designedPrompt, imagePrompt, isDesignStyle, isLook, isPlacement, isTone, type DesignStyle, type Look, type Tone } from "./lib/creativeImages";
 import { notFound, userError } from "./lib/errors";
 import { designModel, imageCostCents, imageModel } from "./lib/gemini";
 import { platformRoute } from "./lib/modelChoice";
 import { savedRecord } from "./lib/savedRecords";
-import { EMPTY_DESIGN, designText, type CreativeRecord, type Variation } from "./skills/creativeProduction/shapes";
+import { EMPTY_DESIGN, EXAMPLE_NOTE, designText, exampleFigures, type CreativeRecord, type Variation } from "./skills/creativeProduction/shapes";
 import { IMAGE_ADMIN_WORDS, IMAGE_MODELS, IMAGE_SETUP_WORDS, imageMark, imageVia } from "./lib/imageModels";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -143,6 +143,8 @@ export const quote = workspaceQuery({
       looks: LOOKS.map((row) => ({ value: row, ...LOOK_WORDS[row], eachCents: priceFor(costOf(row)) })),
       /** How many of the brand's own ads the kit holds as pictures of its look. A designed ad follows them. */
       styleRefs: kit?.styleRefs.length ?? 0,
+      /** Where a designed ad's look comes from: the brand's past ads (or the standard layout), or a new design. */
+      styles: DESIGN_STYLES.map((row) => ({ value: row, ...designStyleWords(row, kit?.styleRefsOwned ? kit.styleRefs.length : 0) })),
       /** The placements the brand kit names, as the starting choice. */
       kitPlacements: kit?.placements ?? [],
       /** Null when billing is off (local and test deployments): nothing is blocked there. */
@@ -179,6 +181,7 @@ export const generate = workspaceMutation({
     confirmedCents: v.number(),
     look: v.optional(v.string()),
     tone: v.optional(v.string()),
+    style: v.optional(v.string()),
     only: v.optional(v.object({ variationKey: v.string(), placement: v.string() })),
   },
   handler: async (ctx, args) => {
@@ -196,6 +199,7 @@ export const generate = workspaceMutation({
     const earlier = args.only ? existing.find((row) => row.variationKey === args.only?.variationKey && row.placement === args.only?.placement) : undefined;
     const look = lookOf(args.look ?? earlier?.look ?? (earlier ? "photo" : undefined));
     const tone: Tone = args.tone === undefined ? (earlier?.tone ?? "dark") : isTone(args.tone) ? args.tone : "dark";
+    const style: DesignStyle = args.style === undefined ? (earlier?.style ?? "brand") : isDesignStyle(args.style) ? args.style : "brand";
     const price = priceOf(variations.length * placements.length, look);
     if (args.confirmedCents !== price.totalCents) throw userError("The price changed. Check the new price and confirm again.");
     await assertRoom(ctx, ctx.workspaceId, price.count, price.totalCents);
@@ -211,10 +215,10 @@ export const generate = workspaceMutation({
         let imageId;
         if (prior) {
           // The earlier picture stays visible until the new one arrives, then its file is deleted.
-          await ctx.db.patch(prior._id, { status: "generating", model, look, tone, holdCents: price.eachCents, failCode: undefined });
+          await ctx.db.patch(prior._id, { status: "generating", model, look, tone, style, holdCents: price.eachCents, failCode: undefined });
           imageId = prior._id;
         } else {
-          imageId = await ctx.db.insert("creativeImages", { workspaceId: ctx.workspaceId, assetId: asset._id, variationKey: variation.key, placement, look, tone, status: "generating", model, costCents: 0, holdCents: price.eachCents, createdBy: ctx.identity.subject, createdAt: now });
+          imageId = await ctx.db.insert("creativeImages", { workspaceId: ctx.workspaceId, assetId: asset._id, variationKey: variation.key, placement, look, tone, style, status: "generating", model, costCents: 0, holdCents: price.eachCents, createdBy: ctx.identity.subject, createdAt: now });
         }
         await ctx.scheduler.runAfter(0, internal.creativeImageActions.make, { imageId });
         started += 1;
@@ -241,6 +245,8 @@ export const list = workspaceQuery({
         placement: row.placement,
         look: (row.look ?? "photo") as Look,
         status: row.status,
+        /** The copy was edited after this designed ad was drawn, so its words are out of date. */
+        stale: row.stale === true && row.status === "ready",
         url: row.storageId ? await ctx.storage.getUrl(row.storageId) : null,
         problem: row.status === "failed" ? failWords(row.failCode ?? "") : null,
         /** The image model that made the picture shown. Null while the first one is being made, and when it failed. */
@@ -278,17 +284,20 @@ export const forMake = internalQuery({
       return { ...base, look: "photo" as const, prompt: imagePrompt({ direction: variation.imageDirection, kit: kit ?? { imageStyle: "", colors: [], industry: "" }, placement: row.placement }), expected: [] as string[], styleRefs: [] as Id<"_storage">[], checkRoute: null };
     }
     const design = designOf(variation);
-    const refs = (kit?.styleRefsOwned ? kit.styleRefs : []).map((ref) => ref.storageId as Id<"_storage">);
+    const fresh = row.style === "fresh";
+    const refs = (kit?.styleRefsOwned && !fresh ? kit.styleRefs : []).map((ref) => ref.storageId as Id<"_storage">);
     const route = await platformRoute(ctx, "classify");
     return {
       ...base,
       look: "designed" as const,
       prompt: designedPrompt({
-        text: { eyebrow: design.eyebrow, kicker: design.kicker, headline: variation.headline, accent: design.accent, visual: design.visual || variation.imageDirection, labels: design.labels, subline: design.subline, cta: variation.cta },
+        text: { eyebrow: design.eyebrow, kicker: design.kicker, headline: variation.headline, accent: design.accent, visual: design.visual || variation.imageDirection, labels: design.labels, subline: design.subline, cta: variation.cta, ...(exampleFigures({ ...variation, design }) ? { note: EXAMPLE_NOTE } : {}) },
         kit: kit ?? { name: saved.kit.name, colors: [], headingFont: "", imageStyle: "", industry: "" },
         placement: row.placement,
         tone: row.tone ?? "dark",
         styleRefs: refs.length,
+        style: fresh ? "fresh" : "brand",
+        variant: Math.max(0, saved.creative?.variations.findIndex((item) => item.key === row.variationKey) ?? 0),
       }),
       /** Every line the picture must show. The action reads the picture back and compares. */
       expected: designText({ ...variation, design }),
@@ -309,7 +318,7 @@ export const saveMade = internalMutation({
     }
     if (args.storageId) {
       if (row.storageId) await ctx.storage.delete(row.storageId);
-      await ctx.db.patch(row._id, { status: "ready", storageId: args.storageId, costCents: row.costCents + args.costCents, holdCents: 0, failCode: undefined, ...(args.provider ? { provider: args.provider } : {}), ...(args.reportedCents !== undefined ? { reportedCents: args.reportedCents } : {}) });
+      await ctx.db.patch(row._id, { status: "ready", storageId: args.storageId, costCents: row.costCents + args.costCents, holdCents: 0, failCode: undefined, stale: undefined, ...(args.provider ? { provider: args.provider } : {}), ...(args.reportedCents !== undefined ? { reportedCents: args.reportedCents } : {}) });
       await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents: args.costCents, source: "creative", ref: row._id });
     } else {
       // A retake that failed keeps the earlier picture.

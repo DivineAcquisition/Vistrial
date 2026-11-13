@@ -1,6 +1,7 @@
 "use client";
 
 import { useClerk, useReverification, useSession, useUser } from "@clerk/nextjs";
+import type { EmailAddressResource } from "@clerk/shared/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { SecurityView, type ConfirmState, type SecurityBusy, type SecurityPanel } from "@/components/account/security-view";
@@ -16,6 +17,7 @@ import {
   type DeviceRow,
 } from "@/lib/auth/account";
 import type { AuthProblem } from "@/lib/auth/errors";
+import { readUserError } from "@/lib/errors/user-error";
 
 const NOTHING_CAME_BACK: AuthProblem = { field: "form", message: "That did not work. Try again in a moment." };
 
@@ -26,7 +28,17 @@ type Pending = { complete: () => void; cancel: () => void; level: Level };
  * Password, two-step sign-in and signed-in devices for the person who is signed in. Clerk makes the
  * changes and decides when to ask "is it really you"; the screens, including that check, are ours.
  */
-export function AccountSecurity() {
+export function AccountSecurity({
+  closing,
+  onLeaveEverything,
+  onEmailChanged,
+}: {
+  /** What deleting the account would do to the person's organizations. null while loading. */
+  closing: { leaves: string[]; blockedBy: string[] } | null;
+  /** Takes the person out of every organization. Runs just before the sign-in is deleted. */
+  onLeaveEverything: () => Promise<unknown>;
+  onEmailChanged?: () => void;
+}) {
   const clerk = useClerk();
   const { user, isLoaded } = useUser();
   const { session } = useSession();
@@ -37,6 +49,9 @@ export function AccountSecurity() {
   const [devices, setDevices] = useState<DeviceRow[] | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const pending = useRef<Pending | null>(null);
+  const [emailSentCount, setEmailSentCount] = useState(0);
+  /** The new address while it waits for its code. */
+  const newEmail = useRef<EmailAddressResource | null>(null);
 
   /** Clerk wants a fresh check before the change. Open our own window for it. */
   const onNeedsReverification = useCallback(
@@ -58,6 +73,35 @@ export function AccountSecurity() {
   const verifyTotp = useReverification((code: string) => user?.verifyTOTP({ code }), guard);
   const disableTotp = useReverification(() => user?.disableTOTP(), guard);
   const createBackupCodes = useReverification(() => user?.createBackupCode(), guard);
+  const addEmail = useReverification((email: string) => user?.createEmailAddress({ email }), guard);
+  const makePrimary = useReverification((id: string) => user?.update({ primaryEmailAddressId: id }), guard);
+  const removeEmail = useReverification((id: string) => user?.emailAddresses.find((item) => item.id === id)?.destroy(), guard);
+  const deleteUser = useReverification(() => user?.delete(), guard);
+
+  /** Asks "is it you" now, without waiting for Clerk to demand it. Rejects quietly if the person backs out. */
+  const askConfirm = useCallback(
+    () =>
+      new Promise<void>((resolve, reject) =>
+        onNeedsReverification({ complete: resolve, cancel: () => reject({ code: "reverification_cancelled" }), level: undefined }),
+      ),
+    [onNeedsReverification],
+  );
+
+  /** Swaps the sign-in email for a checked one, then drops the old address when Clerk allows it. */
+  const switchEmail = useCallback(
+    async (next: EmailAddressResource) => {
+      const oldId = user?.primaryEmailAddressId;
+      await makePrimary(next.id);
+      // An address tied to Google sign-in cannot be removed. It stays as a spare; the new one is still the sign-in.
+      if (oldId && oldId !== next.id) await removeEmail(oldId).catch(() => undefined);
+      await user?.reload();
+      newEmail.current = null;
+      setPanel(null);
+      setNotice(`Email changed to ${next.emailAddress}.`);
+      onEmailChanged?.();
+    },
+    [makePrimary, onEmailChanged, removeEmail, user],
+  );
 
   const sessionId = session?.id ?? null;
   const loadDevices = useCallback(async () => {
@@ -90,7 +134,9 @@ export function AccountSecurity() {
     try {
       await work();
     } catch (error) {
-      if (!isConfirmCancelled(error)) setProblem(explainAccountError(error, field, currentPassword));
+      const ours = readUserError(error);
+      if (ours) setProblem({ field: "form", message: ours.message });
+      else if (!isConfirmCancelled(error)) setProblem(explainAccountError(error, field, currentPassword));
     } finally {
       setBusy(null);
     }
@@ -110,6 +156,66 @@ export function AccountSecurity() {
       twoStepOn={Boolean(user?.totpEnabled)}
       hasBackupCodes={Boolean(user?.backupCodeEnabled)}
       devices={devices}
+      email={user?.primaryEmailAddress?.emailAddress ?? ""}
+      emailSentCount={emailSentCount}
+      canDelete={Boolean(user?.deleteSelfEnabled)}
+      closing={closing}
+      onOpenEmail={() => {
+        setProblem(null);
+        setNotice(null);
+        setPanel({ kind: "email" });
+      }}
+      onEmail={(email) =>
+        void run(
+          "email-start",
+          async () => {
+            const known = user?.emailAddresses.find((item) => item.emailAddress.toLowerCase() === email.toLowerCase());
+            // An address already checked on this account needs no new code.
+            if (known?.verification?.status === "verified") return switchEmail(known);
+            const address = known ?? (await addEmail(email));
+            if (!address) return;
+            await address.prepareVerification({ strategy: "email_code" });
+            newEmail.current = address;
+            setEmailSentCount((count) => count + 1);
+            setPanel({ kind: "email-code", email: address.emailAddress });
+          },
+          "email",
+        )
+      }
+      onEmailCode={(code) =>
+        void run(
+          "email-verify",
+          async () => {
+            if (!newEmail.current) return setPanel({ kind: "email" });
+            await switchEmail(await newEmail.current.attemptVerification({ code }));
+          },
+          "code",
+        )
+      }
+      onEmailResend={() =>
+        void run(
+          "email-resend",
+          async () => {
+            await newEmail.current?.prepareVerification({ strategy: "email_code" });
+            setEmailSentCount((count) => count + 1);
+          },
+          "code",
+        )
+      }
+      onOpenDelete={() => {
+        setProblem(null);
+        setNotice(null);
+        setPanel({ kind: "delete" });
+      }}
+      onDelete={() =>
+        void run("delete", async () => {
+          // The identity check comes first, so nothing is removed for someone who cannot pass it.
+          await askConfirm();
+          await onLeaveEverything();
+          await deleteUser();
+          window.location.replace("/sign-in");
+        })
+      }
       panel={panel}
       busy={busy}
       problem={problem}
@@ -176,6 +282,10 @@ export function AccountSecurity() {
         })
       }
       onClosePanel={() => {
+        // A new address that was never confirmed is taken off the account again.
+        const abandoned = newEmail.current;
+        newEmail.current = null;
+        if (abandoned && abandoned.verification?.status !== "verified") void abandoned.destroy().catch(() => undefined);
         setPanel(null);
         setProblem(null);
       }}

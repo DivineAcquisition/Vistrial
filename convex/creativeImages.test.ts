@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { EMPTY_BRAND } from "./lib/brandKits";
-import { designedPrompt, imagePrompt, missingText } from "./lib/creativeImages";
+import { FRESH_LAYOUTS, designedPrompt, imagePrompt, missingText } from "./lib/creativeImages";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { geminiImageBody, imageCostCents, readImage, type ScriptedGeminiImage } from "./lib/gemini";
 import { IMAGE_SETUP_WORDS, readOpenRouterImage, type ScriptedOpenRouterImage } from "./lib/imageModels";
@@ -126,6 +126,15 @@ describe("the image request", () => {
     expect(light).toContain("No labels on the visual.");
     expect(light).not.toContain("attached image");
     expect(light).toContain("Never: a logo");
+    // A new design places the parts itself, differs by variation, is never shown a past ad, and marks example figures.
+    const fresh = designedPrompt({ text: { eyebrow: "For roofers", kicker: "The leak", headline: "You are leaking jobs.", accent: "", visual: "A funnel.", labels: ["100 leads in", "12 booked"], subline: "", cta: "Start", note: "Example figures" }, kit: { ...EMPTY_BRAND, name: "Alpha" }, placement: "1:1", tone: "dark", styleRefs: 3, style: "fresh", variant: 2 });
+    expect(fresh).toContain("Compose a new layout");
+    expect(fresh).toContain(FRESH_LAYOUTS[2]);
+    expect(fresh).not.toContain("attached image");
+    expect(fresh).not.toContain("across the very top");
+    expect(fresh).toContain('"You are leaking jobs."');
+    expect(fresh).toContain('in very small print: "Example figures"');
+    expect(light).not.toContain("Example figures");
     // Case, punctuation and the arrow on a button do not matter. A misspelling and a missing line do.
     expect(missingText(["Stop racing for the same lead.", "START"], ["STOP RACING FOR THE SAME LEAD", "Start →"])).toEqual([]);
     expect(missingText(["Stop racing for the same lead.", "Start"], ["Stop raceing for the same lead."])).toEqual(["Stop racing for the same lead.", "Start"]);
@@ -398,6 +407,17 @@ describe("images for an ad set", () => {
     // Four kept, four charged at the price quoted. The picture that was thrown away cost the customer nothing.
     const ledger = await t.run((ctx) => ctx.db.query("billingLedger").collect());
     expect(ledger.map((row) => row.priceCents)).toEqual([42, 42, 42, 42]);
+
+    // "New design": the same words, a layout of its own, and the brand's past ad is not sent.
+    expect(quote.styles.map((row) => [row.value, row.label])).toEqual([["brand", "Like your past ads"], ["fresh", "New design"]]);
+    await a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: [], confirmedCents: 42, style: "fresh", only: { variationKey: "B", placement: "1:1" } });
+    await settle(t);
+    const made = bodies.slice(5);
+    expect(made.length).toBeGreaterThan(0);
+    expect(made.every((body) => body.input.filter((part) => part.type === "image").length === 0)).toBe(true);
+    const freshPrompt = (made[0].input[0] as { text: string }).text;
+    expect(freshPrompt).toContain(FRESH_LAYOUTS[1]);
+    expect(freshPrompt).toContain('"You are leaking jobs B"');
   });
 
   it("does not keep or charge for a designed ad whose words come out wrong twice", async () => {

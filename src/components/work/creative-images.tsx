@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PLACEMENTS, PLACEMENT_WORDS, type Placement } from "../../../convex/lib/brandKits";
-import type { Look, Tone } from "../../../convex/lib/creativeImages";
+import type { DesignStyle, Look, Tone } from "../../../convex/lib/creativeImages";
 
 import type { CreativeImageList, CreativeImageQuote } from "./types";
 import { SectionTitle } from "./work-shell";
@@ -35,6 +35,9 @@ export type CreativeImagesProps = {
   onLook: (look: Look) => void;
   tone: Tone;
   onTone: (tone: Tone) => void;
+  /** Where a designed ad's look comes from: the brand's past ads, or a new design. */
+  style: DesignStyle;
+  onStyle: (style: DesignStyle) => void;
   /** The price of the placements and the look chosen. Null while it is being read. */
   quote: CreativeImageQuote | null;
   list: CreativeImageList | null;
@@ -140,6 +143,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
           <span>
             {PLACEMENT_WORDS[placement]} {placement}
             {image.status === "generating" && image.url ? " · making a new one" : ""}
+            {image.stale && image.status !== "generating" ? <span className="text-warning"> · the words were edited after this was made</span> : null}
           </span>
           <ModelMark model={image.model} />
         </span>
@@ -170,7 +174,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
 }
 
 /** Images for an ad set: choose the placements, see the price, confirm, then the finished ads. */
-export function CreativeImagesView({ editor, variations, placements, onPlacements, look, onLook, tone, onTone, quote, list, onGenerate, onRetake }: CreativeImagesProps) {
+export function CreativeImagesView({ editor, variations, placements, onPlacements, look, onLook, tone, onTone, style, onStyle, quote, list, onGenerate, onRetake }: CreativeImagesProps) {
   const credits = useCredits();
   const [confirming, setConfirming] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -220,10 +224,11 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                     ]}
                   />
                 ) : null}
+                {look === "designed" ? <SegmentedRadioGroup aria-label="Design" value={style} onValueChange={(value) => onStyle(value as DesignStyle)} options={quote.styles.map((row) => ({ value: row.value, label: row.label }))} /> : null}
               </div>
               <p className="text-xs text-muted-foreground">
                 {quote.looks.find((row) => row.value === look)?.what}
-                {look === "designed" ? (quote.styleRefs > 0 ? ` Following ${quote.styleRefs} of your own ads from the brand kit.` : " Add a few of your own past ads to the brand kit and designed ads will follow their look.") : ""}
+                {look === "designed" ? ` ${quote.styles.find((row) => row.value === style)?.what ?? ""}` : ""}
               </p>
             </div>
           ) : null}
@@ -327,6 +332,7 @@ export function CreativeImages({ workspaceId, assetId, editor, variations }: { w
   const [chosen, setChosen] = useState<Placement[] | null>(null);
   const [look, setLook] = useState<Look>("designed");
   const [tone, setTone] = useState<Tone>("dark");
+  const [style, setStyle] = useState<DesignStyle>("brand");
   const first = useQuery(api.creativeImages.quote, { workspaceId, assetId, placements: [], look });
   const placements = chosen ?? (first ? (first.kitPlacements.length > 0 ? first.kitPlacements : (["1:1"] as Placement[])) : []);
   const quote = useQuery(api.creativeImages.quote, placements.length > 0 ? { workspaceId, assetId, placements, look } : "skip");
@@ -342,10 +348,12 @@ export function CreativeImages({ workspaceId, assetId, editor, variations }: { w
       onLook={setLook}
       tone={tone}
       onTone={setTone}
+      style={style}
+      onStyle={setStyle}
       quote={placements.length > 0 ? (quote ?? null) : (first ?? null)}
       list={list ?? null}
       onGenerate={async (rows, confirmedCents) => {
-        await generate({ workspaceId, assetId, placements: rows, confirmedCents, look, tone });
+        await generate({ workspaceId, assetId, placements: rows, confirmedCents, look, tone, style });
       }}
       onRetake={async (variationKey, placement, confirmedCents) => {
         await generate({ workspaceId, assetId, placements: [], confirmedCents, only: { variationKey, placement } });

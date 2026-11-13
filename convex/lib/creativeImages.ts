@@ -60,7 +60,7 @@ export function imagePrompt(args: { direction: string; kit: Pick<BrandContent, "
 export const LOOKS = ["designed", "photo"] as const;
 export type Look = (typeof LOOKS)[number];
 export const LOOK_WORDS: Record<Look, { label: string; what: string }> = {
-  designed: { label: "Designed ad", what: "The whole ad is drawn with your words in it, in the style of your own past ads, then read back to check every word." },
+  designed: { label: "Designed ad", what: "The whole ad is drawn with your words in it, then read back to check every word." },
   photo: { label: "Photo with text on top", what: "A picture with no words. Your headline, button and real logo file are placed on top." },
 };
 export const TONES = ["dark", "light"] as const;
@@ -73,7 +73,32 @@ export function isTone(value: string): value is Tone {
   return (TONES as readonly string[]).includes(value);
 }
 
-export type DesignedText = { eyebrow: string; kicker: string; headline: string; accent: string; visual: string; labels: string[]; subline: string; cta: string };
+/**
+ * Where a designed ad's look comes from. "brand": the brand's own past ads, or the standard layout when the
+ * kit holds none. "fresh": a new layout each time, in the brand's colours and fonts, with no past ad shown
+ * to the image model.
+ */
+export const DESIGN_STYLES = ["brand", "fresh"] as const;
+export type DesignStyle = (typeof DESIGN_STYLES)[number];
+export function isDesignStyle(value: string): value is DesignStyle {
+  return (DESIGN_STYLES as readonly string[]).includes(value);
+}
+export function designStyleWords(style: DesignStyle, styleRefs: number) {
+  if (style === "fresh") return { label: "New design", what: "A new layout for each variation, in your colours and fonts. Your past ads are not shown to the designer. Your words stay exactly as written." };
+  return styleRefs > 0
+    ? { label: "Like your past ads", what: `Follows the look of the ${styleRefs === 1 ? "ad" : `${styleRefs} ads`} saved in your brand kit.` }
+    : { label: "Standard layout", what: "Top bar, big headline, one visual, button. Add your own past ads to the brand kit and this follows their look instead." };
+}
+
+/** Layouts a new design can take. Each variation of a set gets a different one, so the four do not look alike. */
+export const FRESH_LAYOUTS = [
+  "Visual first: the central visual fills the upper two thirds, large and dramatic, with the headline set big beneath it.",
+  "Type first: the headline fills most of the ad in oversized type, with the visual small and sharp in one corner.",
+  "Split: the ad is divided into two blocks of contrasting colour, words in one and the visual in the other.",
+  "Card: the visual and its labels sit inside one large rounded card that floats over the background, with the headline above the card.",
+] as const;
+
+export type DesignedText = { eyebrow: string; kicker: string; headline: string; accent: string; visual: string; labels: string[]; subline: string; cta: string; /** Small print shown when the labels are example figures. */ note?: string };
 
 const quoted = (value: string) => `"${value.replace(/"/g, "'")}"`;
 
@@ -82,8 +107,12 @@ const quoted = (value: string) => `"${value.replace(/"/g, "'")}"`;
  * look comes from the brand kit: its colours, its fonts and pictures of its own past ads. The reference ad a
  * creative was modelled on is never part of it.
  */
-export function designedPrompt(args: { text: DesignedText; kit: Pick<BrandContent, "name" | "colors" | "headingFont" | "imageStyle" | "industry">; placement: Placement; tone: Tone; styleRefs: number }) {
-  const { text, kit, placement, tone, styleRefs } = args;
+export function designedPrompt(args: { text: DesignedText; kit: Pick<BrandContent, "name" | "colors" | "headingFont" | "imageStyle" | "industry">; placement: Placement; tone: Tone; styleRefs: number; style?: DesignStyle; /** The variation's position in its set, so new designs differ from each other. */ variant?: number }) {
+  const { text, kit, placement, tone } = args;
+  const fresh = args.style === "fresh";
+  // A new design is never shown a past ad.
+  const styleRefs = fresh ? 0 : args.styleRefs;
+  const note = text.note && text.labels.length ? `   Directly beneath the visual, in very small print: ${quoted(text.note)}.` : "";
   const accent = kit.colors[0]?.hex ?? "#7c6cf6";
   const wide = placement === "16:9" || placement === "1.91:1";
   const layout = [
@@ -92,13 +121,19 @@ export function designedPrompt(args: { text: DesignedText; kit: Pick<BrandConten
     `3. The headline, very large and very bold, the biggest thing on the ad: ${quoted(text.headline)}.${text.accent && text.headline.includes(text.accent) ? ` Set the words ${quoted(text.accent)} in the accent colour and the rest in the main text colour.` : ""}`,
     `4. One central visual, clean and simple, that makes the headline's point at a glance: ${text.visual}`,
     text.labels.length ? `   Label it with exactly these short callouts, each joined to its part by a thin line: ${text.labels.map(quoted).join(", ")}.` : "   No labels on the visual.",
+    note,
     text.subline ? `5. Under the visual, one line of medium-weight text: ${quoted(text.subline)}.` : "",
     text.cta ? `6. At the bottom, one wide rounded button in the accent colour with the words ${quoted(text.cta.toUpperCase())} and a small arrow.` : "",
   ].filter(Boolean);
   return [
     `Design a finished static advertisement for ${kit.name}${kit.industry ? `, a business in ${kit.industry}` : ""}. Flat graphic design, like a polished social media ad. Not a photograph of an ad.`,
-    `Layout, ${wide ? "arranged for a wide frame with the words on the left and the visual on the right" : "stacked top to bottom"}:`,
-    ...layout,
+    ...(fresh
+      ? [
+          `Compose a new layout for a ${wide ? "wide" : placement === "9:16" ? "tall" : "square or portrait"} frame. ${FRESH_LAYOUTS[(args.variant ?? 0) % FRESH_LAYOUTS.length]} Do not fall back on a plain stack of bar, headline, picture and button.`,
+          "It must contain every one of these parts, placed where they serve the layout. The headline stays the largest text:",
+        ]
+      : [`Layout, ${wide ? "arranged for a wide frame with the words on the left and the visual on the right" : "stacked top to bottom"}:`]),
+    ...(fresh ? layout.map(freeLine) : layout),
     `Colours: ${tone === "dark" ? "a near-black background with white text" : "a soft, very light tint of the accent colour as the background, with near-black text"}. Accent colour ${accent}.${kit.colors.length > 1 ? ` Other brand colours, used sparingly: ${kit.colors.slice(1).map((row) => row.hex).join(", ")}.` : ""}`,
     `Type: a heavy, modern sans-serif${kit.headingFont ? ` in the manner of ${kit.headingFont}` : ""}, with tight spacing on the headline. Generous margins. Nothing touches the edges.`,
     kit.imageStyle ? `The central visual follows this style: ${kit.imageStyle}` : "The central visual is a soft, glossy 3D object or a clean diagram, lit from above.",
@@ -108,6 +143,16 @@ export function designedPrompt(args: { text: DesignedText; kit: Pick<BrandConten
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/** A layout line with its fixed position taken out, for a new design that places the parts itself. */
+function freeLine(line: string) {
+  return line
+    .replace(/^(\s*)\d\. /, "$1- ")
+    .replace("A full-width bar across the very top in the accent colour, holding one centred line", "A short tag or bar in the accent colour holding one line")
+    .replace("Under it, a small line", "A small line")
+    .replace("Under the visual, one line", "One line")
+    .replace("At the bottom, one wide rounded button", "One rounded button");
 }
 
 /** The lines a designed ad must show that a reading of the picture did not find, compared without case or punctuation. */

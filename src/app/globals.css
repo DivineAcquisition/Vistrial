@@ -368,6 +368,26 @@
     letter-spacing: -0.022em;
   }
 
+  /*
+   * Inside the app, text is a touch bolder: the same Inter, every weight moved up by 50.
+   * The product shell marks the page with data-app-text. The rule sits on :root so dialogs,
+   * menus and toasts drawn outside the shell follow it too. The public site is unchanged.
+   */
+  :root:has([data-app-text]) {
+    --font-weight-normal: 450;
+    --font-weight-medium: 550;
+    --font-weight-semibold: 650;
+    --font-weight-bold: 750;
+  }
+
+  :root:has([data-app-text]) body {
+    font-weight: 450;
+  }
+
+  :root:has([data-app-text]) :is(h1, h2, h3, h4, h5, h6, .font-heading, .font-display) {
+    font-weight: 550;
+  }
+
   h1 {
     letter-spacing: -0.032em;
   }

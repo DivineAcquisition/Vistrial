@@ -147,7 +147,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
             profileEditor={
               <Panel className="grid gap-2 p-4 text-sm text-muted-foreground">
                 <p className="text-foreground">Offer: Paid social and landing pages for coaches and course sellers, on a monthly retainer.</p>
-                <p>Audience: Busy homeowners and property managers. Geography: San Francisco to San Jose.</p>
+                <p>Audience: Coaches already selling and property managers. Geography: San Francisco to San Jose.</p>
                 <p>The live page shows the full profile editor here.</p>
               </Panel>
             }

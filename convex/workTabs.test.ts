@@ -379,6 +379,32 @@ describe("each tab's results and suggestions", () => {
     await expect(a.owner.query(api.workTabs.tab, { workspaceId: a.workspaceId, skillSlug: "campaign-strategy" })).rejects.toThrow();
   });
 
+  it("gives each report row the opening of its current version and its claims' labels, and nothing for other skills", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const b = await seed(t, "Beta");
+    await t.run(async (ctx) => {
+      const assetId = await ctx.db.insert("assets", { workspaceId: a.workspaceId, kind: "marketReport", title: "Market report", status: "draft", currentVersion: 2, createdAt: Date.now() });
+      await ctx.db.insert("assetVersions", { workspaceId: a.workspaceId, assetId, version: 1, body: "# Market report\n\nAn earlier summary.\n\n## Findings\n\n- Old.", createdBy: "agent" });
+      const current = await ctx.db.insert("assetVersions", { workspaceId: a.workspaceId, assetId, version: 2, body: "# Market report\n\n**Objective:** Find what agencies lead with.\n\nFive of eight agencies lead with a booked-call promise.\n\n## Opportunities\n\n### 1. State a guarantee", createdBy: "person" });
+      await ctx.db.insert("evidence", { workspaceId: a.workspaceId, assetVersionId: current, claimKey: "finding-1", statement: "Five of eight lead with a promise.", basis: "observed" });
+      await ctx.db.insert("evidence", { workspaceId: a.workspaceId, assetVersionId: current, claimKey: "opportunity-1", statement: "State a guarantee.", basis: "hypothesis" });
+      await ctx.db.insert("evidence", { workspaceId: a.workspaceId, assetVersionId: current, claimKey: "older", statement: "A claim from before bases.", computed: true });
+      // A report with no text has no answer.
+      await ctx.db.insert("assets", { workspaceId: a.workspaceId, kind: "marketReport", title: "Empty report", status: "approved", currentVersion: 1, createdAt: Date.now() });
+    });
+    await seedOfferAsset(t, a.workspaceId, "draft");
+    const research = await a.owner.query(api.workTabs.tab, { workspaceId: a.workspaceId, skillSlug: "market-intelligence" });
+    expect(research.results.find((row) => row.title === "Market report")?.answer).toEqual({
+      lead: "# Market report\n\n**Objective:** Find what agencies lead with.\n\nFive of eight agencies lead with a booked-call promise.",
+      labels: ["Observed", "Untested hypothesis"],
+    });
+    expect(research.results.find((row) => row.title === "Empty report")?.answer).toBeNull();
+    const offers = await a.owner.query(api.workTabs.tab, { workspaceId: a.workspaceId, skillSlug: "offer-intelligence" });
+    expect(offers.results.every((row) => row.answer === null)).toBe(true);
+    expect((await b.owner.query(api.workTabs.tab, { workspaceId: b.workspaceId, skillSlug: "market-intelligence" })).results).toEqual([]);
+  });
+
   it("suggests the next steps an approved report unlocks, and never one that runs on its own", () => {
     const none = { approvedReport: false, approvedOffer: false, approvedDiagnosis: false, ownData: false, goal: false };
     const report = { ...none, approvedReport: true, ownData: true };

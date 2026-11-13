@@ -10,7 +10,7 @@ import type { SignInStep, SignUpStep } from "@/lib/auth/flow";
 import { StoryTheme } from "../story-theme";
 import { AccountStory } from "./account-story";
 
-const EMAIL = "jaylen@brookscleaning.com";
+const EMAIL = "jaylen@brooksconsulting.com";
 
 const SIGN_IN: Record<string, SignInStep> = {
   email: { kind: "email" },
@@ -21,7 +21,7 @@ const SIGN_IN: Record<string, SignInStep> = {
   "second-app": { kind: "second", method: "totp", methods: ["totp", "phone_code", "backup_code"], sentTo: null, newDevice: false },
   "second-text": { kind: "second", method: "phone_code", methods: ["totp", "phone_code", "backup_code"], sentTo: "+1 *** *** 0142", newDevice: false },
   "second-backup": { kind: "second", method: "backup_code", methods: ["totp", "backup_code"], sentTo: null, newDevice: false },
-  "new-device": { kind: "second", method: "email_code", methods: ["email_code"], sentTo: "j*****@brookscleaning.com", newDevice: true },
+  "new-device": { kind: "second", method: "email_code", methods: ["email_code"], sentTo: "j*****@brooksconsulting.com", newDevice: true },
   "google-only": { kind: "blocked", reason: "google-only" },
   done: { kind: "done" },
 };
@@ -64,7 +64,7 @@ export function AuthPagesStory({ screen, step, problem, theme }: { screen: strin
       <main className="mx-auto grid max-w-2xl gap-4 p-4">
         <StoryTheme theme={theme} />
         <AccountSecurity
-          closing={{ leaves: ["Brooks Cleaning"], blockedBy: [] }}
+          closing={{ leaves: ["Brooks Consulting"], blockedBy: [] }}
           onLeaveEverything={async () => {
             (window as unknown as { leftEverything?: boolean }).leftEverything = true;
           }}

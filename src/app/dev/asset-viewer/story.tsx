@@ -15,7 +15,7 @@ const T0 = Date.UTC(2026, 9, 27, 14, 0, 0);
 
 const EVIDENCE: EvidenceView[] = [
   { claimKey: "durable", statement: "Twelve competitor ads have run for more than 30 days.", computed: true, fetchedAt: null, sourceLabel: null },
-  { claimKey: "offer", statement: "The offer is a first deep clean at $300.", computed: false, fetchedAt: T0, sourceLabel: "Business profile, version 3" },
+  { claimKey: "offer", statement: "The offer is a $3,500 setup with a $2,500 monthly retainer.", computed: false, fetchedAt: T0, sourceLabel: "Business profile, version 3" },
   { claimKey: "hook", statement: "Most long-running ads open with a before-and-after photo.", computed: false, fetchedAt: T0 + 60_000, sourceLabel: "Saved run record" },
   { claimKey: "broken", statement: "A claim whose source was deleted.", computed: false, fetchedAt: T0, sourceLabel: null },
 ];
@@ -23,16 +23,16 @@ const EVIDENCE: EvidenceView[] = [
 const MARKET_REPORT = [
   "# Market report",
   "",
-  "**Objective:** Find the offers and messages Austin deep-cleaning competitors lead with, and where we can stand out.",
+  "**Objective:** Find the offers and messages agencies for coaches lead with, and where we can stand out.",
   "",
   "Competitors we could see lead with trust or with before-and-after results, and none showed a price.",
   "",
   "## Opportunities",
   "",
-  "### 1. Lead with visible flat-rate pricing",
+  "### 1. Lead with visible fixed pricing",
   "",
   "- **Evidence:** Untested hypothesis",
-  "- **Why it matters here:** Your offer is flat-rate. No competitor excerpt showed a price.",
+  "- **Why it matters here:** Your offer has a fixed price. No competitor excerpt showed a price.",
   "- **Proposed action:** Check the top listings first, then list both prices on your profile.",
   "- **How to tell if it worked:** Compare four weeks of calls before and after.",
   "",
@@ -44,9 +44,9 @@ const MARKET_REPORT = [
 ].join("\n");
 
 const BASIS_EVIDENCE: EvidenceView[] = [
-  { claimKey: "finding-1", statement: "Trust is the most repeated lead message.", computed: false, fetchedAt: null, sourceLabel: null, basis: "observed", basisLabel: "Observed", sources: [{ id: "s1", platform: "web", title: "Molly Maid of Greater Austin", url: "https://www.mollymaid.com/greater-austin/", publisher: "Molly Maid", observedAt: T0, availability: "linkOnly" }], sourceMissing: false },
-  { claimKey: "finding-2", statement: "A visible flat price may set the business apart.", computed: false, fetchedAt: null, sourceLabel: null, basis: "inferred", basisLabel: "Inference", sources: [], sourceMissing: false },
-  { claimKey: "opportunity-1", statement: "Lead with visible flat-rate pricing.", computed: false, fetchedAt: null, sourceLabel: null, basis: "hypothesis", basisLabel: "Untested hypothesis", sources: [], sourceMissing: false },
+  { claimKey: "finding-1", statement: "Trust is the most repeated lead message.", computed: false, fetchedAt: null, sourceLabel: null, basis: "observed", basisLabel: "Observed", sources: [{ id: "s1", platform: "web", title: "Rival Growth: booked calls for coaches", url: "https://rival-growth.example.com/", publisher: "Rival Growth", observedAt: T0, availability: "linkOnly" }], sourceMissing: false },
+  { claimKey: "finding-2", statement: "A visible fixed price may set the business apart.", computed: false, fetchedAt: null, sourceLabel: null, basis: "inferred", basisLabel: "Inference", sources: [], sourceMissing: false },
+  { claimKey: "opportunity-1", statement: "Lead with visible fixed pricing.", computed: false, fetchedAt: null, sourceLabel: null, basis: "hypothesis", basisLabel: "Untested hypothesis", sources: [], sourceMissing: false },
   { claimKey: "finding-3", statement: "Not enough data: no competitor prices were collected.", computed: false, fetchedAt: null, sourceLabel: null, basis: "insufficient", basisLabel: "Not enough data", sources: [], sourceMissing: false },
 ];
 
@@ -54,7 +54,7 @@ const V1 = "Market snapshot\n42 ads from 9 advertisers.\nTop hook: before and af
 const V2 = "Market snapshot\n42 ads from 9 advertisers.\nTop hook: before and after photos.\nGap: nobody shows pricing.\nTest plan: 3 ideas.";
 
 const ROWS: AssetRowView[] = [
-  { id: "a1", title: "Ad research: home cleaning, Austin", kind: "researchReport", status: "draft", currentVersion: 2, createdAt: T0, createdByRun: "r1" },
+  { id: "a1", title: "Ad research: agencies for coaches", kind: "researchReport", status: "draft", currentVersion: 2, createdAt: T0, createdByRun: "r1" },
   { id: "a2", title: "Spring offer copy set", kind: "adCopySet", status: "approved", currentVersion: 1, createdAt: T0 - 86_400_000, createdByRun: null },
 ];
 

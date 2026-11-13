@@ -14,10 +14,10 @@ const WS = "ws1" as Id<"workspaces">;
 const S = (n: number) => `src${n}`;
 
 export const SOURCES: SourceLite[] = [
-  { id: S(1), title: "Molly Maid of Greater Austin", url: "https://www.mollymaid.com/greater-austin/", platform: "web", publisher: "Molly Maid", origin: "supplied" },
-  { id: S(2), title: "Full home deep cleaning transformation", url: "https://www.youtube.com/watch?v=aaaaaaaaaaa", platform: "youtube", publisher: "Sparkly Maid Austin" },
-  { id: S(3), title: "It's not magic, it's the checklist", url: "https://austincleaningcrew.example.com/", platform: "web", publisher: "Austin Cleaning Crew" },
-  { id: S(4), title: "Move-out clean before and after", url: "https://www.tiktok.com/@team/video/7234567890123456789", platform: "tiktok", publisher: "family-run team" },
+  { id: S(1), title: "Rival Growth: booked calls for coaches", url: "https://rival-growth.example.com/", platform: "web", publisher: "Rival Growth", origin: "supplied" },
+  { id: S(2), title: "How we filled a coach's calendar in 30 days", url: "https://www.youtube.com/watch?v=aaaaaaaaaaa", platform: "youtube", publisher: "Brightside Agency" },
+  { id: S(3), title: "It's not magic, it's the checklist", url: "https://coachfunnelco.example.com/", platform: "web", publisher: "Coach Funnel Co" },
+  { id: S(4), title: "A coach's calendar, before and after", url: "https://www.tiktok.com/@team/video/7234567890123456789", platform: "tiktok", publisher: "family-run team" },
 ];
 
 const CHECKS_PASSED = {
@@ -36,25 +36,25 @@ const CHECKS_PASSED = {
 
 const OPPS = [
   {
-    opportunity: "Lead with visible flat-rate pricing",
+    opportunity: "Lead with visible fixed pricing",
     evidence: { sourceRefIds: [S(1), S(2)], uncertainty: "hypothesis" },
-    businessRelevance: { text: "Your offer is flat-rate ($249 deep clean, $299 move-out). No competitor excerpt we saw showed a price.", profileFields: ["offer"], factIds: [] },
-    proposedAction: "Check the top Austin listings for prices first. If most hide them, list both prices on your Google Business Profile and say 'flat rate, no quote call needed'.",
+    businessRelevance: { text: "Your retainer has a stated price ($2,500 a month, $3,500 setup). No competitor excerpt we saw showed a price.", profileFields: ["offer"], factIds: [] },
+    proposedAction: "Check the top agency pages for prices first. If most hide them, state both prices on your landing page and say 'fixed price, no quote call needed'.",
     validationMethod: "Record four weeks of profile calls and clicks as a baseline, then compare the four to eight weeks after.",
   },
   {
     opportunity: "Publish a checklist instead of generic trust claims",
     evidence: { sourceRefIds: [S(3), S(1)], uncertainty: "hypothesis" },
     businessRelevance: { text: "Four competitors lead with 'trust'. One proves consistency with a checklist, which fits your plain, trustworthy voice.", profileFields: ["brandVoice"], factIds: [] },
-    proposedAction: "Write a room-by-room list of what the $249 and $299 cleans include and exclude, and use it as the ad landing page.",
+    proposedAction: "Write a line-by-line list of what the $3,500 setup and the $2,500 retainer include and exclude, and use it as the ad landing page.",
     validationMethod: "Track checklist page views to bookings, and count 'what is included?' questions before and after.",
   },
   {
-    opportunity: "Austin move-out before-and-after videos with the $299 price",
+    opportunity: "Client result videos with the $3,500 setup price",
     evidence: { sourceRefIds: [S(4)], uncertainty: "hypothesis" },
     businessRelevance: { text: "Movers are a core audience, and your $1,500 a month Meta budget (verified) can test this.", profileFields: ["audience"], factIds: ["f1"] },
-    proposedAction: "Film two or three real Austin move-out jobs and test price-first against 'ready for handover' on Meta for three to four weeks.",
-    validationMethod: "Compare cost per lead and booked move-out jobs for the two angles in Ads Manager.",
+    proposedAction: "Film two or three real client results and test price-first against 'calendar full in 30 days' on Meta for three to four weeks.",
+    validationMethod: "Compare cost per lead and booked calls for the two angles in Ads Manager.",
   },
 ];
 
@@ -62,20 +62,20 @@ export function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "wo
   const base = {
     project: {
       id: "p1",
-      title: "Austin deep cleaning",
-      objective: "Find the offers and messages Austin deep-cleaning competitors lead with, and where we can stand out.",
-      market: kind === "waiting" || kind === "timedOut" ? "" : "Deep house cleaning",
+      title: "Agencies for coaches",
+      objective: "Find the offers and messages agencies for coaches lead with, and where we can stand out.",
+      market: kind === "waiting" || kind === "timedOut" ? "" : "Marketing agencies for coaches",
       geography: "Austin, TX",
-      competitors: [{ name: "Molly Maid", url: "https://www.mollymaid.com" }],
+      competitors: [{ name: "Rival Growth", url: "https://rival-growth.example.com" }],
       platforms: ["web", "youtube", "tiktok"],
       suppliedUrls: [],
       status: "ready",
       createdAt: 1793800000000,
     },
     context: {
-      market: kind === "waiting" || kind === "timedOut" ? "" : "Deep house cleaning",
+      market: kind === "waiting" || kind === "timedOut" ? "" : "Marketing agencies for coaches",
       geography: "Austin, TX",
-      profile: { versionId: "pv1", offer: "Deep house cleaning and move-out cleaning, flat-rate pricing", audience: "Busy professionals and renters", geography: "Austin, TX" },
+      profile: { versionId: "pv1", offer: "Done-for-you lead generation for coaches, fixed monthly price", audience: "Coaches and consultants already selling", geography: "Austin, TX" },
       facts: [
         { id: "f1", factKey: "monthlyAdBudget", value: "$1,500 a month on Meta", status: "verified", sourceType: "owner", recordedAt: 1793800000000 },
         { id: "f2", factKey: "topObjection", value: "Customers worry about hidden fees", status: "unverified", sourceType: "agent", recordedAt: 1793700000000 },
@@ -83,7 +83,7 @@ export function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "wo
       gaps: kind === "waiting" || kind === "timedOut" ? ["researchMarket"] : [],
       known: [
         { key: "geography", label: "Area", value: "Austin, TX", origin: "profile", status: "verified", recordedAt: 1793600000000 },
-        { key: "offer", label: "Offer", value: "Deep house cleaning and move-out cleaning, flat-rate pricing", origin: "profile", status: "verified", recordedAt: 1793600000000 },
+        { key: "offer", label: "Offer", value: "Done-for-you lead generation for coaches, fixed monthly price", origin: "profile", status: "verified", recordedAt: 1793600000000 },
         { key: "monthlyAdBudget", label: "Ad budget", value: "$1,500 a month on Meta", origin: "fact", status: "verified", recordedAt: 1793800000000 },
         { key: "topObjection", label: "Top objection", value: "Customers worry about hidden fees", origin: "fact", status: "unverified", recordedAt: 1793700000000 },
       ],
@@ -94,11 +94,11 @@ export function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "wo
       kind === "waiting" || kind === "timedOut"
         ? null
         : {
-            objective: "Find the offers and messages Austin deep-cleaning competitors lead with.",
+            objective: "Find the offers and messages agencies for coaches lead with.",
             deliverables: ["A report with three opportunities"],
-            researchQuestions: ["What do Austin competitors lead with?", "Who shows a price?", "What do move-out ads promise?"],
-            searchQueries: ["deep cleaning Austin TX", "move out cleaning Austin price", "Molly Maid Austin"],
-            competitorsToLookUp: ["Molly Maid"],
+            researchQuestions: ["What do competing agencies lead with?", "Who shows a price?", "What do their ads promise?"],
+            searchQueries: ["marketing agency for coaches", "lead generation for coaches price", "Rival Growth agency"],
+            competitorsToLookUp: ["Rival Growth"],
             known: { profileVersionId: "pv1", factIds: ["f1"] },
             missing: [{ gap: "Competitor prices", blocks: false }],
             assumptions: ["No competitor price list is on record, so prices are checked on the pages found."],
@@ -122,16 +122,16 @@ export function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "wo
   });
   const report = (n: number) => ({
     objective: base.project.objective,
-    summary: "Austin competitors we could see lead with trust or with before-and-after results, and none of the excerpts showed a price. Evidence is thin, so all three ideas are tests, not conclusions.",
+    summary: "Competing agencies we could see lead with trust or with before-and-after results, and none of the excerpts showed a price. Evidence is thin, so all three ideas are tests, not conclusions.",
     findings: [
-      { statement: "Trust is the most repeated lead message among the cleaners we saw.", basis: "observed", sourceRefIds: [S(1), S(3)] },
-      { statement: "Sparkly Maid leads its deep-clean videos with visible results.", basis: "observed", sourceRefIds: [S(2)] },
-      { statement: "A visible flat price may set the business apart, once checked on full pages.", basis: "inferred", sourceRefIds: [S(1), S(2)] },
+      { statement: "Trust is the most repeated lead message among the agencies we saw.", basis: "observed", sourceRefIds: [S(1), S(3)] },
+      { statement: "Brightside Agency leads its videos with client results.", basis: "observed", sourceRefIds: [S(2)] },
+      { statement: "A visible fixed price may set the business apart, once checked on full pages.", basis: "inferred", sourceRefIds: [S(1), S(2)] },
       { statement: "Not enough data: no competitor prices or Meta ads were collected.", basis: "insufficient", sourceRefIds: [] },
     ],
     opportunities: OPPS.slice(0, n),
     limits: [
-      { platform: "web", text: "Partial. Most Austin pages were link-only, so offers and prices on them were not seen." },
+      { platform: "web", text: "Partial. Most agency pages were link-only, so offers and prices on them were not seen." },
       { platform: "tiktok", text: "No public search. Only 8 videos were collected." },
     ],
     contextUsed: { profileVersionId: "pv1", factIds: ["f1"] },
@@ -246,7 +246,7 @@ export function ResearchStudioStory({ initialState, initialWidth, initialSection
             counts={key === "waiting" || key === "timedOut" ? new Map() : new Map([["web", 30], ["youtube", 22], ["tiktok", 8]])}
             sources={key === "waiting" || key === "timedOut" ? new Map() : sources}
             assetStatus={key === "review" ? "needsReview" : key === "done" ? "draft" : null}
-            reportAsset={key === "done" || key === "review" ? { id: "a1", title: "Market report: Austin deep cleaning", status: key === "review" ? "needsReview" : "draft", currentVersion: key === "review" ? 2 : 1 } : null}
+            reportAsset={key === "done" || key === "review" ? { id: "a1", title: "Market report: agencies for coaches", status: key === "review" ? "needsReview" : "draft", currentVersion: key === "review" ? 2 : 1 } : null}
             capCents={300}
             editor
             initialSection={initialSection}

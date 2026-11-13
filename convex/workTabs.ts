@@ -61,6 +61,27 @@ async function connectedData(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
   };
 }
 
+/**
+ * What a report's row needs to say what the report found: the opening of its current version (the objective
+ * and the summary paragraph, before the first section) and the evidence label of each of its claims. The
+ * screen picks the summary out of the opening and shows the weakest label beside it; nothing is rewritten.
+ * Null when the version has no text.
+ */
+async function reportAnswer(ctx: QueryCtx, workspaceId: Id<"workspaces">, asset: Doc<"assets">) {
+  const versions = await ctx.db
+    .query("assetVersions")
+    .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", workspaceId).eq("assetId", asset._id))
+    .take(50);
+  const current = versions.find((row) => row.version === asset.currentVersion);
+  const lead = (current?.body ?? "").split(/\n##\s/)[0].trim().slice(0, 1500);
+  if (!current || !lead) return null;
+  const evidence = await ctx.db
+    .query("evidence")
+    .withIndex("by_workspace_version", (q) => q.eq("workspaceId", workspaceId).eq("assetVersionId", current._id))
+    .take(100);
+  return { lead, labels: evidence.flatMap((row) => (row.basis ? [BASIS_LABEL[row.basis]] : [])) };
+}
+
 function projectIdOf(ctx: QueryCtx, run: Doc<"agentRuns"> | null) {
   return run ? ctx.db.normalizeId("researchProjects", run.inputRef) : null;
 }
@@ -128,6 +149,7 @@ export const tab = workspaceQuery({
         createdAt: asset.createdAt,
         runId: asset.createdByRun ?? null,
         projectId: run && run.workspaceId === ctx.workspaceId ? projectIdOf(ctx, run) : null,
+        answer: skill === "market-intelligence" ? await reportAnswer(ctx, ctx.workspaceId, asset) : null,
       });
     }
     results.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || b.createdAt - a.createdAt);

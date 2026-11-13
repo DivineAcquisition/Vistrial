@@ -32,7 +32,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
     "Reports label each claim as observed, inferred, a hypothesis, or backed by your own results, and link to its source. A long-running or popular ad is not proof that it worked. Do not treat a hypothesis as a fact.",
     "Agents do not publish, post, send, or spend anything. A person on your team approves the work. If you approve or use something, it is your decision.",
     "Do not rely on AI output as legal, financial, or other professional advice.",
-    "Anthropic provides the AI models our agents use, including their web search and web page reading.",
+    "Anthropic provides the Claude AI models our agents use, including their web search and web page reading. If someone on your team chooses a GPT or Gemini model for a piece of work, that work runs on OpenAI's models hosted by Microsoft or on Google's models, reached through OpenRouter. Ad images are made by Google's models, or by OpenAI's if that model is chosen, and reference videos are read by a Google model. The Privacy Policy says what each of them receives.",
   ];
   if (trust.switches.aiNoTraining) {
     ai.push(

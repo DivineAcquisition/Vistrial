@@ -10,7 +10,7 @@ import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { MISSING_SOURCE } from "./lib/evidence";
 import { INJECTION_FIXTURE, toolsAfterModel } from "./lib/registry";
 import { resolveRoute } from "./lib/modelChoice";
-import type { Family, Needs } from "./lib/models";
+import type { Needs } from "./lib/models";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -523,7 +523,7 @@ describe("step 4 runtime", () => {
       expect(sent[0].provider).toEqual({ data_collection: "deny", zdr: true, require_parameters: true });
       const run = await t.run((ctx) => ctx.db.get(runId));
       // $0.02 reported is 2 cents: the run carries what OpenRouter said, not a table price.
-      expect(run?.costCents).toBeCloseTo(2, 6);
+      expect(run?.costCents).toBeCloseTo(2 * 1.055, 4);
     } finally {
       delete (globalThis as { __vistrialScriptedOpenRouter?: unknown }).__vistrialScriptedOpenRouter;
     }
@@ -551,33 +551,41 @@ describe("step 4 runtime", () => {
     const admin = t.withIdentity(person("admin", "admin@example.com", { secondFactor: true }));
     const route = { workKind: "write", provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "claude", fallbackModel: "claude-sonnet-5-5" };
     await admin.mutation(api.platform.setRoute, route);
-    await expect(admin.mutation(api.platform.setRoute, { ...route, model: "openai/gpt-6-astra" })).rejects.toThrow("has no price set");
+    await expect(admin.mutation(api.platform.setRoute, { ...route, model: "openai/gpt-7" })).rejects.toThrow("has no price set");
     await expect(admin.mutation(api.platform.setRoute, { ...route, fallbackModel: "claude-opus-9" })).rejects.toThrow("has no price set");
     await expect(admin.mutation(api.platform.setRoute, { ...route, provider: "claude" })).rejects.toThrow("Anthropic's own model ids");
   });
 
-  it("resolves a family to its route only where it can run, and otherwise keeps the platform's", async () => {
+  it("resolves a chosen model to its route only where it can run, and otherwise keeps the platform's", async () => {
     const t = convexTest(schema, modules);
     await t.mutation(internal.platform.ensureDefaultRoutes, {});
     const opus = { provider: "claude", model: "claude-opus-5-5", fallbackProvider: "claude", fallbackModel: "claude-sonnet-5-5" };
-    const resolve = (choice: Family | undefined, needs: Needs = {}) => t.run((ctx) => resolveRoute(ctx, "research", choice, needs));
+    const sol = "openai/gpt-6.1-sol";
+    const carbon = "google/gemini-4-carbon";
+    const resolve = (choice: string | undefined, needs: Needs = {}) => t.run((ctx) => resolveRoute(ctx, "research", choice, needs));
     delete process.env.OPENROUTER_API_KEY;
     delete process.env.MODEL_FAMILIES;
     delete process.env.OPENROUTER_WEB_SEARCH;
     try {
       expect(await resolve(undefined)).toEqual({ route: opus });
-      expect(await resolve("claude", { webSearch: true })).toEqual({ route: opus });
+      expect(await resolve("claude-opus-5-5", { webSearch: true })).toEqual({ route: opus });
+      expect(await resolve("not-a-model")).toEqual({ route: opus });
+      // Another Claude model needs no switch: it runs at Anthropic, like the platform's own.
+      expect((await resolve("claude-sonnet-5-5", { webSearch: true, webFetch: true })).route).toEqual({ provider: "claude", model: "claude-sonnet-5-5", fallbackProvider: "claude", fallbackModel: "claude-opus-5-5" });
       // No key, or the owner has not switched the family on: the platform's route runs, and the answer says why.
-      expect(await resolve("gpt")).toEqual({ route: opus, setAside: { family: "gpt", reason: "not_switched_on" } });
+      expect(await resolve(sol)).toEqual({ route: opus, setAside: { model: sol, family: "gpt", reason: "not_switched_on" } });
       process.env.OPENROUTER_API_KEY = "test-key";
-      expect(await resolve("gpt")).toEqual({ route: opus, setAside: { family: "gpt", reason: "not_switched_on" } });
+      expect(await resolve(sol)).toEqual({ route: opus, setAside: { model: sol, family: "gpt", reason: "not_switched_on" } });
       process.env.MODEL_FAMILIES = "gpt, Gemini";
-      expect((await resolve("gpt")).route).toEqual({ provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" });
-      expect((await resolve("gemini")).route?.model).toBe("google/gemini-4-carbon");
-      expect(await resolve("gemini", { webSearch: true })).toEqual({ route: opus, setAside: { family: "gemini", reason: "no_web_search" } });
+      expect((await resolve(sol)).route).toEqual({ provider: "openrouter", model: sol, fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" });
+      // A family name from an older record still means that family's usual model.
+      expect((await resolve("gpt")).route?.model).toBe(sol);
+      expect((await resolve("openai/gpt-6-astra")).route?.model).toBe("openai/gpt-6-astra");
+      expect((await resolve(carbon)).route?.model).toBe(carbon);
+      expect(await resolve(carbon, { webSearch: true })).toEqual({ route: opus, setAside: { model: carbon, family: "gemini", reason: "no_web_search" } });
       process.env.OPENROUTER_WEB_SEARCH = "on";
-      expect((await resolve("gemini", { webSearch: true })).route?.provider).toBe("openrouter");
-      expect(await resolve("gpt", { webFetch: true })).toEqual({ route: opus, setAside: { family: "gpt", reason: "no_web_fetch" } });
+      expect((await resolve(carbon, { webSearch: true })).route?.provider).toBe("openrouter");
+      expect(await resolve(sol, { webFetch: true })).toEqual({ route: opus, setAside: { model: sol, family: "gpt", reason: "no_web_fetch" } });
     } finally {
       delete process.env.OPENROUTER_API_KEY;
       delete process.env.MODEL_FAMILIES;

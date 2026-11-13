@@ -1,10 +1,10 @@
 /**
  * Which model route a piece of work runs on. One place, so every caller answers the same way:
  *
- * 1. No family chosen: the platform's route for that kind of work (`modelRoutes`), as always.
- * 2. A family the platform's route already belongs to: that same route.
- * 3. Another family: that family's route (lib/models.ts), if it can run the work here.
- * 4. A family that cannot run the work here: the platform's route, and the answer says why. Nothing is
+ * 1. No model chosen: the platform's route for that kind of work (`modelRoutes`), as always.
+ * 2. The model the platform's route already uses: that same route.
+ * 3. Another model: that model's route (lib/models.ts), if its family can run the work here.
+ * 4. A model that cannot run the work here: the platform's route, and the answer says why. Nothing is
  *    swapped silently: the model that runs is recorded on the step, and a person choosing by hand is refused
  *    before this point (`assertCanRun`).
  *
@@ -13,7 +13,7 @@
  */
 import type { QueryCtx } from "../_generated/server";
 import { userError } from "./errors";
-import { CANNOT_RUN_WORDS, FAMILY_NAME, FAMILY_ROUTES, cannotRun, familyOf, type CannotRun, type Family, type Gate, type Needs } from "./models";
+import { CANNOT_RUN_WORDS, cannotRun, parseChoice, routesFor, type CannotRun, type Family, type Gate, type Needs } from "./models";
 import type { ModelRoute } from "./modelRouter";
 import { openRouterKey, openRouterWebSearchOn } from "./openrouter";
 import { devSkillsEnabled, type WorkKind } from "./registry";
@@ -41,22 +41,27 @@ export async function platformRoute(ctx: Pick<QueryCtx, "db">, workKind: WorkKin
 
 export type Resolved = {
   route: ModelRoute | null;
-  /** The family asked for that could not run this work here, and why. The platform's route runs instead. */
-  setAside?: { family: Family; reason: CannotRun };
+  /** The model asked for that could not run this work here, and why. The platform's route runs instead. */
+  setAside?: { model: string; family: Family; reason: CannotRun };
 };
 
-export async function resolveRoute(ctx: Pick<QueryCtx, "db">, workKind: WorkKind, choice?: Family | null, needs: Needs = {}): Promise<Resolved> {
+/** `choice` is a model id (or, from an older record, a family name). */
+export async function resolveRoute(ctx: Pick<QueryCtx, "db">, workKind: WorkKind, choice?: string | null, needs: Needs = {}): Promise<Resolved> {
   const base = await platformRoute(ctx, workKind);
-  if (!choice) return { route: base };
-  if (base && familyOf(base.model) === choice) return { route: base };
-  const reason = cannotRun(choice, needs, modelGate());
-  if (reason) return { route: base, setAside: { family: choice, reason } };
-  return { route: FAMILY_ROUTES[choice][workKind] };
+  const spec = parseChoice(choice);
+  if (!spec) return { route: base };
+  const mine = routesFor(spec)[workKind];
+  if (base && base.provider === mine.provider && base.model === mine.model) return { route: base };
+  const reason = cannotRun(spec.family, needs, modelGate());
+  if (reason) return { route: base, setAside: { model: spec.id, family: spec.family, reason } };
+  return { route: mine };
 }
 
-/** Refuses a family a person chose by hand that cannot run this work here, in words they can act on. */
-export function assertCanRun(choice: Family | null | undefined, needs: Needs) {
+/** Refuses a model a person chose by hand that cannot run this work here, in words they can act on. */
+export function assertCanRun(choice: string | null | undefined, needs: Needs) {
   if (!choice) return;
-  const reason = cannotRun(choice, needs, modelGate());
-  if (reason) throw userError(`${FAMILY_NAME[choice]} cannot run this: ${CANNOT_RUN_WORDS[reason].toLowerCase()}. Choose another model.`);
+  const spec = parseChoice(choice);
+  if (!spec) throw userError("That model is not offered. Choose another model.");
+  const reason = cannotRun(spec.family, needs, modelGate());
+  if (reason) throw userError(`${spec.name} cannot run this: ${CANNOT_RUN_WORDS[reason].toLowerCase()}. Choose another model.`);
 }

@@ -108,6 +108,34 @@ export function assertWithinCeiling(caps: Caps) {
   }
 }
 
+/** The model every cap above was sized for (Claude Opus 5.5), in dollars per million tokens. */
+export const CAPS_SIZED_FOR = { input: 4, output: 20 };
+
+/**
+ * How much further a run on a chosen model may spend than the caps say: the model's list price over the
+ * price the caps were sized for (the mean of the input and output ratios). Never below 1, so a cheaper
+ * model does not lower a cap, and 1 when no model was chosen or it has no price.
+ */
+export function capScale(price: { input: number; output: number } | null | undefined): number {
+  if (!price) return 1;
+  const ratio = (price.input / CAPS_SIZED_FOR.input + price.output / CAPS_SIZED_FOR.output) / 2;
+  return Number.isFinite(ratio) ? Math.max(1, ratio) : 1;
+}
+
+/**
+ * A run's caps on a dearer model: both cost caps raised by the scale, and never past the platform ceiling.
+ * Steps and run time do not change. The day cap rises with the run cap because some skills set them equal.
+ */
+export function scaleCaps(caps: Caps, scale: number): Caps {
+  if (!(scale > 1)) return caps;
+  const raise = (cents: number, ceiling: number) => Math.max(cents, Math.min(Math.ceil(cents * scale), ceiling));
+  return {
+    ...caps,
+    maxCostCentsPerRun: raise(caps.maxCostCentsPerRun, PLATFORM_CEILING.maxCostCentsPerRun),
+    maxCostCentsPerDay: raise(caps.maxCostCentsPerDay, PLATFORM_CEILING.maxCostCentsPerDay),
+  };
+}
+
 export function dayKey(now = Date.now()) {
   return new Date(now).toISOString().slice(0, 10);
 }

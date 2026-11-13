@@ -362,6 +362,76 @@ async function done(t, name, expectedPath) {
     check(`${n}: the button works again`, !(await t.page.getByRole('button', { name: 'Turn on' }).isDisabled()));
     await end(t, n);
   }
+  { // change email
+    const n = 'account email';
+    const t = await account({});
+    check(`${n}: shows the current address`, (await text(t.page)).includes('You sign in with jay@example.com'));
+    await t.page.getByRole('button', { name: 'Change email' }).click();
+    await t.page.getByLabel('New email').fill('jay@example.com'); await t.page.getByRole('button', { name: 'Send code' }).click();
+    check(`${n}: same address caught on the page`, (await alertText(t.page)).includes('already use'));
+    await t.page.getByLabel('New email').fill('taken@example.com'); await t.page.getByRole('button', { name: 'Send code' }).click();
+    let a = await waitAlert(t.page);
+    check(`${n}: address used by someone else in plain words`, a.includes('Another account already uses that email.'), a);
+    await noRaw(t.page, n);
+    await t.page.getByLabel('New email').fill('jay@newdomain.com'); await t.page.getByRole('button', { name: 'Send code' }).click();
+    await until(t.page, 'We sent a 6-digit code to jay@newdomain.com').then(() => check(`${n}: code sent to the new address`, t.mock.acct.emailCodesSent === 1)).catch(async () => check(`${n}: code sent to the new address`, false, await alertText(t.page)));
+    check(`${n}: nothing has changed yet`, t.mock.acct.primary === 'idn_1');
+    await t.page.getByLabel('Code').fill('111111'); await t.page.getByRole('button', { name: 'Use this email' }).click();
+    a = await waitAlert(t.page);
+    check(`${n}: wrong code in plain words`, a.includes('That code is not right.'), a);
+    await t.page.getByLabel('Code').fill(CODE); await t.page.getByRole('button', { name: 'Use this email' }).click();
+    await until(t.page, 'Email changed to jay@newdomain.com.').then(() => check(`${n}: change is confirmed in words`, true)).catch(async () => check(`${n}: change is confirmed in words`, false, await alertText(t.page)));
+    check(`${n}: new address is the sign-in and the old one is gone`, t.mock.acct.primary !== 'idn_1' && t.mock.acct.emails.length === 1 && t.mock.acct.emails[0].email === 'jay@newdomain.com', JSON.stringify(t.mock.acct.emails));
+    check(`${n}: card shows the new address`, (await text(t.page)).includes('You sign in with jay@newdomain.com'));
+    await noClerkUi(t, n); await end(t, n);
+  }
+  { // backing out of an email change leaves no stray address
+    const n = 'account email cancelled';
+    const t = await account({});
+    await t.page.getByRole('button', { name: 'Change email' }).click();
+    await t.page.getByLabel('New email').fill('jay@newdomain.com'); await t.page.getByRole('button', { name: 'Send code' }).click();
+    await until(t.page, 'We sent a 6-digit code');
+    await t.page.getByRole('button', { name: 'Cancel' }).click();
+    await t.page.waitForFunction(() => !document.body.innerText.includes('We sent a 6-digit code'));
+    await t.page.waitForTimeout(800);
+    check(`${n}: the unconfirmed address is taken off the account`, t.mock.acct.emails.length === 1 && t.mock.acct.primary === 'idn_1', JSON.stringify(t.mock.acct.emails));
+    await end(t, n);
+  }
+  { // delete account
+    const n = 'account delete';
+    const t = await account({});
+    await t.page.getByRole('button', { name: 'Delete account' }).click();
+    await until(t.page, 'removes you from Brooks Cleaning');
+    await t.page.getByRole('button', { name: 'Delete my account' }).click();
+    check(`${n}: needs the word typed first`, (await alertText(t.page)).includes('Type DELETE') && !t.mock.acct.deleted);
+    await t.page.getByLabel('Type DELETE to confirm').fill('delete'); await t.page.getByRole('button', { name: 'Delete my account' }).click();
+    await until(t.page, 'Confirm it is you').then(() => check(`${n}: asks who you are before anything is removed`, !t.mock.acct.deleted)).catch(async () => check(`${n}: asks who you are before anything is removed`, false, await text(t.page)));
+    check(`${n}: organizations untouched until the check passes`, !(await t.page.evaluate(() => window.leftEverything)));
+    const dialog = t.page.getByRole('dialog');
+    await dialog.getByLabel('Password', { exact: true }).fill('old password'); await dialog.getByRole('button', { name: 'Confirm' }).click();
+    await t.page.waitForURL((u) => u.pathname === '/sign-in', { timeout: 20000 }).then(() => check(`${n}: ends on the sign-in page`, true)).catch(async () => check(`${n}: ends on the sign-in page`, false, t.page.url() + ' ' + (await alertText(t.page))));
+    check(`${n}: the sign-in was deleted`, t.mock.acct.deleted === true);
+    await end(t, n);
+  }
+  { // delete: backing out of the identity check removes nothing
+    const n = 'account delete cancelled';
+    const t = await account({});
+    await t.page.getByRole('button', { name: 'Delete account' }).click();
+    await t.page.getByLabel('Type DELETE to confirm').fill('DELETE'); await t.page.getByRole('button', { name: 'Delete my account' }).click();
+    await until(t.page, 'Confirm it is you');
+    await t.page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+    await t.page.waitForFunction(() => !document.querySelector('[role=dialog]'), null, { timeout: 10000 }).catch(() => {});
+    check(`${n}: nothing is removed`, !t.mock.acct.deleted && !(await t.page.evaluate(() => window.leftEverything)) && (await alertText(t.page)).trim() === '');
+    await end(t, n);
+  }
+  { // delete not switched on in Clerk
+    const n = 'account delete not switched on';
+    const t = await account({ user: { canDelete: false } });
+    await t.page.getByRole('button', { name: 'Delete account' }).click();
+    await until(t.page, 'not switched on yet').then(() => check(`${n}: says so and offers the way to ask`, true)).catch(async () => check(`${n}: says so and offers the way to ask`, false, await text(t.page)));
+    check(`${n}: offers no delete button`, (await t.page.getByRole('button', { name: 'Delete my account' }).count()) === 0);
+    await end(t, n);
+  }
   await browser.close();
   console.log(results.join('\n'));
   console.log(failures ? `\n${failures} FAILED` : '\nALL PASSED');

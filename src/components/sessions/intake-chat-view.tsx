@@ -30,6 +30,7 @@ import { SourceIcon } from "@/components/research/source-icon";
 import { Banner } from "@/components/ui/banner";
 import { showError } from "@/lib/errors/show-error";
 import { useCredits } from "@/lib/credits";
+import { ModelMark, type ModelMarkData } from "@/components/models/model-mark";
 
 export type IntakeSlots = {
   objective: string;
@@ -42,7 +43,7 @@ export type IntakeSlots = {
   origins: Record<string, string | undefined>;
 };
 
-export type IntakeMessage = { id: string; role: "you" | "agent"; kind: string; text: string; chips: string[]; data: unknown; at: number };
+export type IntakeMessage = { id: string; role: "you" | "agent"; kind: string; text: string; chips: string[]; data: unknown; /** The model that wrote this turn, when one did. */ model?: ModelMarkData | null; at: number };
 
 export type IntakeView = {
   intake: {
@@ -58,6 +59,8 @@ export type IntakeView = {
     platformNote: string | null;
     projectId: string | null;
     mode?: "thorough" | "fast";
+    /** The model family picked for this conversation, or null for the organization's default. */
+    model?: string | null;
     researchCapCents?: number;
   };
   messages: IntakeMessage[];
@@ -96,13 +99,14 @@ function Avatar() {
   return agentSlugForName(speaker) ? <AgentAvatar name={speaker} size="sm" className="mt-0.5" /> : <VistrialMark className="mt-0.5" />;
 }
 
-function Agent({ children, name }: { children: React.ReactNode; name?: string }) {
+function Agent({ children, name, model }: { children: React.ReactNode; name?: string; /** The model that wrote this turn. Turns written in code, and older ones, have none. */ model?: ModelMarkData | null }) {
   return (
     <motion.li initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex min-w-0 gap-3">
       <Avatar />
       <div className="grid min-w-0 flex-1 gap-2">
         {name ? <span className="text-xs font-medium text-muted-foreground">{name}</span> : null}
         {children}
+        <ModelMark model={model} />
       </div>
     </motion.li>
   );
@@ -390,7 +394,7 @@ export function IntakeChatView({
             if (message.kind === "known") {
               const items = (message.data as { items?: { label: string; value: string }[] } | null)?.items ?? [];
               return (
-                <Agent key={message.id}>
+                <Agent key={message.id} model={message.model}>
                   <p className="text-sm text-card-foreground">{message.text}</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {items.map((item) => (
@@ -408,7 +412,7 @@ export function IntakeChatView({
             if (message.kind === "question") {
               const current = message.id === lastQuestion?.id && status === "chatting";
               return (
-                <Agent key={message.id}>
+                <Agent key={message.id} model={message.model}>
                   <p className="rounded-2xl rounded-tl-md bg-muted px-4 py-2.5 text-sm text-card-foreground">{message.text}</p>
                   {current && editor ? <Chips chips={message.chips} onPick={(chip) => void send(chip)} disabled={busy} /> : null}
                 </Agent>
@@ -418,7 +422,7 @@ export function IntakeChatView({
               const factKey = (message.data as { factKey?: string } | null)?.factKey ?? "";
               const open = view?.intake.pendingRemember.some((row) => row.factKey === factKey) ?? false;
               return (
-                <Agent key={message.id}>
+                <Agent key={message.id} model={message.model}>
                   <div className="grid gap-2 rounded-xl border border-border bg-card p-3">
                     <p className="flex items-center gap-2 text-sm text-card-foreground">
                       <Brain aria-hidden className="size-4 text-primary" /> {message.text}
@@ -440,7 +444,7 @@ export function IntakeChatView({
             if (message.kind === "found") {
               const found = (message.data as { competitors?: { name: string; url?: string }[] } | null)?.competitors ?? [];
               return (
-                <Agent key={message.id}>
+                <Agent key={message.id} model={message.model}>
                   <p className="text-sm text-card-foreground">{message.text}</p>
                   <div className="flex flex-wrap gap-2">
                     {found.map((row) => (
@@ -455,14 +459,14 @@ export function IntakeChatView({
             if (message.kind === "plan") {
               const latestPlan = [...(view?.messages ?? [])].reverse().find((row) => row.kind === "plan")?.id === message.id;
               return (
-                <Agent key={message.id}>
+                <Agent key={message.id} model={message.model}>
                   <p className="text-sm text-card-foreground">{message.text}</p>
                   {latestPlan && view ? <PlanCard view={view} actions={actions} editor={editor} /> : null}
                 </Agent>
               );
             }
             return (
-              <Agent key={message.id}>
+              <Agent key={message.id} model={message.model}>
                 <p className="text-sm text-card-foreground">{message.text}</p>
               </Agent>
             );

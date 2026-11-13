@@ -18,6 +18,7 @@ import { savedRecord } from "./lib/savedRecords";
 import { CHANNEL_WORDS } from "./skills/offerIntelligence/channels";
 import { readAnalysis, type OfferAnalysis, type OfferContext } from "./skills/offerIntelligence/shapes";
 import { EMPTY_OFFER, MAX, NOT_STATED, OFFER_FIELDS, cleanOffer, compareOffers, offerFromProfile, offerProblem, sameOffer, type OfferContent, type OfferInput } from "./lib/offerCards";
+import { markOfAsset } from "./lib/modelMarks";
 
 export { cleanOffer, compareOffers, offerProblem, OFFER_FIELDS, type OfferContent };
 
@@ -253,6 +254,8 @@ export const analysis = workspaceQuery({
       assetId: asset._id,
       title: asset.title,
       status: asset.status,
+      /** The model that made it, as stored on its run. Null for older work. */
+      model: await markOfAsset(ctx, asset),
       createdAt: asset.createdAt,
       summary: row.summary,
       position: row.offerPosition.text,

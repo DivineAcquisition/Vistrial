@@ -37,6 +37,8 @@ import {
 } from "./lib/intake";
 import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
+import { capsFor, rememberedModel, resolveRoute, skillNeeds } from "./lib/modelChoice";
+import { markOf, parseChoice } from "./lib/models";
 import { completeWithTools } from "./lib/toolRouter";
 import { moveFilesToProject } from "./files";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
@@ -89,9 +91,21 @@ const SYSTEM =
 
 const SLOT_WORDS: Record<AskedSlot, string> = { objective: "Goal", market: "What you sell", geography: "Area", competitors: "Competitors" };
 
-type Message = { role: "you" | "agent"; kind: string; text: string; chips?: string[]; data?: unknown };
+type Message = { role: "you" | "agent"; kind: string; text: string; chips?: string[]; data?: unknown; madeWith?: { provider: string; model: string } };
 
 // ---------- What screens read ----------
+
+/**
+ * The most the research this conversation leads to may cost: the run's cap for its mode, raised for the
+ * model it will run on (the conversation's own pick, else the one its person last chose for research),
+ * exactly as the run's caps are raised when it starts.
+ */
+async function researchCap(ctx: { db: import("./_generated/server").QueryCtx["db"] }, row: Doc<"intakes">) {
+  const needs = skillNeeds("market-intelligence");
+  const choice = row.modelChoice ?? (await rememberedModel(ctx, row.workspaceId, row.createdBy, needs));
+  const caps = await capsFor(ctx, { workspaceId: row.workspaceId, agentSlug: row.agentSlug, skillSlug: "market-intelligence", choice, mode: row.mode ?? "thorough" });
+  return caps.maxCostCentsPerRun;
+}
 
 function intakeView(row: Doc<"intakes">) {
   return {
@@ -109,6 +123,8 @@ function intakeView(row: Doc<"intakes">) {
     projectId: row.projectId ?? null,
     clientId: row.clientId ?? null,
     mode: row.mode ?? "thorough",
+    /** The model family picked for this conversation, or null for the organization's default. */
+    model: parseChoice(row.modelChoice)?.id ?? null,
     researchCapCents: (row.mode ?? "thorough") === "fast" ? 150 : 300,
     createdAt: row.createdAt,
   };
@@ -119,7 +135,7 @@ async function messagesOf(ctx: { db: import("./_generated/server").QueryCtx["db"
     .query("intakeMessages")
     .withIndex("by_intake", (q) => q.eq("intakeId", intakeId))
     .take(200);
-  return rows.map((row) => ({ id: row._id, role: row.role, kind: row.kind, text: row.text, chips: row.chips ?? [], data: row.data ?? null, at: row.at }));
+  return rows.map((row) => ({ id: row._id, role: row.role, kind: row.kind, text: row.text, chips: row.chips ?? [], data: row.data ?? null, model: markOf(row.madeWith), at: row.at }));
 }
 
 export const get = workspaceQuery({
@@ -127,7 +143,7 @@ export const get = workspaceQuery({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.intakeId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
-    return { intake: intakeView(row), messages: await messagesOf(ctx, row._id) };
+    return { intake: { ...intakeView(row), researchCapCents: await researchCap(ctx, row) }, messages: await messagesOf(ctx, row._id) };
   },
 });
 
@@ -140,7 +156,7 @@ export const forProject = workspaceQuery({
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
       .first();
     if (!row || row.workspaceId !== ctx.workspaceId) return null;
-    return { intake: intakeView(row), messages: await messagesOf(ctx, row._id) };
+    return { intake: { ...intakeView(row), researchCapCents: await researchCap(ctx, row) }, messages: await messagesOf(ctx, row._id) };
   },
 });
 
@@ -397,10 +413,10 @@ export const load = internalQuery({
       .order("desc")
       .first();
     const facts = await factsForRun(ctx, row.workspaceId);
-    const route = await ctx.db
-      .query("modelRoutes")
-      .withIndex("by_workKind", (q) => q.eq("workKind", "classify"))
-      .unique();
+    // The conversation's own pick, else the model its person last chose for research, judged against the research it leads to.
+    const needs = skillNeeds("market-intelligence");
+    const choice = row.modelChoice ?? (await rememberedModel(ctx, row.workspaceId, row.createdBy, needs));
+    const { route } = await resolveRoute(ctx, "classify", choice, needs);
     const files = await ctx.db
       .query("sessionFiles")
       .withIndex("by_intake", (q) => q.eq("intakeId", row._id))
@@ -414,7 +430,7 @@ export const load = internalQuery({
         ...facts.slice(0, 20).map((row) => `${row.factKey}: ${row.value} (${row.status})`),
         ...(row.context ? [`The owner attached this ${CONTEXT_NOUN[row.context.kind]}${row.context.kind === "asset" || row.context.kind === "offer" ? " to refine" : ""}: ${row.context.title}`] : []),
       ],
-      route: route ?? (devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null),
+      route,
     };
   },
 });
@@ -429,7 +445,7 @@ export const commit = internalMutation({
     status: v.union(v.literal("chatting"), v.literal("ready")),
     pendingRemember: v.array(v.object({ factKey: v.string(), label: v.string(), value: v.string() })),
     platformNote: v.optional(v.string()),
-    messages: v.array(v.object({ role: v.union(v.literal("you"), v.literal("agent")), kind: v.string(), text: v.string(), chips: v.optional(v.array(v.string())), data: v.optional(v.any()) })),
+    messages: v.array(v.object({ role: v.union(v.literal("you"), v.literal("agent")), kind: v.string(), text: v.string(), chips: v.optional(v.array(v.string())), data: v.optional(v.any()), madeWith: v.optional(v.object({ provider: v.string(), model: v.string() })) })),
   },
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.intakeId);
@@ -487,6 +503,8 @@ export const step = internalAction({
     let slots = intake.slots as Slots;
     let spent = 0;
     const out: Message[] = [];
+    /** Set once a model has written this turn, so its messages carry which one. A turn written in code carries none. */
+    let wrote: { madeWith?: { provider: string; model: string } } = {};
     // A tapped routing choice ("Research my market") is not the question; the last typed message is.
     const latest = [...state.messages].reverse().find((row) => row.role === "you" && row.kind !== "choice")?.text ?? "";
     const room = () => intake.capCents - intake.costCents - spent;
@@ -531,6 +549,7 @@ export const step = internalAction({
         });
         spent += result.costCents;
         answer = (result.output as ModelAnswer | null) ?? null;
+        if (answer) wrote = { madeWith: { provider: result.provider, model: result.model } };
       } catch {
         answer = null;
       }
@@ -538,7 +557,7 @@ export const step = internalAction({
 
     const applied = applyUpdate(slots, answer ? answer.update : guidedUpdate(slots, intake.asking, latest));
     slots = applied.slots;
-    if (answer?.reply.trim()) out.push({ role: "agent", kind: "text", text: clean(answer.reply, 300) });
+    if (answer?.reply.trim()) out.push({ role: "agent", kind: "text", text: clean(answer.reply, 300), ...wrote });
 
     // 2. Offer to remember lasting answers the owner just gave.
     const pending = [...intake.pendingRemember];
@@ -556,7 +575,7 @@ export const step = internalAction({
       const fromModel = answer?.question.slot === missing && answer.question.text.trim() ? answer.question : null;
       const question = fromModel ? { text: clean(fromModel.text, 300), chips: fromModel.chips.map((row) => clean(row, 60)).filter(Boolean).slice(0, 4) } : FALLBACK_QUESTIONS[missing];
       if (missing === "competitors" && !question.chips.some((row) => saysUnknown(row))) question.chips = [...question.chips.slice(0, 3), "I'm not sure, find them"];
-      out.push({ role: "agent", kind: "question", text: question.text, chips: question.chips, data: { slot: missing } });
+      out.push({ role: "agent", kind: "question", text: question.text, chips: question.chips, data: { slot: missing }, ...(fromModel ? wrote : {}) });
       asked += 1;
       await ctx.runMutation(internal.intake.commit, {
         intakeId: args.intakeId,
@@ -588,7 +607,7 @@ export const step = internalAction({
         const rows = ((found.output as { competitors?: { name: string; url: string }[] } | null)?.competitors ?? []).slice(0, 6);
         const next = applyUpdate(slots, { competitors: rows });
         slots = { ...next.slots, competitors: next.slots.competitors.map((row) => (row.origin === "you" && rows.some((found) => clean(found.name, 80) === row.name) ? { ...row, origin: "found" as const } : row)), origins: { ...next.slots.origins, competitors: "found" } };
-        if (slots.competitors.length) out.push({ role: "agent", kind: "found", text: `I found ${slots.competitors.length} likely competitors. Keep, remove or add to them on the plan.`, data: { competitors: slots.competitors } });
+        if (slots.competitors.length) out.push({ role: "agent", kind: "found", text: `I found ${slots.competitors.length} likely competitors. Keep, remove or add to them on the plan.`, data: { competitors: slots.competitors }, madeWith: { provider: found.provider, model: found.model } });
       } catch {
         // No search: the plan says it researches the market broadly.
       }
@@ -660,6 +679,6 @@ export const devView = internalQuery({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.intakeId);
     if (!row) return null;
-    return { intake: intakeView(row), messages: await messagesOf(ctx, row._id) };
+    return { intake: { ...intakeView(row), researchCapCents: await researchCap(ctx, row) }, messages: await messagesOf(ctx, row._id) };
   },
 });

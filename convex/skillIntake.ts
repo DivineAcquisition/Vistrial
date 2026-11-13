@@ -13,7 +13,8 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { dayKey } from "./lib/caps";
-import { daySpend, loadCaps } from "./lib/capRows";
+import { daySpend } from "./lib/capRows";
+import { capsFor, rememberedModel, skillNeeds } from "./lib/modelChoice";
 import { notFound, userError } from "./lib/errors";
 import { liveFact, writeFact } from "./lib/facts";
 import { assertCanSpend } from "./lib/billing";
@@ -134,7 +135,8 @@ async function known(ctx: QueryCtx, workspaceId: Id<"workspaces">, skill: ChatSk
 }
 
 async function plan(ctx: MutationCtx, row: Doc<"intakes">, skill: ChatSkill) {
-  const caps = await loadCaps(ctx, row.workspaceId, GROWTH_ARCHITECT, skill);
+  // The budget the run will really get: raised for a dearer model exactly as `startRunFor` raises it.
+  const caps = await capsFor(ctx, { workspaceId: row.workspaceId, agentSlug: GROWTH_ARCHITECT, skillSlug: skill, choice: row.modelChoice });
   const spent = await daySpend(ctx, row.workspaceId, GROWTH_ARCHITECT, skill, dayKey());
   return {
     skill,
@@ -157,7 +159,16 @@ async function advance(ctx: MutationCtx, row: Doc<"intakes">, skill: ChatSkill) 
     await ctx.db.patch(row._id, { status: "chatting", asking: next.key, questionsAsked: row.questionsAsked + 1, updatedAt: Date.now() });
     return;
   }
-  const fresh = (await ctx.db.get(row._id))!;
+  let fresh = (await ctx.db.get(row._id))!;
+  // The plan shows a budget, and the budget depends on the model. A conversation with no pick of its own is
+  // fixed here to the model its person last chose, so the budget shown cannot change behind the card.
+  if (fresh.modelChoice === undefined) {
+    const remembered = await rememberedModel(ctx, fresh.workspaceId, fresh.createdBy, skillNeeds(skill));
+    if (remembered) {
+      await ctx.db.patch(fresh._id, { modelChoice: remembered });
+      fresh = (await ctx.db.get(row._id))!;
+    }
+  }
   await ctx.db.insert("intakeMessages", {
     workspaceId: row.workspaceId,
     intakeId: row._id,
@@ -168,6 +179,22 @@ async function advance(ctx: MutationCtx, row: Doc<"intakes">, skill: ChatSkill) 
     at,
   });
   await ctx.db.patch(row._id, { status: "ready", asking: undefined, updatedAt: Date.now() });
+}
+
+async function latestPlan(ctx: Pick<QueryCtx, "db">, intakeId: Id<"intakes">) {
+  const rows = await ctx.db
+    .query("intakeMessages")
+    .withIndex("by_intake", (q) => q.eq("intakeId", intakeId))
+    .order("desc")
+    .take(20);
+  return rows.find((message) => message.kind === "plan") ?? null;
+}
+
+/** Draws the plan on screen again, with the budget for the model the conversation is now on. Called when its model changes. */
+export async function redrawPlan(ctx: MutationCtx, row: Doc<"intakes"> & { skillSlug: ChatSkill }) {
+  if (row.status !== "ready") return;
+  const shown = await latestPlan(ctx, row._id);
+  if (shown) await ctx.db.patch(shown._id, { data: await plan(ctx, row, row.skillSlug) });
 }
 
 async function ownIntake(ctx: QueryCtx & { workspaceId: Id<"workspaces"> }, intakeId: Id<"intakes">) {
@@ -295,6 +322,11 @@ export const start = workspaceMutation({
     await assertCanSpend(ctx, ctx.workspaceId);
     const answers = row.answers ?? {};
     const skill = row.skillSlug;
+    // Nobody starts work on a budget other than the one they were shown. The run gets the conversation's
+    // model; if that would mean a different budget from the one on the plan card, they confirm again.
+    const shown = (await latestPlan(ctx, row._id))?.data as { capCents?: number } | undefined;
+    const now = await capsFor(ctx, { workspaceId: ctx.workspaceId, agentSlug: GROWTH_ARCHITECT, skillSlug: skill, choice: row.modelChoice });
+    if (shown?.capCents !== undefined && shown.capCents !== now.maxCostCentsPerRun) throw userError("The budget changed. Check the new budget on the plan, then press Start again.");
     const forClient = row.clientId ? { clientId: row.clientId } : {};
     const base = { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: skill, ...forClient };
     let projectId: Id<"researchProjects"> | undefined;
@@ -333,7 +365,9 @@ export const start = workspaceMutation({
       }
       await saveCardFromChat(ctx, answers);
     }
-    const runId = await startRunFor(ctx, { ...base, ...(projectId ? { projectId } : {}) });
+    // The model fixed on the conversation goes with the run it starts. It is passed as the run's own, not as
+    // a pick by whoever pressed Start, so pressing Start never changes what is remembered for anyone.
+    const runId = await startRunFor(ctx, { ...base, ...(projectId ? { projectId } : {}), ...(row.modelChoice ? { fixedModel: row.modelChoice } : { unattended: true }) });
     await ctx.db.patch(row._id, { status: "started", runId, ...(projectId ? { projectId } : {}), updatedAt: Date.now() });
     return { runId, projectId: projectId ?? null };
   },

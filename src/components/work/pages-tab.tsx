@@ -23,6 +23,8 @@ import type { ItemDecision, PagesQuote, PagesTabData, ReviewActions, TeardownPag
 import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
 import { useCredits } from "@/lib/credits";
+import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
+import { useModelChoice } from "@/components/models/use-model-choice";
 
 export type TeardownAsk = { industry: string; ownUrl: string; urls: string[]; find: boolean; note: string };
 
@@ -34,6 +36,8 @@ export type PagesTabProps = {
   quote: PagesQuote | null;
   onAskChange: (ask: TeardownAsk | null) => void;
   onStart: (ask: TeardownAsk, confirmedCents: number) => Promise<void>;
+  /** The model switch for work started here. Left out where no model can be chosen. */
+  model?: ModelSwitchProps | null;
   view: TeardownView | null;
   page: TeardownPageView | null;
   onSelect: (assetId: string) => void;
@@ -57,7 +61,7 @@ const STOP_WORDS: Record<string, string> = {
 
 const EMPTY_ASK: TeardownAsk = { industry: "", ownUrl: "", urls: [], find: true, note: "" };
 /** The ask: industry, your page, other pages, and whether to look for more. The plan and budget sit under it. */
-function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial: TeardownAsk; quote: PagesQuote | null; onAskChange: (ask: TeardownAsk | null) => void; onStart: PagesTabProps["onStart"]; onClose: () => void }) {
+function StartForm({ initial, quote, onAskChange, onStart, onClose, model }: { model?: ModelSwitchProps | null; initial: TeardownAsk; quote: PagesQuote | null; onAskChange: (ask: TeardownAsk | null) => void; onStart: PagesTabProps["onStart"]; onClose: () => void }) {
   const credits = useCredits();
   const [industry, setIndustry] = useState(initial.industry);
   const [ownUrl, setOwnUrl] = useState(initial.ownUrl);
@@ -91,15 +95,15 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
 
   const refused = quote?.pages.filter((row) => !row.ok) ?? [];
   return (
-    <Panel className="grid gap-4 p-4 sm:p-6">
+    <Panel className="grid grid-cols-1 gap-4 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-heading text-base text-card-foreground">Tear down landing pages</h2>
         <Button type="button" size="sm" variant="ghost" onClick={onClose} aria-label="Close">
           <X aria-hidden className="size-4" />
         </Button>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="grid content-start gap-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 content-start gap-3">
           <label className="grid gap-1 text-sm text-card-foreground">
             Industry
             <Input value={industry} maxLength={80} placeholder="Marketing agencies for coaches" onChange={(event) => setIndustry(event.target.value)} />
@@ -125,7 +129,7 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
           </label>
         </div>
 
-        <div className="grid content-start gap-3 rounded-xl border border-border p-3 sm:p-4" aria-live="polite">
+        <div className="grid min-w-0 grid-cols-1 content-start gap-3 rounded-xl border border-border p-3 sm:p-4" aria-live="polite">
           <p className="flex items-center gap-2 text-sm font-medium text-card-foreground">
             <ListChecks aria-hidden className="size-4 text-primary" /> The plan, before anything runs
           </p>
@@ -167,10 +171,12 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
               <Honest words={quote.honest} />
               {quote.canStart ? (
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button type="button" disabled={!quote.ready || busy} onClick={() => void start()}>
-                    {busy ? <LoaderCircle aria-hidden className="size-4 animate-spin" /> : <Search aria-hidden className="size-4" />}
+                  {/* The label can wrap, so on the narrowest phones the button stays inside its card. */}
+                  <Button type="button" className="h-auto min-h-9 max-w-full py-1.5 text-left whitespace-normal" disabled={!quote.ready || busy} onClick={() => void start()}>
+                    {busy ? <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin" /> : <Search aria-hidden className="size-4 shrink-0" />}
                     {busy ? "Starting…" : `Start teardown · up to ${credits.words(quote.maxCents)}`}
                   </Button>
+                  {model ? <ModelSwitch {...model} /> : null}
                   {!quote.ready && !quote.industry ? <span className="text-xs text-muted-foreground">Name the industry first.</span> : null}
                   {!quote.ready && quote.industry && quote.maxPages === 0 ? <span className="text-xs text-muted-foreground">Add a page, or tick the box to find some.</span> : null}
                 </div>
@@ -189,7 +195,7 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
 }
 
 /** The Pages workspace, drawn from data so the screen and its story are the same component. */
-export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, view, page, onSelect, onSelectPage, decisions, tryActions, review, briefJson, initialAsk }: PagesTabProps) {
+export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, model, view, page, onSelect, onSelectPage, decisions, tryActions, review, briefJson, initialAsk }: PagesTabProps) {
   const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialAsk));
   const close = () => {
@@ -198,7 +204,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
   };
   const empty = tab.results.length === 0 && tab.running.length === 0;
   return (
-    <div className="grid min-w-0 gap-5">
+    <div className="grid min-w-0 grid-cols-1 gap-5">
       <WorkHero
         icon={FileSearch}
         eyebrow="Landing Page Teardown"
@@ -213,14 +219,15 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
         }
       />
 
-      {form ? <StartForm initial={initialAsk ?? EMPTY_ASK} quote={quote} onAskChange={onAskChange} onStart={onStart} onClose={close} /> : null}
+      {form ? <StartForm initial={initialAsk ?? EMPTY_ASK} quote={quote} onAskChange={onAskChange} onStart={onStart} onClose={close} model={model} /> : null}
 
       {tab.running.length > 0 ? (
-        <section className="grid gap-2" aria-label="Running now">
+        <section className="grid grid-cols-1 gap-2" aria-label="Running now">
           <SectionTitle icon={LoaderCircle}>Running now</SectionTitle>
-          <ul className="grid gap-2">
+          {/* One column that can shrink, so a long line is cut with "..." instead of widening the page on a phone. */}
+          <ul className="grid grid-cols-1 gap-2">
             {tab.running.map((run) => (
-              <li key={run.id}>
+              <li key={run.id} className="min-w-0">
                 <Link href={`/app/runs/${run.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-3 py-2 text-sm hover:border-primary/50">
                   <span className="flex min-w-0 items-center gap-2 text-card-foreground">
                     <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin text-primary" />
@@ -308,6 +315,7 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
   const [pageId, setPageId] = useState<string | null>(null);
   const [ask, setAsk] = useState<TeardownAsk | null>(null);
   const start = useMutation(api.landingTeardown.start);
+  const modelChoice = useModelChoice(workspaceId, "landing-page-teardown");
   const review = useReviewActions(workspaceId);
 
   const assetId = (selected ?? tab?.results[0]?.id ?? null) as Id<"assets"> | null;
@@ -315,7 +323,7 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
   const shownPage = pageId && view?.pages.some((row) => row.id === pageId) ? pageId : (view?.pages[0]?.id ?? null);
   const page = useQuery(api.landingTeardown.page, assetId && shownPage ? { workspaceId, assetId, pageId: shownPage } : "skip");
   const brief = useQuery(api.landingTeardown.brief, assetId && view?.hasBrief ? { workspaceId, assetId } : "skip");
-  const quote = useQuery(api.landingTeardown.quote, ask ? { workspaceId, industry: ask.industry, ownUrl: ask.ownUrl || undefined, urls: ask.urls, find: ask.find } : "skip");
+  const quote = useQuery(api.landingTeardown.quote, ask ? { workspaceId, industry: ask.industry, ownUrl: ask.ownUrl || undefined, urls: ask.urls, find: ask.find, ...(modelChoice.picked ? { model: modelChoice.picked } : {}) } : "skip");
   const { byIndex, actions } = useItemDecisions(workspaceId, assetId);
 
   if (!tab) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -326,8 +334,9 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
       tab={tab}
       quote={quote ?? null}
       onAskChange={setAsk}
+      model={editor ? modelChoice.props : null}
       onStart={async (next, confirmedCents) => {
-        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents, clientId });
+        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents, clientId, ...(modelChoice.picked ? { model: modelChoice.picked } : {}) });
       }}
       view={view ?? null}
       page={page ?? null}

@@ -309,8 +309,9 @@ function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, contex
   const shell = useWorkspaceShell();
   const send = useMutation(api.agentChat.send);
   const { clientId } = useClientScope();
-  const extras = useChatExtras(workspaceId, editor, shell?.role === "owner");
   const [route, setRoute] = useState<ChatRoute | null>(preset);
+  // The switch offers only models that can run the skill this chat is set to.
+  const extras = useChatExtras(workspaceId, editor, shell?.role === "owner", route ?? undefined);
   const [attached, setAttached] = useState<ChatContext | null>(context);
   const [problem, setProblem] = useState("");
   const research = route === "market-intelligence";
@@ -331,7 +332,7 @@ function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, contex
             placeholder={!editor ? "Owners, Admins and Members start work. You can read every conversation." : route ? ROUTE_LOOK[route].hint : "Ask about your market, your offer or your growth…"}
             initialText={starter || ask}
             disabled={!editor}
-            {...(research ? extras.composer : {})}
+            {...(research ? extras.composer : { model: extras.composer.model })}
             footnote="It asks only what it needs, then shows a plan with its budget. Nothing runs or spends until you press Start."
             onSubmit={async (text) => {
               setProblem("");
@@ -341,6 +342,7 @@ function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, contex
                   ...(clientId ? { clientId } : {}),
                   text,
                   ...(route ? { skill: route } : {}),
+                  ...(extras.model ? { model: extras.model } : {}),
                   ...(attached ? { context: { kind: attached.kind, id: attached.id } } : {}),
                   ...(research ? { mode: extras.mode, ...(extras.sources ? { platforms: extras.sources } : {}), ...(extras.links.length ? { links: extras.links } : {}) } : {}),
                 });

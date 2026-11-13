@@ -4,7 +4,7 @@ import { CreativeTabStory } from "./story";
 
 export const metadata = { title: "Creative tab story", robots: { index: false, follow: false } };
 
-/** ?state=full|review|empty|rep|form|running|approved|due|won|edit and ?theme=light|dark, for screenshots. */
+/** ?state=full|review|empty|rep|form|running|approved|due|won|edit|noimages|noimages-admin|gptimages and ?theme=light|dark, for screenshots. */
 export default async function CreativeTabStoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (process.env.NODE_ENV === "production") notFound();
   const query = await searchParams;

@@ -14,7 +14,8 @@ import { internalAction, internalMutation, internalQuery, type MutationCtx } fro
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notFound, userError } from "./lib/errors";
 import type { ModelRoute } from "./lib/modelRouter";
-import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
+import { wrapUntrusted } from "./lib/registry";
+import { platformRoute } from "./lib/modelChoice";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { completeWithTools } from "./lib/toolRouter";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
@@ -156,11 +157,8 @@ export const forRead = internalQuery({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.fileId);
     if (!row) return null;
-    const route = await ctx.db
-      .query("modelRoutes")
-      .withIndex("by_workKind", (q) => q.eq("workKind", "classify"))
-      .unique();
-    return { file: row, route: route ?? (devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null) };
+    const route = await platformRoute(ctx, "classify");
+    return { file: row, route };
   },
 });
 

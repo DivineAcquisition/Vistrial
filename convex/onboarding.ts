@@ -18,9 +18,9 @@ import { signedInMutation, signedInQuery } from "./lib/builders";
 import { writeFact } from "./lib/facts";
 import { ALL_PLATFORMS } from "./lib/intake";
 import { unlockOnboarding } from "./lib/onboarding";
-import type { ModelRoute } from "./lib/modelRouter";
 import { createWorkspaceFor } from "./lib/newWorkspace";
-import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
+import { wrapUntrusted } from "./lib/registry";
+import { platformRoute } from "./lib/modelChoice";
 import { parsePublicUrl } from "./lib/sourceRefs";
 import { completeWithTools } from "./lib/toolRouter";
 import { cleanScope } from "./research";
@@ -173,13 +173,10 @@ const SITE_SCHEMA = {
 export const siteContext = internalQuery({
   args: { rowId: v.id("onboarding") },
   handler: async (ctx, args) => {
-    const route = await ctx.db
-      .query("modelRoutes")
-      .withIndex("by_workKind", (q) => q.eq("workKind", "classify"))
-      .unique();
+    const route = await platformRoute(ctx, "classify");
     return {
       row: await ctx.db.get(args.rowId),
-      route: (route ?? (devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null)) as ModelRoute | null,
+      route,
     };
   },
 });
@@ -405,7 +402,7 @@ export const startFree = signedInMutation({
       .withIndex("by_user", (q) => q.eq("userId", ctx.userId))
       .filter((q) => q.and(q.eq(q.field("workspaceId"), row.workspaceId), q.eq(q.field("active"), true)))
       .first();
-    if (!member || !isOwner(member.role)) throw userError("Only the workspace owner can start the free session.", "not_allowed");
+    if (!member || !isOwner(member.role)) throw userError("Only the organization's Owner can start the free session.", "not_allowed");
 
     const previous = row.freeRunId ? await ctx.db.get(row.freeRunId) : null;
     if (previous && row.freeProjectId) {

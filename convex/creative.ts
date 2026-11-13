@@ -22,6 +22,7 @@ import { notFound, userError } from "./lib/errors";
 import { savedRecord } from "./lib/savedRecords";
 import { startRunFor } from "./runs";
 import { COPY_MAX, DIALS, DIAL_WORDS, PHASE, SKILL_SLUG, designText, type CreativeContext, type CreativeRecord, type Variation } from "./skills/creativeProduction/shapes";
+import { markOfAsset } from "./lib/modelMarks";
 
 const OPEN = ["queued", "running", "waiting", "needsInput"] as const;
 const MAX_NOTE = 600;
@@ -123,6 +124,8 @@ export const start = workspaceMutation({
     offerCardId: v.optional(v.id("offerCards")),
     dial: v.optional(v.string()),
     note: v.optional(v.string()),
+    /** The model family picked for this work: claude, gpt or gemini. Missing means the organization's default. */
+    model: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     requireWork(ctx.member.role);
@@ -161,7 +164,7 @@ export const start = workspaceMutation({
       createdBy: ctx.identity.subject,
       createdAt: Date.now(),
     });
-    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, inputRef: requestId, clientId: kit.clientId });
+    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, inputRef: requestId, clientId: kit.clientId, model: args.model });
     await ctx.db.patch(requestId, { runId });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "creative.started", subject: requestId });
     return { requestId, runId };
@@ -236,6 +239,8 @@ export const view = workspaceQuery({
       assetId: asset._id,
       title: asset.title,
       status: asset.status,
+      /** The model that made it, as stored on its run. Null for older work. */
+      model: await markOfAsset(ctx, asset),
       createdAt: asset.createdAt,
       versions: saved.versions,
       dial: { value: saved.dial, ...DIAL_WORDS[saved.dial] },

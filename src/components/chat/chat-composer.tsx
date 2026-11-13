@@ -37,7 +37,9 @@ import {
   MenuSubTrigger,
   MenuTrigger,
 } from "@/components/ui/menu";
+import { ModelSwitch, capScaleOf, type ModelSwitchProps } from "@/components/models/model-switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useCredits } from "@/lib/credits";
 import { cn } from "@/lib/utils";
 import { SourceIcon } from "@/components/research/source-icon";
 
@@ -50,21 +52,24 @@ export type ComposerFile = {
   status: "uploading" | "reading" | "read" | "failed";
 };
 
+/** No run may cost more than this, whatever the model (the platform ceiling in convex/lib/caps.ts). */
+const MAX_RUN_CENTS = 1000;
+
 export const MODE_WORDS: Record<
   ComposerMode,
-  { label: string; model: string; words: string; cap: string }
+  { label: string; words: string; capCents: number }
 > = {
+  // capCents is what a research session may cost to run in this mode; the screen shows it as credits. A
+  // dearer model picked in the switch raises it in step with its price.
   thorough: {
     label: "Thorough",
-    model: "Opus 5.5",
     words: "Best research quality",
-    cap: "up to $3.00",
+    capCents: 300,
   },
   fast: {
     label: "Fast",
-    model: "Sonnet 5.5",
     words: "Quicker, about half the cost",
-    cap: "up to $1.50",
+    capCents: 150,
   },
 };
 
@@ -103,6 +108,7 @@ export function ChatComposer({
   size = "dock",
   agent,
   mode,
+  model,
   sources,
   links,
   files,
@@ -126,6 +132,8 @@ export function ChatComposer({
     onChange?: (mode: ComposerMode) => void;
     locked?: boolean;
   };
+  /** The model switch: which model does the work this chat starts. Left out where no model can be chosen. */
+  model?: ModelSwitchProps | null;
   sources?: {
     value: string[] | null;
     onChange: (value: string[] | null) => void;
@@ -148,6 +156,7 @@ export function ChatComposer({
   autoFocus?: boolean;
   initialText?: string;
 }) {
+  const credits = useCredits();
   const [text, setText] = useState(initialText);
   const [sending, setSending] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -465,9 +474,6 @@ export function ChatComposer({
                   <Gauge aria-hidden className="size-3.5" />
                 )}
                 {MODE_WORDS[mode.value].label}
-                <span className="hidden text-[10px] text-muted-foreground sm:inline">
-                  {MODE_WORDS[mode.value].model}
-                </span>
                 {mode.locked ? null : (
                   <ChevronDown aria-hidden className="size-3" />
                 )}
@@ -489,13 +495,10 @@ export function ChatComposer({
                       <span className="grid gap-0.5">
                         <span className="flex items-baseline gap-2">
                           {MODE_WORDS[key].label}
-                          <span className="text-[11px] text-muted-foreground">
-                            {MODE_WORDS[key].model}
-                          </span>
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {MODE_WORDS[key].words} · research{" "}
-                          {MODE_WORDS[key].cap}
+                          {MODE_WORDS[key].words} · research up to{" "}
+                          {credits.cost(Math.min(Math.ceil(MODE_WORDS[key].capCents * capScaleOf(model, key)), MAX_RUN_CENTS))}
                         </span>
                       </span>
                     </MenuItem>
@@ -504,6 +507,8 @@ export function ChatComposer({
               </MenuPopup>
             </Menu>
           ) : null}
+
+          {model ? <ModelSwitch {...model} mode={mode?.value ?? model.mode} /> : null}
 
           {focused && sources ? (
             <button

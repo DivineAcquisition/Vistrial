@@ -30,6 +30,7 @@ import { ReviewBar } from "./review-bar";
 import type { FinishedRun, ResultRow, ReviewActions, RunningRun, SuggestionRow } from "./types";
 import { useCredits } from "@/lib/credits";
 import { MEMORY_HREF } from "@/lib/shell/journey";
+import { ModelMark } from "@/components/models/model-mark";
 
 /** Plain words for a step's phase, as the live feed shows it. */
 const PHASE_WORDS: Record<string, string> = {
@@ -208,6 +209,7 @@ export function ResultsList({
                     <span className="text-xs text-muted-foreground">
                       Version {row.currentVersion} · {shortDate(row.createdAt)}
                     </span>
+                    <ModelMark model={row.model} />
                   </Link>
                   <AssetStatusBadge status={row.status as "draft"} />
                 </div>

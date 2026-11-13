@@ -15,7 +15,7 @@ import { assertCanSpend, chargeUsage } from "./lib/billing";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notFound, userError } from "./lib/errors";
 import { MAX_IMAGE_BYTES, MAX_REFERENCES_PER_DAY, MAX_VIDEO_BYTES, REFERENCE_FAIL_WORDS, contentTypeOf, mediaKindOf, readReferenceLink } from "./lib/referenceShapes";
-import { devSkillsEnabled } from "./lib/registry";
+import { platformRoute } from "./lib/modelChoice";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_LISTED = 30;
@@ -133,11 +133,8 @@ export const forAnalysis = internalQuery({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.referenceId);
     if (!row || row.status !== "analysing") return null;
-    const route = await ctx.db
-      .query("modelRoutes")
-      .withIndex("by_workKind", (q) => q.eq("workKind", "classify"))
-      .unique();
-    return { reference: row, route: route ?? (devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null) };
+    const route = await platformRoute(ctx, "classify");
+    return { reference: row, route };
   },
 });
 

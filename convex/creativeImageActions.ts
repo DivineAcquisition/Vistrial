@@ -1,6 +1,6 @@
 "use node";
 /**
- * Making one image with Gemini and storing it. A designed ad is read back by Claude to check that every word
+ * Making one image and storing it, through whichever key this deployment has (lib/imageModels.ts). A designed ad is read back by Claude to check that every word
  * came out right; one that did not is made once more, and if it is still wrong it is not kept and not charged.
  * Runs in Node because pictures are held in memory while they are decoded.
  */
@@ -10,7 +10,8 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { CHECK_COST_CENTS, missingText } from "./lib/creativeImages";
-import { GeminiError, callGeminiImage, type ReferenceImage } from "./lib/gemini";
+import { GeminiError, type ReferenceImage } from "./lib/gemini";
+import { makeImage } from "./lib/imageModels";
 import { ModelError, type ModelRoute } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
 
@@ -53,9 +54,9 @@ export const make = internalAction({
     try {
       const request = { model: plan.model, prompt: plan.prompt, aspect: plan.aspect, size: plan.size };
       if (plan.look !== "designed") {
-        const image = await callGeminiImage(request);
+        const image = await makeImage(request);
         const storageId = await ctx.storage.store(new Blob([Buffer.from(image.data, "base64")], { type: image.mimeType }));
-        await ctx.runMutation(internal.creativeImages.saveMade, { imageId: args.imageId, storageId, costCents: image.costCents });
+        await ctx.runMutation(internal.creativeImages.saveMade, { imageId: args.imageId, storageId, costCents: image.costCents, provider: image.provider, ...(image.reportedCents !== null ? { reportedCents: image.reportedCents } : {}) });
         return null;
       }
       const route = plan.checkRoute as ModelRoute | null;
@@ -65,13 +66,13 @@ export const make = internalAction({
       }
       const references = await styleReferences(ctx, plan.styleRefs);
       for (let attempt = 1; attempt <= DESIGN_ATTEMPTS; attempt += 1) {
-        const image = await callGeminiImage({ ...request, references });
+        const image = await makeImage({ ...request, references });
         const read = await readWords(route, image);
         if (missingText(plan.expected, read.lines).length > 0) continue;
         const storageId = await ctx.storage.store(new Blob([Buffer.from(image.data, "base64")], { type: image.mimeType }));
         // The customer pays for the one picture kept and a flat charge for its check, exactly as quoted. An
         // attempt that was thrown away is ours to bear.
-        await ctx.runMutation(internal.creativeImages.saveMade, { imageId: args.imageId, storageId, costCents: image.costCents + CHECK_COST_CENTS });
+        await ctx.runMutation(internal.creativeImages.saveMade, { imageId: args.imageId, storageId, costCents: image.costCents + CHECK_COST_CENTS, provider: image.provider, ...(image.reportedCents !== null ? { reportedCents: image.reportedCents } : {}) });
         return null;
       }
       await fail("text_wrong");

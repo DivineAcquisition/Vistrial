@@ -21,7 +21,7 @@ import { notFound, userError } from "./lib/errors";
 import type { ModelRoute } from "./lib/modelRouter";
 import { wrapUntrusted } from "./lib/registry";
 import { choiceFor, resolveRoute } from "./lib/modelChoice";
-import { isFamily, markOf } from "./lib/models";
+import { markOf } from "./lib/models";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { completeWithTools } from "./lib/toolRouter";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
@@ -122,9 +122,9 @@ export const ask = workspaceMutation({
     if (busy && (busy.status === "thinking" || busy.status === "running")) throw userError("One moment. Vistrial is still on the last question.");
     const at = await lastAt(ctx, project._id);
     const mode: Mode = args.mode ?? "thorough";
-    // Answering reads the session's own sources, so any family that is switched on can do it.
-    const family = await choiceFor(ctx, ctx.workspaceId, args.model, {});
-    const choice = family ? { modelChoice: family } : {};
+    // Answering reads the session's own sources, so any model that is switched on can do it.
+    const model = await choiceFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, picked: args.model, needs: {} });
+    const choice = model ? { modelChoice: model } : {};
     await ctx.db.insert("sessionChats", { workspaceId: ctx.workspaceId, projectId: project._id, role: "you", kind: "question", text, status: "done", mode, costCents: 0, createdBy: ctx.identity.subject, at });
     const answerId = await ctx.db.insert("sessionChats", { workspaceId: ctx.workspaceId, projectId: project._id, role: "agent", kind: "answer", text: "", status: "thinking", mode, ...choice, costCents: 0, createdBy: ctx.identity.subject, at: at + 1 });
     await ctx.scheduler.runAfter(0, internal.followups.answer, { chatId: answerId, question: text });
@@ -192,10 +192,9 @@ export const context = internalQuery({
       .query("sessionChats")
       .withIndex("by_project", (q) => q.eq("projectId", project._id))
       .take(40);
-    // New research searches the web. A family that cannot do that here is set aside for it: the platform's
+    // New research searches the web. A model that cannot do that here is set aside for it: the platform's
     // route runs, and the answer records the model that did.
-    const family = isFamily(message.modelChoice) ? message.modelChoice : null;
-    const routeFor = async (workKind: "classify" | "write" | "research", webSearch: boolean) => (await resolveRoute(ctx, workKind, family, { webSearch })).route;
+    const routeFor = async (workKind: "classify" | "write" | "research", webSearch: boolean) => (await resolveRoute(ctx, workKind, message.modelChoice, { webSearch })).route;
     const mode: Mode = message.mode ?? "thorough";
     return {
       message,

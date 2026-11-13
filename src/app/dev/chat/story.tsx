@@ -4,8 +4,7 @@ import { useState } from "react";
 
 import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { ChatComposer, type ComposerFile, type ComposerMode } from "@/components/chat/chat-composer";
-import type { ModelFamily } from "@/components/models/model-mark";
-import { SAMPLE_MARKS, SAMPLE_MODELS, SAMPLE_MODELS_RESEARCH } from "@/components/models/sample";
+import { SAMPLE_MARKS, SAMPLE_MODELS, SAMPLE_MODELS_CLAUDE } from "@/components/models/sample";
 import { FollowUpsView, type FollowUpMessage } from "@/components/sessions/session-thread";
 
 const AGENTS = [
@@ -42,7 +41,7 @@ const MESSAGES: FollowUpMessage[] = [
 export function ChatStory() {
   const [agent, setAgent] = useState("growth-architect");
   const [mode, setMode] = useState<ComposerMode>("thorough");
-  const [family, setFamily] = useState<ModelFamily>("gpt");
+  const [family, setFamily] = useState("openai/gpt-6.1-sol");
   const [sources, setSources] = useState<string[] | null>(null);
   const [links, setLinks] = useState<string[]>(["https://housekeep.com/"]);
   const [files, setFiles] = useState<ComposerFile[]>([
@@ -66,7 +65,7 @@ export function ChatStory() {
           files={{ value: files, onAdd: () => undefined, onRemove: (key) => setFiles((rows) => rows.filter((row) => row.key !== key)) }}
           connect={{ canConnect: true, metaConnected: false, onConnectMeta: () => undefined }}
           onSubmit={async () => undefined}
-          model={{ options: SAMPLE_MODELS_RESEARCH, value: "claude" }}
+          model={{ options: SAMPLE_MODELS_CLAUDE, value: "claude-opus-5-5" }}
           footnote="It asks only what it needs, then shows a plan with its budget. Nothing runs or spends until you press Start."
         />
       </section>

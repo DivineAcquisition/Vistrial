@@ -127,11 +127,12 @@ const BANANA = { family: "gemini" as const, name: "Nano Banana 2.1" };
 const IMAGE_MODELS = {
   value: "gemini" as const,
   options: [
-    { family: "gemini" as const, label: "Gemini", thorough: "Nano Banana Pro", fast: "Nano Banana Pro", off: null, cost: null },
-    { family: "gpt" as const, label: "GPT", thorough: "GPT Image", fast: "GPT Image", off: "Coming soon", cost: null },
-    { family: "claude" as const, label: "Claude", thorough: "Claude", fast: "Claude", off: "Does not make images", cost: null },
+    { id: "gemini" as const, family: "gemini" as const, familyName: "Gemini", name: "Nano Banana Pro", cost: null },
+    { id: "gpt" as const, family: "gpt" as const, familyName: "GPT", name: "GPT Image 2.6 Sunburst", cost: "Usually costs more" },
   ],
 };
+const GPT_NOTICE = "GPT images are made by OpenAI, reached through OpenRouter. Unlike the other models here, OpenAI is not on a no-retention agreement for image requests: it may keep the request for a time. The price is an upper limit: you are charged what each image really cost, never more.";
+const RETAKE = { cents: 16, upTo: false, model: "gemini" as const };
 const SETUP_ADMIN = "Image making needs a key. Set OPENROUTER_API_KEY or GEMINI_API_KEY in this Convex deployment's environment variables (Settings, Environment Variables). Neither is set.";
 const SETUP_EVERYONE = "Image making is not set up on this workspace yet, so no image was made and nothing was charged. Your ad copy is ready to use as it is. Ask your Vistrial contact to switch images on, or write to contact@vistrial.io.";
 
@@ -139,11 +140,11 @@ const IMAGES: CreativeImageList = {
   eachCents: { photo: 16, designed: 42 },
   brand: { name: "Northside Dental", accent: "#0f8b8d", headingFont: "Poppins", logoUrl: LOGO },
   images: [
-    { id: id("i1"), variationKey: "A", placement: "1:1", look: "photo", status: "ready", stale: false, url: picture("#f2e9dc", "#0f8b8d"), problem: null, model: BANANA },
-    { id: id("i2"), variationKey: "A", look: "photo", placement: "9:16", status: "ready", stale: false, url: picture("#dff3f1", "#12263a"), problem: null, model: BANANA },
-    { id: id("i3"), variationKey: "A", look: "photo", placement: "1.91:1", status: "ready", stale: false, url: picture("#f2e9dc", "#12263a"), problem: null, model: BANANA },
-    { id: id("i4"), variationKey: "B", look: "photo", placement: "1:1", status: "generating", stale: false, url: null, problem: null, model: null },
-    { id: id("i5"), variationKey: "B", look: "photo", placement: "9:16", status: "failed", stale: false, url: null, problem: "The image service declined to make this one. Try again, or edit the image direction.", model: null },
+    { id: id("i1"), variationKey: "A", placement: "1:1", look: "photo", status: "ready", stale: false, url: picture("#f2e9dc", "#0f8b8d"), problem: null, model: BANANA, retake: RETAKE },
+    { id: id("i2"), variationKey: "A", look: "photo", placement: "9:16", status: "ready", stale: false, url: picture("#dff3f1", "#12263a"), problem: null, model: BANANA, retake: RETAKE },
+    { id: id("i3"), variationKey: "A", look: "photo", placement: "1.91:1", status: "ready", stale: false, url: picture("#f2e9dc", "#12263a"), problem: null, model: BANANA, retake: RETAKE },
+    { id: id("i4"), variationKey: "B", look: "photo", placement: "1:1", status: "generating", stale: false, url: null, problem: null, model: null, retake: RETAKE },
+    { id: id("i5"), variationKey: "B", look: "photo", placement: "9:16", status: "failed", stale: false, url: null, problem: "The image service declined to make this one. Try again, or edit the image direction.", model: null, retake: RETAKE },
   ],
 };
 
@@ -171,7 +172,7 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
       <CreativeTabView
         base="/app/agents/growth-architect"
         editor={state !== "rep"}
-        model={{ options: SAMPLE_MODELS, value: "gemini" }}
+        model={{ options: SAMPLE_MODELS, value: "google/gemini-4-carbon" }}
         options={OPTIONS}
         references={state === "form" ? REFERENCES : []}
         referenceActions={{ addLink: async () => null, upload: async () => null, remove: noop }}
@@ -196,8 +197,8 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
             onTone={() => undefined}
             style={state === "approved" ? "fresh" : "brand"}
             onStyle={() => undefined}
-            quote={{ models: IMAGE_MODELS, setup: state === "noimages" ? { words: SETUP_EVERYONE, admin: false } : state === "noimages-admin" ? { words: SETUP_ADMIN, admin: true } : null, look: "designed", looks: [{ value: "designed", label: "Designed ad", what: "The whole ad is drawn with your words in it, then read back to check every word.", eachCents: 42 }, { value: "photo", label: "Photo with text on top", what: "A picture with no words. Your headline, button and real logo file are placed on top.", eachCents: 16 }], styleRefs: 2, styles: [{ value: "brand", label: "Like your past ads", what: "Follows the look of the 2 ads saved in your brand kit." }, { value: "fresh", label: "New design", what: "A new layout for each variation, in your colours and fonts. Your past ads are not shown to the designer. Your words stay exactly as written." }], count: 12, eachCents: 42, totalCents: 504, variations: 4, placements: ["1:1", "9:16", "1.91:1"], kitPlacements: ["1:1", "9:16"], availableCents: state === "review" ? 40 : 14_250, canAfford: state !== "review", blocked: state === "review" ? "This ad set did not pass its checks. Fix it before spending on images." : null }}
-            list={state === "running" || state.startsWith("noimages") ? { ...IMAGES, images: [] } : IMAGES}
+            quote={{ models: state === "gptimages" ? { ...IMAGE_MODELS, value: "gpt" as const } : IMAGE_MODELS, placementsOff: state === "gptimages" ? ["4:5"] : [], notice: state === "gptimages" ? GPT_NOTICE : null, upTo: state === "gptimages", setup: state === "noimages" ? { words: SETUP_EVERYONE, admin: false } : state === "noimages-admin" ? { words: SETUP_ADMIN, admin: true } : null, look: "designed", looks: [{ value: "designed", label: "Designed ad", what: "The whole ad is drawn with your words in it, then read back to check every word.", eachCents: 42 }, { value: "photo", label: "Photo with text on top", what: "A picture with no words. Your headline, button and real logo file are placed on top.", eachCents: 16 }], styleRefs: 2, styles: [{ value: "brand", label: "Like your past ads", what: "Follows the look of the 2 ads saved in your brand kit." }, { value: "fresh", label: "New design", what: "A new layout for each variation, in your colours and fonts. Your past ads are not shown to the designer. Your words stay exactly as written." }], count: 12, eachCents: 42, totalCents: 504, variations: 4, placements: ["1:1", "9:16", "1.91:1"], kitPlacements: ["1:1", "9:16"], availableCents: state === "review" ? 40 : 14_250, canAfford: state !== "review", blocked: state === "review" ? "This ad set did not pass its checks. Fix it before spending on images." : null }}
+            list={state === "running" || state === "gptimages" || state.startsWith("noimages") ? { ...IMAGES, images: [] } : IMAGES}
             onGenerate={noop}
             onRetake={noop}
           />

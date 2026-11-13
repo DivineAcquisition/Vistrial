@@ -13,7 +13,7 @@ import { EMPTY_BRAND } from "./lib/brandKits";
 import { FRESH_LAYOUTS, designedPrompt, imagePrompt, missingText } from "./lib/creativeImages";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { geminiImageBody, imageCostCents, readImage, type ScriptedGeminiImage } from "./lib/gemini";
-import { IMAGE_SETUP_WORDS, readOpenRouterImage, type ScriptedOpenRouterImage } from "./lib/imageModels";
+import { IMAGE_SETUP_WORDS, gptImageQuoteCents, gptImagesOpen, readOpenRouterImage, type ScriptedOpenRouterImage } from "./lib/imageModels";
 import { internal } from "./_generated/api";
 import type { ScriptedModel } from "./lib/toolRouter";
 import schema from "./schema";
@@ -151,6 +151,8 @@ describe("images for an ad set", () => {
     delete process.env.AUTUMN_SECRET_KEY;
     delete process.env.GEMINI_API_KEY;
     delete process.env.OPENROUTER_API_KEY;
+    delete process.env.MODEL_FAMILIES;
+    delete process.env.GPT_IMAGE_MEASURED_CENTS;
   });
 
   it("with no key set, starts nothing and charges nothing, and tells a Platform Admin exactly what is missing", async () => {
@@ -174,20 +176,89 @@ describe("images for an ad set", () => {
     expect(forAdmin.setup?.words).toContain("GEMINI_API_KEY");
   });
 
-  it("says which families make images: Gemini does, GPT is coming, Claude does not", async () => {
+  it("lists only the image models that can make images here", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     imageModel();
     const photo = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo" });
     expect(photo.setup).toBeNull();
     expect(photo.models.value).toBe("gemini");
-    expect(photo.models.options.map((row) => [row.family, row.thorough, row.off])).toEqual([
-      ["gemini", "Nano Banana 2.1", null],
-      ["gpt", "GPT Image", "Coming soon"],
-      ["claude", "Claude", "Does not make images"],
-    ]);
+    // GPT images are closed until a price has been measured, and Claude makes no images: neither is listed.
+    expect(photo.models.options.map((row) => [row.id, row.name])).toEqual([["gemini", "Nano Banana 2.1"]]);
+    expect(photo).toMatchObject({ upTo: false, placementsOff: [], notice: null });
     const designed = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "designed" });
-    expect(designed.models.options[0].thorough).toBe("Nano Banana Pro");
+    expect(designed.models.options[0].name).toBe("Nano Banana Pro");
+    // Each of the three switches alone is not enough.
+    process.env.MODEL_FAMILIES = "gpt";
+    process.env.GPT_IMAGE_MEASURED_CENTS = "8";
+    expect(gptImagesOpen()).toBe(false);
+    (globalThis as Globals).__vistrialScriptedOpenRouterImage = () => ({ status: 500, body: null });
+    expect(gptImagesOpen()).toBe(true);
+    delete process.env.GPT_IMAGE_MEASURED_CENTS;
+    expect(gptImagesOpen()).toBe(false);
+    await expect(a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo", confirmedCents: 16, model: "gpt" })).rejects.toThrow("GPT images are not available here yet");
+  });
+
+  describe("GPT images", () => {
+    const sent: Record<string, unknown>[] = [];
+    const open = (cost: number | null) => {
+      process.env.MODEL_FAMILIES = "gpt,gemini";
+      process.env.GPT_IMAGE_MEASURED_CENTS = "8";
+      sent.length = 0;
+      (globalThis as Globals).__vistrialScriptedOpenRouterImage = (body) => {
+        sent.push(body);
+        return { status: 200, body: { data: [{ b64_json: "aGVsbG8=", media_type: "image/png" }], usage: cost === null ? {} : { cost } } };
+      };
+    };
+
+    it("quotes up to a price worked out from the measured cost, and leaves out the shape the model does not make", async () => {
+      const t = makeTester();
+      const a = await seed(t, "Alpha");
+      open(0.08);
+      // 8 cents measured, plus OpenRouter's 5.5%, plus half again as headroom.
+      expect(gptImageQuoteCents()).toBe(12.66);
+      const quote = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1", "4:5", "9:16"], look: "photo", model: "gpt" });
+      expect(quote.models.value).toBe("gpt");
+      expect(quote.models.options.map((row) => [row.id, row.name, row.cost])).toEqual([
+        ["gemini", "Nano Banana 2.1", null],
+        ["gpt", "GPT Image 2.6 Sunburst", "Usually costs more"],
+      ]);
+      expect(quote).toMatchObject({ upTo: true, placementsOff: ["4:5"], placements: ["1:1", "9:16"], eachCents: 38 });
+      expect(quote.notice).toContain("not on a no-retention agreement");
+      await expect(a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["4:5"], look: "photo", confirmedCents: quote.eachCents * 2, model: "gpt" })).rejects.toThrow("cannot make the 4:5 shape");
+      expect(sent).toHaveLength(0);
+    });
+
+    it("charges what the image really cost with the fee, never more than the quote, and remembers the choice", async () => {
+      const t = makeTester();
+      const a = await seed(t, "Alpha");
+      open(0.09);
+      const quote = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo", model: "gpt" });
+      await a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo", confirmedCents: quote.totalCents, model: "gpt" });
+      await settle(t);
+      expect(sent[0]).toMatchObject({ model: "openai/gpt-image-2.6-sunburst", aspect_ratio: "1:1", quality: "high", n: 1, provider: { only: ["openai"], allow_fallbacks: false } });
+      expect(sent[0]).not.toHaveProperty("resolution");
+      const rows = await t.run((ctx) => ctx.db.query("creativeImages").collect());
+      // 9 cents reported, 9.49 with the fee: under the 12.66 quoted, so that is what is charged.
+      expect(rows[0]).toMatchObject({ status: "ready", provider: "openrouter", model: "openai/gpt-image-2.6-sunburst", costCents: 9.49, reportedCents: 9, holdCents: 0 });
+      const listed = await a.owner.query(api.creativeImages.list, { workspaceId: a.workspaceId, assetId: a.assetId });
+      expect(listed.images[0].model).toEqual({ family: "gpt", name: "GPT Image 2.6 Sunburst" });
+      expect(listed.images[0].retake).toEqual({ cents: 38, upTo: true, model: "gpt" });
+      // Next time, with nothing picked, this person's images start on GPT. Nobody else's do.
+      expect((await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo" })).models.value).toBe("gpt");
+      // An image that cost more than was quoted is charged the quote, and no more.
+      open(0.5);
+      await a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: [], confirmedCents: 38, model: "gpt", only: { variationKey: "A", placement: "1:1" } });
+      await settle(t);
+      const again = (await t.run((ctx) => ctx.db.query("creativeImages").collect())).find((row) => row.variationKey === "A");
+      expect(again?.costCents).toBeCloseTo(9.49 + 12.66, 6);
+      // With no cost reported, the measured cost with the fee stands in.
+      open(null);
+      await a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: [], confirmedCents: 38, model: "gpt", only: { variationKey: "B", placement: "1:1" } });
+      await settle(t);
+      const second = (await t.run((ctx) => ctx.db.query("creativeImages").collect())).find((row) => row.variationKey === "B");
+      expect(second?.costCents).toBeCloseTo(9.49 + 8.44, 6);
+    });
   });
 
   it("makes images through OpenRouter when only that key is there, pinned to Google Cloud, at the price confirmed", async () => {
@@ -207,9 +278,9 @@ describe("images for an ad set", () => {
     expect(String(sent[0].prompt)).toContain("A tidy room for A");
     expect(JSON.stringify(sent[0])).not.toMatch(/Rival/i);
     const row = (await t.run((ctx) => ctx.db.query("creativeImages").collect()))[0];
-    // Charged the table price the person confirmed; what OpenRouter reported is kept beside it.
-    expect(row).toMatchObject({ status: "ready", provider: "openrouter", costCents: 5.04, reportedCents: 5.04, holdCents: 0 });
-    expect((await t.run((ctx) => ctx.db.query("billingLedger").collect())).map((entry) => [entry.costCents, entry.priceCents])).toEqual([[5.04, 16]]);
+    // Charged the list price with OpenRouter's 5.5% fee, which is the price the person confirmed; what OpenRouter reported is kept beside it.
+    expect(row).toMatchObject({ status: "ready", provider: "openrouter", costCents: 5.32, reportedCents: 5.04, holdCents: 0 });
+    expect((await t.run((ctx) => ctx.db.query("billingLedger").collect())).map((entry) => [entry.costCents, entry.priceCents])).toEqual([[5.32, 16]]);
     const listed = await a.owner.query(api.creativeImages.list, { workspaceId: a.workspaceId, assetId: a.assetId });
     expect(listed.images[0].model).toEqual({ family: "gemini", name: "Nano Banana 2.1" });
   });

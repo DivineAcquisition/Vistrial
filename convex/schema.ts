@@ -459,8 +459,6 @@ export default defineSchema({
     weeklyPlan: v.optional(v.boolean()),
     /** Posts about changes in the organization's industry, read from the web. Missing means off. They use credits. */
     trendPosts: v.optional(v.boolean()),
-    /** The model family work starts on unless a person picks another: claude, gpt or gemini. Missing means the platform's own route. Set by an Owner or Admin. */
-    defaultModel: v.optional(v.string()),
   }).index("by_workspace", ["workspaceId"]),
 
   /** One member's own choices: theme and which in-app notices they want. Missing fields mean the default. */
@@ -473,6 +471,11 @@ export default defineSchema({
     notifyReportReady: v.optional(v.boolean()),
     /** Off stops reminder emails for this member. Missing means on. The switches above still choose which notices. */
     notifyByEmail: v.optional(v.boolean()),
+    /**
+     * The model this member last chose, per kind of work (lib/modelChoice.ts `ChoiceGroup`): a model id from
+     * lib/models.ts, and for images a family. Their next piece of that kind of work starts on it. Missing means the platform's route.
+     */
+    models: v.optional(v.object({ text: v.optional(v.string()), search: v.optional(v.string()), read: v.optional(v.string()), /** The family last chosen for making images: gemini or gpt. */ image: v.optional(v.string()) })),
     updatedAt: v.number(),
   }).index("by_workspace_user", ["workspaceId", "userId"]),
 

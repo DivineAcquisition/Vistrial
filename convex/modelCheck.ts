@@ -12,13 +12,14 @@ import type Anthropic from "@anthropic-ai/sdk";
 
 import { internalAction } from "./_generated/server";
 import { GeminiError, imageCostCents } from "./lib/gemini";
-import { OPENROUTER_IMAGES_URL, openRouterImageBody, readOpenRouterImage } from "./lib/imageModels";
-import { FAMILY_ROUTES } from "./lib/models";
+import { GPT_IMAGE_ASPECTS, GPT_IMAGE_MODEL, OPENROUTER_IMAGES_URL, gptImageMeasuredCents, openRouterImageBody, readOpenRouterImage } from "./lib/imageModels";
+import { MODELS as OFFERED } from "./lib/models";
 import { ModelError, costCents } from "./lib/modelRouter";
 import { OPENROUTER_URL, openRouterBody, openRouterCreate, openRouterKey, openRouterToolBudget, openRouterWebSearchTool, readReply, reportedCents } from "./lib/openrouter";
 import { collect, type Citation, type FoundSource } from "./lib/toolRouter";
 
-const MODELS = [...new Set([...Object.values(FAMILY_ROUTES.gpt), ...Object.values(FAMILY_ROUTES.gemini)].map((route) => route.model))];
+/** Every model offered through OpenRouter. */
+const MODELS = OFFERED.filter((row) => row.provider === "openrouter").map((row) => row.id);
 
 const SCHEMA = { type: "object", properties: { colour: { type: "string" }, count: { type: "integer" } }, required: ["colour", "count"], additionalProperties: false } as const;
 
@@ -169,6 +170,41 @@ async function imageMade() {
 }
 
 /**
+ * GPT images have no list price: they are priced by the token. This makes one small picture in each shape
+ * the product uses, at the quality the product asks for, and reports what each cost. GPT images stay closed
+ * until a Platform Admin sets GPT_IMAGE_MEASURED_CENTS to `setTo`, the dearest of them.
+ */
+async function gptImage() {
+  const shapes = [];
+  for (const aspect of GPT_IMAGE_ASPECTS) {
+    try {
+      const response = await fetch(OPENROUTER_IMAGES_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${openRouterKey()}`, "Content-Type": "application/json" },
+        body: JSON.stringify(openRouterImageBody({ model: GPT_IMAGE_MODEL, prompt: "A plain blue square on a white background, with the words SPRING SALE in large letters.", aspect, size: "2K" })),
+      });
+      let body: unknown = null;
+      try {
+        body = await response.json();
+      } catch {
+        body = null;
+      }
+      const made = readOpenRouterImage({ status: response.status, body });
+      shapes.push({ aspect, ok: made.data.length > 0 && made.reportedCents !== null, code: "ok", mimeType: made.mimeType, reportedCents: made.reportedCents });
+    } catch (error) {
+      shapes.push({ aspect, ok: false, code: error instanceof GeminiError ? error.code : "threw", reportedCents: null });
+    }
+  }
+  const costs = shapes.flatMap((row) => (row.reportedCents === null ? [] : [row.reportedCents]));
+  return {
+    shapes,
+    /** Set GPT_IMAGE_MEASURED_CENTS to this. Null when a shape failed or reported no cost: leave GPT images closed. */
+    setTo: costs.length === shapes.length && costs.length > 0 ? Math.max(...costs) : null,
+    measuredNow: gptImageMeasuredCents(),
+  };
+}
+
+/**
  * What OpenRouter says about the key itself: numbers and flags only. A run where every call answers
  * `no_credit` is explained here: no credit bought, a key limit that is used up, or a free-tier account.
  */
@@ -231,10 +267,12 @@ export const run = internalAction({
       models,
       /** Images through OpenRouter (used when GEMINI_API_KEY is not set). */
       imageMade: await imageMade(),
+      /** GPT images: what one costs, per shape. They stay closed until GPT_IMAGE_MEASURED_CENTS is set from this. */
+      gptImage: await gptImage(),
       account: await account(),
       whyNoCredit: await whyNoCredit(),
       badKey: await badKey(),
-      next: "If every search line is ok, set OPENROUTER_WEB_SEARCH=on. If reportedCents and tableCents differ by more than a few percent, the price table needs correcting.",
+      next: "If every search line is ok, set OPENROUTER_WEB_SEARCH=on. If reportedCents and tableCents differ by more than a few percent, the price table needs correcting. If gptImage.setTo is a number, set GPT_IMAGE_MEASURED_CENTS to it to open GPT images.",
     };
   },
 });

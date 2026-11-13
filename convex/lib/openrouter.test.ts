@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { cannotRun, familyOf, FAMILY_ROUTES, type Gate } from "./models";
+import { cannotRun, familyOf, MODELS, modelSpec, parseChoice, routesFor, type Gate } from "./models";
 import { ModelError, PRICES, complete } from "./modelRouter";
-import { OPENROUTER_ROUTING, openRouterError, readReply, reportedCents, type OpenRouterReply, type ScriptedOpenRouter } from "./openrouter";
+import { OPENROUTER_FEE, OPENROUTER_ROUTING, openRouterCents, openRouterError, readReply, reportedCents, type OpenRouterReply, type ScriptedOpenRouter } from "./openrouter";
 import { completeWithTools } from "./toolRouter";
 
 const SOL = "openai/gpt-6.1-sol";
 const TERRA = "openai/gpt-6.1-terra";
-const ROUTE = FAMILY_ROUTES.gpt.write;
+const ROUTE = routesFor(modelSpec(SOL)!).write;
+/** Every cost through OpenRouter carries its fee. */
+const FEE = 1 + OPENROUTER_FEE;
 
 type Body = Record<string, unknown>;
 const hook = globalThis as { __vistrialScriptedOpenRouter?: ScriptedOpenRouter };
@@ -88,15 +90,24 @@ describe("the OpenRouter provider", () => {
     script(reply([text("done")], { cost: 0.0042 }));
     const result = await completeWithTools(ROUTE, "write", { input: "q" });
     // $0.0042 is 0.42 cents. The table would have said 1,000 in at $2 and 100 out at $10: 0.3 cents.
-    expect(result.costCents).toBeCloseTo(0.42, 6);
+    expect(result.costCents).toBeCloseTo(0.42 * FEE, 4);
     expect(result.inputTokens).toBe(1000);
     expect(result.outputTokens).toBe(100);
+  });
+
+  it("adds OpenRouter's 5.5% fee to every cost, reported or worked out, in one place", () => {
+    expect(OPENROUTER_FEE).toBe(0.055);
+    expect(openRouterCents({ cost: 1 }, 7)).toBe(105.5);
+    expect(openRouterCents({}, 100)).toBe(105.5);
+    expect(openRouterCents({ cost: 0 }, 100)).toBe(0);
+    // The reported figure itself is left as OpenRouter gave it.
+    expect(reportedCents({ cost: 1 })).toBe(100);
   });
 
   it("falls back to the price table when no cost is reported", async () => {
     script(reply([text("done")], { cost: null }));
     const result = await completeWithTools(ROUTE, "write", { input: "q" });
-    expect(result.costCents).toBeCloseTo(0.3, 6);
+    expect(result.costCents).toBeCloseTo(0.3 * FEE, 4);
     expect(reportedCents({ cost: "0.1" })).toBeNull();
     expect(reportedCents({ cost: -1 })).toBeNull();
     expect(reportedCents(null)).toBeNull();
@@ -104,8 +115,8 @@ describe("the OpenRouter provider", () => {
 
   it("cannot run a model that has no price", async () => {
     script(reply([text("done")]));
-    const route = { provider: "openrouter", model: "openai/gpt-6-astra", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6-astra" };
-    expect(PRICES["openai/gpt-6-astra"]).toBeUndefined();
+    const route = { provider: "openrouter", model: "openai/gpt-7", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-7" };
+    expect(PRICES["openai/gpt-7"]).toBeUndefined();
     await expect(completeWithTools(route, "write", { input: "q" })).rejects.toMatchObject({ code: "unpriced_model", retryable: false });
   });
 
@@ -138,13 +149,13 @@ describe("the OpenRouter provider", () => {
     expect(result.sources.map((row) => row.url)).toEqual(["https://example.com/a", "https://example.com/b"]);
     expect(result.citations).toEqual([{ url: "https://example.com/b", title: "Example B", citedText: "b" }]);
     // The reported cost already holds the search fees: they are not added twice.
-    expect(result.costCents).toBeCloseTo(3, 6);
+    expect(result.costCents).toBeCloseTo(3 * FEE, 4);
   });
 
   it("refuses domain filters on a Google model, whose own search has none", async () => {
     process.env.OPENROUTER_WEB_SEARCH = "on";
     const sent = script(reply([text("done")]));
-    const route = { ...FAMILY_ROUTES.gemini.research, fallbackModel: "google/gemini-4-carbon" };
+    const route = { ...routesFor(modelSpec("google/gemini-4-carbon")!).research, fallbackModel: "google/gemini-4-carbon" };
     await expect(completeWithTools(route, "research", { input: "q", webSearch: { maxUses: 2, blockedDomains: ["x.com"] } })).rejects.toMatchObject({ code: "unsupported_tool" });
     expect(sent).toHaveLength(0);
   });
@@ -154,7 +165,7 @@ describe("the OpenRouter provider", () => {
     const result = await completeWithTools(ROUTE, "write", { input: "q" });
     expect(sent.map((row) => row.model)).toEqual([SOL, TERRA]);
     expect(result.model).toBe(TERRA);
-    expect(result.costCents).toBeCloseTo(0.3, 6);
+    expect(result.costCents).toBeCloseTo(0.3 * FEE, 4);
   });
 
   it("turns errors into codes and keeps none of the provider's words", async () => {
@@ -193,7 +204,7 @@ describe("the OpenRouter provider", () => {
 
   it("stops on max_tokens and on a full context window, with the cost counted", async () => {
     script(reply([], { stop: "max_tokens", cost: 0.01 }));
-    await expect(completeWithTools(ROUTE, "classify", { input: "q" })).rejects.toMatchObject({ code: "max_tokens", spent: { costCents: 1 } });
+    await expect(completeWithTools(ROUTE, "classify", { input: "q" })).rejects.toMatchObject({ code: "max_tokens", spent: { costCents: 1.055 } });
     script(reply([], { stop: "model_context_window_exceeded", cost: 0.01 }));
     await expect(completeWithTools(ROUTE, "classify", { input: "q" })).rejects.toMatchObject({ code: "max_tokens" });
   });
@@ -203,7 +214,7 @@ describe("the OpenRouter provider", () => {
     const result = await complete(ROUTE, "summarize", "Summarize this");
     expect(sent[0].max_tokens).toBe(4000);
     expect(sent[0].provider).toEqual(OPENROUTER_ROUTING);
-    expect(result).toMatchObject({ text: "hello", provider: "openrouter", model: SOL, costCents: 0.1 });
+    expect(result).toMatchObject({ text: "hello", provider: "openrouter", model: SOL, costCents: 0.1055 });
   });
 });
 
@@ -218,15 +229,40 @@ describe("families", () => {
     expect(familyOf("fake-writer")).toBeNull();
   });
 
-  it("keeps every fallback inside the family, on a model with a price", () => {
-    for (const family of ["claude", "gpt", "gemini"] as const) {
-      for (const route of Object.values(FAMILY_ROUTES[family])) {
-        expect(familyOf(route.model)).toBe(family);
-        expect(familyOf(route.fallbackModel)).toBe(family);
+  it("gives every offered model a price, a name, and a companion and fallback inside its family", () => {
+    expect(new Set(MODELS.map((row) => row.id)).size).toBe(MODELS.length);
+    for (const row of MODELS) {
+      expect(PRICES[row.id]).toBeDefined();
+      expect(familyOf(row.id)).toBe(row.family);
+      expect(row.provider).toBe(row.family === "claude" ? "claude" : "openrouter");
+      expect(row.fallback).not.toBe(row.id);
+      for (const other of [row.light, row.fallback]) expect(modelSpec(other)?.family).toBe(row.family);
+      for (const route of Object.values(routesFor(row))) {
+        expect(route.fallbackModel).not.toBe(route.model);
         expect(PRICES[route.model]).toBeDefined();
         expect(PRICES[route.fallbackModel]).toBeDefined();
       }
+      // A lighter companion never costs more than the model it works beside.
+      expect(PRICES[row.light].output).toBeLessThanOrEqual(PRICES[row.id].output);
     }
+  });
+
+  it("runs the chosen model for research and writing and its lighter companion for the rest", () => {
+    const routes = routesFor(modelSpec("openai/gpt-6-astra")!);
+    expect(routes.research).toEqual({ provider: "openrouter", model: "openai/gpt-6-astra", fallbackProvider: "openrouter", fallbackModel: SOL });
+    expect(routes.write).toEqual(routes.research);
+    expect(routes.classify).toEqual({ provider: "openrouter", model: TERRA, fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6-astra" });
+    expect(routes.summarize).toEqual(routes.classify);
+  });
+
+  it("reads a choice as a model id, or a family name from an older record, and nothing else", () => {
+    expect(parseChoice(SOL)?.id).toBe(SOL);
+    expect(parseChoice("gpt")?.id).toBe(SOL);
+    expect(parseChoice("claude")?.id).toBe("claude-opus-5-5");
+    expect(parseChoice("gemini")?.id).toBe("google/gemini-4-carbon");
+    expect(parseChoice("claude-fable-5-2")).toBeNull();
+    expect(parseChoice("openai/gpt-9")).toBeNull();
+    expect(parseChoice(undefined)).toBeNull();
   });
 
   it("says why a family cannot run a piece of work", () => {

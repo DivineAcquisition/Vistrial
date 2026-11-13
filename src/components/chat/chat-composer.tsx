@@ -37,7 +37,7 @@ import {
   MenuSubTrigger,
   MenuTrigger,
 } from "@/components/ui/menu";
-import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
+import { ModelSwitch, capScaleOf, type ModelSwitchProps } from "@/components/models/model-switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useCredits } from "@/lib/credits";
 import { cn } from "@/lib/utils";
@@ -52,11 +52,15 @@ export type ComposerFile = {
   status: "uploading" | "reading" | "read" | "failed";
 };
 
+/** No run may cost more than this, whatever the model (the platform ceiling in convex/lib/caps.ts). */
+const MAX_RUN_CENTS = 1000;
+
 export const MODE_WORDS: Record<
   ComposerMode,
   { label: string; words: string; capCents: number }
 > = {
-  // capCents is what a research session may cost to run in this mode; the screen shows it as credits.
+  // capCents is what a research session may cost to run in this mode; the screen shows it as credits. A
+  // dearer model picked in the switch raises it in step with its price.
   thorough: {
     label: "Thorough",
     words: "Best research quality",
@@ -494,7 +498,7 @@ export function ChatComposer({
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {MODE_WORDS[key].words} · research up to{" "}
-                          {credits.cost(MODE_WORDS[key].capCents)}
+                          {credits.cost(Math.min(Math.ceil(MODE_WORDS[key].capCents * capScaleOf(model, key)), MAX_RUN_CENTS))}
                         </span>
                       </span>
                     </MenuItem>

@@ -37,8 +37,8 @@ import {
 } from "./lib/intake";
 import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
-import { orgDefaultModel, resolveRoute, skillNeeds } from "./lib/modelChoice";
-import { isFamily, markOf } from "./lib/models";
+import { rememberedModel, resolveRoute, skillNeeds } from "./lib/modelChoice";
+import { markOf, parseChoice } from "./lib/models";
 import { completeWithTools } from "./lib/toolRouter";
 import { moveFilesToProject } from "./files";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
@@ -112,7 +112,7 @@ function intakeView(row: Doc<"intakes">) {
     clientId: row.clientId ?? null,
     mode: row.mode ?? "thorough",
     /** The model family picked for this conversation, or null for the organization's default. */
-    model: isFamily(row.modelChoice) ? row.modelChoice : null,
+    model: parseChoice(row.modelChoice)?.id ?? null,
     researchCapCents: (row.mode ?? "thorough") === "fast" ? 150 : 300,
     createdAt: row.createdAt,
   };
@@ -401,9 +401,10 @@ export const load = internalQuery({
       .order("desc")
       .first();
     const facts = await factsForRun(ctx, row.workspaceId);
-    // The conversation's own pick, else the organization's default, judged against the research it leads to.
-    const family = isFamily(row.modelChoice) ? row.modelChoice : await orgDefaultModel(ctx, row.workspaceId);
-    const { route } = await resolveRoute(ctx, "classify", family, skillNeeds("market-intelligence"));
+    // The conversation's own pick, else the model its person last chose for research, judged against the research it leads to.
+    const needs = skillNeeds("market-intelligence");
+    const choice = row.modelChoice ?? (await rememberedModel(ctx, row.workspaceId, row.createdBy, needs));
+    const { route } = await resolveRoute(ctx, "classify", choice, needs);
     const files = await ctx.db
       .query("sessionFiles")
       .withIndex("by_intake", (q) => q.eq("intakeId", row._id))

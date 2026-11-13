@@ -86,11 +86,27 @@ export function openRouterToolBudget(maxUses: number) {
   return { stop_server_tools_when: [{ type: "step_count_is", step_count: maxUses }] };
 }
 
-/** What OpenRouter says the call cost, in cents, or null when it reports none. `usage.cost` is in US dollars and includes search fees. */
+/** What OpenRouter says the call cost, in cents, before its fee, or null when it reports none. `usage.cost` is in US dollars and includes search fees. */
 export function reportedCents(usage: unknown): number | null {
   const cost = (usage as { cost?: unknown } | null | undefined)?.cost;
   if (typeof cost !== "number" || !Number.isFinite(cost) || cost < 0) return null;
   return Math.round(cost * 100 * 10_000) / 10_000;
+}
+
+/**
+ * OpenRouter takes 5.5% when credit is bought (its pricing page, read 2026-11-13), on top of what each call
+ * costs. So every dollar of usage really cost $1.055, and that is what is counted.
+ */
+export const OPENROUTER_FEE = 0.055;
+
+/**
+ * What a call through OpenRouter cost us, in cents: the cost it reports (or the price table's figure when it
+ * reports none) plus its fee. The one place the fee is added, for text and for images. Everything
+ * downstream (a run's cost, its caps, credits charged) sees the figure with the fee already in it.
+ */
+export function openRouterCents(usage: unknown, tableCents: number): number {
+  const before = reportedCents(usage) ?? tableCents;
+  return Math.round(before * (1 + OPENROUTER_FEE) * 10_000) / 10_000;
 }
 
 /** OpenRouter's stable machine code for an error, wherever the format puts it. Never its message. */
@@ -191,7 +207,7 @@ export async function openRouterComplete(model: string, workKind: WorkKind, inpu
   const response = await create({ model, max_tokens: MAX_TOKENS[workKind], messages: [{ role: "user", content: input }] });
   const inputTokens = response.usage.input_tokens;
   const outputTokens = response.usage.output_tokens;
-  const spent = { inputTokens, outputTokens, costCents: reportedCents(response.usage) ?? costCents(model, inputTokens, outputTokens) };
+  const spent = { inputTokens, outputTokens, costCents: openRouterCents(response.usage, costCents(model, inputTokens, outputTokens)) };
   if (response.stop_reason === "refusal") throw new ModelError("refused", true, spent);
   const text = response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("\n");
   return { text, ...spent, provider: "openrouter", model };

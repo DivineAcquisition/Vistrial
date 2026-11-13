@@ -1,7 +1,9 @@
 import type { GenericDatabaseReader, GenericDatabaseWriter } from "convex/server";
 
 import type { DataModel, Id } from "../_generated/dataModel";
-import { capScope, defaultCapsFor, type Caps } from "./caps";
+import { capScale, capScope, defaultCapsFor, scaleCaps, type Caps } from "./caps";
+import { parseChoice } from "./models";
+import { PRICES } from "./modelRouter";
 
 type Reader = { db: GenericDatabaseReader<DataModel> };
 type Writer = { db: GenericDatabaseWriter<DataModel> };
@@ -82,9 +84,22 @@ export function isMode(value: unknown): value is Mode {
   return value === "thorough" || value === "fast";
 }
 
-/** A run's caps: the scope's caps, lowered to the mode's cap when the mode has one. */
-export async function runCaps(ctx: Reader, run: { workspaceId: Id<"workspaces">; agentSlug: string; skillSlug: string; mode?: string }): Promise<Caps> {
-  const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
+/**
+ * How much further work on a chosen model may spend than the caps say (lib/caps.ts `capScale`). Fast work
+ * runs on the model's lighter companion, so that model's price decides. 1 when nothing was chosen.
+ */
+export function choiceScale(choice: string | null | undefined, mode?: string): number {
+  const spec = parseChoice(choice);
+  return spec ? capScale(PRICES[mode === "fast" ? spec.light : spec.id]) : 1;
+}
+
+/**
+ * A run's caps: the scope's caps, raised for a dearer chosen model, then lowered to the mode's cap when the
+ * mode has one (raised the same way).
+ */
+export async function runCaps(ctx: Reader, run: { workspaceId: Id<"workspaces">; agentSlug: string; skillSlug: string; mode?: string; modelChoice?: string }): Promise<Caps> {
+  const scale = choiceScale(run.modelChoice, run.mode);
+  const caps = scaleCaps(await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug), scale);
   const modeCap = isMode(run.mode) ? MODES[run.mode].capCents : null;
-  return modeCap === null ? caps : { ...caps, maxCostCentsPerRun: Math.min(caps.maxCostCentsPerRun, modeCap) };
+  return modeCap === null ? caps : { ...caps, maxCostCentsPerRun: Math.min(caps.maxCostCentsPerRun, Math.ceil(modeCap * scale)) };
 }

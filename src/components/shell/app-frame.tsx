@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";
 import { FreeSessionFlow } from "@/components/onboarding/free-session-flow";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
+import { PackageFlow } from "@/components/onboarding/package-flow";
 import { ProductShell } from "@/components/shell/product-shell";
 import { ArchivedNotice } from "@/components/settings/organization-data";
 import { CreditsProvider } from "@/lib/credits";
@@ -63,6 +64,8 @@ function AuthedFrame({ children }: { children: React.ReactNode }) {
   // New people answer the wizard before anything else; it creates their organization.
   if (onboarding && WIZARD_STAGES.has(onboarding.stage)) return <OnboardingFlow />;
   // The organization exists, but the rest of the app opens once the plan is paid for.
+  // Go: the first package runs with its progress, and the paywall sits under it.
+  if (onboarding && onboarding.stage === "package" && onboarding.workspaceId) return <PackageFlow />;
   if (onboarding && LOCKED_STAGES.has(onboarding.stage) && onboarding.workspaceId) return <FreeSessionFlow />;
   if (mine === undefined || onboarding === undefined) {
     return (

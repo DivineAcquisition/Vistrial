@@ -307,6 +307,8 @@ export async function startRunFor(
     role,
     checkCredit = true,
     free = false,
+    packageId,
+    capCentsOverride,
     projectId,
     inputRef,
     clientId,
@@ -318,6 +320,9 @@ export async function startRunFor(
     checkCredit?: boolean;
     /** Onboarding's free session: no credit check, and nothing is charged to the workspace. */
     free?: boolean;
+    /** The first package this run belongs to, and the most it may cost us (cents). Only with `free`. */
+    packageId?: Id<"firstPackages">;
+    capCentsOverride?: number;
     agentSlug: string;
     skillSlug: string;
     projectId?: Id<"researchProjects">;
@@ -375,7 +380,8 @@ export async function startRunFor(
   const gate = await controls(ctx, workspaceId);
   // A dearer chosen model may spend more, in step with its price, and the spending limit is judged against that.
   const caps = await capsFor(ctx, { workspaceId, agentSlug: args.agentSlug, skillSlug: args.skillSlug, choice: modelChoice, mode: args.mode });
-  const spent = await daySpend(ctx, workspaceId, args.agentSlug, args.skillSlug, dayKey());
+  // A first-package run is not held back by the organization's own day cap.
+  const spent = packageId ? 0 : await daySpend(ctx, workspaceId, args.agentSlug, args.skillSlug, dayKey());
   const blocked = gate.paused || gate.halted || spent >= caps.maxCostCentsPerDay;
   // Work above the organization's spending limit waits for an Owner or Admin (lib/approvals.ts). The free session spends nothing.
   const spendApproval = free ? null : await requireSpendApproval(ctx, { workspaceId, role, skillSlug: args.skillSlug, clientId: runClient, maxCostCentsPerRun: caps.maxCostCentsPerRun });
@@ -395,6 +401,7 @@ export async function startRunFor(
     inputTokens: 0,
     outputTokens: 0,
     ...(free ? { free: true } : {}),
+    ...(free && packageId ? { packageId, ...(capCentsOverride !== undefined ? { capCentsOverride } : {}) } : {}),
     ...(runClient ? { clientId: runClient } : {}),
   });
   await writeAudit(ctx, {
@@ -468,8 +475,11 @@ export const expire = internalMutation({
  * module names the next step; the runtime checks it against the skill's declared tools.
  */
 /** A run's caps, raised only for a chosen model that will really run it. */
-function capsOfRun(ctx: Pick<QueryCtx, "db">, run: Doc<"agentRuns">) {
-  return capsFor(ctx, { workspaceId: run.workspaceId, agentSlug: run.agentSlug, skillSlug: run.skillSlug, choice: run.modelChoice, mode: run.mode });
+async function capsOfRun(ctx: Pick<QueryCtx, "db">, run: Doc<"agentRuns">) {
+  const caps = await capsFor(ctx, { workspaceId: run.workspaceId, agentSlug: run.agentSlug, skillSlug: run.skillSlug, choice: run.modelChoice, mode: run.mode });
+  // A first-package run: at most what is left of the package's limit, and never stopped by the organization's day cap.
+  if (run.packageId) return { ...caps, maxCostCentsPerRun: Math.min(caps.maxCostCentsPerRun, run.capCentsOverride ?? caps.maxCostCentsPerRun), maxCostCentsPerDay: Number.MAX_SAFE_INTEGER };
+  return caps;
 }
 
 export const prepare = internalMutation({
@@ -648,7 +658,8 @@ async function recordFailure(
  * The counter is the skill's own when the skill has its own caps, otherwise the agent's.
  */
 async function charge(ctx: MutationCtx, run: Doc<"agentRuns">, spent: Spend) {
-  const dayCost = await addDaySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey(), spent.costCents);
+  // The first package is our cost: it does not use up the organization's own day caps.
+  const dayCost = run.packageId ? 0 : await addDaySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey(), spent.costCents);
   // The free session is on Vistrial: its cost is kept on the run and the day's counter, never charged as credits.
   if (!run.free) await chargeUsage(ctx, { workspaceId: run.workspaceId, costCents: spent.costCents, source: "run", ref: run._id });
   const runCost = run.costCents + spent.costCents;

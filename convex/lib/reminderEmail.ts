@@ -125,3 +125,46 @@ export function reportReadyEmail(input: {
   });
   return { subject: input.needsReview ? `Report needs review: ${fewWords(input.title, 80)}` : `Report ready: ${fewWords(input.title, 80)}`, ...body };
 }
+
+const BASIS_WORDS: Record<string, string> = { observed: "Observed", inferred: "Inferred", hypothesis: "Hypothesis", firstParty: "Your data", insufficient: "Not enough data" };
+
+/**
+ * The email that the first package is ready, to the Owner only. Unlike the reminders above, it carries the
+ * report's own words: the answer, the top three findings with their evidence labels, and the two offer
+ * ideas, because the Owner asked for a package that arrives ready to use. Built in code from the saved
+ * reports; nothing here is written by a model for the email.
+ */
+export function firstPackageEmail(input: {
+  workspaceName: string;
+  answer: string;
+  findings: { text: string; basis: string | null }[];
+  ideas: { focus: "acquisition" | "retention"; title: string; why: string }[];
+  /** The research arrived as "needs review" rather than approved. */
+  researchNeedsReview: boolean;
+  teardown: "ready" | "running" | "none";
+  reportAssetId: string;
+  appUrl: string;
+}): ReminderEmail {
+  const workspace = fewWords(input.workspaceName, 80);
+  const base = appBase(input.appUrl);
+  const findings = input.findings.slice(0, 3).map((row) => `${fewWords(row.text, 160)}${row.basis ? ` (${BASIS_WORDS[row.basis] ?? row.basis})` : ""}`);
+  const ideas = input.ideas.map((row) => `${row.focus === "acquisition" ? "To win customers" : "To keep customers"}: ${fewWords(row.title, 90)}. ${fewWords(row.why, 160)}.`);
+  const lines = [
+    `Strategist finished the first package for ${workspace}. It is on Vistrial: it used none of your credits.`,
+    input.researchNeedsReview ? "The research did not pass all of its checks, so it waits for your review instead of arriving approved." : "",
+    input.answer ? `The answer: ${fewWords(input.answer, 420)}.` : "",
+  ].filter(Boolean);
+  const list = [
+    ...(findings.length ? findings.map((row, index) => `Finding ${index + 1}: ${row}`) : []),
+    ...(ideas.length ? ideas : ["The two offer ideas were not written this time. You can ask Strategist for them from the research."]),
+    input.teardown === "ready" ? "Your pages, torn down: ready in the app." : input.teardown === "running" ? "Your pages, torn down: still being written. It will be on Home shortly." : "",
+  ].filter(Boolean);
+  const body = layout({
+    lines,
+    list,
+    button: { label: "Open the full report", url: `${base}/app/assets/${input.reportAssetId}` },
+    why: `You got this because you are the Owner of ${workspace} on Vistrial and have "Report ready" emails on.`,
+    settingsUrl: settingsUrl(input.appUrl),
+  });
+  return { subject: `Your first Vistrial package: ${fewWords(input.workspaceName, 70)}`, ...body };
+}

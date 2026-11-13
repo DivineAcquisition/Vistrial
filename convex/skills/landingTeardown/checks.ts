@@ -73,14 +73,16 @@ export function runChecks(read: IndustryRead | null, record: PagesRecord): Check
   const untrue = read.patterns.filter((row) => row.job && row.pageIds.some((id) => analysed.has(id) && !analysed.get(id)!.order.includes(row.job!)));
   results.push(result("patterns_true", untrue.length === 0, `These name a section some of their cited pages do not have: ${untrue.slice(0, 3).map((row) => `${row.statement} (${SECTION_BY_KEY[row.job!].name})`).join("; ")}.`));
 
-  const badGaps = own
+  const badGaps = record.ownSite
+    ? read.gaps
+    : own
     ? read.gaps.filter((row) => row.job && (own.order.includes(row.job) || row.pageIds.some((id) => analysed.has(id) && !analysed.get(id)!.order.includes(row.job!))))
     : read.gaps;
   results.push(
     result(
       "gaps_true",
       badGaps.length === 0,
-      own ? `These gaps name a section your page already has, or cite a page that lacks it too: ${badGaps.slice(0, 3).map((row) => row.statement).join("; ")}.` : "The business's own page was not read, so there are no gaps to report. Leave gaps empty.",
+      record.ownSite ? "Every page here is the business's own, so there are no gaps against other pages. Leave gaps empty." : own ? `These gaps name a section your page already has, or cite a page that lacks it too: ${badGaps.slice(0, 3).map((row) => row.statement).join("; ")}.` : "The business's own page was not read, so there are no gaps to report. Leave gaps empty.",
     ),
   );
 

@@ -32,6 +32,24 @@ describe("report PDF content", () => {
     expect(model.limits).toHaveLength(1);
   });
 
+  it("puts the answer first: the weakest label, the claims by label, and the first opportunity's action", () => {
+    const model = buildReportPdf(input, { branding: "vistrial", generatedAt: AT });
+    // Observed, Observed, Inference, Your data from the findings, and one untested opportunity.
+    expect(model.answer.label).toBe("Untested hypothesis");
+    expect(model.answer.byLabel).toEqual([
+      { label: "Your data", count: 1 },
+      { label: "Observed", count: 2 },
+      { label: "Inference", count: 1 },
+      { label: "Untested hypothesis", count: 1 },
+    ]);
+    expect(model.answer.legend.map((row) => row.label)).toEqual(["Your data", "Observed", "Inference", "Untested hypothesis"]);
+    expect(model.answer.next).toEqual({ action: "Lead with 20 booked calls in 60 days or we work free.", from: "Own the guarantee", label: null });
+    // No opportunities: nothing to do next is invented.
+    expect(buildReportPdf({ ...input, opportunities: [] }, { branding: "vistrial", generatedAt: AT }).answer.next).toBeNull();
+    // A finding with no saved basis never reads as strong.
+    expect(buildReportPdf({ ...input, opportunities: [], findings: [{ statement: "x", basisLabel: "No basis", sourceIds: [] }] }, { branding: "vistrial", generatedAt: AT }).answer.label).toBe("Untested hypothesis");
+  });
+
   it("charts sources by platform, the offers and calls to action seen, and the business's own figures", () => {
     const model = buildReportPdf(input, { branding: "vistrial", generatedAt: AT });
     expect(model.charts.platforms).toEqual([

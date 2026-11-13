@@ -372,12 +372,20 @@ Pictures: `briefing-before-*`, `briefing-after-*`, `tasks-before-*`, `tasks-afte
 3. **Sample data.** The dev stories no longer show a cleaning business as the Vistrial customer. The
    customer is a marketing agency that serves coaches; the competitors are made-up agencies on
    `example.com`. Test fixtures under `convex/` are untouched.
-4. **The report PDF** follows the new layout in its own change.
+4. **The report PDF follows the same order as the screen.** After the cover: "The answer" (the summary
+   with the weakest label among the report's claims, how many claims carry each label, the first
+   opportunity's action as what to do next, then each opportunity), "What the research saw" (the charts
+   and the business's own figures), then every finding with its label and sources, the limits, what the
+   labels mean, and the sources appendix. Labels are the label's own words in an ink-bordered box, so they
+   read the same in a black-and-white print. Nothing is new text: `buildReportPdf` computes the answer
+   from the findings and opportunities the PDF already had. White-label still never says Vistrial.
+   Pictures: `pdf-before-summary-2.png`, `pdf-after-answer-2.png`, `pdf-after-findings-4.png`,
+   `pdf-after-answer-white-label-2.png`.
 
 ## Not done, not tested
 
-- Every screen named in the brief uses the blocks. The PDF does not, and the Research list and the Canvas
-  views were not redesigned.
+- Every screen named in the brief uses the blocks, and the PDF follows the same order. The Canvas views
+  were not redesigned.
 - No real model was run. The new verdict and headline fields were exercised with the scripted model in
   `convex/landingTeardown.test.ts`; what a real model writes in them has not been seen.
 - Not tested with a screen reader by a person. The markup is a list, a table with row and column headers,

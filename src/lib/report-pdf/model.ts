@@ -4,6 +4,8 @@
  * PDF says (and that a white-label one never says "Vistrial") is checked here, in tests.
  */
 
+import { EVIDENCE_MEANING, evidenceCounts, isEvidenceWord, weakestClaim } from "../readable/evidence";
+
 export type Branding = "vistrial" | "whiteLabel";
 
 export type ReportPdfInput = {
@@ -28,6 +30,17 @@ export type ReportPdfModel = {
   meta: { title: string; author: string; creator: string };
   cover: { eyebrow: string; businessName: string; title: string; subtitle: string; date: string; logoUrl: string | null; brandMark: boolean };
   summary: { objective: string; text: string; stats: { label: string; value: string }[] };
+  /**
+   * The answer page: the summary's evidence label (the weakest among the report's claims), how many claims
+   * carry each label, what each label means, and the first opportunity's action as what to do next. All of
+   * it is computed here from the report's own findings and opportunities; nothing is written anew.
+   */
+  answer: {
+    label: string | null;
+    byLabel: { label: string; count: number }[];
+    legend: { label: string; means: string }[];
+    next: { action: string; from: string; label: string | null } | null;
+  };
   findings: { number: number; statement: string; basisLabel: string; sources: number[] }[];
   opportunities: { number: number; opportunity: string; action: string; howToTell: string; uncertainty: string | null; sources: number[] }[];
   limits: string[];
@@ -119,6 +132,10 @@ export function buildReportPdf(input: ReportPdfInput, options: { branding: Brand
     .filter((group) => group.rows.length > 0);
 
   const findings = input.findings.map((row, i) => ({ number: i + 1, statement: pdfText(row.statement), basisLabel: row.basisLabel, sources: refs(row.sourceIds) }));
+  // A finding with no saved basis is never read as stronger than an untested idea.
+  const labels = [...input.findings.map((row) => (isEvidenceWord(row.basisLabel) ? row.basisLabel : "Untested hypothesis")), ...input.opportunities.flatMap((row) => (UNCERTAINTY[row.uncertainty] ? [UNCERTAINTY[row.uncertainty]!] : []))];
+  const byLabel = [...evidenceCounts(labels)].reverse();
+  const first = input.opportunities.find((row) => pdfText(row.proposedAction)) ?? null;
   return {
     meta: {
       title: pdfText(input.title),
@@ -142,6 +159,12 @@ export function buildReportPdf(input: ReportPdfInput, options: { branding: Brand
         { label: "Opportunities", value: String(input.opportunities.length) },
         { label: "Sources", value: String(input.sources.length) },
       ],
+    },
+    answer: {
+      label: weakestClaim(labels),
+      byLabel,
+      legend: byLabel.map((row) => ({ label: row.label, means: EVIDENCE_MEANING[row.label] })),
+      next: first ? { action: pdfText(first.proposedAction), from: pdfText(first.opportunity), label: UNCERTAINTY[first.uncertainty] ?? null } : null,
     },
     findings,
     opportunities: input.opportunities.map((row, i) => ({

@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+import { openRouterComplete } from "./openrouter";
 import { WORK_KINDS, type WorkKind } from "./registry";
 
 export type ModelRoute = {
@@ -18,18 +19,54 @@ export type Completion = {
   model: string;
 };
 
-export const PROVIDERS = ["claude", "fake"] as const;
+/** "claude" is Anthropic, direct. "openrouter" reaches other companies' models through OpenRouter (lib/openrouter.ts). */
+export const PROVIDERS = ["claude", "openrouter", "fake"] as const;
+
+export type Price = {
+  input: number;
+  output: number;
+  cacheRead: number;
+  /** Dollars per million tokens written to the cache. Missing means 1.25x input (Anthropic's rule). */
+  cacheWrite?: number;
+  /** Cents for one web search by the model's own search. Missing means 1 cent (Anthropic's fee). */
+  searchCents?: number;
+  /** A dearer rate for a request whose prompt is over this many tokens (Haiku 5.5). */
+  long?: { over: number; input: number; output: number; cacheRead: number };
+};
 
 /**
- * Dollars per million tokens, first-party API rates. A model missing here cannot run, so caps stay real.
- * Cache writes cost 1.25x input. Cache reads are listed per model (Haiku 5.5's is assumed at 10% of input).
+ * Dollars per million tokens. A model missing here cannot run, through any provider, so caps stay real.
+ *
+ * Claude rows are Anthropic's first-party API rates, read from its pricing page on 2026-11-13. Cache writes
+ * cost 1.25x input. Haiku 5.5 costs five times as much for a prompt over 100,000 tokens (`long`).
+ *
+ * Rows with a company prefix ("openai/", "google/") are OpenRouter model ids, with the prices its models
+ * endpoint (https://openrouter.ai/api/v1/models) listed on 2026-11-13. OpenRouter reports what each call
+ * cost, and that is what is counted; these rows are the fallback when it reports none, what the worst-case
+ * estimate before a step is worked out from, and what a run's caps are scaled by (lib/caps.ts). Above
+ * 272,000 input tokens the GPT-6.1 input price doubles; the reported cost includes that, this table does not.
+ *
+ * Every model a person can choose (lib/models.ts) has a row here; a test holds that.
  */
-export const PRICES: Record<string, { input: number; output: number; cacheRead: number }> = {
+export const PRICES: Record<string, Price> = {
   "claude-fable-5-1": { input: 10, output: 50, cacheRead: 0.25 },
   "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2 },
-  "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.2 },
-  "claude-haiku-5-5": { input: 0.1, output: 0.5, cacheRead: 0.01 },
+  "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.1 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5, cacheRead: 0.01, long: { over: 100_000, input: 0.5, output: 2.5, cacheRead: 0.05 } },
+  "openai/gpt-6-astra": { input: 10, output: 50, cacheRead: 1, cacheWrite: 12.5, searchCents: 1 },
+  "openai/gpt-6.1-sol": { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5, searchCents: 1 },
+  "openai/gpt-6.1-terra": { input: 1, output: 5, cacheRead: 0.05, cacheWrite: 1.25, searchCents: 1 },
+  "openai/gpt-6-luna": { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125, searchCents: 1 },
+  "google/gemini-4-argon": { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875, searchCents: 1.4 },
+  "google/gemini-4-carbon": { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875, searchCents: 1.4 },
+  "google/gemini-4-hydrogen": { input: 1.5, output: 7.5, cacheRead: 0.075, cacheWrite: 0.0833, searchCents: 1.4 },
+  "google/gemini-3.8-flash": { input: 0.825, output: 4.125, cacheRead: 0.0825, cacheWrite: 0.0417, searchCents: 1.4 },
 };
+
+/** The rates one request pays: the model's row, or its dearer rate when the whole prompt is over the row's limit. */
+export function ratesFor(price: Price, promptTokens: number): Price {
+  return price.long && promptTokens > price.long.over ? { ...price, ...price.long, long: undefined } : price;
+}
 
 /** Output room per kind of work. Short kinds stay short so one call cannot spend the run cap alone. */
 export const MAX_TOKENS: Record<WorkKind, number> = {
@@ -79,8 +116,9 @@ export function isProvider(value: string) {
 }
 
 export function costCents(model: string, inputTokens: number, outputTokens: number) {
-  const price = PRICES[model];
-  if (!price) throw new ModelError("unpriced_model", false);
+  const row = PRICES[model];
+  if (!row) throw new ModelError("unpriced_model", false);
+  const price = ratesFor(row, inputTokens);
   const dollars = (inputTokens * price.input + outputTokens * price.output) / 1_000_000;
   return Math.round(dollars * 100 * 10_000) / 10_000;
 }
@@ -109,6 +147,7 @@ export async function complete(route: ModelRoute, workKind: WorkKind, input: str
 
 async function callProvider(provider: string, model: string, workKind: WorkKind, input: string) {
   if (provider === "claude") return claudeComplete(model, workKind, input);
+  if (provider === "openrouter") return openRouterComplete(model, workKind, input);
   if (provider === "fake") return fakeComplete(provider, model);
   throw new ModelError("unknown_provider", false);
 }

@@ -24,6 +24,7 @@ import { selectClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { ModelMark } from "@/components/models/model-mark";
 
 export type Board = FunctionReturnType<typeof api.agentTasks.board>;
 export type TaskCard = Board["columns"][number]["cards"][number];
@@ -156,6 +157,7 @@ function Card({ card, column, board, actions, onEdit, onSkip }: { card: TaskCard
         <span className={chip}>{card.type === "work" ? (card.skill ? `Agent work · ${card.skill}` : "Agent work") : "A change you make"}</span>
         {card.client ? <span className={cn(chip, "border-primary/30 text-primary")}>{card.client}</span> : null}
         {card.by === "person" ? <span className={chip}>From a teammate</span> : null}
+        <ModelMark model={card.model} className="ml-auto" />
       </div>
       <div className="grid gap-1">
         <h3 className="text-sm font-medium text-card-foreground">{card.title}</h3>

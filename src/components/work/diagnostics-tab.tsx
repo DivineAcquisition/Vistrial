@@ -130,7 +130,7 @@ function StallSummary({ diagnosis, decisions }: { diagnosis: DiagnosisView; deci
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SectionTitle icon={Gauge}>Where growth stalls</SectionTitle>
         <span className="flex flex-wrap items-center gap-2">
-          <ModelMark />
+          <ModelMark model={diagnosis.model} />
           <StatusBadge
             label={diagnosis.status === "approved" ? "Approved" : diagnosis.status === "needsReview" ? "Needs review" : "Waiting for approval"}
             tone={diagnosis.status === "approved" ? "good" : "warning"}
@@ -397,11 +397,11 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
     </>
   );
   return (
-    <div className="grid min-w-0 gap-5">
+    <div className="grid min-w-0 grid-cols-1 gap-5">
       {canvas ? (
-        <div className="grid min-w-0 gap-5">{top}</div>
+        <div className="grid min-w-0 grid-cols-1 gap-5">{top}</div>
       ) : (
-        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div className="grid min-w-0 content-start gap-5">
             {top}
             {/* The owner's order (2026-11-13): what the diagnosis could read first, then what it found. */}

@@ -70,7 +70,7 @@ export function runChecks(input: CheckInput): ChecksRecord {
     !usedProfileOk || !usedFactsOk
       ? "The report lists context that is not on record."
       : mustUse && !usedSomething
-        ? "The workspace has business context, but the report lists none as used."
+        ? "The organization has business context, but the report lists none as used."
         : "The context used is listed.",
   );
 

@@ -27,6 +27,8 @@ import { canWork, isAdmin } from "./lib/roles";
 import { linkedRecords, linksOf } from "./lib/taskLinks";
 import { TASK_COLUMNS, expectedReturn, taskEvidence, type ExpectedReturn, type TaskColumn, type TaskEvidence } from "./lib/taskShapes";
 import { SKILL_TAB } from "./lib/workTabs";
+import { markOfRun } from "./lib/modelMarks";
+import { markOf } from "./lib/models";
 
 const MAX_TITLE = 140;
 const MAX_WHY = 600;
@@ -266,6 +268,8 @@ async function card(ctx: Member & { role: string }, task: Doc<"agentTasks">, now
     /** What was measured at the check-in. Only ever from a recorded outcome. */
     result: outcome ? { result: outcome.result, note: outcome.note, recordedAt: outcome.recordedAt, changes: changesBetween(records.decision!.baseline, outcome.after) } : null,
     skippedReason: task.skippedReason ?? null,
+    /** The model of the run that did this task's work, else of the run that proposed it. Null when neither is known. */
+    model: markOf(records.run?.madeWith) ?? (task.proposedBy.kind === "agent" ? await markOfRun(ctx, task.workspaceId, task.proposedBy.runId) : null),
     createdAt: task.createdAt,
   };
 }

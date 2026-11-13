@@ -25,7 +25,12 @@ export type RunStepView = {
   outputTokens: number;
   /** The skill's name for the step (brief, classify, write...). */
   phase?: string | null;
+  /** The model a model step ran on, from the route stored with it. */
+  model?: RunModel | null;
 };
+
+/** A model as a screen shows it: its family, for the maker's mark, and its plain name. */
+export type RunModel = { family: "claude" | "gpt" | "gemini"; name: string };
 
 export type StepGroup =
   | { type: "single"; key: string; step: RunStepView }
@@ -64,6 +69,8 @@ export type RunView = {
   startedAt: number;
   finishedAt: number | null;
   startedByName: string | null;
+  /** The model that did this run's writing, as stored when it ran. Missing on older runs. */
+  model?: RunModel | null;
   maxSteps: number;
   maxDurationMs: number;
   cost: CostView;
@@ -86,6 +93,7 @@ export type RunRow = {
   startedAt: number;
   finishedAt: number | null;
   startedByName: string | null;
+  model?: RunModel | null;
   caps: {
     maxCostCentsPerRun: number;
     maxCostCentsPerDay: number;
@@ -121,6 +129,7 @@ export function toRunView(row: RunRow): RunView {
     startedAt: row.startedAt,
     finishedAt: row.finishedAt,
     startedByName: row.startedByName,
+    model: row.model ?? null,
     maxSteps: row.caps.maxSteps,
     maxDurationMs: row.caps.maxDurationMs,
     cost: {
@@ -220,6 +229,11 @@ export const RESULT_CODE_WORDS: Record<string, string> = {
   no_key: "No model key is set. A platform admin adds one.",
   unpriced_model: "This model has no price set, so it cannot run.",
   unknown_provider: "This model provider is not known.",
+  no_credit: "The model service account is out of credit. A platform admin adds some. You were not charged for this step.",
+  blocked: "The model service did not allow this request.",
+  no_provider: "No model host that meets our privacy rules was available. Try again in a few minutes.",
+  web_search_off: "This model cannot search the web here yet.",
+  unsupported_tool: "This model cannot do this step.",
   partial: "Done, but this source could not show everything. Its status says why.",
   unavailable: "This source could not be used this time. Its status says why.",
   awaiting_authorization: "This source is waiting for an account to be approved.",
@@ -228,7 +242,7 @@ export const RESULT_CODE_WORDS: Record<string, string> = {
   no_research_sources: "The approved market reports cite no competitor sources, so there is nothing to compare the offer against.",
   no_creative_request: "This run has nothing to make a creative from. Start it from the Creative tab.",
   brand_missing: "The brand this creative was for is gone or was put away.",
-  reference_missing: "The reference ad is no longer in this workspace.",
+  reference_missing: "The reference ad is no longer in this organization.",
   offer_missing: "The offer this creative was for is gone.",
   missing_context: "Something the research needs is missing.",
   waiting_for_user: "Asked a question and waited for an answer.",

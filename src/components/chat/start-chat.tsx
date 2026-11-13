@@ -57,6 +57,7 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
               workspaceId: shell.workspaceId,
               text,
               mode: extras.mode,
+              ...(extras.model ? { model: extras.model } : {}),
               ...(extras.sources ? { platforms: extras.sources } : {}),
               ...(extras.links.length ? { links: extras.links } : {}),
               // A new conversation is about whoever the picker is on.

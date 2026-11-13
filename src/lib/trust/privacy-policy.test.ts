@@ -10,13 +10,28 @@ describe("privacy policy stays inside verified behavior", () => {
   it("names the operator and the Lanham address", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Effective: November 11, 2026");
-    expect(text).toContain("Last updated: November 11, 2026");
+    expect(text).toContain("Effective: November 13, 2026");
+    expect(text).toContain("Last updated: November 13, 2026");
+  });
+
+  it("says plainly where GPT, Gemini and image work goes, and what may be kept", () => {
+    // GPT text runs on Microsoft Azure, Gemini on Google Cloud, both reached through OpenRouter.
+    expect(text).toContain("Microsoft Azure for GPT models, Google Cloud for Gemini models");
+    expect(text).toContain("zero data retention list");
+    // The two exceptions are stated, not hidden: Google's abuse retention, and OpenAI for images.
+    expect(text).toContain("Google may keep the requests and answers of Gemini work for a time, only to detect and prevent abuse");
+    expect(text).toContain("OpenAI is not on the zero data retention list for image requests");
+    // Image making through Google is covered, which the policy did not say before.
+    expect(text).toContain("Ad images are made by Google's image models");
+    // A choice is per person and remembered; there is no organization default to describe.
+    expect(text).toContain("Their choice is remembered");
+    expect(text).not.toMatch(/default for your organization/i);
+    // Nothing is promised about never keeping, or about where processing happens.
+    expect(text).not.toMatch(/never (kept|stored|retained)/i);
   });
 
   it("drops claims the product does not enforce", () => {
     expect(text).not.toContain("\u2014");
-    expect(text).not.toMatch(/openai/i);
     expect(text).not.toMatch(/vercel analytics/i);
     expect(text).not.toMatch(/last four/i);
     expect(text).not.toMatch(/seven years/i);
@@ -30,7 +45,7 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Meta pixel");
     expect(text).not.toContain("[COUNSEL:");
     // The policy names the providers the code actually calls, and no retired ones.
-    for (const name of ["Vercel", "Convex", "Clerk", "Anthropic", "Cloudflare", "Resend", "Autumn", "Stripe"]) expect(text).toContain(name);
+    for (const name of ["Vercel", "Convex", "Clerk", "Anthropic", "Google", "OpenRouter", "Microsoft", "OpenAI", "Cloudflare", "Resend", "Autumn", "Stripe"]) expect(text).toContain(name);
     expect(text).not.toMatch(/supabase|compass|quiet hours|embeddings/i);
     expect(text).not.toMatch(/GoHighLevel is the CRM/i);
   });
@@ -82,7 +97,7 @@ describe("privacy policy stays inside verified behavior", () => {
     });
     expect(on).toMatch(/not used to train/i);
     expect(on).toMatch(/encrypted at rest/i);
-    expect(on).toContain("Effective: November 11, 2026");
+    expect(on).toContain("Effective: November 13, 2026");
     expect(on).toContain("Registered agent, Maryland");
   });
 });

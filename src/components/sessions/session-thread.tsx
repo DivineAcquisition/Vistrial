@@ -50,6 +50,7 @@ import { Banner } from "@/components/ui/banner";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { showError } from "@/lib/errors/show-error";
 import { useCredits } from "@/lib/credits";
+import { ModelMark, type ModelMarkData } from "@/components/models/model-mark";
 
 export type ThreadData = {
   studio: Studio;
@@ -266,6 +267,7 @@ function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspa
         placeholder={hasReport ? "Ask about this report, or ask for more research…" : "Ask a follow-up, or start a new session…"}
         disabled={busy}
         mode={extras.composer.mode}
+        model={extras.composer.model}
         files={extras.composer.files}
         connect={extras.composer.connect}
         footnote={
@@ -283,7 +285,7 @@ function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspa
           try {
             await extras.attachTo({ projectId });
             extras.reset();
-            await ask({ workspaceId, projectId, text, mode: extras.mode });
+            await ask({ workspaceId, projectId, text, mode: extras.mode, ...(extras.model ? { model: extras.model } : {}) });
           } catch (problem) {
             setNotice(showError(problem, "That question was not sent."));
             throw problem;
@@ -310,7 +312,7 @@ function FollowUps({ workspaceId, projectId, agentName, editor }: { workspaceId:
   );
 }
 
-export type FollowUpMessage = { id: string; role: string; kind: string; text: string; status: string; data?: unknown; costCents: number };
+export type FollowUpMessage = { id: string; role: string; kind: string; text: string; status: string; data?: unknown; costCents: number; /** The model that wrote this answer, as stored when it ran. */ model?: ModelMarkData | null };
 
 /** The follow-up turns as plain data, so stories can show them without a backend. */
 export function FollowUpsView({
@@ -381,6 +383,7 @@ export function FollowUpsView({
           <AgentSaid key={row.id} name={agentName} icon={row.kind === "proposal" ? Search : MessageSquareText} line={row.kind === "proposal" ? "researched it:" : "answered from this session's sources:"}>
             <div className="grid gap-2 rounded-xl border border-border bg-card p-4">
               <p className="text-sm whitespace-pre-line text-card-foreground">{row.text}</p>
+              <ModelMark model={row.model} />
               {cited.length ? (
                 <div className="flex flex-wrap gap-1.5">
                   {cited.map((source, index) => (

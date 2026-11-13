@@ -182,7 +182,7 @@ export function runChecks(input: CheckInput): ChecksRecord {
     !usedProfileOk || !usedFactsOk
       ? "The creative lists context that is not on record."
       : mustUse && !usedSomething
-        ? "The workspace has business context, but the creative lists none as used."
+        ? "The organization has business context, but the creative lists none as used."
         : !creative.brief.audience || !creative.brief.promise
           ? "The brief does not say who the creative is for or what it promises."
           : "The brief names its audience and promise, and the context used is real.",

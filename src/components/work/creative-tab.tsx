@@ -28,6 +28,9 @@ import type { AddedReference, CreativeOptions, CreativeTabData, CreativeView, Re
 import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
 import { useCredits } from "@/lib/credits";
+import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
+import { useModelChoice } from "@/components/models/use-model-choice";
+import { ModelMark } from "@/components/models/model-mark";
 
 export type CreativeStart = { kitId: string; sourceRefId: string | null; referenceId: string | null; offerCardId: string | null; dial: string; note: string };
 
@@ -49,6 +52,8 @@ export type CreativeTabProps = {
   view: CreativeView | null;
   onSelect: (assetId: string) => void;
   onStart: (start: CreativeStart) => Promise<void>;
+  /** The model switch for work started here. Left out where no model can be chosen. */
+  model?: ModelSwitchProps | null;
   review: ReviewActions;
   /** The reference picked with "Make our version" on the research board. Opens the form with it chosen. */
   initialSource?: string | null;
@@ -172,7 +177,7 @@ function AddReference({ actions }: { actions: ReferenceActions }) {
 }
 
 /** The ask: which brand, what to start from, and how closely to follow a reference. */
-function StartForm({ base, options, references, referenceActions, initialSource, onCancel, onStart }: { base: string; options: CreativeOptions; references: AddedReference[]; referenceActions: ReferenceActions; initialSource: string | null; onCancel: () => void; onStart: (start: CreativeStart) => Promise<void> }) {
+function StartForm({ base, options, references, referenceActions, initialSource, onCancel, onStart, model }: { model?: ModelSwitchProps | null; base: string; options: CreativeOptions; references: AddedReference[]; referenceActions: ReferenceActions; initialSource: string | null; onCancel: () => void; onStart: (start: CreativeStart) => Promise<void> }) {
   const [kitId, setKitId] = useState<string | null>(options.kits.length === 1 ? options.kits[0].id : null);
   const [sourceRefId, setSourceRefId] = useState<string | null>(initialSource && options.sources.some((row) => row.id === initialSource) ? initialSource : null);
   const [picked, setPicked] = useState<string | null>(null);
@@ -372,7 +377,8 @@ function StartForm({ base, options, references, referenceActions, initialSource,
         >
           <Sparkles aria-hidden className="size-4" /> {starting ? "Starting…" : "Write the ad set"}
         </Button>
-        <span className="text-xs text-muted-foreground">Writes a brief, four copy variations, a script and captions. Usually under $1 of credits. Nothing is published.</span>
+        {model ? <ModelSwitch {...model} /> : null}
+        <span className="text-xs text-muted-foreground">Writes a brief, four copy variations, a script and captions. Usually under 100 credits. Nothing is published.</span>
       </div>
     </Panel>
   );
@@ -411,7 +417,10 @@ function AdSet({ view, editor, review, images, test, onEdit, initialEdit }: { vi
       <div className="grid gap-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h3 className="min-w-0 font-heading text-lg text-card-foreground">{view.title}</h3>
-          <AssetStatusBadge status={view.status} />
+          <span className="flex flex-wrap items-center gap-3">
+            <ModelMark model={view.model} />
+            <AssetStatusBadge status={view.status} />
+          </span>
         </div>
         <ul className="grid gap-1 text-sm text-muted-foreground">
           <li>
@@ -598,11 +607,11 @@ function AdSet({ view, editor, review, images, test, onEdit, initialEdit }: { vi
 }
 
 /** The Creative workspace: the ask, what is running, and the ad sets with the one chosen opened. */
-export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, review, initialSource, initialForm, images, test, onEdit, initialEdit }: CreativeTabProps) {
+export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, model, review, initialSource, initialForm, images, test, onEdit, initialEdit }: CreativeTabProps) {
   const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialForm || initialSource));
   return (
-    <div className="grid min-w-0 gap-5">
+    <div className="grid min-w-0 grid-cols-1 gap-5">
       <WorkHero
         icon={Megaphone}
         eyebrow="Creative"
@@ -617,7 +626,7 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
         }
       />
 
-      {form && editor ? <StartForm base={base} options={options} references={references} referenceActions={referenceActions} initialSource={initialSource ?? null} onCancel={() => setForm(false)} onStart={(start) => onStart(start).then(() => setForm(false))} /> : null}
+      {form && editor ? <StartForm base={base} options={options} references={references} referenceActions={referenceActions} initialSource={initialSource ?? null} model={model} onCancel={() => setForm(false)} onStart={(start) => onStart(start).then(() => setForm(false))} /> : null}
 
       {tab.running.length > 0 ? (
         <section className="grid gap-3" aria-label="Running now">
@@ -702,6 +711,7 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
   const view = useQuery(api.creative.view, chosen ? { workspaceId, assetId: chosen } : "skip");
   const references = useQuery(api.references.list, { workspaceId });
   const start = useMutation(api.creative.start);
+  const modelChoice = useModelChoice(workspaceId, "creative-production");
   const addReference = useMutation(api.references.add);
   const referenceUploadUrl = useMutation(api.references.uploadUrl);
   const removeReference = useMutation(api.references.remove);
@@ -734,6 +744,7 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
       tab={tab}
       view={view ?? null}
       onSelect={setAssetId}
+      model={editor ? modelChoice.props : null}
       onStart={async (row) => {
         await start({
           workspaceId,
@@ -743,6 +754,7 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
           ...(row.offerCardId ? { offerCardId: row.offerCardId as Id<"offerCards"> } : {}),
           dial: row.dial,
           note: row.note,
+          ...(modelChoice.picked ? { model: modelChoice.picked } : {}),
         });
         setAssetId(null);
       }}

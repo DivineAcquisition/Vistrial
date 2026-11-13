@@ -80,7 +80,7 @@ export const add = workspaceMutation({
       .query("callTranscripts")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .take(MAX_PER_WORKSPACE);
-    if (existing.length >= MAX_PER_WORKSPACE) throw userError(`A workspace keeps up to ${MAX_PER_WORKSPACE} transcripts. Delete one you no longer need.`, "limit");
+    if (existing.length >= MAX_PER_WORKSPACE) throw userError(`An organization keeps up to ${MAX_PER_WORKSPACE} transcripts. Delete one you no longer need.`, "limit");
     const id = await ctx.db.insert("callTranscripts", {
       workspaceId: ctx.workspaceId,
       ...forClient,

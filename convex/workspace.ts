@@ -49,9 +49,9 @@ export const mine = signedInQuery({
 export const create = signedInMutation({
   args: { name: v.string(), timezone: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    if (await activeMembership(ctx, ctx.userId)) throw userError("You already belong to a workspace.");
+    if (await activeMembership(ctx, ctx.userId)) throw userError("You already belong to an organization.");
     const name = args.name.trim();
-    if (!name) throw userError("Name the workspace.");
+    if (!name) throw userError("Name the organization.");
     const workspaceId = await createWorkspaceFor(ctx, { userId: ctx.userId, displayName: ctx.name, email: ctx.email || undefined, name, timezone: args.timezone });
     return workspaceId;
   },

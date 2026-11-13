@@ -12,6 +12,7 @@ import { Panel } from "@/components/ui/panel";
 import { formatDuration, isOpen, stepAnnouncement, summaryLine, type RunAssetView, type RunView } from "@/lib/runs/view";
 import { Banner } from "@/components/ui/banner";
 import { useCredits } from "@/lib/credits";
+import { ModelMark } from "@/components/models/model-mark";
 
 export type RunViewerProps = {
   run: RunView;
@@ -57,6 +58,7 @@ export function RunViewer({
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-heading text-2xl text-foreground break-words">{skillName}</h1>
           <RunStatusBadge status={run.status} />
+          <ModelMark model={run.model} className="text-sm" />
         </div>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
           <div>

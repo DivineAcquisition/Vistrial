@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import type { ComposerFile, ComposerMode } from "@/components/chat/chat-composer";
+import { useModelChoice } from "@/components/models/use-model-choice";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -21,7 +22,7 @@ function kindOf(file: File): ComposerFile["kind"] | null {
  * What the chat box carries besides the text: mode, focused sources, links and files (uploaded to the
  * workspace's storage straight away, attached once there is a conversation), and Meta connect.
  */
-export function useChatExtras(workspaceId: Id<"workspaces">, canEdit: boolean, ownerOnly: boolean) {
+export function useChatExtras(workspaceId: Id<"workspaces">, canEdit: boolean, ownerOnly: boolean, skillSlug?: string) {
   const pathname = usePathname();
   const uploadUrl = useMutation(api.files.uploadUrl);
   const attach = useMutation(api.files.attach);
@@ -31,6 +32,8 @@ export function useChatExtras(workspaceId: Id<"workspaces">, canEdit: boolean, o
   // The workspace's default research quality (Settings → Agents) until this chat picks its own.
   const [chosenMode, setMode] = useState<ComposerMode | null>(null);
   const mode: ComposerMode = chosenMode ?? me?.defaultResearchMode ?? "thorough";
+  // Which model does the work. `skillSlug` is the skill the chat is already on, when the screen knows it.
+  const modelChoice = useModelChoice(workspaceId, skillSlug);
   const [sources, setSources] = useState<string[] | null>(null);
   const [links, setLinks] = useState<string[]>([]);
   const [files, setFiles] = useState<Uploaded[]>([]);
@@ -78,6 +81,9 @@ export function useChatExtras(workspaceId: Id<"workspaces">, canEdit: boolean, o
   return {
     mode,
     setMode,
+    /** The family the person picked by hand, to send with the message. Undefined leaves the default in place. */
+    model: modelChoice.picked ?? undefined,
+    modelSwitch: modelChoice.props,
     sources,
     setSources,
     links,
@@ -87,6 +93,7 @@ export function useChatExtras(workspaceId: Id<"workspaces">, canEdit: boolean, o
     reset,
     composer: {
       mode: { value: mode, onChange: setMode },
+      model: canEdit ? modelChoice.props : null,
       sources: { value: sources, onChange: setSources },
       links: { value: links, onAdd: (url: string) => setLinks((current) => (current.includes(url) ? current : [...current, url].slice(0, 10))), onRemove: (url: string) => setLinks((current) => current.filter((row) => row !== url)) },
       files: canEdit ? { value: files, onAdd: addFiles, onRemove: (key: string) => setFiles((current) => current.filter((row) => row.key !== key)) } : undefined,

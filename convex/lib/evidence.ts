@@ -44,7 +44,7 @@ export type ClaimProblem =
 /** Plain words for each problem, for a person who edits a claim. */
 export const CLAIM_PROBLEM_TEXT: Record<ClaimProblem, string> = {
   no_evidence: "A claim needs evidence.",
-  source_not_found: "A claim cites a source that is not in this workspace.",
+  source_not_found: "A claim cites a source that is not in this organization.",
   observed_needs_source: "An observed claim needs at least one source.",
   inferred_needs_source: "An inference needs at least one supporting source.",
   first_party_needs_customer_data: "A claim from your data needs a customer data source.",

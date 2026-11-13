@@ -4,7 +4,7 @@ import { internalMutation } from "./_generated/server";
 import { staffMutation, staffQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { notAllowed, userError } from "./lib/errors";
-import { isProvider, isWorkKind } from "./lib/modelRouter";
+import { PRICES, isProvider, isWorkKind } from "./lib/modelRouter";
 
 const OPEN = ["queued", "running", "waiting"] as const;
 
@@ -70,6 +70,12 @@ export const setRoute = staffMutation({
     if (ctx.staff.role !== "platform_admin") notAllowed();
     if (!isWorkKind(args.workKind)) throw userError("Unknown kind of work.");
     if (!isProvider(args.provider) || !isProvider(args.fallbackProvider)) throw userError("Unknown provider.");
+    // A model with no price cannot run, so a route is never pointed at one. The fake provider is for tests.
+    for (const [provider, model] of [[args.provider, args.model], [args.fallbackProvider, args.fallbackModel]]) {
+      if (provider !== "fake" && !PRICES[model]) throw userError(`The model "${model.slice(0, 80)}" has no price set, so it cannot run.`);
+      if (provider === "openrouter" && !model.includes("/")) throw userError("An OpenRouter model is written company/model, for example openai/gpt-6.1-sol.");
+      if (provider === "claude" && !model.startsWith("claude-")) throw userError("The claude provider runs Anthropic's own model ids, for example claude-opus-5-5.");
+    }
     const current = await ctx.db
       .query("modelRoutes")
       .withIndex("by_workKind", (q) => q.eq("workKind", args.workKind))

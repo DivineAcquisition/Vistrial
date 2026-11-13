@@ -18,6 +18,7 @@ import { savedRecord } from "./lib/savedRecords";
 import { SKILL_ASSET, SKILL_TAB, isTabSkill, suggestionsFor, type TabSkill } from "./lib/workTabs";
 import { reportForRun } from "./studio";
 import { readDiagnosis, type DiagnosticsRecord } from "./skills/growthDiagnostics/shapes";
+import { markOfAsset } from "./lib/modelMarks";
 
 const OPEN = ["queued", "running", "waiting", "needsInput"] as const;
 
@@ -145,6 +146,8 @@ export const tab = workspaceQuery({
         id: asset._id,
         title: asset.title,
         status: asset.status,
+        /** The model that made it, as stored on its run. Null for older work. */
+        model: await markOfAsset(ctx, asset),
         currentVersion: asset.currentVersion,
         createdAt: asset.createdAt,
         runId: asset.createdByRun ?? null,
@@ -205,6 +208,8 @@ export const diagnostics = workspaceQuery({
         assetId: asset._id,
         title: asset.title,
         status: asset.status,
+        /** The model that made it, as stored on its run. Null for older work. */
+        model: await markOfAsset(ctx, asset),
         createdAt: asset.createdAt,
         projectId: run && run.workspaceId === ctx.workspaceId ? projectIdOf(ctx, run) : null,
         /** The goal the diagnosis was written toward, which may differ from the goal now. */
@@ -251,6 +256,8 @@ export const reportPdf = workspaceQuery({
     return {
       title: asset.title,
       status: asset.status,
+      /** The model that made it, as stored on its run. Null for older work. */
+      model: await markOfAsset(ctx, asset),
       version: asset.currentVersion,
       createdAt: asset.createdAt,
       businessName: workspace?.name ?? "",

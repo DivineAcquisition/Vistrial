@@ -3,12 +3,14 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 import { EvidenceLabel } from "./evidence-label";
+import type { ModelMarkData } from "@/components/models/model-mark";
+
 import { ModelMark } from "./model-mark";
 
 export type Count = { value: string; words: string; hint?: string };
 
 /** A result's title line: what it is, when, its review status, and the slot for the model that ran. */
-export function ResultHeader({ title, meta, status, model, level = 2 }: { title: string; meta?: ReactNode; status?: ReactNode; model?: string | null; level?: 2 | 3 }) {
+export function ResultHeader({ title, meta, status, model, level = 2 }: { title: string; meta?: ReactNode; status?: ReactNode; model?: ModelMarkData | null; level?: 2 | 3 }) {
   const Heading = level === 2 ? "h2" : "h3";
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">

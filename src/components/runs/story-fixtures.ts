@@ -17,6 +17,7 @@ function step(index: number, toolSlug: string | null, extra: Partial<RunStepView
     durationMs: kind === "model" ? 4200 : 350,
     inputTokens: kind === "model" ? 1800 : 0,
     outputTokens: kind === "model" ? 650 : 0,
+    model: kind === "model" ? { family: "claude", name: "Claude Opus 5.5" } : null,
     ...extra,
   };
 }
@@ -30,6 +31,7 @@ const base: RunView = {
   startedAt: T0,
   finishedAt: null,
   startedByName: "Ana Ruiz",
+  model: { family: "claude", name: "Claude Opus 5.5" },
   maxSteps: 40,
   maxDurationMs: 300_000,
   cost: {

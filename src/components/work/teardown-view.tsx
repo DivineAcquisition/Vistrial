@@ -322,6 +322,7 @@ export function Teardown({ view, page, editor, onSelectPage, decisions, tryActio
           </span>
         }
         status={<AssetStatusBadge status={view.status} />}
+        model={view.model}
       />
 
       <VerdictStrip

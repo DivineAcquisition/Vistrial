@@ -9,6 +9,9 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
+import { runChecks } from "./skills/creativeProduction/checks";
+import { renderCreative } from "./skills/creativeProduction/render";
+import { creativeClaims, writeVersion } from "./skills/creativeProduction/tools";
 import { contentOf as kitContent, ownKit } from "./brandKits";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { testFor, testStates } from "./creativeTests";
@@ -18,7 +21,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notFound, userError } from "./lib/errors";
 import { savedRecord } from "./lib/savedRecords";
 import { startRunFor } from "./runs";
-import { DIALS, DIAL_WORDS, PHASE, SKILL_SLUG, type CreativeRecord } from "./skills/creativeProduction/shapes";
+import { COPY_MAX, DIALS, DIAL_WORDS, PHASE, SKILL_SLUG, designText, type CreativeContext, type CreativeRecord, type Variation } from "./skills/creativeProduction/shapes";
 
 const OPEN = ["queued", "running", "waiting", "needsInput"] as const;
 const MAX_NOTE = 600;
@@ -244,5 +247,100 @@ export const view = workspaceQuery({
       checks: saved.checks,
       test: await testFor(ctx, ctx.workspaceId, asset._id),
     };
+  },
+});
+
+const one = (value: string) => value.replace(/\s+/g, " ").trim();
+
+/**
+ * A person's own edit to one variation of an ad set that is waiting for review. The checks run again on
+ * their words exactly as they ran on the writer's: an edit that repeats the reference, breaks a brand rule or
+ * states something nothing on record backs sends the set to Needs Review with the check named. The edit is
+ * saved as a new version, and designed pictures of that variation are marked out of date. Owners, Admins and Members.
+ */
+export const edit = workspaceMutation({
+  args: {
+    assetId: v.id("assets"),
+    variationKey: v.string(),
+    hook: v.string(),
+    primaryText: v.string(),
+    headline: v.string(),
+    cta: v.string(),
+    eyebrow: v.string(),
+    kicker: v.string(),
+    subline: v.string(),
+    labels: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    requireWork(ctx.member.role);
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset || asset.workspaceId !== ctx.workspaceId || asset.kind !== "adCopySet") notFound();
+    if (asset.status !== "draft" && asset.status !== "needsReview") throw userError("Only an ad set that is waiting for review can be edited.");
+    const run = asset.createdByRun ? await ctx.db.get(asset.createdByRun) : null;
+    const saved = (await savedRecord(ctx.db, asset, "creative")) as CreativeRecord | null;
+    const context = (await savedRecord(ctx.db, asset, "context")) as CreativeContext | null;
+    if (!run || !saved?.creative || !context) notFound();
+    const before = saved.creative.variations.find((row) => row.key === args.variationKey);
+    if (!before) notFound();
+
+    const fields = { hook: one(args.hook), primaryText: args.primaryText.replace(/[ \t]+/g, " ").trim(), headline: one(args.headline), cta: one(args.cta) };
+    const design = { eyebrow: one(args.eyebrow), kicker: one(args.kicker), subline: one(args.subline), labels: args.labels.map(one).filter(Boolean) };
+    for (const [name, value] of [["hook", fields.hook], ["text", fields.primaryText], ["headline", fields.headline], ["button", fields.cta]] as const) {
+      if (!value) throw userError(`The ${name} cannot be blank.`);
+    }
+    const tooLong: [string, string, number][] = [
+      ["hook", fields.hook, COPY_MAX.hook],
+      ["text", fields.primaryText, COPY_MAX.primaryText],
+      ["headline", fields.headline, COPY_MAX.headline],
+      ["button", fields.cta, COPY_MAX.cta],
+      ["top bar", design.eyebrow, COPY_MAX.eyebrow],
+      ["line above the headline", design.kicker, COPY_MAX.kicker],
+      ["line under the picture", design.subline, COPY_MAX.subline],
+      ...design.labels.map((label): [string, string, number] => ["label", label, COPY_MAX.label]),
+    ];
+    for (const [name, value, max] of tooLong) {
+      if (value.length > max) throw userError(`Keep the ${name} to ${max} characters. It is ${value.length}.`);
+    }
+    if (design.labels.length > COPY_MAX.labels) throw userError(`Keep to ${COPY_MAX.labels} labels.`);
+
+    const earlier = before.design ?? { eyebrow: "", kicker: "", accent: "", visual: "", labels: [], subline: "" };
+    const after: Variation = { ...before, ...fields, design: { ...earlier, ...design, accent: earlier.accent && fields.headline.includes(earlier.accent) ? earlier.accent : "" } };
+    if (JSON.stringify(after) === JSON.stringify({ ...before, design: earlier })) return { status: asset.status, passed: saved.checks.passed, changed: false };
+    const creative = { ...saved.creative, variations: saved.creative.variations.map((row) => (row.key === before.key ? after : row)) };
+
+    // An edit costs nothing, so the run's own cost check carries over as it was.
+    const rerun = runChecks({ creative, context, runCostCents: 0, capCents: 0 });
+    const cost = saved.checks.results.find((row) => row.id === 7);
+    const results = rerun.results.map((row) => (row.id === 7 && cost ? cost : row));
+    const checks = { passed: results.every((row) => row.passed), results };
+
+    const artifacts = await ctx.db
+      .query("runArtifacts")
+      .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("runId", run._id))
+      .order("desc")
+      .take(300);
+    const record = artifacts.find((row) => row.kind === "creative");
+    if (!record) notFound();
+    const version = asset.currentVersion + 1;
+    const body = `${renderCreative(creative, context, checks, [])}\n_Variation ${before.key} was edited by a person._\n`;
+    await writeVersion(ctx, run, asset._id, version, body, creativeClaims(creative, context, artifacts.find((row) => row.kind === "context")?._id ?? null), "person");
+    const next = JSON.stringify({ ...saved, creative, checks, versions: version });
+    // A new record beside the run's own, so what the writer produced stays as it was.
+    await ctx.db.insert("runArtifacts", { workspaceId: ctx.workspaceId, runId: run._id, stepId: record.stepId, kind: "creative", byteSize: next.length, body: next });
+    const status = checks.passed ? ("draft" as const) : ("needsReview" as const);
+    await ctx.db.patch(asset._id, { status, currentVersion: version });
+
+    // A designed picture carries its words. One drawn before the edit no longer matches.
+    if (designText({ ...before, design: earlier }).join("\n") !== designText(after).join("\n")) {
+      const images = await ctx.db
+        .query("creativeImages")
+        .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
+        .take(200);
+      for (const image of images) {
+        if (image.variationKey === before.key && image.look === "designed" && image.status === "ready") await ctx.db.patch(image._id, { stale: true });
+      }
+    }
+    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "creative.edited", subject: `${asset._id}:${before.key}`, count: version });
+    return { status, passed: checks.passed, changed: true };
   },
 });

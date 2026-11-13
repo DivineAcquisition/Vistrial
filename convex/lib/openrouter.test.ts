@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { cannotRun, familyOf, MODELS, modelSpec, parseChoice, routesFor, type Gate } from "./models";
+import { cannotRun, cannotRunModel, familyOf, MODELS, modelSpec, parseChoice, routesFor, type Gate } from "./models";
 import { ModelError, PRICES, complete } from "./modelRouter";
 import { OPENROUTER_FEE, OPENROUTER_ROUTING, openRouterCents, openRouterError, readReply, reportedCents, type OpenRouterReply, type ScriptedOpenRouter } from "./openrouter";
 import { completeWithTools } from "./toolRouter";
@@ -99,7 +99,10 @@ describe("the OpenRouter provider", () => {
     expect(OPENROUTER_FEE).toBe(0.055);
     expect(openRouterCents({ cost: 1 }, 7)).toBe(105.5);
     expect(openRouterCents({}, 100)).toBe(105.5);
-    expect(openRouterCents({ cost: 0 }, 100)).toBe(0);
+    // A reported cost of zero is not believed: the price table's figure is used, so the work is still counted.
+    expect(openRouterCents({ cost: 0 }, 100)).toBe(105.5);
+    expect(reportedCents({ cost: 0, input_tokens: 1000, output_tokens: 100 })).toBeNull();
+    expect(reportedCents({ cost: Number.NaN })).toBeNull();
     // The reported figure itself is left as OpenRouter gave it.
     expect(reportedCents({ cost: 1 })).toBe(100);
   });
@@ -263,6 +266,19 @@ describe("families", () => {
     expect(parseChoice("claude-fable-5-2")).toBeNull();
     expect(parseChoice("openai/gpt-9")).toBeNull();
     expect(parseChoice(undefined)).toBeNull();
+  });
+
+  it("offers Claude Haiku 5.5 for work that searches or reads the web only once that has been proven", () => {
+    const off: Gate = { openRouter: false, families: [], webSearch: false };
+    const haiku = modelSpec("claude-haiku-5-5")!;
+    expect(cannotRunModel(haiku, {}, off)).toBeNull();
+    expect(cannotRunModel(haiku, { webSearch: true }, off)).toBe("no_web_search");
+    expect(cannotRunModel(haiku, { webFetch: true }, off)).toBe("no_web_fetch");
+    expect(cannotRunModel(haiku, { webSearch: true, webFetch: true }, { ...off, haikuWeb: true })).toBeNull();
+    // Opus and Sonnet are as they were.
+    for (const id of ["claude-opus-5-5", "claude-sonnet-5-5"]) expect(cannotRunModel(modelSpec(id)!, { webSearch: true, webFetch: true }, off)).toBeNull();
+    // A model's own rule never hides its family's.
+    expect(cannotRunModel(modelSpec(SOL)!, { webSearch: true }, off)).toBe("not_switched_on");
   });
 
   it("says why a family cannot run a piece of work", () => {

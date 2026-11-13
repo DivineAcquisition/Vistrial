@@ -8,7 +8,6 @@ import { LayoutListIcon, MenuIcon } from "@/components/icons";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { AskButton, ChatPanelProvider, LiveChatPanel, useChatPanel } from "@/components/chat/side-panel";
 import { JourneySidebar } from "@/components/shell/journey-sidebar";
-import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { agentStateLabel, type RailAgent, type RailDepartment } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
@@ -24,18 +23,13 @@ function active(pathname: string, href: string) {
 }
 
 /**
- * The column on the right: the live stream, or the chat panel in its place while the panel is open. The
- * panel stays open as pages change; on a phone it is a full-height sheet.
+ * The column on the right: the chat panel while it is open, and nothing otherwise, so a page has the full
+ * width. The panel stays open as pages change; on a phone it is a full-height sheet. Work that is running
+ * shows in the sidebar's badges and on each work tab.
  */
 function RightColumn() {
   const panel = useChatPanel();
-  if (panel?.open) return <LiveChatPanel />;
-  return (
-    <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block print:hidden">
-      <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Live</p>
-      <LiveAside />
-    </aside>
-  );
+  return panel?.open ? <LiveChatPanel /> : null;
 }
 
 export function ProductShell(props: Parameters<typeof ProductShellInner>[0]) {

@@ -42,7 +42,7 @@ export const TRUST_FALLBACK: TrustPublic = {
   supportEmail: "contact@vistrial.io",
   securityUpdatedOn: "2026-10-14",
   subprocessorsUpdatedOn: "2026-10-14",
-  privacyUpdatedOn: "2026-11-11",
+  privacyUpdatedOn: "2026-11-13",
   termsUpdatedOn: "2026-11-13",
   termsEffectiveOn: "2026-11-10",
   legalEntity: "Divine Agency LLC",

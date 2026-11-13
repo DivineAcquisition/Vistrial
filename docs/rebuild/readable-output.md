@@ -9,8 +9,8 @@ Example: the page breakdown displays loads of copy but no highlights or indicato
 it comes to understanding all that text."
 
 This document is the pattern. The blocks it describes are built (`src/components/readable/`,
-`src/lib/readable/`) and can be clicked at `/dev/readable-output`. No product screen uses them yet; each
-screen is rebuilt on them in its own pull request (see "Order of work").
+`src/lib/readable/`) and can be clicked at `/dev/readable-output`. Each screen is rebuilt on them in its
+own pull request (see "Order of work"); the Pages tab is the first.
 
 ## What is wrong today
 
@@ -239,9 +239,42 @@ a phone screen; if that is too much, use "in place" on phones only.
 4. Briefing posts, the weekly growth report and task cards.
 5. The PDF, last, if its layout should follow.
 
+## Landing page teardown, rebuilt (part 2)
+
+The Pages tab is now built from the blocks (`src/components/work/teardown-view.tsx`). Stories:
+`/dev/pages-tab?state=full`, and `?state=old` for a teardown saved before pages carried a verdict.
+
+| | Before | After |
+|---|---|---|
+| First screen at 1280 | The standing limit, one sentence, the approve buttons, a screenshot | The summary with its evidence label, four counts, the approve buttons, and what to do next |
+| One page | Eight boxes of prose, then seven open sections | A verdict, the coverage map, three weakest and three strongest points, the buttons, then sections with a status, a headline and only their highlighted lines |
+| Across pages | Eleven bars, then two lists of sentences | One table of which page has which section, with "Yours lacks this" on the rows that differ |
+| Open by default | Everything | The answer and the indicators. Notes, every page line, the seven other facts, "why it may work", "why, and how to tell" and each check are one step away |
+
+![First screen, 1280](../screenshots/readable-output/pages-after-first-screen-1280-light.png)
+![After, 1280 light](../screenshots/readable-output/pages-after-1280-light.png)
+![After, 1280 dark](../screenshots/readable-output/pages-after-1280-dark.png)
+![After, 390 light](../screenshots/readable-output/pages-after-390-light.png)
+![After, 390 dark](../screenshots/readable-output/pages-after-390-dark.png)
+![A teardown saved before the change, 1280](../screenshots/readable-output/pages-after-saved-earlier-1280-light.png)
+
+The page is about as long as before (4,824 px against 5,123 at 1280). The aim was the first screen and
+what the eye can sort, not a shorter page: with every disclosure closed, a person sees statuses and
+highlights, and opens what they want.
+
+Kept, in the same place or one step away: the screenshot at both widths with its link, every quote, the
+pages each finding cites, "We'll try this" with its check-in, approve / request changes / reject, the
+brief and "Copy brief", "Not read", every check and every limit. The full-page pictures show "what to do
+next" at the foot of the result; on a screen it is held to the bottom edge while the result is in view.
+
+New model words: an optional verdict for each page and a headline for each section (see
+`landing-page-teardown.md`, "At-a-glance lines"). Everything else in the top layers is computed in code.
+
 ## Not done, not tested
 
-- No product screen uses the blocks yet.
+- Only the Pages tab uses the blocks so far.
+- No real model was run. The new verdict and headline fields were exercised with the scripted model in
+  `convex/landingTeardown.test.ts`; what a real model writes in them has not been seen.
 - Not tested with a screen reader by a person. The markup is a list, a table with row and column headers,
   native disclosures and text labels; that was checked in code, not by ear.
 - Contrast was looked at in light and dark screenshots, not measured with a tool.

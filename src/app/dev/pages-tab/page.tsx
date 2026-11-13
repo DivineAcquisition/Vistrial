@@ -4,7 +4,7 @@ import { PagesTabStory } from "./story";
 
 export const metadata = { title: "Pages tab story", robots: { index: false, follow: false } };
 
-/** ?state=full|noshots|form|running|empty|rep, ?page=p1|p2|p3 and ?theme=light|dark, for screenshots. */
+/** ?state=full|old|noshots|form|running|empty|rep (old: a teardown saved before verdicts and section headlines), ?page=p1|p2|p3 and ?theme=light|dark, for screenshots. */
 export default async function PagesTabStoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (process.env.NODE_ENV === "production") notFound();
   const query = await searchParams;

@@ -31,7 +31,7 @@ exist. Open questions for the owner are at the end.
 | D6 | **The two offer ideas come from Offer Intelligence in a new "first package" mode**, not a new skill. | Offer Intelligence already reads the approved research, the profile, the facts and the business's own results, cites sources and has code checks. The mode adds: exactly two changes, one `acquisition` and one `retention`, built on the captured offers and prices, and it never stops to ask a question (no one is waiting at a chat). |
 | D7 | **The page teardown is the Landing Page Teardown skill in a new "own site" mode**: up to 5 of the business's own pages, no competitor search. | The per-page reading against the owner's framework is unchanged. The cross-page write changes: with no competitor pages there are no "patterns others share"; it writes improvements per page and across the funnel. |
 | D8 | **The free limit is $15.00 of our cost per organization** (owner's decision; first proposed at $8.00), split per part (section 4.2), enforced in code on top of each skill's own run cap. | Each skill's existing run cap (research $3, offers $1.50, teardown $3) already bounds a run; the package limit makes the total a single, stated number, and a retry can only spend what is left. |
-| D9 | **Capturing the organization's own site is free once. A Client's site, and any later re-read, uses credits**, at the usual markup, with the most it can cost shown on the form before it is submitted. | A capture is cheap (section 1.6), but free reads on demand for every client would be an open tap on our cost. |
+| D9 | **The first read of each site is free: the organization's own and each Client's (owner's decision). Any later re-read uses credits**, at the usual markup, with the most it can cost shown before it starts. | A capture is cheap (section 1.6); free re-reads on demand would be an open tap on our cost. |
 
 ---
 
@@ -73,7 +73,7 @@ All three are additive: older rows read as before.
 |---|---|---|
 | Onboarding step 1 | The organization | Free (inside the package limit) |
 | Settings › Brand › Your brand › "Read my website again" | The organization | Free the first time for an organization that never had a capture (existing organizations), credits after |
-| Adding a Client with a website, or adding a website to a Client that had none | That Client | Credits, shown on the form |
+| Adding a Client with a website, or adding a website to a Client that had none | That Client | Free the first time (owner's decision); credits after, shown on the form |
 | Settings › Brand › a client › "Read the website again" | That Client | Credits, shown before |
 
 A read that cannot be paid for (out of credits) saves the website, says "Not read: out of credits" and

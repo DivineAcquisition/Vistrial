@@ -174,7 +174,7 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
 
   const reading = capture && (capture.status === "reading" || capture.status === "understanding");
   const showForm = !capture || capture.status === "failed" || again;
-  const price = quote ? (quote.free ? "Free: the first read of your own site is on Vistrial." : `Uses up to ${credits.words(quote.maxCredits)}. Pages that cannot be read are not charged.`) : null;
+  const price = quote ? (quote.free ? "Free: the first read of each website is on Vistrial." : `Uses up to ${credits.words(quote.maxCredits)}. Pages that cannot be read are not charged.`) : null;
 
   const form = (
     <form

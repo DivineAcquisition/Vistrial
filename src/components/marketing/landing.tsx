@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "@/components/icons";
 
 import { BlurFade } from "@/components/ui/blur-fade";
-import { AppTour, ProductPicture } from "@/components/marketing/app-screens";
+import { AppWindow, LoopVisuals, SkillVisuals } from "@/components/marketing/app-visuals";
 import { AgentFlow } from "@/components/marketing/agentic-visuals";
 import { LandingFaq } from "@/components/marketing/faq";
 import { PhilosophySection } from "@/components/marketing/philosophy";
@@ -37,7 +37,7 @@ import {
   SECTIONS,
 } from "@/lib/marketing/content";
 import { HERO } from "@/lib/marketing/content";
-import { APP_SCREENS, picturesFor } from "@/lib/marketing/pictures";
+import { APP_VISUALS } from "@/lib/marketing/app-visuals";
 import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 import {
   marketingDisplayTitle,
@@ -173,25 +173,17 @@ export function LandingPage() {
         </Section>
       ) : null}
 
-      {/* The app itself: Tasks, the Briefing, Home and clients, one real screen after another. */}
+      {/* The app itself, drawn in the page's own parts: Tasks, the Briefing, Home and clients in one window. */}
       {SECTIONS.growthArchitect ? (
-        <Section id={APP_SCREENS.id} eyebrow={APP_SCREENS.eyebrow} headline={APP_SCREENS.headline} lead={APP_SCREENS.lead}>
-          <AppTour pictures={picturesFor("app")} />
+        <Section id={APP_VISUALS.id} eyebrow={APP_VISUALS.eyebrow} headline={APP_VISUALS.headline} lead={APP_VISUALS.lead}>
+          <AppWindow />
 
-          {/* What three of the skills hand back, as real screens. */}
+          {/* What three of the skills hand back, drawn as the app lays them out. */}
           <div className="mt-14">
-            <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_SCREENS.skillsTitle}</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{APP_SCREENS.skillsLead}</p>
-            <div className="mt-5 grid gap-5 lg:grid-cols-2">
-              {picturesFor("skill").map((picture, index) => (
-                <ProductPicture
-                  key={picture.id}
-                  picture={picture}
-                  crop={index === 2 ? "max-h-[34rem]" : "max-h-[19rem]"}
-                  className={index === 2 ? "lg:col-span-2" : undefined}
-                  sizes={index === 2 ? "(min-width: 1152px) 1152px, 100vw" : undefined}
-                />
-              ))}
+            <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_VISUALS.skillsTitle}</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{APP_VISUALS.skillsLead}</p>
+            <div className="mt-5">
+              <SkillVisuals />
             </div>
           </div>
 
@@ -199,11 +191,9 @@ export function LandingPage() {
           <div className="mt-14">
             <LoopDemo />
             <div className="mt-8">
-              <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_SCREENS.loopTitle}</h3>
-              <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
-                {picturesFor("loop").map((picture) => (
-                  <ProductPicture key={picture.id} picture={picture} crop="max-h-[24rem]" />
-                ))}
+              <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_VISUALS.loopTitle}</h3>
+              <div className="mt-5">
+                <LoopVisuals />
               </div>
             </div>
           </div>

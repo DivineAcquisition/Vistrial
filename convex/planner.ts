@@ -44,7 +44,7 @@ async function startAsOwner(ctx: MutationCtx, workspaceId: Id<"workspaces">, ski
   const owner = members.find((row) => row.active && isOwner(row.role));
   if (!owner) return { started: false, reason: "no_owner" };
   try {
-    await startRunFor(ctx, { workspaceId, userId: owner.userId, role: owner.role, agentSlug: GROWTH_ARCHITECT, skillSlug, inputRef });
+    await startRunFor(ctx, { workspaceId, userId: owner.userId, role: owner.role, agentSlug: GROWTH_ARCHITECT, skillSlug, inputRef, unattended: true });
     return { started: true };
   } catch (error) {
     const data = (error as { data?: { code?: string } }).data;

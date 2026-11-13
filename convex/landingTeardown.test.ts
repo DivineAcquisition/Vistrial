@@ -419,6 +419,34 @@ describe("landing page teardown", () => {
     delete process.env.AUTUMN_SECRET_KEY;
   });
 
+  it("quotes, confirms and runs a teardown on one budget, raised for a dearer model", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    process.env.OPENROUTER_API_KEY = "test-key";
+    process.env.MODEL_FAMILIES = "gpt";
+    // A teardown may search for pages, so a GPT model is only offered for it once web search is proven.
+    process.env.OPENROUTER_WEB_SEARCH = "on";
+    try {
+      const astra = "openai/gpt-6-astra";
+      const plain = await a.owner.query(api.landingTeardown.quote, { workspaceId: a.workspaceId, ...ASK });
+      const dear = await a.owner.query(api.landingTeardown.quote, { workspaceId: a.workspaceId, ...ASK, model: astra });
+      // 300 cents of cost on the platform's model; 2.5 times that on a model 2.5 times the price.
+      expect([plain.maxCents, dear.maxCents]).toEqual([900, 2250]);
+      // The budget confirmed for one model does not start a run on another: the person confirms the new figure.
+      expect(await message(a.owner.mutation(api.landingTeardown.start, { workspaceId: a.workspaceId, ...ASK, model: astra, confirmedCents: plain.maxCents }))).toBe("The budget changed. Check the new one and confirm again.");
+      expect(await t.run((ctx) => ctx.db.query("agentRuns").collect())).toHaveLength(0);
+      const started = await a.owner.mutation(api.landingTeardown.start, { workspaceId: a.workspaceId, ...ASK, model: astra, confirmedCents: dear.maxCents });
+      const run = await a.owner.query(api.runs.get, { workspaceId: a.workspaceId, runId: started.runId });
+      expect(run.caps.maxCostCentsPerRun).toBe(750);
+      // The choice is now remembered, so the next quote with nothing picked shows the same raised budget.
+      expect((await a.owner.query(api.landingTeardown.quote, { workspaceId: a.workspaceId, ...ASK })).maxCents).toBe(2250);
+    } finally {
+      delete process.env.OPENROUTER_API_KEY;
+      delete process.env.MODEL_FAMILIES;
+      delete process.env.OPENROUTER_WEB_SEARCH;
+    }
+  });
+
   it("shows the plan and the budget before anything runs", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");

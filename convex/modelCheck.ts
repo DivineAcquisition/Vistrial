@@ -1,0 +1,315 @@
+/**
+ * The first real calls to OpenRouter, made on purpose. No OpenRouter key existed when the provider was
+ * written, so nothing about it has been proven against the real service. A Platform Admin runs this once
+ * from the Convex dashboard (Functions, then modelCheck:run, then Run) after setting OPENROUTER_API_KEY. It
+ * makes a few small calls per model and reports codes, counts and cost. It never returns model text, and it
+ * touches no customer data: every prompt is fixed below.
+ *
+ * What each line must show is in docs/rebuild/models-and-openrouter.md, section 8. Internal, so no client
+ * can call it. It spends a few cents of the OpenRouter account's credit.
+ */
+import type Anthropic from "@anthropic-ai/sdk";
+
+import { internalAction } from "./_generated/server";
+import { GeminiError, imageCostCents } from "./lib/gemini";
+import { GPT_IMAGE_ASPECTS, GPT_IMAGE_MODEL, OPENROUTER_IMAGES_URL, gptImageMeasuredCents, openRouterImageBody, readOpenRouterImage } from "./lib/imageModels";
+import { MODELS as OFFERED } from "./lib/models";
+import { ModelError, costCents } from "./lib/modelRouter";
+import { OPENROUTER_URL, openRouterBody, openRouterCreate, openRouterKey, openRouterToolBudget, openRouterWebSearchTool, readReply, reportedCents } from "./lib/openrouter";
+import { collect, completeWithTools, type Citation, type FoundSource } from "./lib/toolRouter";
+
+/** Every model offered through OpenRouter. */
+const MODELS = OFFERED.filter((row) => row.provider === "openrouter").map((row) => row.id);
+
+const SCHEMA = { type: "object", properties: { colour: { type: "string" }, count: { type: "integer" } }, required: ["colour", "count"], additionalProperties: false } as const;
+
+/** A 16x16 plain red PNG, so the image check sends no one's picture. */
+const RED_PNG = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAF0lEQVR4nGP4z8BAEiJN9aiGUQ1DSgMAkPn/Afnh+ngAAAAASUVORK5CYII=";
+
+type Line = { ok: boolean; code: string; stop?: string | null; host?: string | null; reportedCents?: number | null; tableCents?: number; note?: string };
+
+function failed(error: unknown): Line {
+  return { ok: false, code: error instanceof ModelError ? error.code : "threw" };
+}
+
+/** What a response says about itself, without its text. `host` is the company that served it (OpenRouter's `provider` field). */
+function facts(model: string, message: Anthropic.Message) {
+  const host = (message as unknown as { provider?: unknown }).provider;
+  return {
+    stop: message.stop_reason,
+    host: typeof host === "string" ? host : null,
+    reportedCents: reportedCents(message.usage),
+    tableCents: costCents(model, message.usage.input_tokens, message.usage.output_tokens),
+  };
+}
+
+const textOf = (message: Anthropic.Message) => message.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("");
+
+async function plain(model: string): Promise<Line> {
+  try {
+    const message = await openRouterCreate(model)({ model, max_tokens: 2000, messages: [{ role: "user", content: "Reply with the single word: ready" }] });
+    const seen = facts(model, message);
+    return { ok: message.stop_reason === "end_turn" && textOf(message).length > 0 && seen.reportedCents !== null, code: "ok", ...seen };
+  } catch (error) {
+    return failed(error);
+  }
+}
+
+async function structured(model: string, maxTokens: number): Promise<Line> {
+  try {
+    const message = await openRouterCreate(model)({
+      model,
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: "A basket holds three red apples. Fill in the colour and the count." }],
+      output_config: { format: { type: "json_schema", schema: SCHEMA } },
+    } as Anthropic.MessageCreateParamsNonStreaming);
+    let matches = false;
+    try {
+      const parsed = JSON.parse(textOf(message)) as { colour?: unknown; count?: unknown };
+      matches = typeof parsed.colour === "string" && parsed.count === 3;
+    } catch {
+      matches = false;
+    }
+    return { ok: matches, code: matches ? "ok" : "invalid_output", ...facts(model, message) };
+  } catch (error) {
+    return failed(error);
+  }
+}
+
+async function image(model: string): Promise<Line> {
+  try {
+    const message = await openRouterCreate(model)({
+      model,
+      max_tokens: 2000,
+      messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/png", data: RED_PNG } }, { type: "text", text: "What colour is this square? One word." }] }],
+    });
+    return { ok: /red/i.test(textOf(message)), code: "ok", ...facts(model, message) };
+  } catch (error) {
+    return failed(error);
+  }
+}
+
+/** One web search, declared exactly as the router declares it, reading the result with the router's own reader. */
+async function search(model: string) {
+  try {
+    const message = await openRouterCreate(model)({
+      model,
+      max_tokens: 4000,
+      messages: [{ role: "user", content: "Search the web for the official website of the city of Paris, France, and give its address." }],
+      tools: [openRouterWebSearchTool(model, { maxUses: 1 }) as unknown as Anthropic.Messages.ToolUnion],
+      ...openRouterToolBudget(1),
+    } as Anthropic.MessageCreateParamsNonStreaming);
+    const sources = new Map<string, FoundSource>();
+    const citations: Citation[] = [];
+    collect(message.content, sources, citations);
+    const blocks: Record<string, number> = {};
+    for (const block of message.content) blocks[block.type] = (blocks[block.type] ?? 0) + 1;
+    const searches = message.usage.server_tool_use?.web_search_requests ?? 0;
+    return {
+      // The evidence checks need the pages found. A search that ran but returned none is a failure here.
+      ok: sources.size > 0 && searches > 0,
+      code: "ok",
+      ...facts(model, message),
+      searchesCounted: searches,
+      sourcesRead: sources.size,
+      citationsRead: citations.length,
+      /** Which kinds of block came back, so an unread shape can be seen without seeing any text. */
+      blocks,
+    };
+  } catch (error) {
+    return failed(error);
+  }
+}
+
+/** A key that cannot be right must come back as `auth_failed`. Uses no real key. */
+async function badKey(): Promise<Line> {
+  try {
+    const model = MODELS[0];
+    const response = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: { Authorization: "Bearer sk-or-v1-not-a-real-key", "Content-Type": "application/json" },
+      body: JSON.stringify(openRouterBody({ model, max_tokens: 16, messages: [{ role: "user", content: "ready" }] })),
+    });
+    let body: unknown = null;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+    readReply({ status: response.status, body });
+    return { ok: false, code: "accepted", note: "A made-up key was accepted." };
+  } catch (error) {
+    const line = failed(error);
+    return { ...line, ok: line.code === "auth_failed" };
+  }
+}
+
+/**
+ * One small picture through OpenRouter's image endpoint, pinned to Google Cloud exactly as the product sends
+ * it: a picture must come back, and its reported cost should match the table price a customer is quoted.
+ */
+async function imageMade() {
+  const model = "gemini-nano-banana-2.1";
+  try {
+    const response = await fetch(OPENROUTER_IMAGES_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${openRouterKey()}`, "Content-Type": "application/json" },
+      body: JSON.stringify(openRouterImageBody({ model, prompt: "A plain blue square on a white background. No text.", aspect: "4:5", size: "2K" })),
+    });
+    let body: unknown = null;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+    const made = readOpenRouterImage({ status: response.status, body });
+    return { ok: made.data.length > 0, code: "ok", mimeType: made.mimeType, base64Length: made.data.length, reportedCents: made.reportedCents, tableCents: imageCostCents(model, "2K") };
+  } catch (error) {
+    return { ok: false, code: error instanceof GeminiError ? error.code : "threw" };
+  }
+}
+
+/**
+ * GPT images have no list price: they are priced by the token. This makes one small picture in each shape
+ * the product uses, at the quality the product asks for, and reports what each cost. GPT images stay closed
+ * until a Platform Admin sets GPT_IMAGE_MEASURED_CENTS to `setTo`, the dearest of them.
+ */
+async function gptImage() {
+  const shapes = [];
+  for (const aspect of GPT_IMAGE_ASPECTS) {
+    try {
+      const response = await fetch(OPENROUTER_IMAGES_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${openRouterKey()}`, "Content-Type": "application/json" },
+        body: JSON.stringify(openRouterImageBody({ model: GPT_IMAGE_MODEL, prompt: "A plain blue square on a white background, with the words SPRING SALE in large letters.", aspect, size: "2K" })),
+      });
+      let body: unknown = null;
+      try {
+        body = await response.json();
+      } catch {
+        body = null;
+      }
+      const made = readOpenRouterImage({ status: response.status, body });
+      shapes.push({ aspect, ok: made.data.length > 0 && made.reportedCents !== null, code: "ok", mimeType: made.mimeType, reportedCents: made.reportedCents });
+    } catch (error) {
+      shapes.push({ aspect, ok: false, code: error instanceof GeminiError ? error.code : "threw", reportedCents: null });
+    }
+  }
+  const costs = shapes.flatMap((row) => (row.reportedCents === null ? [] : [row.reportedCents]));
+  return {
+    shapes,
+    /** Set GPT_IMAGE_MEASURED_CENTS to this. Null when a shape failed or reported no cost: leave GPT images closed. */
+    setTo: costs.length === shapes.length && costs.length > 0 ? Math.max(...costs) : null,
+    measuredNow: gptImageMeasuredCents(),
+  };
+}
+
+/**
+ * What OpenRouter says about the key itself: numbers and flags only. A run where every call answers
+ * `no_credit` is explained here: no credit bought, a key limit that is used up, or a free-tier account.
+ */
+async function account() {
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/key", { headers: { Authorization: `Bearer ${openRouterKey()}` } });
+    const body = (await response.json()) as { data?: Record<string, unknown> } | null;
+    const data = body?.data ?? {};
+    const number = (value: unknown) => (typeof value === "number" ? value : null);
+    return {
+      status: response.status,
+      /** Dollars. `limit` null means the key has no spending limit of its own. */
+      limit: number(data.limit),
+      limitRemaining: number(data.limit_remaining),
+      usage: number(data.usage),
+      isFreeTier: typeof data.is_free_tier === "boolean" ? data.is_free_tier : null,
+    };
+  } catch {
+    return { status: 0, limit: null, limitRemaining: null, usage: null, isFreeTier: null };
+  }
+}
+
+/** Why OpenRouter answered 402 to the smallest possible call: its own name for the limit that stopped it. */
+async function whyNoCredit() {
+  try {
+    const model = MODELS[0];
+    const response = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${openRouterKey()}`, "Content-Type": "application/json" },
+      body: JSON.stringify(openRouterBody({ model, max_tokens: 16, messages: [{ role: "user", content: "ready" }] })),
+    });
+    if (response.status !== 402) return { status: response.status, limitSource: null };
+    const body = (await response.json()) as { error?: { metadata?: { limit_source?: unknown }; limit_source?: unknown } } | null;
+    const source = body?.error?.metadata?.limit_source ?? body?.error?.limit_source;
+    return { status: 402, limitSource: typeof source === "string" ? source.slice(0, 60) : null };
+  } catch {
+    return { status: 0, limitSource: null };
+  }
+}
+
+/**
+ * Claude Haiku 5.5, direct at Anthropic, on work that uses the web. It is offered for such work only once
+ * both lines here are ok and a Platform Admin sets CLAUDE_HAIKU_WEB=on. Two things are unproven:
+ * whether the router's web tools are accepted for this model at all (a refusal comes back as `bad_request`,
+ * which is not retried, so a run would fail), and whether a step that searches is counted at the right rate:
+ * `inputTokens` is the sum over the search's server-side turns, and if it passes 100,000 the router counts
+ * the step at Haiku's dearer long-prompt rate. Compare `costCents` with the Anthropic console for this call.
+ */
+async function haikuWeb() {
+  const model = "claude-haiku-5-5";
+  const route = { provider: "claude", model, fallbackProvider: "claude", fallbackModel: model };
+  const line = async (request: Parameters<typeof completeWithTools>[2]) => {
+    try {
+      const result = await completeWithTools(route, "research", { ...request, maxTurns: 2 });
+      return {
+        ok: result.webSearches + result.webFetches > 0 && result.sources.length > 0,
+        code: "ok",
+        searches: result.webSearches,
+        fetches: result.webFetches,
+        sourcesRead: result.sources.length,
+        inputTokens: result.inputTokens,
+        countedAtLongRate: result.inputTokens > 100_000,
+        costCents: result.costCents,
+      };
+    } catch (error) {
+      return failed(error);
+    }
+  };
+  return {
+    search: await line({ input: "Search the web for the official website of the city of Paris, France, and give its address.", webSearch: { maxUses: 1 } }),
+    read: await line({ input: "Read https://www.iana.org/help/example-domains and say in one sentence what the page is about.", webFetch: { maxUses: 1 } }),
+    next: "If both lines are ok and costCents matches what Anthropic billed, set CLAUDE_HAIKU_WEB=on.",
+  };
+}
+
+export const run = internalAction({
+  args: {},
+  handler: async () => {
+    if (!openRouterKey()) return { ready: false as const, why: "OPENROUTER_API_KEY is not set on this deployment.", haikuWeb: await haikuWeb() };
+    const models = [];
+    for (const model of MODELS) {
+      models.push({
+        model,
+        plain: await plain(model),
+        structured: await structured(model, 4000),
+        /** The same call with the 8,000-token room a classify step gets: a model that thinks first must still finish. */
+        classifyRoom: await structured(model, 8000),
+        image: await image(model),
+        search: await search(model),
+      });
+    }
+    return {
+      ready: true as const,
+      /** Every `host` should be Azure (GPT) or Google Vertex (Gemini): the routing rules sent with each request allow nothing else. */
+      models,
+      /** Images through OpenRouter (used when GEMINI_API_KEY is not set). */
+      imageMade: await imageMade(),
+      /** GPT images: what one costs, per shape. They stay closed until GPT_IMAGE_MEASURED_CENTS is set from this. */
+      gptImage: await gptImage(),
+      account: await account(),
+      /** Claude Haiku 5.5 on web work, direct at Anthropic. It needs no OpenRouter credit. */
+      haikuWeb: await haikuWeb(),
+      whyNoCredit: await whyNoCredit(),
+      badKey: await badKey(),
+      next: "If every search line is ok, set OPENROUTER_WEB_SEARCH=on. If reportedCents and tableCents differ by more than a few percent, the price table needs correcting. If gptImage.setTo is a number, set GPT_IMAGE_MEASURED_CENTS to it to open GPT images.",
+    };
+  },
+});

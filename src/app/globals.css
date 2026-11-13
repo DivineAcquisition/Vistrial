@@ -2286,6 +2286,33 @@ html[data-calm="true"] .live-shimmer-text {
 }
 
 /*
+ * The usage page's chart colours: one per agent, led by the brand violet, in a fixed order that passed the
+ * colour-blind and contrast checks in both themes (dataviz validator). An agent keeps its colour whatever is filtered.
+ */
+.usage-viz {
+  --series-1: #6250d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #2a78d6;
+  --series-8: #e34948;
+  --series-none: #8a8984;
+}
+.dark .usage-viz {
+  --series-1: #9085e9;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #0ca30c;
+  --series-7: #3987e5;
+  --series-8: #e66767;
+  --series-none: #74736c;
+}
+
+/*
  * Sidebar rows (Home, Tasks, agents, work tabs, Library). Hover is a soft brand
  * wash with a thin left accent and a brand-tinted icon; the current page is a
  * stronger wash with a solid accent, so the two never read the same. The focus

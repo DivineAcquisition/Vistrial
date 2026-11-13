@@ -152,6 +152,8 @@ export const saveAccount = internalMutation({
     autoRefill: v.optional(v.object({ enabled: v.boolean(), thresholdCents: v.number(), amountCents: v.number() })),
     /** How many organizations beyond the first the customer is paying for. */
     extraOrganizations: v.optional(v.number()),
+    /** Credits bought in packs, when Autumn reports them. */
+    packsCents: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { workspaceId, ...fields } = args;

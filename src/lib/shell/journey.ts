@@ -28,7 +28,7 @@ export function isJourneyTab(value: unknown): value is JourneyTab {
 }
 
 /**
- * The sidebar tab an agent sits under. It is its journey stage, except that Operations Intelligence
+ * The sidebar tab an agent sits under. It is its journey stage, except that Operator
  * ("Run"), which belongs to no stage, sits under Convert. The public page keeps its own grouping.
  */
 export function sidebarTabOf(lifecycle: string | null | undefined): JourneyTab | null {
@@ -89,7 +89,7 @@ const PAGES_SKILL = "landing-page-teardown";
 
 /**
  * The tabs under an agent in the sidebar: Chat first (the one place to talk to it), then its work tabs,
- * then Creative and Pages when those skills are live, then Brands for the Growth Architect. An agent with no work tab has no chat either, so it has no tabs.
+ * then Creative and Pages when those skills are live, then Brands for the Strategist. An agent with no work tab has no chat either, so it has no tabs.
  */
 export function agentTabs(agent: RailAgent): AgentTab[] {
   const work = workTabsFor(agent);

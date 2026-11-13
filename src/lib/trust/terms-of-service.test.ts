@@ -33,7 +33,7 @@ describe("terms stay inside what the product does", () => {
   });
 
   it("describes the current product, not the retired sales OS", () => {
-    expect(text).toContain("Growth Architect");
+    expect(text).toContain("Strategist");
     expect(text).toContain("official access only");
     expect(text).not.toMatch(/GoHighLevel is the CRM|quiet hours|case file|compass|embeddings/i);
   });

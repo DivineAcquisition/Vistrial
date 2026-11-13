@@ -1,5 +1,5 @@
 /**
- * The three Growth Architect work tabs, as data: which skill each tab is for, which asset kind it hands
+ * The three Strategist work tabs, as data: which skill each tab is for, which asset kind it hands
  * back, and the next steps it suggests. Suggestions never run anything: each one opens a tab with the chat
  * filled in, and the owner decides.
  */

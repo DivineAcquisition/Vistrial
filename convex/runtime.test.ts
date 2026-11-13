@@ -676,7 +676,7 @@ describe("step 4 runtime", () => {
     await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "off" });
     await expect(
       admin.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" }),
-    ).rejects.toThrow("Turn on the Growth Architect first.");
+    ).rejects.toThrow("Turn on the Strategist first.");
     expect((await owner.query(api.runs.page, { workspaceId, paginationOpts: { numItems: 5, cursor: null } })).page).toHaveLength(0);
     await expect(
       admin.mutation(api.runs.start, { workspaceId, agentSlug: "nobody", skillSlug: "test-echo" }),

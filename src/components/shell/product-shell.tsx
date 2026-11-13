@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { PageEnter } from "@/components/motion/page-enter";
 import { BalanceNotice } from "@/components/billing/balance-notice";
 
-// Leads and My day belong to the Sales Conversion agent. Their pages stay, hidden from the nav until it ships.
+// Leads and My day belong to the Dealmaker agent. Their pages stay, hidden from the nav until it ships.
 const tabs = [{ href: "/app", label: "Home", icon: LayoutListIcon }] as const;
 
 function active(pathname: string, href: string) {

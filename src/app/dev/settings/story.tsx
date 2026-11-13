@@ -200,7 +200,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
             data={{
               canManage: owner,
               files: 2,
-              meta: { status: "connected", account: "Northlight Growth", user: "Malik Sannie", usedBy: ["Growth Architect"] },
+              meta: { status: "connected", account: "Northlight Growth", user: "Malik Sannie", usedBy: ["Strategist"] },
             }}
           />
         ) : null}

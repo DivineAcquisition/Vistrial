@@ -10,6 +10,7 @@ import { Check, ChevronDown, ExternalLink, NotebookPenIcon, Plus, Trash2 } from 
 import { useChatPanel } from "@/components/chat/side-panel";
 import { MeasuredChanges, OutcomeForm, RESULT_WORDS } from "@/components/research/outcome-loop";
 import { useClientScope, useWorkspaceShell } from "@/components/shell/shell-context";
+import { EvidenceLabel, LongText } from "@/components/readable";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogPopup, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -84,7 +85,7 @@ function Facts({ card }: { card: TaskCard }) {
           <dt className="text-muted-foreground">Expected return</dt>
           <dd className="flex flex-wrap items-center gap-1.5 text-card-foreground">
             <span className={cn("font-medium", !card.expectedReturn.known && "font-normal text-muted-foreground")}>{card.expectedReturn.text}</span>
-            {card.expectedReturn.known ? <span className={chip}>{card.expectedReturn.basis}</span> : null}
+            {card.expectedReturn.known ? <EvidenceLabel label={card.expectedReturn.basis} /> : null}
           </dd>
           {card.expectedReturn.known && card.expectedReturn.basis === "Inference" ? (
             <dd className="text-[11px] leading-4 text-muted-foreground">
@@ -158,7 +159,7 @@ function Card({ card, column, board, actions, onEdit, onSkip }: { card: TaskCard
       </div>
       <div className="grid gap-1">
         <h3 className="text-sm font-medium text-card-foreground">{card.title}</h3>
-        {card.why ? <p className="text-xs leading-relaxed text-muted-foreground">{card.why}</p> : null}
+        {card.why ? <LongText text={card.why} lines={2} limit={150} more="Read the reason" className="text-xs leading-relaxed text-muted-foreground" /> : null}
       </div>
 
       {column === "result" && card.result ? (

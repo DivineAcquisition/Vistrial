@@ -55,8 +55,11 @@ export function PagesTabStory({ state, theme, pageId }: { state: string; theme: 
   const empty = state === "empty";
   const running = state === "running";
   const shots = state !== "noshots";
-  const found = data.pages.find((row) => row.id === selected) ?? data.pages[0];
+  let found = data.pages.find((row) => row.id === selected) ?? data.pages[0];
   const names = found.sections.map((row) => row.name);
+  // A teardown saved before pages carried a verdict and sections a headline: the screen writes its own from counts.
+  const old = state === "old";
+  if (old) found = { ...found, verdict: "", sections: found.sections.map((row) => ({ ...row, headline: "" })) };
   const page: TeardownPageView = shots ? { ...found, driver: "browser", screenshots: { desktop: wireframe(names, 1280), phone: wireframe(names, 390) } } : found;
   const tab: PagesTabData = empty
     ? { ...data.tab, results: [], running: [], stopped: [] }

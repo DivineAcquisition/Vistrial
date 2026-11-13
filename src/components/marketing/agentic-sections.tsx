@@ -274,7 +274,7 @@ export function LoopDemo() {
 }
 
 /* ---------------------------------------------------------------------------
- * Growth Architect: pick a skill, see the plan it runs
+ * Strategist: pick a skill, see the plan it runs
  * ------------------------------------------------------------------------- */
 
 export function SkillPlans() {

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-/** New research starts in the Growth Architect's chat, preset for research. */
+/** New research starts in the Strategist's chat, preset for research. */
 export default function NewAssignmentRedirect() {
   const router = useRouter();
   useEffect(() => {

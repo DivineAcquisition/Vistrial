@@ -2,7 +2,7 @@ import { COMPANY_ADDRESS, LEGAL_ENTITY } from "@/lib/constants";
 import { formatTrustDate, type TrustPublic } from "@/lib/trust/model";
 
 /**
- * Public privacy policy for the current product (Growth Architect). A sentence
+ * Public privacy policy for the current product (Strategist). A sentence
  * is included only when the product does that thing today. Switch lines stay
  * out until a Platform Admin confirms the setting and turns them on.
  */
@@ -88,7 +88,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "ul",
           items: [
-            "Vistrial is an agentic workforce for business growth. Our first agent, Growth Architect, researches a business's market from public sources and the business's own results, then prepares reports, strategy, and creative drafts for a person to review.",
+            "Vistrial is an agentic workforce for business growth. Our first agent, Strategist, researches a business's market from public sources and the business's own results, then prepares reports, strategy, and creative drafts for a person to review.",
             "If you visit our website or ask for access, we collect only what we need to respond to you.",
             "If you are a customer, the information in your workspace belongs to you. We handle it on your behalf to provide the service.",
             "Research uses official access only: public web pages, official platform APIs, and links you provide. Vistrial does not log in to a platform for you or get around blocks.",
@@ -125,7 +125,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Customer workspace information. A Vistrial customer tells Growth Architect what to research and brings in its own information, such as its business profile, competitors, results files, and lead lists. The customer decides what to bring in and how it is used. We process that information for the customer, to provide the service, and follow the customer's instructions and our agreement with them. If you are a lead or contact of a customer, Section 13 explains your options.",
+          text: "Customer workspace information. A Vistrial customer tells Strategist what to research and brings in its own information, such as its business profile, competitors, results files, and lead lists. The customer decides what to bring in and how it is used. We process that information for the customer, to provide the service, and follow the customer's instructions and our agreement with them. If you are a lead or contact of a customer, Section 13 explains your options.",
         },
       ],
     },
@@ -164,13 +164,13 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         { kind: "h", text: "D. Customer workspace information" },
         {
           kind: "p",
-          text: "A customer workspace holds the information the customer enters or uploads, and the work Growth Architect prepares from it. This can include:",
+          text: "A customer workspace holds the information the customer enters or uploads, and the work Strategist prepares from it. This can include:",
         },
         {
           kind: "ul",
           items: [
             "The business profile: what the business sells, where, to whom, its offers, and its competitors.",
-            "Research assignments: the questions, markets, keywords, competitors, and links the team asks Growth Architect to look at.",
+            "Research assignments: the questions, markets, keywords, competitors, and links the team asks Strategist to look at.",
             "Files the team uploads, such as the business's own ad or sales results. A results file is read once and deleted; only totals by date and by campaign or channel are kept. Columns that name a person or how to reach them, such as names, email addresses, phone numbers and street addresses, are skipped without being read.",
             "Results from accounts the team connects, such as Meta ad results and booked-call counts from a calendar, described in parts I and J below.",
             "Call transcripts the team uploads or pastes, described in part K below.",
@@ -183,7 +183,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         { kind: "h", text: "E. Information from public sources" },
         {
           kind: "p",
-          text: "To research a market, Growth Architect reads public sources: public web pages, YouTube through its official API, the Meta Ad Library through Meta's official API where it is available, and TikTok and Instagram posts the team provides or the research finds, through the platforms' public link previews. From these, Vistrial stores links, titles, publishers, dates, short text excerpts, and the facts drawn from them, such as which offers an advertiser leads with and how long an ad has run. It does not store copies of ad images or video files. Some posts are shown through the platform's own embedded player.",
+          text: "To research a market, Strategist reads public sources: public web pages, YouTube through its official API, the Meta Ad Library through Meta's official API where it is available, and TikTok and Instagram posts the team provides or the research finds, through the platforms' public link previews. From these, Vistrial stores links, titles, publishers, dates, short text excerpts, and the facts drawn from them, such as which offers an advertiser leads with and how long an ad has run. It does not store copies of ad images or video files. Some posts are shown through the platform's own embedded player.",
         },
         {
           kind: "p",
@@ -264,8 +264,8 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "ul",
           items: [
-            "Growth Architect prepares work for review. It does not publish, post, send, or charge anything to an ad account. A person approves the work, and you decide what to use.",
-            "You choose what Growth Architect researches, and every run has a cost limit.",
+            "Strategist prepares work for review. It does not publish, post, send, or charge anything to an ad account. A person approves the work, and you decide what to use.",
+            "You choose what Strategist researches, and every run has a cost limit.",
             "Collection from public ad libraries stays off until a workspace Owner accepts the risk in writing.",
             "Only the people invited into a workspace can see it, and what each person sees depends on their role. Important actions, including staff actions that change a workspace, are recorded.",
           ],
@@ -297,7 +297,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Platforms we read from. When Growth Architect researches a market, it sends search terms and links to Google (for YouTube) and Meta (for the Meta Ad Library), and requests public link previews from platforms such as TikTok and Instagram. It sends what is needed to find public content, not the contents of your workspace.",
+          text: "Platforms we read from. When Strategist researches a market, it sends search terms and links to Google (for YouTube) and Meta (for the Meta Ad Library), and requests public link previews from platforms such as TikTok and Instagram. It sends what is needed to find public content, not the contents of your workspace.",
         },
         {
           kind: "p",
@@ -450,7 +450,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Growth Architect reads content that is already public, such as ads in the Meta Ad Library, public videos and posts, and public web pages. A research report can mention the business or person who published that content and link to it. Vistrial does not log in to see private content, does not get around blocks, and does not store copies of images or videos.",
+          text: "Strategist reads content that is already public, such as ads in the Meta Ad Library, public videos and posts, and public web pages. A research report can mention the business or person who published that content and link to it. Vistrial does not log in to see private content, does not get around blocks, and does not store copies of images or videos.",
         },
         {
           kind: "p",

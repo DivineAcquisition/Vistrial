@@ -24,7 +24,7 @@ const ORBIT_SECONDS = 28;
  */
 export function AgentScene({
   className,
-  label = "Growth Architect is ready",
+  label = "Strategist is ready",
   sources = SOURCES,
   tint,
 }: {

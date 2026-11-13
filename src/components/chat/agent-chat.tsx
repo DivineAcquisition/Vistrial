@@ -71,7 +71,7 @@ export function ConversationList({ rows, activeId, base, canStart }: { rows: Cha
       {rows === undefined ? (
         <p className="px-1 text-sm text-muted-foreground">Loading.</p>
       ) : rows.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">Your conversations with the Growth Architect are kept here.</p>
+        <p className="rounded-xl border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">Your conversations with the Strategist are kept here.</p>
       ) : (
         <ul className="grid gap-1">
           {rows.map((row) => {

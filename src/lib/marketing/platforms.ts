@@ -13,7 +13,7 @@
  */
 
 export type PlatformGroup =
-  /** Where Growth Architect researches. Matches `platform` in convex/lib/researchShapes.ts. */
+  /** Where Strategist researches. Matches `platform` in convex/lib/researchShapes.ts. */
   | "source"
   /** Connectors the product describes today. */
   | "connector"

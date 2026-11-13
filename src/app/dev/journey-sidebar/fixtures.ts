@@ -2,7 +2,7 @@ import { CATALOG } from "../../../../convex/catalog";
 import type { HomeOverview, SearchHit } from "@/components/shell/journey-sidebar";
 import type { ShellAgent } from "@/components/shell/shell-context";
 
-/** The catalog as the shell reads it, with Growth Architect on. */
+/** The catalog as the shell reads it, with Strategist on. */
 export const STORY_AGENTS: ShellAgent[] = CATALOG.map((row) => ({
   slug: row.slug,
   name: row.name,

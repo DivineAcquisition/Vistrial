@@ -65,6 +65,16 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Uploaded results files are deleted as soon as they are read");
   });
 
+  it("says what is read from HighLevel, what about leads is kept, and how it is deleted", () => {
+    expect(text).toContain("L. Connected HighLevel accounts");
+    expect(text).toContain("Vistrial never creates, edits, moves or deletes anything in HighLevel, and never messages, calls or emails anyone");
+    expect(text).toContain("Vistrial keeps only the name, email address, phone number, where the lead came from");
+    expect(text).toContain("It does not keep what a message said, email subjects, call recordings or transcripts");
+    expect(text).toContain("Disconnecting the sub-account in Connections deletes the tokens and everything read from it");
+    expect(text).toContain("Uninstalling the Vistrial app in HighLevel does the same");
+    expect(text).toContain("HighLevel is the customer's own provider, not a service provider of Vistrial");
+  });
+
   it("says how credits are paid for and that card numbers stay with Stripe", () => {
     expect(text).not.toContain("does not take payments");
     expect(text).toContain("Payment is taken by Stripe on its own checkout page");

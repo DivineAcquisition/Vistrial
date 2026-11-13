@@ -168,6 +168,47 @@ async function imageMade() {
   }
 }
 
+/**
+ * What OpenRouter says about the key itself: numbers and flags only. A run where every call answers
+ * `no_credit` is explained here: no credit bought, a key limit that is used up, or a free-tier account.
+ */
+async function account() {
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/key", { headers: { Authorization: `Bearer ${openRouterKey()}` } });
+    const body = (await response.json()) as { data?: Record<string, unknown> } | null;
+    const data = body?.data ?? {};
+    const number = (value: unknown) => (typeof value === "number" ? value : null);
+    return {
+      status: response.status,
+      /** Dollars. `limit` null means the key has no spending limit of its own. */
+      limit: number(data.limit),
+      limitRemaining: number(data.limit_remaining),
+      usage: number(data.usage),
+      isFreeTier: typeof data.is_free_tier === "boolean" ? data.is_free_tier : null,
+    };
+  } catch {
+    return { status: 0, limit: null, limitRemaining: null, usage: null, isFreeTier: null };
+  }
+}
+
+/** Why OpenRouter answered 402 to the smallest possible call: its own name for the limit that stopped it. */
+async function whyNoCredit() {
+  try {
+    const model = MODELS[0];
+    const response = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${openRouterKey()}`, "Content-Type": "application/json" },
+      body: JSON.stringify(openRouterBody({ model, max_tokens: 16, messages: [{ role: "user", content: "ready" }] })),
+    });
+    if (response.status !== 402) return { status: response.status, limitSource: null };
+    const body = (await response.json()) as { error?: { metadata?: { limit_source?: unknown }; limit_source?: unknown } } | null;
+    const source = body?.error?.metadata?.limit_source ?? body?.error?.limit_source;
+    return { status: 402, limitSource: typeof source === "string" ? source.slice(0, 60) : null };
+  } catch {
+    return { status: 0, limitSource: null };
+  }
+}
+
 export const run = internalAction({
   args: {},
   handler: async () => {
@@ -190,6 +231,8 @@ export const run = internalAction({
       models,
       /** Images through OpenRouter (used when GEMINI_API_KEY is not set). */
       imageMade: await imageMade(),
+      account: await account(),
+      whyNoCredit: await whyNoCredit(),
       badKey: await badKey(),
       next: "If every search line is ok, set OPENROUTER_WEB_SEARCH=on. If reportedCents and tableCents differ by more than a few percent, the price table needs correcting.",
     };

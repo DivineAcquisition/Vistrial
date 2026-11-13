@@ -319,9 +319,47 @@ Not done in this part: the Research tab's list of reports is unchanged (its rows
 status, nothing to summarise without a new query); the PDF is unchanged; the Canvas views of Offers and
 Diagnostics are unchanged apart from the shared chips.
 
+## Briefing posts, the weekly growth report and task cards (part 4)
+
+The same discipline at small size. Nothing changed on the server and no post or task gained a field.
+
+**The feed.** One line above the posts, counted from the posts shown: how many need your decision, how
+many wait for an Owner or Admin, how many are new. A post waiting for a decision says so in its header
+with an icon and words ("Needs your decision", or "Waiting for a decision" for someone who cannot decide).
+
+**The weekly growth report.** The report is written in code as a summary, titled lists and a closing note
+(`taskProposer/tools.ts`). `splitPost` reads that shape back: the summary shows in full, each list shows
+as its title and a count with its lines one step away, an empty list shows its own "None." line, and
+"Proposed for next week", the part that says what to do, starts open. A body that is not in this shape is
+shown as written.
+
+**Every other post.** A body folds at three lines when it is longer than 240 characters (it was four lines
+at 420); a draft's preview folds at three lines. The whole text stays in the page, so a screen reader and
+find-in-page reach it; the button says whether it is open. Sources, the approval block and the links are
+unchanged.
+
+**Task cards.** The basis of an expected return is the evidence label with its icon (it was plain text in
+a grey chip). A reason longer than 150 characters folds at two lines behind "Read the reason". The card
+already led with what to do, what it may return, what it costs in credits and its evidence, so its order
+is unchanged.
+
+| Indicator | Computed from |
+|---|---|
+| "N need your decision", "N waiting for an Owner or Admin" | posts shown whose `approval.status` is waiting, split by `approval.canDecide` |
+| "N new" | posts shown with `unread` |
+| Count beside each list of the weekly report | lines of that list in the post's own body |
+| Evidence label on a task | `expectedReturn.basis`, as saved |
+
+The `Digest` block (what changed, what it means, what to do) from part 1 is not used here. A post has a
+title, a body and a link, not three separate fields, and splitting a body into "what it means" would need
+either new words from a model or a guess. It stays in the kit for a post kind that gains those fields.
+
+Pictures: `briefing-before-*`, `briefing-after-*`, `tasks-before-*`, `tasks-after-*`.
+
 ## Not done, not tested
 
-- The Pages tab, the report page, the offer analysis and the diagnosis use the blocks. Briefing and Tasks do not yet.
+- Every screen named in the brief uses the blocks. The PDF does not, and the Research list and the Canvas
+  views were not redesigned.
 - No real model was run. The new verdict and headline fields were exercised with the scripted model in
   `convex/landingTeardown.test.ts`; what a real model writes in them has not been seen.
 - Not tested with a screen reader by a person. The markup is a list, a table with row and column headers,

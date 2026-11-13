@@ -22,6 +22,7 @@ import { designModel, imageCostCents, imageModel } from "./lib/gemini";
 import { platformRoute } from "./lib/modelChoice";
 import { savedRecord } from "./lib/savedRecords";
 import { EMPTY_DESIGN, designText, type CreativeRecord, type Variation } from "./skills/creativeProduction/shapes";
+import { IMAGE_ADMIN_WORDS, IMAGE_MODELS, IMAGE_SETUP_WORDS, imageMark, imageVia } from "./lib/imageModels";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -84,6 +85,31 @@ function lookOf(raw: string | undefined): Look {
   return look;
 }
 
+/** A Platform Admin is told the exact setting that is missing; everyone else is told what they can do. */
+async function isPlatformAdmin(ctx: QueryCtx & { identity: { subject: string } }) {
+  const staff = await ctx.db
+    .query("staff")
+    .withIndex("by_user", (q) => q.eq("userId", ctx.identity.subject))
+    .unique();
+  return staff?.role === "platform_admin";
+}
+
+/**
+ * The families in the image model switch, honestly: Gemini makes images here; GPT images are not offered
+ * yet (no 4:5 shape and no per-image price to quote); Claude does not make images.
+ */
+function imageFamilies(look: Look) {
+  const name = IMAGE_MODELS[modelFor(look)]?.name ?? "Gemini";
+  return {
+    value: "gemini" as const,
+    options: [
+      { family: "gemini" as const, label: "Gemini", thorough: name, fast: name, off: null, cost: null },
+      { family: "gpt" as const, label: "GPT", thorough: "GPT Image", fast: "GPT Image", off: "Coming soon", cost: null },
+      { family: "claude" as const, label: "Claude", thorough: "Claude", fast: "Claude", off: "Does not make images", cost: null },
+    ],
+  };
+}
+
 /** A variation saved before designs existed has none: it is read as blank, and a designed ad uses its headline and button alone. */
 function designOf(variation: Variation) {
   return variation.design ?? EMPTY_DESIGN;
@@ -103,8 +129,13 @@ export const quote = workspaceQuery({
     const price = priceOf(creative.variations.length * placements.length, look);
     const account = billingOn() ? await accountFor(ctx, ctx.workspaceId) : null;
     const available = account ? account.balanceCents - (await heldCents(ctx, ctx.workspaceId)) : null;
+    const admin = await isPlatformAdmin(ctx);
     return {
       ...price,
+      /** Whether images can be made here at all. When not, the screen shows these words in place of the button, and nothing can be started. */
+      setup: imageVia() ? null : { words: admin ? IMAGE_SETUP_WORDS.admin : IMAGE_SETUP_WORDS.everyone, admin },
+      /** The image model switch: the families, and for the one that makes images, the model this look uses. */
+      models: imageFamilies(look),
       variations: creative.variations.length,
       placements,
       look,
@@ -153,6 +184,8 @@ export const generate = workspaceMutation({
   handler: async (ctx, args) => {
     requireWork(ctx.member.role);
     const { asset, creative } = await adSet(ctx, ctx.workspaceId, args.assetId);
+    // Checked before anything is held or started: with no key, no image is attempted and nothing is charged.
+    if (!imageVia()) throw userError((await isPlatformAdmin(ctx)) ? IMAGE_SETUP_WORDS.admin : IMAGE_SETUP_WORDS.everyone);
     if (asset.status === "needsReview") throw userError("This ad set did not pass its checks. Fix it before spending on images.");
     if (asset.status === "rejected" || asset.status === "archived") throw userError("This ad set was rejected or put away.");
     const placements = cleanPlacements(args.only ? [args.only.placement] : args.placements);
@@ -199,6 +232,8 @@ export const list = workspaceQuery({
     const { asset, saved } = await adSet(ctx, ctx.workspaceId, args.assetId);
     const kit = await kitOf(ctx, ctx.workspaceId, saved);
     const images = [];
+    const admin = await isPlatformAdmin(ctx);
+    const failWords = (code: string) => (admin ? IMAGE_ADMIN_WORDS[code] : undefined) ?? IMAGE_FAIL_WORDS[code] ?? "This image could not be made.";
     for (const row of await imagesOf(ctx, ctx.workspaceId, asset._id)) {
       images.push({
         id: row._id,
@@ -207,7 +242,9 @@ export const list = workspaceQuery({
         look: (row.look ?? "photo") as Look,
         status: row.status,
         url: row.storageId ? await ctx.storage.getUrl(row.storageId) : null,
-        problem: row.status === "failed" ? (IMAGE_FAIL_WORDS[row.failCode ?? ""] ?? "This image could not be made.") : null,
+        problem: row.status === "failed" ? failWords(row.failCode ?? "") : null,
+        /** The image model that made the picture shown. Null while the first one is being made, and when it failed. */
+        model: row.storageId ? imageMark(row.model) : null,
       });
     }
     const logo = kit?.logos.find((row) => row.variant === "light") ?? kit?.logos.find((row) => row.variant === "icon") ?? kit?.logos[0] ?? null;
@@ -263,7 +300,7 @@ export const forMake = internalQuery({
 
 /** Saves a delivered image and charges for it, or records why it failed and charges nothing. The hold is released either way. */
 export const saveMade = internalMutation({
-  args: { imageId: v.id("creativeImages"), storageId: v.optional(v.id("_storage")), costCents: v.number(), failCode: v.optional(v.string()) },
+  args: { imageId: v.id("creativeImages"), storageId: v.optional(v.id("_storage")), costCents: v.number(), failCode: v.optional(v.string()), provider: v.optional(v.string()), reportedCents: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const row: Doc<"creativeImages"> | null = await ctx.db.get(args.imageId);
     if (!row) {
@@ -272,7 +309,7 @@ export const saveMade = internalMutation({
     }
     if (args.storageId) {
       if (row.storageId) await ctx.storage.delete(row.storageId);
-      await ctx.db.patch(row._id, { status: "ready", storageId: args.storageId, costCents: row.costCents + args.costCents, holdCents: 0, failCode: undefined });
+      await ctx.db.patch(row._id, { status: "ready", storageId: args.storageId, costCents: row.costCents + args.costCents, holdCents: 0, failCode: undefined, ...(args.provider ? { provider: args.provider } : {}), ...(args.reportedCents !== undefined ? { reportedCents: args.reportedCents } : {}) });
       await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents: args.costCents, source: "creative", ref: row._id });
     } else {
       // A retake that failed keeps the earlier picture.

@@ -1366,6 +1366,10 @@ export default defineSchema({
     storageId: v.optional(v.id("_storage")),
     failCode: v.optional(v.string()),
     model: v.string(),
+    /** How it was made: "google" (direct) or "openrouter". Stored when it is made; missing on older images. */
+    provider: v.optional(v.string()),
+    /** What OpenRouter reported this image cost, in cents, kept to compare with the price charged. Missing when made directly. */
+    reportedCents: v.optional(v.number()),
     /** What the image cost us once it was delivered. Zero for one that failed. */
     costCents: v.number(),
     /** The price held from the balance while it is being made, so two batches cannot spend the same credit. */

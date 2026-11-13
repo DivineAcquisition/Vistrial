@@ -17,6 +17,9 @@ import type { Look, Tone } from "../../../convex/lib/creativeImages";
 import type { CreativeImageList, CreativeImageQuote } from "./types";
 import { SectionTitle } from "./work-shell";
 import { useCredits } from "@/lib/credits";
+import { ModelMark } from "@/components/models/model-mark";
+import { ModelSwitch } from "@/components/models/model-switch";
+import { Banner } from "@/components/ui/banner";
 
 type VariationCopy = { key: string; headline: string; cta: string };
 type ImageRow = CreativeImageList["images"][number];
@@ -133,9 +136,12 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
         </div>
       )}
       <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-        <span className="mr-auto">
-          {PLACEMENT_WORDS[placement]} {placement}
-          {image.status === "generating" && image.url ? " · making a new one" : ""}
+        <span className="mr-auto grid gap-0.5">
+          <span>
+            {PLACEMENT_WORDS[placement]} {placement}
+            {image.status === "generating" && image.url ? " · making a new one" : ""}
+          </span>
+          <ModelMark model={image.model} />
         </span>
         {image.url ? (
           <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => void save()}>
@@ -201,6 +207,8 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                   }}
                   options={quote.looks.map((row) => ({ value: row.value, label: `${row.label} · ${credits.words(row.eachCents)}` }))}
                 />
+                {/* Which model makes the picture. Only a family that really makes images here can be chosen. */}
+                <ModelSwitch options={quote.models.options} value={quote.models.value} />
                 {look === "designed" ? (
                   <SegmentedRadioGroup
                     aria-label="Background"
@@ -241,7 +249,13 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
           </div>
           {placements.length === 0 ? <p className="text-sm text-muted-foreground">Choose at least one placement.</p> : null}
           {placements.length > 0 && !quote ? <p className="text-sm text-muted-foreground">Working out the price.</p> : null}
-          {placements.length > 0 && quote && quote.count > 0 ? (
+          {quote?.setup ? (
+            // Checked before anything is started: no button is offered, so nothing can be charged.
+            <Banner tone="warning" role="status" title={quote.setup.admin ? "Image making is not set up" : "Images are not available yet"}>
+              {quote.setup.words}
+            </Banner>
+          ) : null}
+          {placements.length > 0 && quote && quote.count > 0 && !quote.setup ? (
             <>
               <p className="text-sm text-card-foreground">
                 {quote.count} image{quote.count === 1 ? "" : "s"}: {quote.variations} variations × {quote.placements.length} placement{quote.placements.length === 1 ? "" : "s"}. <span className="font-medium">{credits.words(quote.totalCents)} of credits</span>{" "}

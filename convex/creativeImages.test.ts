@@ -13,6 +13,8 @@ import { EMPTY_BRAND } from "./lib/brandKits";
 import { designedPrompt, imagePrompt, missingText } from "./lib/creativeImages";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { geminiImageBody, imageCostCents, readImage, type ScriptedGeminiImage } from "./lib/gemini";
+import { IMAGE_SETUP_WORDS, readOpenRouterImage, type ScriptedOpenRouterImage } from "./lib/imageModels";
+import { internal } from "./_generated/api";
 import type { ScriptedModel } from "./lib/toolRouter";
 import schema from "./schema";
 
@@ -20,7 +22,7 @@ const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 const makeTester = () => convexTest(schema, modules);
 type Tester = ReturnType<typeof makeTester>;
 const AGENT = "growth-architect";
-type Globals = { __vistrialScriptedGeminiImage?: ScriptedGeminiImage; __vistrialScriptedModel?: ScriptedModel };
+type Globals = { __vistrialScriptedGeminiImage?: ScriptedGeminiImage; __vistrialScriptedModel?: ScriptedModel; __vistrialScriptedOpenRouterImage?: ScriptedOpenRouterImage };
 
 function person(subject: string) {
   return { subject, email: `${subject}@example.com`, name: subject, issuer: "https://clerk.vistrial.test", tokenIdentifier: `https://clerk.vistrial.test|${subject}` };
@@ -136,7 +138,105 @@ describe("images for an ad set", () => {
     vi.useRealTimers();
     delete (globalThis as Globals).__vistrialScriptedGeminiImage;
     delete (globalThis as Globals).__vistrialScriptedModel;
+    delete (globalThis as Globals).__vistrialScriptedOpenRouterImage;
     delete process.env.AUTUMN_SECRET_KEY;
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
+  });
+
+  it("with no key set, starts nothing and charges nothing, and tells a Platform Admin exactly what is missing", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const quote = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo" });
+    // Everyone else is told what happened and what they can do, not which variable to set.
+    expect(quote.setup).toEqual({ words: IMAGE_SETUP_WORDS.everyone, admin: false });
+    expect(quote.setup?.words).toContain("nothing was charged");
+    expect(quote.setup?.words).not.toContain("API_KEY");
+    const refusal = await message(a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo", confirmedCents: quote.totalCents }));
+    expect(refusal).toBe(IMAGE_SETUP_WORDS.everyone);
+    await settle(t);
+    expect(await t.run((ctx) => ctx.db.query("creativeImages").collect())).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("billingLedger").collect())).toEqual([]);
+
+    await t.mutation(internal.staffAdmin.enroll, { userId: "Alpha-owner", role: "platform_admin" });
+    const forAdmin = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo" });
+    expect(forAdmin.setup).toEqual({ words: IMAGE_SETUP_WORDS.admin, admin: true });
+    expect(forAdmin.setup?.words).toContain("OPENROUTER_API_KEY");
+    expect(forAdmin.setup?.words).toContain("GEMINI_API_KEY");
+  });
+
+  it("says which families make images: Gemini does, GPT is coming, Claude does not", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    imageModel();
+    const photo = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo" });
+    expect(photo.setup).toBeNull();
+    expect(photo.models.value).toBe("gemini");
+    expect(photo.models.options.map((row) => [row.family, row.thorough, row.off])).toEqual([
+      ["gemini", "Nano Banana 2.1", null],
+      ["gpt", "GPT Image", "Coming soon"],
+      ["claude", "Claude", "Does not make images"],
+    ]);
+    const designed = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "designed" });
+    expect(designed.models.options[0].thorough).toBe("Nano Banana Pro");
+  });
+
+  it("makes images through OpenRouter when only that key is there, pinned to Google Cloud, at the price confirmed", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const sent: Record<string, unknown>[] = [];
+    (globalThis as Globals).__vistrialScriptedOpenRouterImage = (body) => {
+      sent.push(body);
+      return { status: 200, body: { created: 1, data: [{ b64_json: "aGVsbG8=", media_type: "image/png" }], usage: { prompt_tokens: 0, completion_tokens: 1680, total_tokens: 1680, cost: 0.0504 } } };
+    };
+    const quote = await a.owner.query(api.creativeImages.quote, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["9:16"], look: "photo" });
+    expect(quote.setup).toBeNull();
+    await a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: [], look: "photo", confirmedCents: 16, only: { variationKey: "A", placement: "9:16" } });
+    await settle(t);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ model: "google/gemini-nano-banana-2.1", aspect_ratio: "9:16", resolution: "2K", n: 1, provider: { only: ["google-vertex"], allow_fallbacks: false } });
+    expect(String(sent[0].prompt)).toContain("A tidy room for A");
+    expect(JSON.stringify(sent[0])).not.toMatch(/Rival/i);
+    const row = (await t.run((ctx) => ctx.db.query("creativeImages").collect()))[0];
+    // Charged the table price the person confirmed; what OpenRouter reported is kept beside it.
+    expect(row).toMatchObject({ status: "ready", provider: "openrouter", costCents: 5.04, reportedCents: 5.04, holdCents: 0 });
+    expect((await t.run((ctx) => ctx.db.query("billingLedger").collect())).map((entry) => [entry.costCents, entry.priceCents])).toEqual([[5.04, 16]]);
+    const listed = await a.owner.query(api.creativeImages.list, { workspaceId: a.workspaceId, assetId: a.assetId });
+    expect(listed.images[0].model).toEqual({ family: "gemini", name: "Nano Banana 2.1" });
+  });
+
+  it("charges nothing when OpenRouter fails, and shows no picture", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    (globalThis as Globals).__vistrialScriptedOpenRouterImage = () => ({ status: 502, body: { error: { code: 502, message: "upstream detail" } } });
+    await a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: [], look: "photo", confirmedCents: 16, only: { variationKey: "A", placement: "1:1" } });
+    await settle(t);
+    const listed = await a.owner.query(api.creativeImages.list, { workspaceId: a.workspaceId, assetId: a.assetId });
+    expect(listed.images[0]).toMatchObject({ status: "failed", url: null, model: null });
+    expect(listed.images[0].problem).not.toContain("upstream");
+    expect(await t.run((ctx) => ctx.db.query("billingLedger").collect())).toEqual([]);
+    // Codes only, whatever the service said.
+    for (const [status, code] of [[401, "auth_failed"], [402, "no_credit"], [403, "blocked"], [429, "rate_limited"], [400, "bad_request"], [500, "provider_error"]] as const) {
+      expect(() => readOpenRouterImage({ status, body: { error: { message: "secret" } } })).toThrow(code);
+    }
+    expect(() => readOpenRouterImage({ status: 200, body: { data: [] } })).toThrow("refused");
+    expect(() => readOpenRouterImage({ status: 200, body: { data: [{ b64_json: "" }] } })).toThrow("refused");
+  });
+
+  it("uses the direct Google key first when both ways are set up", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const direct = imageModel();
+    const viaOpenRouter: unknown[] = [];
+    (globalThis as Globals).__vistrialScriptedOpenRouterImage = (body) => {
+      viaOpenRouter.push(body);
+      return { status: 200, body: { data: [{ b64_json: "aGVsbG8=" }] } };
+    };
+    await a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: [], look: "photo", confirmedCents: 16, only: { variationKey: "A", placement: "1:1" } });
+    await settle(t);
+    expect(direct).toHaveLength(1);
+    expect(viaOpenRouter).toHaveLength(0);
+    expect((await t.run((ctx) => ctx.db.query("creativeImages").collect()))[0]).toMatchObject({ status: "ready", provider: "google" });
   });
 
   it("shows the price first, makes exactly what was confirmed, and charges only for what was delivered", async () => {

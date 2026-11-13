@@ -93,6 +93,7 @@ import type * as lib_factShapes from "../lib/factShapes.js";
 import type * as lib_facts from "../lib/facts.js";
 import type * as lib_gemini from "../lib/gemini.js";
 import type * as lib_guard from "../lib/guard.js";
+import type * as lib_imageModels from "../lib/imageModels.js";
 import type * as lib_intake from "../lib/intake.js";
 import type * as lib_integrations_bookings from "../lib/integrations/bookings.js";
 import type * as lib_integrations_oauth from "../lib/integrations/oauth.js";
@@ -310,6 +311,7 @@ declare const fullApi: ApiFromModules<{
   "lib/facts": typeof lib_facts;
   "lib/gemini": typeof lib_gemini;
   "lib/guard": typeof lib_guard;
+  "lib/imageModels": typeof lib_imageModels;
   "lib/intake": typeof lib_intake;
   "lib/integrations/bookings": typeof lib_integrations_bookings;
   "lib/integrations/oauth": typeof lib_integrations_oauth;

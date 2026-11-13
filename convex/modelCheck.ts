@@ -11,6 +11,8 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
 import { internalAction } from "./_generated/server";
+import { GeminiError, imageCostCents } from "./lib/gemini";
+import { OPENROUTER_IMAGES_URL, openRouterImageBody, readOpenRouterImage } from "./lib/imageModels";
 import { FAMILY_ROUTES } from "./lib/models";
 import { ModelError, costCents } from "./lib/modelRouter";
 import { OPENROUTER_URL, openRouterBody, openRouterCreate, openRouterKey, openRouterToolBudget, openRouterWebSearchTool, readReply, reportedCents } from "./lib/openrouter";
@@ -141,6 +143,31 @@ async function badKey(): Promise<Line> {
   }
 }
 
+/**
+ * One small picture through OpenRouter's image endpoint, pinned to Google Cloud exactly as the product sends
+ * it: a picture must come back, and its reported cost should match the table price a customer is quoted.
+ */
+async function imageMade() {
+  const model = "gemini-nano-banana-2.1";
+  try {
+    const response = await fetch(OPENROUTER_IMAGES_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${openRouterKey()}`, "Content-Type": "application/json" },
+      body: JSON.stringify(openRouterImageBody({ model, prompt: "A plain blue square on a white background. No text.", aspect: "4:5", size: "2K" })),
+    });
+    let body: unknown = null;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+    const made = readOpenRouterImage({ status: response.status, body });
+    return { ok: made.data.length > 0, code: "ok", mimeType: made.mimeType, base64Length: made.data.length, reportedCents: made.reportedCents, tableCents: imageCostCents(model, "2K") };
+  } catch (error) {
+    return { ok: false, code: error instanceof GeminiError ? error.code : "threw" };
+  }
+}
+
 export const run = internalAction({
   args: {},
   handler: async () => {
@@ -161,6 +188,8 @@ export const run = internalAction({
       ready: true as const,
       /** Every `host` should be Azure (GPT) or Google Vertex (Gemini): the routing rules sent with each request allow nothing else. */
       models,
+      /** Images through OpenRouter (used when GEMINI_API_KEY is not set). */
+      imageMade: await imageMade(),
       badKey: await badKey(),
       next: "If every search line is ok, set OPENROUTER_WEB_SEARCH=on. If reportedCents and tableCents differ by more than a few percent, the price table needs correcting.",
     };

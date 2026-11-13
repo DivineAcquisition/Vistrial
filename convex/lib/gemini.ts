@@ -37,7 +37,7 @@ export type GeminiResult = { text: string; inputTokens: number; outputTokens: nu
 /** Why a call failed, as a code a screen has words for. Never the provider's own message. */
 export class GeminiError extends Error {
   constructor(
-    readonly code: "no_key" | "unpriced_model" | "provider_error" | "rate_limited" | "refused" | "bad_request" | "auth_failed" | "connection_failed",
+    readonly code: "no_key" | "unpriced_model" | "provider_error" | "rate_limited" | "refused" | "bad_request" | "auth_failed" | "connection_failed" | "no_credit" | "blocked",
     readonly costCents = 0,
   ) {
     super(code);

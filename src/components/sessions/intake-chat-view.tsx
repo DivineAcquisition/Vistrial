@@ -30,7 +30,7 @@ import { SourceIcon } from "@/components/research/source-icon";
 import { Banner } from "@/components/ui/banner";
 import { showError } from "@/lib/errors/show-error";
 import { useCredits } from "@/lib/credits";
-import { ModelMark, type ModelFamily, type ModelMarkData } from "@/components/models/model-mark";
+import { ModelMark, type ModelMarkData } from "@/components/models/model-mark";
 
 export type IntakeSlots = {
   objective: string;
@@ -60,7 +60,7 @@ export type IntakeView = {
     projectId: string | null;
     mode?: "thorough" | "fast";
     /** The model family picked for this conversation, or null for the organization's default. */
-    model?: ModelFamily | null;
+    model?: string | null;
     researchCapCents?: number;
   };
   messages: IntakeMessage[];

@@ -11,12 +11,13 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
 import { internalAction } from "./_generated/server";
-import { FAMILY_ROUTES } from "./lib/models";
+import { MODELS as OFFERED } from "./lib/models";
 import { ModelError, costCents } from "./lib/modelRouter";
 import { OPENROUTER_URL, openRouterBody, openRouterCreate, openRouterKey, openRouterToolBudget, openRouterWebSearchTool, readReply, reportedCents } from "./lib/openrouter";
 import { collect, type Citation, type FoundSource } from "./lib/toolRouter";
 
-const MODELS = [...new Set([...Object.values(FAMILY_ROUTES.gpt), ...Object.values(FAMILY_ROUTES.gemini)].map((route) => route.model))];
+/** Every model offered through OpenRouter. */
+const MODELS = OFFERED.filter((row) => row.provider === "openrouter").map((row) => row.id);
 
 const SCHEMA = { type: "object", properties: { colour: { type: "string" }, count: { type: "integer" } }, required: ["colour", "count"], additionalProperties: false } as const;
 

@@ -24,7 +24,6 @@ import { saveTheme, type ThemeChoice } from "@/lib/theme";
 import { CATALOG } from "@/lib/shell/rail";
 import { ApprovalSettingsView, type ApprovalSettingsData } from "@/components/settings/approval-settings";
 import { MemoryView, type MemoryFact } from "@/components/settings/memory-section";
-import { SAMPLE_MODELS } from "@/components/models/sample";
 
 /** What an agency's memory holds: facts with where each came from and whether a person confirmed it. */
 const MEMORY: MemoryFact[] = [
@@ -98,7 +97,6 @@ function agents(canEdit: boolean): AgentsData {
   return {
     canEdit,
     defaultResearchMode: "thorough",
-    models: { options: SAMPLE_MODELS, current: "claude", chosen: null },
     agents: CATALOG.map((agent) => ({
       slug: agent.slug,
       name: agent.name,
@@ -182,7 +180,6 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
               setAgentData((row) => ({ ...row, agents: row.agents.map((agent) => (agent.slug === slug ? { ...agent, state: on ? "on" : "off" } : agent)) }))
             }
             onMode={async (mode) => setAgentData((row) => ({ ...row, defaultResearchMode: mode }))}
-            onModel={async (family) => setAgentData((row) => ({ ...row, models: row.models && { ...row.models, current: family, chosen: family } }))}
             onPause={async (paused) => setAgentData((row) => ({ ...row, controls: row.controls && { ...row.controls, paused } }))}
             onCaps={done}
           />

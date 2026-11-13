@@ -66,7 +66,6 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
   const people = useQuery(api.settings.people, staffView && section === "people" ? { workspaceId } : "skip");
   const support = useQuery(api.settings.supportLog, owner && section === "people" ? { workspaceId } : "skip");
   const defaults = useQuery(api.settings.agentDefaults, staffView && section === "agents" ? { workspaceId } : "skip");
-  const models = useQuery(api.models.options, staffView && section === "agents" ? { workspaceId } : "skip");
   const controls = useQuery(api.controls.get, staffView && section === "agents" ? { workspaceId, agentSlug: AGENT } : "skip");
   const meta = useQuery(api.metaAds.status, staffView && section === "data" ? { workspaceId } : "skip");
   const uploads = useQuery(api.resultUploads.list, staffView && section === "data" ? { workspaceId } : "skip");
@@ -83,7 +82,6 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
   const setSupport = useMutation(api.settings.setSupportAccess);
   const setAgent = useMutation(api.workspace.setAgentState);
   const setMode = useMutation(api.settings.setDefaultResearchMode);
-  const setDefaultModel = useMutation(api.models.setDefault);
   const setPaused = useMutation(api.controls.setPaused);
   const setCaps = useMutation(api.controls.setCaps);
   const setPrefs = useMutation(api.settings.setMyPreferences);
@@ -156,7 +154,6 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
         data={{
           canEdit: defaults.canEdit,
           defaultResearchMode: defaults.defaultResearchMode,
-          models: models ? { options: models.families, current: models.current, chosen: models.orgDefault } : null,
           agents: shell.agents.map((agent) => ({
             slug: agent.slug,
             name: agent.name,
@@ -176,7 +173,6 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
         }}
         onAgent={(slug, on) => attempt(setAgent({ workspaceId, slug, state: on ? "on" : "off" }))}
         onMode={(mode) => attempt(setMode({ workspaceId, mode }))}
-        onModel={(family) => attempt(setDefaultModel({ workspaceId, model: family }))}
         onPause={(paused) => attempt(setPaused({ workspaceId, paused }))}
         onCaps={(run, day) =>
           attempt(

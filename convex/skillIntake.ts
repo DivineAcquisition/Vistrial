@@ -12,8 +12,9 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { dayKey } from "./lib/caps";
-import { daySpend, loadCaps } from "./lib/capRows";
+import { dayKey, scaleCaps } from "./lib/caps";
+import { choiceScale, daySpend, loadCaps } from "./lib/capRows";
+import { rememberedModel, skillNeeds } from "./lib/modelChoice";
 import { notFound, userError } from "./lib/errors";
 import { liveFact, writeFact } from "./lib/facts";
 import { assertCanSpend } from "./lib/billing";
@@ -134,7 +135,9 @@ async function known(ctx: QueryCtx, workspaceId: Id<"workspaces">, skill: ChatSk
 }
 
 async function plan(ctx: MutationCtx, row: Doc<"intakes">, skill: ChatSkill) {
-  const caps = await loadCaps(ctx, row.workspaceId, GROWTH_ARCHITECT, skill);
+  // What the run would be allowed: raised for a dearer model, as `startRunFor` will raise it.
+  const choice = row.modelChoice ?? (await rememberedModel(ctx, row.workspaceId, row.createdBy, skillNeeds(skill)));
+  const caps = scaleCaps(await loadCaps(ctx, row.workspaceId, GROWTH_ARCHITECT, skill), choiceScale(choice));
   const spent = await daySpend(ctx, row.workspaceId, GROWTH_ARCHITECT, skill, dayKey());
   return {
     skill,

@@ -158,7 +158,7 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
       <CreativeTabView
         base="/app/agents/growth-architect"
         editor={state !== "rep"}
-        model={{ options: SAMPLE_MODELS, value: "gemini" }}
+        model={{ options: SAMPLE_MODELS, value: "google/gemini-4-carbon" }}
         options={OPTIONS}
         references={state === "form" ? REFERENCES : []}
         referenceActions={{ addLink: async () => null, upload: async () => null, remove: noop }}

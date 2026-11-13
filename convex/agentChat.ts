@@ -18,8 +18,8 @@ import { beginResearch, replyResearch } from "./intake";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { ROUTE_CHOICES, ROUTE_QUESTION, UNDECIDED, isChatRoute, routeChoice, routeIntent, type ChatRoute } from "./lib/chatRouting";
 import { notFound, userError } from "./lib/errors";
-import { assertCanRun, skillNeeds } from "./lib/modelChoice";
-import { isFamily, markOf } from "./lib/models";
+import { assertCanRun, choiceFor, skillNeeds } from "./lib/modelChoice";
+import { markOf, parseChoice } from "./lib/models";
 import { SKILL_TAB } from "./lib/workTabs";
 import { beginSkill, isChatSkill, replySkill, type ChatSkill } from "./skillIntake";
 
@@ -112,18 +112,21 @@ async function firstText(ctx: QueryCtx, intakeId: Id<"intakes">) {
 type Access = MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } };
 
 /**
- * Stores the model family a person picked for a conversation. It must be able to run the skill the
+ * Stores the model a person picked for a conversation, and remembers it as their choice for that kind of work. It must be able to run the skill the
  * conversation is on, or the message is refused with the reason; while the chat is still asking which skill,
  * it is checked when the skill is chosen. `picked` undefined leaves the conversation as it is.
  */
 async function pickModel(ctx: MutationCtx, intakeId: Id<"intakes">, picked: string | undefined, route: ChatRoute | null) {
   const row = await ctx.db.get(intakeId);
   if (!row) return;
-  const choice = picked ?? row.modelChoice;
-  if (choice === undefined) return;
-  if (!isFamily(choice)) throw userError("That model is not one you can choose.");
-  assertCanRun(choice, route ? skillNeeds(route) : {});
-  if (picked !== undefined && picked !== row.modelChoice && row.status !== "started") await ctx.db.patch(row._id, { modelChoice: picked });
+  const needs = route ? skillNeeds(route) : {};
+  if (picked === undefined) {
+    // An earlier pick must still be able to run the skill the conversation has now reached.
+    if (row.modelChoice !== undefined) assertCanRun(row.modelChoice, needs);
+    return;
+  }
+  const choice = await choiceFor(ctx, { workspaceId: row.workspaceId, userId: row.createdBy, picked, needs });
+  if (choice !== row.modelChoice && row.status !== "started") await ctx.db.patch(row._id, { modelChoice: choice });
 }
 type Choices = { mode?: "thorough" | "fast"; platforms?: string[]; links?: string[] };
 
@@ -398,7 +401,7 @@ export const get = workspaceQuery({
       page: isChatPage(row.page) ? CHAT_PAGES[row.page] : null,
       result: await resultOf(ctx, row, route),
       /** The model family picked for this conversation, or null for the organization's default. */
-      model: isFamily(row.modelChoice) ? row.modelChoice : null,
+      model: parseChoice(row.modelChoice)?.id ?? null,
       messages: messages.map((message) => ({ id: message._id, role: message.role, kind: message.kind, text: message.text, chips: message.chips ?? [], data: message.data ?? null, model: markOf(message.madeWith), at: message.at })),
     };
   },

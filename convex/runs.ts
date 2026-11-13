@@ -9,15 +9,15 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from "./lib/caps";
-import { addDaySpend, daySpend, loadCaps, runCaps } from "./lib/capRows";
+import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap, scaleCaps } from "./lib/caps";
+import { addDaySpend, choiceScale, daySpend, loadCaps, runCaps } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
 import { choiceFor, resolveRoute, skillNeeds } from "./lib/modelChoice";
-import { isFamily, markOf, parseModelRoute } from "./lib/models";
+import { markOf, parseModelRoute } from "./lib/models";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isActionTool, isCollectTool, wrapUntrusted } from "./lib/registry";
 import { collectResult, type Platform } from "./lib/researchShapes";
 import { saveSourceRef, setSourceStatus } from "./lib/sourceRefs";
@@ -326,8 +326,10 @@ export async function startRunFor(
     /** The client the run is for, when it has no project to take one from. The caller has already checked it. */
     clientId?: Id<"clients">;
     mode?: "thorough" | "fast";
-    /** The model family a person picked for this run. Missing means the organization's default, else the platform's route. */
+    /** The model a person picked for this run. Missing means the one they last chose for this kind of work, else the platform's route. */
     model?: string;
+    /** Nobody started this by hand (the weekly plan): it runs on the platform's route, whatever `userId` last chose. */
+    unattended?: boolean;
   },
 ) {
   if (checkCredit && !free) await assertCanSpend(ctx, workspaceId);
@@ -349,9 +351,9 @@ export async function startRunFor(
   const skill = skillFor(args.skillSlug);
   if (!skill) throw userError("This skill is not built yet.");
   if (skill.needsProject && !projectId) throw userError("Choose a research project first.");
-  // The free session runs on the platform's route. Otherwise: the family picked by hand, refused here if it
-  // cannot run this skill, else the organization's default.
-  const modelChoice = free ? undefined : await choiceFor(ctx, workspaceId, args.model, skillNeeds(args.skillSlug));
+  // The free session and work nobody started by hand run on the platform's route. Otherwise: the model picked
+  // by hand, refused here if it cannot run this skill, else the one this person last chose for this kind of work.
+  const modelChoice = free ? undefined : await choiceFor(ctx, { workspaceId, userId: args.unattended ? undefined : userId, picked: args.model, needs: skillNeeds(args.skillSlug) });
   const agent = await ctx.db
     .query("agents")
     .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
@@ -365,7 +367,8 @@ export async function startRunFor(
   if (!link || link.state === "off") throw userError(`Turn on the ${agent.name} first.`);
   if (skill.agentSlug !== agent.slug) notFound();
   const gate = await controls(ctx, workspaceId);
-  const caps = await loadCaps(ctx, workspaceId, args.agentSlug, args.skillSlug);
+  // A dearer chosen model may spend more, in step with its price, and the spending limit is judged against that.
+  const caps = scaleCaps(await loadCaps(ctx, workspaceId, args.agentSlug, args.skillSlug), choiceScale(modelChoice, args.mode));
   const spent = await daySpend(ctx, workspaceId, args.agentSlug, args.skillSlug, dayKey());
   const blocked = gate.paused || gate.halted || spent >= caps.maxCostCentsPerDay;
   // Work above the organization's spending limit waits for an Owner or Admin (lib/approvals.ts). The free session spends nothing.
@@ -538,7 +541,7 @@ export const prepare = internalMutation({
     const workKindRoute = run.mode === "fast" && (next.workKind === "research" || next.workKind === "write") ? "classify" : next.workKind;
     // The run's family decides, judged against everything the skill may ask of a model, so one run never
     // mixes families: where the family cannot run this skill here, the platform's route runs every step.
-    const { route } = await resolveRoute(ctx, workKindRoute, isFamily(run.modelChoice) ? run.modelChoice : null, skillNeeds(run.skillSlug));
+    const { route } = await resolveRoute(ctx, workKindRoute, run.modelChoice, skillNeeds(run.skillSlug));
     if (!route) {
       await recordFailure(ctx, run, index, idempotencyKey, "no_route", "model", NO_SPEND, 0, undefined, next.phase);
       return { done: true as const };

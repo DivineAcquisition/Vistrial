@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-import { MAX_TOKENS, ModelError, NO_SPEND, PRICES, addSpend, toModelError, type ModelRoute, type Spend } from "./modelRouter";
-import { openRouterCreate, openRouterToolBudget, openRouterWebSearchOn, openRouterWebSearchTool, reportedCents } from "./openrouter";
+import { MAX_TOKENS, ModelError, NO_SPEND, PRICES, addSpend, ratesFor, toModelError, type ModelRoute, type Spend } from "./modelRouter";
+import { openRouterCreate, openRouterToolBudget, openRouterWebSearchOn, openRouterCents, openRouterWebSearchTool } from "./openrouter";
 import type { WorkKind } from "./registry";
 
 /**
@@ -78,13 +78,14 @@ function priceOf(model: string) {
 
 /**
  * What one response cost. Through OpenRouter it is the cost OpenRouter reports for the request, which
- * already holds search fees. Otherwise, and when OpenRouter reports none, it is worked out from the price
- * table: tokens at the model's rates, cache tokens, and search fees.
+ * already holds search fees, plus OpenRouter's own fee (`openRouterCents`). Otherwise, and when OpenRouter
+ * reports none, it is worked out from the price table: tokens at the model's rates, cache tokens, and
+ * search fees.
  */
 export function usageSpend(model: string, usage: Anthropic.Usage, provider = "claude"): { spent: Spend; webSearches: number; webFetches: number } {
-  const price = priceOf(model);
   const cacheWrite = usage.cache_creation_input_tokens ?? 0;
   const cacheRead = usage.cache_read_input_tokens ?? 0;
+  const price = ratesFor(priceOf(model), usage.input_tokens + cacheWrite + cacheRead);
   const webSearches = usage.server_tool_use?.web_search_requests ?? 0;
   const webFetches = usage.server_tool_use?.web_fetch_requests ?? 0;
   const dollars =
@@ -94,12 +95,12 @@ export function usageSpend(model: string, usage: Anthropic.Usage, provider = "cl
       cacheRead * price.cacheRead) /
     1_000_000;
   const tokenCents = Math.round(dollars * 100 * 10_000) / 10_000;
-  const reported = provider === "openrouter" ? reportedCents(usage) : null;
+  const tableCents = tokenCents + webSearches * (price.searchCents ?? WEB_SEARCH_CENTS);
   return {
     spent: {
       inputTokens: usage.input_tokens + cacheWrite + cacheRead,
       outputTokens: usage.output_tokens,
-      costCents: reported ?? tokenCents + webSearches * (price.searchCents ?? WEB_SEARCH_CENTS),
+      costCents: provider === "openrouter" ? openRouterCents(usage, tableCents) : tableCents,
     },
     webSearches,
     webFetches,

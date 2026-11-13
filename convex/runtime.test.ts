@@ -6,11 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { startRunFor } from "./runs";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { MISSING_SOURCE } from "./lib/evidence";
 import { INJECTION_FIXTURE, toolsAfterModel } from "./lib/registry";
 import { resolveRoute } from "./lib/modelChoice";
-import type { Family, Needs } from "./lib/models";
+import type { Needs } from "./lib/models";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -523,7 +524,7 @@ describe("step 4 runtime", () => {
       expect(sent[0].provider).toEqual({ data_collection: "deny", zdr: true, require_parameters: true });
       const run = await t.run((ctx) => ctx.db.get(runId));
       // $0.02 reported is 2 cents: the run carries what OpenRouter said, not a table price.
-      expect(run?.costCents).toBeCloseTo(2, 6);
+      expect(run?.costCents).toBeCloseTo(2 * 1.055, 4);
     } finally {
       delete (globalThis as { __vistrialScriptedOpenRouter?: unknown }).__vistrialScriptedOpenRouter;
     }
@@ -551,33 +552,41 @@ describe("step 4 runtime", () => {
     const admin = t.withIdentity(person("admin", "admin@example.com", { secondFactor: true }));
     const route = { workKind: "write", provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "claude", fallbackModel: "claude-sonnet-5-5" };
     await admin.mutation(api.platform.setRoute, route);
-    await expect(admin.mutation(api.platform.setRoute, { ...route, model: "openai/gpt-6-astra" })).rejects.toThrow("has no price set");
+    await expect(admin.mutation(api.platform.setRoute, { ...route, model: "openai/gpt-7" })).rejects.toThrow("has no price set");
     await expect(admin.mutation(api.platform.setRoute, { ...route, fallbackModel: "claude-opus-9" })).rejects.toThrow("has no price set");
     await expect(admin.mutation(api.platform.setRoute, { ...route, provider: "claude" })).rejects.toThrow("Anthropic's own model ids");
   });
 
-  it("resolves a family to its route only where it can run, and otherwise keeps the platform's", async () => {
+  it("resolves a chosen model to its route only where it can run, and otherwise keeps the platform's", async () => {
     const t = convexTest(schema, modules);
     await t.mutation(internal.platform.ensureDefaultRoutes, {});
     const opus = { provider: "claude", model: "claude-opus-5-5", fallbackProvider: "claude", fallbackModel: "claude-sonnet-5-5" };
-    const resolve = (choice: Family | undefined, needs: Needs = {}) => t.run((ctx) => resolveRoute(ctx, "research", choice, needs));
+    const sol = "openai/gpt-6.1-sol";
+    const carbon = "google/gemini-4-carbon";
+    const resolve = (choice: string | undefined, needs: Needs = {}) => t.run((ctx) => resolveRoute(ctx, "research", choice, needs));
     delete process.env.OPENROUTER_API_KEY;
     delete process.env.MODEL_FAMILIES;
     delete process.env.OPENROUTER_WEB_SEARCH;
     try {
       expect(await resolve(undefined)).toEqual({ route: opus });
-      expect(await resolve("claude", { webSearch: true })).toEqual({ route: opus });
+      expect(await resolve("claude-opus-5-5", { webSearch: true })).toEqual({ route: opus });
+      expect(await resolve("not-a-model")).toEqual({ route: opus });
+      // Another Claude model needs no switch: it runs at Anthropic, like the platform's own.
+      expect((await resolve("claude-sonnet-5-5", { webSearch: true, webFetch: true })).route).toEqual({ provider: "claude", model: "claude-sonnet-5-5", fallbackProvider: "claude", fallbackModel: "claude-opus-5-5" });
       // No key, or the owner has not switched the family on: the platform's route runs, and the answer says why.
-      expect(await resolve("gpt")).toEqual({ route: opus, setAside: { family: "gpt", reason: "not_switched_on" } });
+      expect(await resolve(sol)).toEqual({ route: opus, setAside: { model: sol, family: "gpt", reason: "not_switched_on" } });
       process.env.OPENROUTER_API_KEY = "test-key";
-      expect(await resolve("gpt")).toEqual({ route: opus, setAside: { family: "gpt", reason: "not_switched_on" } });
+      expect(await resolve(sol)).toEqual({ route: opus, setAside: { model: sol, family: "gpt", reason: "not_switched_on" } });
       process.env.MODEL_FAMILIES = "gpt, Gemini";
-      expect((await resolve("gpt")).route).toEqual({ provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" });
-      expect((await resolve("gemini")).route?.model).toBe("google/gemini-4-carbon");
-      expect(await resolve("gemini", { webSearch: true })).toEqual({ route: opus, setAside: { family: "gemini", reason: "no_web_search" } });
+      expect((await resolve(sol)).route).toEqual({ provider: "openrouter", model: sol, fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" });
+      // A family name from an older record still means that family's usual model.
+      expect((await resolve("gpt")).route?.model).toBe(sol);
+      expect((await resolve("openai/gpt-6-astra")).route?.model).toBe("openai/gpt-6-astra");
+      expect((await resolve(carbon)).route?.model).toBe(carbon);
+      expect(await resolve(carbon, { webSearch: true })).toEqual({ route: opus, setAside: { model: carbon, family: "gemini", reason: "no_web_search" } });
       process.env.OPENROUTER_WEB_SEARCH = "on";
-      expect((await resolve("gemini", { webSearch: true })).route?.provider).toBe("openrouter");
-      expect(await resolve("gpt", { webFetch: true })).toEqual({ route: opus, setAside: { family: "gpt", reason: "no_web_fetch" } });
+      expect((await resolve(carbon, { webSearch: true })).route?.provider).toBe("openrouter");
+      expect(await resolve(sol, { webFetch: true })).toEqual({ route: opus, setAside: { model: sol, family: "gpt", reason: "no_web_fetch" } });
     } finally {
       delete process.env.OPENROUTER_API_KEY;
       delete process.env.MODEL_FAMILIES;
@@ -609,19 +618,19 @@ describe("step 4 runtime", () => {
       const t = convexTest(schema, modules);
       const { owner, workspaceId } = await seedPeople(t);
       await confirmProfile(owner, workspaceId);
-      await expect(owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "gpt" })).rejects.toThrow("GPT cannot run this: not switched on yet");
+      await expect(owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "openai/gpt-6.1-sol" })).rejects.toThrow("GPT-6.1 Sol cannot run this: not switched on yet");
       await expect(owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "llama" })).rejects.toThrow("not one you can choose");
       expect(await t.run((ctx) => ctx.db.query("agentRuns").take(5))).toHaveLength(0);
     });
 
-    it("stores the family picked on the run, and its steps are routed to that family", async () => {
+    it("stores the model picked on the run, and its steps are routed to that model", async () => {
       on();
       process.env.OPENROUTER_API_KEY = "test-key";
       const t = convexTest(schema, modules);
       const { owner, workspaceId } = await seedPeople(t);
       await confirmProfile(owner, workspaceId);
-      const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "gpt" });
-      expect((await t.run((ctx) => ctx.db.get(runId)))?.modelChoice).toBe("gpt");
+      const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "openai/gpt-6.1-sol" });
+      expect((await t.run((ctx) => ctx.db.get(runId)))?.modelChoice).toBe("openai/gpt-6.1-sol");
       // The first step is a tool. Commit it, then the model step's plan names the family's route.
       const first = await t.mutation(internal.runs.prepare, { runId });
       if (first.done || first.kind !== "tool") throw new Error("expected a tool step");
@@ -630,30 +639,90 @@ describe("step 4 runtime", () => {
       expect(second).toMatchObject({ kind: "model", route: { provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" } });
     });
 
-    it("an Owner or Admin sets the organization's default, and work with no pick starts on it", async () => {
-      on();
+    it("lists only the models that can do the work, and none that cannot", async () => {
+      process.env.ALLOW_DEV_SKILLS = "true";
       const t = convexTest(schema, modules);
-      const { owner, admin, viewer, workspaceId } = await seedPeople(t);
-      await confirmProfile(owner, workspaceId);
+      const { owner, viewer, workspaceId } = await seedPeople(t);
+      await t.mutation(internal.platform.ensureDefaultRoutes, {});
+      const ids = async (skillSlug?: string) => (await owner.query(api.models.options, { workspaceId, ...(skillSlug ? { skillSlug } : {}) })).models.map((row) => row.id);
+      const claude = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"];
+      // Nothing switched on: Claude only.
+      expect(await ids()).toEqual(claude);
+      on();
       process.env.OPENROUTER_API_KEY = "test-key";
-      await expect(viewer.mutation(api.models.setDefault, { workspaceId, model: "gemini" })).rejects.toThrow(NOT_ALLOWED);
-      await admin.mutation(api.models.setDefault, { workspaceId, model: "gemini" });
-      const options = await owner.query(api.models.options, { workspaceId });
-      expect(options.orgDefault).toBe("gemini");
-      expect(options.current).toBe("gemini");
-      expect(options.families.map((row) => [row.family, row.thorough, row.off])).toEqual([
-        ["claude", "Claude Opus 5.5", null],
-        ["gpt", "GPT-6.1 Sol", null],
-        ["gemini", "Gemini 4 Carbon", null],
+      const all = await owner.query(api.models.options, { workspaceId });
+      expect(all.models.map((row) => row.id)).toEqual([
+        ...claude,
+        "openai/gpt-6-astra",
+        "openai/gpt-6.1-sol",
+        "openai/gpt-6.1-terra",
+        "openai/gpt-6-luna",
+        "google/gemini-4-argon",
+        "google/gemini-4-carbon",
+        "google/gemini-4-hydrogen",
+        "google/gemini-3.8-flash",
       ]);
-      // Research searches the web, which is not proven through OpenRouter yet: greyed with the reason, and
-      // the default falls back to the platform's own route for it.
-      const research = await owner.query(api.models.options, { workspaceId, skillSlug: "market-intelligence" });
-      expect(research.families.map((row) => row.off)).toEqual([null, "Cannot search the web here yet", "Cannot search the web here yet"]);
-      const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
-      expect((await t.run((ctx) => ctx.db.get(runId)))?.modelChoice).toBe("gemini");
-      await owner.mutation(api.models.setDefault, { workspaceId, model: null });
-      expect((await owner.query(api.models.options, { workspaceId })).orgDefault).toBeNull();
+      expect(all.current).toBe("claude-opus-5-5");
+      expect(all.canChoose).toBe(true);
+      expect((await viewer.query(api.models.options, { workspaceId })).canChoose).toBe(false);
+      const row = (id: string) => all.models.find((model) => model.id === id);
+      // The platform's own model says nothing about cost. A dearer one says so and raises the limit.
+      expect(row("claude-opus-5-5")).toMatchObject({ cost: null, capScale: 1, fastName: "Claude Sonnet 5.5" });
+      expect(row("openai/gpt-6-astra")).toMatchObject({ cost: "Usually costs more", capScale: 2.5, fastCapScale: 1, fastName: "GPT-6.1 Terra" });
+      expect(row("openai/gpt-6.1-sol")).toMatchObject({ cost: "Usually costs less", capScale: 1 });
+      // Research searches the web, which is not proven through OpenRouter yet: those models are not listed.
+      expect(await ids("market-intelligence")).toEqual(claude);
+      process.env.OPENROUTER_WEB_SEARCH = "on";
+      expect(await ids("market-intelligence")).toHaveLength(11);
+    });
+
+    it("remembers each person's last choice per kind of work, and nobody else's", async () => {
+      on();
+      process.env.OPENROUTER_API_KEY = "test-key";
+      const t = convexTest(schema, modules);
+      const { owner, admin, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      const start = (who: typeof owner, model?: string) => who.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", ...(model ? { model } : {}) });
+      const choiceOf = async (runId: Id<"agentRuns">) => (await t.run((ctx) => ctx.db.get(runId)))?.modelChoice;
+      // Never chose: nothing is stored and the platform's route runs.
+      expect(await choiceOf(await start(owner))).toBeUndefined();
+      await start(owner, "google/gemini-4-carbon");
+      expect((await owner.query(api.models.options, { workspaceId })).current).toBe("google/gemini-4-carbon");
+      expect(await choiceOf(await start(owner))).toBe("google/gemini-4-carbon");
+      // Another person in the same organization is not affected.
+      expect((await admin.query(api.models.options, { workspaceId })).current).not.toBe("google/gemini-4-carbon");
+      expect(await choiceOf(await start(admin))).toBeUndefined();
+      // A choice made for writing is not carried into research, which is another kind of work.
+      expect((await owner.query(api.models.options, { workspaceId, skillSlug: "market-intelligence" })).current).not.toBe("google/gemini-4-carbon");
+      // If the family is switched off later, the remembered choice stops applying and nothing is refused.
+      process.env.MODEL_FAMILIES = "gpt";
+      expect(await choiceOf(await start(owner))).toBeUndefined();
+    });
+
+    it("leaves work nobody starts by hand on the platform's route, whatever its owner last chose", async () => {
+      on();
+      process.env.OPENROUTER_API_KEY = "test-key";
+      const t = convexTest(schema, modules);
+      const { owner, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "openai/gpt-6.1-sol" });
+      const runId = await t.run((ctx) => startRunFor(ctx, { workspaceId, userId: "owner", role: "owner", agentSlug: "growth-architect", skillSlug: "test-echo", unattended: true }));
+      expect((await t.run((ctx) => ctx.db.get(runId)))?.modelChoice).toBeUndefined();
+    });
+
+    it("lets a run on a dearer model spend more, in step with its price, and judges the spending limit against that", async () => {
+      on();
+      process.env.OPENROUTER_API_KEY = "test-key";
+      const t = convexTest(schema, modules);
+      const { owner, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      const capOf = async (runId: Id<"agentRuns">) => (await owner.query(api.runs.get, { workspaceId, runId })).caps.maxCostCentsPerRun;
+      const plain = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+      const base = await capOf(plain);
+      const cheap = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "openai/gpt-6-luna" });
+      expect(await capOf(cheap)).toBe(base);
+      const dear = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "openai/gpt-6-astra" });
+      expect(await capOf(dear)).toBe(Math.ceil(base * 2.5));
     });
 
     it("shows which model ran: on the run, on each model step, and on what the run made", async () => {
@@ -696,13 +765,15 @@ describe("step 4 runtime", () => {
       const t = convexTest(schema, modules);
       const { owner, viewer, workspaceId } = await seedPeople(t);
       await confirmProfile(owner, workspaceId);
-      await expect(owner.mutation(api.agentChat.send, { workspaceId, text: "Research my market", skill: "market-intelligence", model: "gpt" })).rejects.toThrow("GPT cannot run this: cannot search the web here yet");
-      const { intakeId } = await owner.mutation(api.agentChat.send, { workspaceId, text: "Is my retainer priced right?", skill: "offer-intelligence", model: "gpt" });
-      expect((await owner.query(api.agentChat.get, { workspaceId, intakeId })).model).toBe("gpt");
-      await owner.mutation(api.agentChat.setModel, { workspaceId, intakeId, model: "gemini" });
-      expect((await owner.query(api.agentChat.get, { workspaceId, intakeId })).model).toBe("gemini");
-      await expect(viewer.mutation(api.agentChat.setModel, { workspaceId, intakeId, model: "claude" })).rejects.toThrow();
-      // A chat with no pick stays on the default.
+      await expect(owner.mutation(api.agentChat.send, { workspaceId, text: "Research my market", skill: "market-intelligence", model: "openai/gpt-6.1-sol" })).rejects.toThrow("GPT-6.1 Sol cannot run this: cannot search the web here yet");
+      const { intakeId } = await owner.mutation(api.agentChat.send, { workspaceId, text: "Is my retainer priced right?", skill: "offer-intelligence", model: "openai/gpt-6.1-sol" });
+      expect((await owner.query(api.agentChat.get, { workspaceId, intakeId })).model).toBe("openai/gpt-6.1-sol");
+      await owner.mutation(api.agentChat.setModel, { workspaceId, intakeId, model: "google/gemini-4-argon" });
+      expect((await owner.query(api.agentChat.get, { workspaceId, intakeId })).model).toBe("google/gemini-4-argon");
+      await expect(viewer.mutation(api.agentChat.setModel, { workspaceId, intakeId, model: "claude-opus-5-5" })).rejects.toThrow();
+      // The pick is remembered as this person's choice for this kind of work.
+      expect((await owner.query(api.models.options, { workspaceId, skillSlug: "offer-intelligence" })).current).toBe("google/gemini-4-argon");
+      // A chat with no pick of its own stores none: it starts on whatever the person last chose.
       const plain = await owner.mutation(api.agentChat.send, { workspaceId, text: "Is my retainer priced right?", skill: "offer-intelligence" });
       expect((await owner.query(api.agentChat.get, { workspaceId, intakeId: plain.intakeId })).model).toBeNull();
     });

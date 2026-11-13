@@ -20,6 +20,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { BRAND_KIND_WORDS } from "../../../convex/lib/brandKits";
 import { ATTEST_WORDS, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, readReferenceLink } from "../../../convex/lib/referenceShapes";
 
+import { VariationEditor, type VariationEdit } from "./creative-edit";
 import { CreativeImages } from "./creative-images";
 import { CreativeTest, type TestActions } from "./creative-test";
 import { ReviewBar } from "./review-bar";
@@ -62,6 +63,10 @@ export type CreativeTabProps = {
   images?: ReactNode;
   /** Marking the open ad set as running and recording which variation won. */
   test: TestActions;
+  /** Saves a person's own edit to one variation of the open ad set, and runs the checks again. */
+  onEdit: (edit: VariationEdit) => Promise<{ passed: boolean }>;
+  /** Opens one variation's editor straight away (stories). */
+  initialEdit?: string | null;
 };
 
 /** Why a run ended with nothing to review, in plain words. The run's own page has the step that failed. */
@@ -402,7 +407,8 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 }
 
 /** One ad set: what it was made from, the checks, the brief, the four variations, the script and the captions. */
-function AdSet({ view, editor, review, images, test }: { view: CreativeView; editor: boolean; review: ReviewActions; images?: ReactNode; test: TestActions }) {
+function AdSet({ view, editor, review, images, test, onEdit, initialEdit }: { view: CreativeView; editor: boolean; review: ReviewActions; images?: ReactNode; test: TestActions; onEdit: CreativeTabProps["onEdit"]; initialEdit?: string | null }) {
+  const [editing, setEditing] = useState<string | null>(initialEdit ?? null);
   const creative = view.creative;
   const failed = view.checks.results.filter((row) => !row.passed);
   const waiting = view.status === "draft" || view.status === "needsReview";
@@ -493,8 +499,17 @@ function AdSet({ view, editor, review, images, test }: { view: CreativeView; edi
                       <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{row.key}</span>
                       {row.hookType}
                     </span>
-                    <CopyButton label={`Copy variation ${row.key}`} text={[row.hook, row.primaryText, row.headline, row.cta, ...view.disclaimers].filter(Boolean).join("\n\n")} />
+                    <span className="flex items-center gap-1">
+                      {editor && waiting && editing !== row.key ? (
+                        <Button size="sm" variant="ghost" onClick={() => setEditing(row.key)}>
+                          Edit
+                        </Button>
+                      ) : null}
+                      <CopyButton label={`Copy variation ${row.key}`} text={[row.hook, row.primaryText, row.headline, row.cta, ...view.disclaimers].filter(Boolean).join("\n\n")} />
+                    </span>
                   </div>
+                  {editor && waiting && editing === row.key ? <VariationEditor row={row} onSave={onEdit} onClose={() => setEditing(null)} /> : null}
+                  <div className={cn("grid gap-2", editor && waiting && editing === row.key && "hidden")}>
                   <p className="font-heading text-base text-card-foreground">{row.hook}</p>
                   <p className="text-sm whitespace-pre-line text-card-foreground">{row.primaryText}</p>
                   <p className="text-sm text-card-foreground">
@@ -508,12 +523,13 @@ function AdSet({ view, editor, review, images, test }: { view: CreativeView; edi
                   </p>
                   {row.design?.visual ? (
                     <p className="text-xs text-muted-foreground">
-                      <span className="text-card-foreground">Designed ad:</span> {[row.design.eyebrow && `bar “${row.design.eyebrow}”`, row.design.kicker && `“${row.design.kicker}”`, row.design.visual, row.design.labels.length > 0 ? `labels: ${row.design.labels.join(", ")}` : "", row.design.subline && `“${row.design.subline}”`].filter(Boolean).join(" · ")}
+                      <span className="text-card-foreground">Designed ad:</span> {[row.design.eyebrow && `bar “${row.design.eyebrow}”`, row.design.kicker && `“${row.design.kicker}”`, row.design.visual, row.design.labels.length > 0 ? `labels${row.design.illustrative ? " (example figures, marked in the picture)" : ""}: ${row.design.labels.join(", ")}` : "", row.design.subline && `“${row.design.subline}”`].filter(Boolean).join(" · ")}
                     </p>
                   ) : null}
                   <p className="rounded-lg bg-muted px-2 py-1 text-xs text-muted-foreground">
                     <span className="text-card-foreground">Untested hypothesis:</span> {row.hypothesis}
                   </p>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -591,7 +607,7 @@ function AdSet({ view, editor, review, images, test }: { view: CreativeView; edi
 }
 
 /** The Creative workspace: the ask, what is running, and the ad sets with the one chosen opened. */
-export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, model, review, initialSource, initialForm, images, test }: CreativeTabProps) {
+export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, model, review, initialSource, initialForm, images, test, onEdit, initialEdit }: CreativeTabProps) {
   const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialForm || initialSource));
   return (
@@ -679,7 +695,7 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
             ))}
           </ul>
         )}
-        {view ? <AdSet view={view} editor={editor} review={review} images={images} test={test} /> : null}
+        {view ? <AdSet key={view.assetId} view={view} editor={editor} review={review} images={images} test={test} onEdit={onEdit} initialEdit={initialEdit} /> : null}
       </section>
     </div>
   );
@@ -700,6 +716,7 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
   const referenceUploadUrl = useMutation(api.references.uploadUrl);
   const removeReference = useMutation(api.references.remove);
   const review = useReviewActions(workspaceId);
+  const editVariation = useMutation(api.creative.edit);
   const startTest = useMutation(api.creativeTests.start);
   const recordTest = useMutation(api.creativeTests.recordOutcome);
   const removeTest = useMutation(api.creativeTests.remove);
@@ -752,6 +769,10 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
         remove: async (testId) => {
           await removeTest({ workspaceId, testId: testId as Id<"creativeTests"> });
         },
+      }}
+      onEdit={async (row) => {
+        if (!chosen) return { passed: true };
+        return await editVariation({ workspaceId, assetId: chosen, ...row });
       }}
       initialSource={source ?? null}
       images={view?.creative ? <CreativeImages key={view.assetId} workspaceId={workspaceId} assetId={view.assetId} editor={editor} variations={view.creative.variations.map((row) => ({ key: row.key, headline: row.headline, cta: row.cta }))} /> : null}

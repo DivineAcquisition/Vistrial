@@ -31,6 +31,7 @@ import type { FinishedRun, ResultRow, ReviewActions, RunningRun, SuggestionRow }
 import { useCredits } from "@/lib/credits";
 import { MEMORY_HREF } from "@/lib/shell/journey";
 import { ModelMark } from "@/components/models/model-mark";
+import { AgentAvatar } from "@/components/live/agent-avatar";
 
 /** Plain words for a step's phase, as the live feed shows it. */
 const PHASE_WORDS: Record<string, string> = {
@@ -67,25 +68,71 @@ export function SectionTitle({ icon: Icon, children, aside }: { icon: LucideIcon
   );
 }
 
-/** The top of a work tab: what it holds, in a sentence, and its one main action. No chat box: talking happens in Chat. */
-export function WorkHero({ icon: Icon, eyebrow, title, promise, action, children }: { icon: LucideIcon; eyebrow: string; title: string; promise: string; action?: ReactNode; children?: ReactNode }) {
+/**
+ * The top of a work tab: what it holds, in a sentence, and its one main action. No chat box: talking happens
+ * in Chat. The banner wears the brand: a violet wash and sheen, the agent's face with the skill's icon pinned
+ * to it, and, while the tab has work running, a "Working" tag and a light running along the bottom edge
+ * (still under reduced motion or calm mode).
+ */
+export function WorkHero({
+  icon: Icon,
+  eyebrow,
+  title,
+  promise,
+  action,
+  working = false,
+  agent = "growth-architect",
+  children,
+}: {
+  icon: LucideIcon;
+  eyebrow: string;
+  title: string;
+  promise: string;
+  action?: ReactNode;
+  /** True while this tab has work running. */
+  working?: boolean;
+  /** The agent whose face the banner shows. Every work tab today belongs to Strategist. */
+  agent?: string;
+  children?: ReactNode;
+}) {
   return (
-    <Panel className="relative grid gap-4 overflow-hidden p-4 sm:p-6">
-      <div aria-hidden className="pointer-events-none absolute -top-24 -right-16 size-64 rounded-full bg-primary/15 blur-3xl" />
+    <Panel data-work-hero data-working={working || undefined} className="work-hero relative grid min-w-0 gap-4 overflow-hidden p-4 sm:p-6">
+      <div aria-hidden className="work-hero-wash pointer-events-none absolute inset-0" />
+      <div aria-hidden className="work-hero-grid pointer-events-none absolute inset-y-0 right-0 w-2/3 max-w-md" />
+      <div aria-hidden className={cn("work-hero-orb pointer-events-none absolute -top-24 -right-16 size-64 rounded-full blur-3xl", working && "work-hero-orb-on")} />
+      <div aria-hidden className="work-hero-edge pointer-events-none absolute inset-x-0 top-0 h-px" />
       <div className="relative flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 basis-64 items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 text-primary ring-1 ring-primary/25">
-            <Icon aria-hidden className="size-5" />
+        <div className="flex min-w-0 flex-1 basis-56 items-start gap-3 sm:gap-4">
+          <span className="relative shrink-0">
+            <span className={cn("work-hero-halo absolute -inset-1 rounded-full", working && "work-hero-halo-on")} aria-hidden />
+            <AgentAvatar slug={agent} size="md" working={working} className="relative" />
+            <span className="work-hero-skill absolute -right-1.5 -bottom-1.5 flex size-6 items-center justify-center rounded-lg ring-2 ring-card">
+              <Icon aria-hidden className="size-3.5" />
+            </span>
           </span>
           <div className="grid min-w-0 gap-0.5">
-            <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{eyebrow}</p>
-            <h1 className="font-heading text-lg text-card-foreground">{title}</h1>
+            <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold tracking-[0.14em] uppercase">
+              <span className="work-hero-eyebrow min-w-0 break-words">{eyebrow}</span>
+              {working ? (
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/12 px-2 py-0.5 text-[10px] tracking-[0.08em] text-primary ring-1 ring-primary/25">
+                  <span aria-hidden className="live-pulse size-1.5 rounded-full bg-primary" />
+                  Working
+                </span>
+              ) : null}
+            </p>
+            <h1 className="font-heading text-lg break-words text-card-foreground sm:text-xl">{title}</h1>
             <p className="text-sm text-muted-foreground">{promise}</p>
           </div>
         </div>
-        {action ? <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div> : null}
+        {action ? <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2">{action}</div> : null}
       </div>
       {children ? <div className="relative min-w-0">{children}</div> : null}
+      {working ? (
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
+          <div className="work-hero-track absolute inset-0" />
+          <div className="work-hero-scan absolute inset-y-0 w-1/3" />
+        </div>
+      ) : null}
     </Panel>
   );
 }
@@ -306,8 +353,8 @@ export function SharedLinks({ base }: { base: string }) {
 export function WorkLayout({ main, rail }: { main: ReactNode; rail: ReactNode }) {
   return (
     <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
-      <div className="grid min-w-0 content-start gap-5">{main}</div>
-      <aside className="grid min-w-0 content-start gap-5">{rail}</aside>
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-5">{main}</div>
+      <aside className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-5">{rail}</aside>
     </div>
   );
 }

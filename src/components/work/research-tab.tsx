@@ -39,6 +39,7 @@ export function ResearchTabView({ base, editor, tab, sessions, review, pdf }: Re
             eyebrow="Strategist · Market Intelligence"
             title="Research"
             promise="Your reports library: every report with its sources, ready to approve, send back or export as a PDF."
+            working={tab.running.length > 0}
             action={
               editor ? (
                 <Button render={<Link href={`${base}/work/chat?skill=market-intelligence`} />}>

@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 
+import { publicPageMetadata } from "@/lib/seo";
+
 import { MarketingShell } from "@/components/marketing/chrome";
 import { formatTrustDate } from "@/lib/trust/model";
 import { loadPublicSubprocessors, loadTrustPublic } from "@/lib/trust/public";
 import { marketingHeroTitle, marketingLead } from "@/lib/marketing/ui";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Subprocessors",
   description: "Companies Vistrial uses to run the service, and what data they handle.",
-};
+  path: "/security/subprocessors",
+});
 
 export default async function SubprocessorsPage() {
   const [trust, rows] = await Promise.all([loadTrustPublic(), loadPublicSubprocessors()]);

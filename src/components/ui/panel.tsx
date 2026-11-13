@@ -11,13 +11,15 @@ export function Panel({
   children,
   className,
   as: Component = "div",
+  ...rest
 }: {
   children: React.ReactNode;
   className?: string;
   as?: "div" | "section" | "article" | "li";
-}) {
+} & { [data: `data-${string}`]: string | boolean | undefined }) {
   return (
     <Card
+      {...rest}
       render={Component === "div" ? undefined : <Component />}
       className={cn("panel-hover", className)}
     >

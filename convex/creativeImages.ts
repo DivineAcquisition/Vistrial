@@ -13,7 +13,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { contentOf as kitContent } from "./brandKits";
 import { writeAudit } from "./lib/audit";
-import { OUT_OF_CREDITS, accountFor, billingOn, chargeUsage, priceFor } from "./lib/billing";
+import { OUT_OF_CREDITS, accountFor, billingOn, chargeUsage, markup, priceFor } from "./lib/billing";
 import { PLACEMENTS, type Placement } from "./lib/brandKits";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { CHECK_COST_CENTS, IMAGE_FAIL_WORDS, IMAGE_SIZE, DESIGN_STYLES, LOOKS, LOOK_WORDS, MAX_IMAGES_PER_BATCH, MAX_IMAGES_PER_DAY, PLACEMENT_ASPECT, designStyleWords, designedPrompt, imagePrompt, isDesignStyle, isLook, isPlacement, isTone, type DesignStyle, type Look, type Tone } from "./lib/creativeImages";
@@ -397,8 +397,11 @@ export const saveMade = internalMutation({
     }
     if (args.storageId) {
       if (row.storageId) await ctx.storage.delete(row.storageId);
-      await ctx.db.patch(row._id, { status: "ready", storageId: args.storageId, costCents: row.costCents + args.costCents, holdCents: 0, failCode: undefined, stale: undefined, ...(args.provider ? { provider: args.provider } : {}), ...(args.reportedCents !== undefined ? { reportedCents: args.reportedCents } : {}) });
-      await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents: args.costCents, source: "creative", ref: row._id });
+      // Never more than the price the person confirmed, which is what is held on the row. Whatever changed
+      // between confirming and making (a setting, a key, what the image turned out to cost) is ours to bear.
+      const costCents = row.holdCents > 0 && priceFor(args.costCents) > row.holdCents ? row.holdCents / markup() : args.costCents;
+      await ctx.db.patch(row._id, { status: "ready", storageId: args.storageId, costCents: row.costCents + costCents, holdCents: 0, failCode: undefined, stale: undefined, ...(args.provider ? { provider: args.provider } : {}), ...(args.reportedCents !== undefined ? { reportedCents: args.reportedCents } : {}) });
+      await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents, source: "creative", ref: row._id });
     } else {
       // A retake that failed keeps the earlier picture.
       await ctx.db.patch(row._id, { status: row.storageId ? "ready" : "failed", holdCents: 0, failCode: args.failCode ?? "provider_error" });

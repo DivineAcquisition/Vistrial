@@ -199,6 +199,22 @@ describe("images for an ad set", () => {
     await expect(a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo", confirmedCents: 16, model: "gpt" })).rejects.toThrow("GPT images are not available here yet");
   });
 
+  it("never charges more than the price confirmed, whatever the image turned out to cost", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    imageModel();
+    // One photo, confirmed at 16 credits. The row holds that price while the image is made.
+    await a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: [], look: "photo", confirmedCents: 16, only: { variationKey: "A", placement: "1:1" } });
+    const row = (await t.run((ctx) => ctx.db.query("creativeImages").collect()))[0];
+    expect(row.holdCents).toBe(16);
+    // The maker comes back saying it cost ten times as much (a setting or a key changed in between).
+    const storageId = await t.run((ctx) => ctx.storage.store(new Blob(["x"], { type: "image/png" })));
+    await t.mutation(internal.creativeImages.saveMade, { imageId: row._id, storageId, costCents: 50 });
+    const ledger = await t.run((ctx) => ctx.db.query("billingLedger").collect());
+    expect(ledger.map((entry) => entry.priceCents)).toEqual([16]);
+    expect((await t.run((ctx) => ctx.db.get(row._id)))?.costCents).toBeCloseTo(16 / 3, 6);
+  });
+
   describe("GPT images", () => {
     const sent: Record<string, unknown>[] = [];
     const open = (cost: number | null) => {

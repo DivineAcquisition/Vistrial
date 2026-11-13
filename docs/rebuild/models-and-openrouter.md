@@ -36,7 +36,8 @@ PRs 2 to 4 are built to the answers. **Where a later section of this document sa
 this section is right.**
 
 1. **Who may choose a model.** Owners, Admins and Members: anyone who may start the work.
-2. **The default is per person.** Each person's last choice is remembered, per organization and per kind of
+2. **The default is per person.** Only the person who started a conversation can change its model, and a
+   choice is only ever remembered for the person who made it. Each person's last choice is remembered, per organization and per kind of
    work, and their next piece of that kind of work starts on it. The kinds are: work that only writes, work
    that searches the web, work that reads web pages, and making images. They are kept apart because not
    every model can do every kind. There is no organization default and no setting for one. Work nobody
@@ -49,7 +50,7 @@ this section is right.**
    | - | - | - | - | - | - |
    | Claude | Claude Opus 5.5 | 4 / 20 | Anthropic, direct | Sonnet 5.5 | Sonnet 5.5 |
    | Claude | Claude Sonnet 5.5 | 2 / 10 | Anthropic, direct | itself | Opus 5.5 |
-   | Claude | Claude Haiku 5.5 | 0.10 / 0.50 (0.50 / 2.50 for a prompt over 100,000 tokens) | Anthropic, direct | itself | Sonnet 5.5 |
+   | Claude | Claude Haiku 5.5 (text-only work, until proven on the web) | 0.10 / 0.50 (0.50 / 2.50 for a prompt over 100,000 tokens) | Anthropic, direct | itself | Sonnet 5.5 |
    | GPT | GPT-6 Astra | 10 / 50 | OpenRouter (Azure) | GPT-6.1 Terra | GPT-6.1 Sol |
    | GPT | GPT-6.1 Sol | 2 / 10 | OpenRouter (Azure) | GPT-6.1 Terra | GPT-6.1 Terra |
    | GPT | GPT-6.1 Terra | 1 / 5 | OpenRouter (Azure) | GPT-6 Luna | GPT-6.1 Sol |
@@ -72,13 +73,21 @@ this section is right.**
    Carbon, and the result shows the model that ran.
 5. **Only models that can do the task are listed.** No greyed-out rows with reasons. A family that is not
    switched on is not in the list. Research lists only models proven to search the web with sources:
-   Claude today, GPT and Gemini once the web-search check passes and `OPENROUTER_WEB_SEARCH=on` is set. A
-   last line in the menu says more models are coming.
+   Claude Opus 5.5 and Sonnet 5.5 today, GPT and Gemini once the web-search check passes and
+   `OPENROUTER_WEB_SEARCH=on` is set. Claude Haiku 5.5 is listed for text-only work; for work that searches
+   or reads the web it waits for `modelCheck:run` to prove the web tools work on it and are counted at the
+   right rate, then `CLAUDE_HAIKU_WEB=on`. A last line in the menu says more models are coming.
 6. **A dearer model raises the limit with its price.** Every cap was sized for Claude Opus 5.5 ($4 / $20).
    A run on a chosen model may spend `max(1, price ÷ Opus price)` times its caps, where the ratio is the
-   mean of the input and output ratios. A cheaper model never lowers a cap. Both cost caps (per run and
-   per day) rise together, because some skills set them equal; steps and run time do not change; nothing
-   passes the platform ceiling of 1,000 cents a run. Fast work runs on the lighter companion, so its price
+   mean of the input and output ratios. A cheaper model never lowers a cap. Only the run cap is multiplied.
+   The day cap is an organization's own budget: it rises only as far as one run on that model needs to fit
+   (some skills set the day cap equal to the run cap), never by the full multiple. Steps and run time do not
+   change; nothing passes the platform ceiling of 1,000 cents a run. The scale comes from the model that
+   will really run: a choice that is set aside (its family switched off, or it cannot do the work) raises
+   nothing. **The budget a person is shown and confirms is worked out with the same scale the run gets**
+   (`capsFor` in `convex/lib/modelChoice.ts`): plan cards, the teardown quote, the research budget and the
+   follow-up estimate. Changing the model redraws the plan, and a budget that no longer matches cannot be
+   started from. Fast work runs on the lighter companion, so its price
    decides. Today only GPT-6 Astra is dearer: 2.5 times. The switch says "Usually costs more" beside it, the
    budget shown before a run starts is the raised one, and the organization's spending limit is judged
    against the raised cap. One small function, `capScale` with `scaleCaps` in `convex/lib/caps.ts`, tested.
@@ -87,7 +96,8 @@ this section is right.**
    quoted "up to N credits", where N comes from a measured cost (with OpenRouter's fee, plus half again as
    headroom), and is charged what each image really cost, never more than the quote. It stays closed until
    a real call has measured a price: `modelCheck:run` reports it, and a Platform Admin sets
-   `GPT_IMAGE_MEASURED_CENTS`. GPT image requests go to OpenAI, which is not on OpenRouter's no-retention
+   `GPT_IMAGE_MEASURED_CENTS`. Whatever happens between confirming and making, an image is never charged
+   more than the price held when it was confirmed. GPT image requests go to OpenAI, which is not on OpenRouter's no-retention
    list; the screen and the privacy policy both say so.
 8. **Gemini's Safety Retention is accepted.** The privacy policy describes it plainly.
 9. **The privacy policy change is real and is its own pull request,** separate from this stack and left
@@ -97,7 +107,8 @@ this section is right.**
 10. **OpenRouter's 5.5% fee is added to cost.** One constant, `OPENROUTER_FEE` in
     `convex/lib/openrouter.ts`, applied in one function, `openRouterCents`: every cost from OpenRouter,
     reported or worked out from the price table, text or image, is multiplied by 1.055 before anything else
-    sees it. So a run's recorded cost, its caps and the credits charged all include the fee. The fee is on
+    sees it. A reported cost of zero is read as "not reported" and the price table decides, so work is never
+    counted as free. So a run's recorded cost, its caps and the credits charged all include the fee. The fee is on
     the spending side of a cap: a 300-cent cap buys about 284 cents of model use through OpenRouter. The
     worst-case estimate before a step includes it too.
 
@@ -542,6 +553,7 @@ from the Convex dashboard once the key is set. It makes one small call per line,
 | `OPENROUTER_API_KEY` | Convex dashboard, the deployment's environment variables | The same |
 | `MODEL_FAMILIES=gpt,gemini` | Convex environment variables | Offering GPT and Gemini in the picker. Set it when the privacy policy is live. |
 | `OPENROUTER_WEB_SEARCH=on` | Convex environment variables | Research on GPT and Gemini. Set it after check 5 passes. |
+| `CLAUDE_HAIKU_WEB=on` | Convex environment variables | Claude Haiku 5.5 on research and other web work. Set it after both `haikuWeb` lines of `modelCheck:run` are ok. Needs no OpenRouter credit. |
 | `GPT_IMAGE_MEASURED_CENTS` | Convex environment variables | GPT images. Set it to the figure `modelCheck:run` reports as `gptImage.setTo`, once it has run with credit. Also needs `gpt` in `MODEL_FAMILIES`. |
 | `GEMINI_API_KEY` (optional) | <https://aistudio.google.com/apikey>, then Convex environment variables | Images and reference videos direct from Google. Reference videos need this key; images do not if OpenRouter is set. |
 

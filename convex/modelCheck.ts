@@ -16,7 +16,7 @@ import { GPT_IMAGE_ASPECTS, GPT_IMAGE_MODEL, OPENROUTER_IMAGES_URL, gptImageMeas
 import { MODELS as OFFERED } from "./lib/models";
 import { ModelError, costCents } from "./lib/modelRouter";
 import { OPENROUTER_URL, openRouterBody, openRouterCreate, openRouterKey, openRouterToolBudget, openRouterWebSearchTool, readReply, reportedCents } from "./lib/openrouter";
-import { collect, type Citation, type FoundSource } from "./lib/toolRouter";
+import { collect, completeWithTools, type Citation, type FoundSource } from "./lib/toolRouter";
 
 /** Every model offered through OpenRouter. */
 const MODELS = OFFERED.filter((row) => row.provider === "openrouter").map((row) => row.id);
@@ -245,10 +245,45 @@ async function whyNoCredit() {
   }
 }
 
+/**
+ * Claude Haiku 5.5, direct at Anthropic, on work that uses the web. It is offered for such work only once
+ * both lines here are ok and a Platform Admin sets CLAUDE_HAIKU_WEB=on. Two things are unproven:
+ * whether the router's web tools are accepted for this model at all (a refusal comes back as `bad_request`,
+ * which is not retried, so a run would fail), and whether a step that searches is counted at the right rate:
+ * `inputTokens` is the sum over the search's server-side turns, and if it passes 100,000 the router counts
+ * the step at Haiku's dearer long-prompt rate. Compare `costCents` with the Anthropic console for this call.
+ */
+async function haikuWeb() {
+  const model = "claude-haiku-5-5";
+  const route = { provider: "claude", model, fallbackProvider: "claude", fallbackModel: model };
+  const line = async (request: Parameters<typeof completeWithTools>[2]) => {
+    try {
+      const result = await completeWithTools(route, "research", { ...request, maxTurns: 2 });
+      return {
+        ok: result.webSearches + result.webFetches > 0 && result.sources.length > 0,
+        code: "ok",
+        searches: result.webSearches,
+        fetches: result.webFetches,
+        sourcesRead: result.sources.length,
+        inputTokens: result.inputTokens,
+        countedAtLongRate: result.inputTokens > 100_000,
+        costCents: result.costCents,
+      };
+    } catch (error) {
+      return failed(error);
+    }
+  };
+  return {
+    search: await line({ input: "Search the web for the official website of the city of Paris, France, and give its address.", webSearch: { maxUses: 1 } }),
+    read: await line({ input: "Read https://www.iana.org/help/example-domains and say in one sentence what the page is about.", webFetch: { maxUses: 1 } }),
+    next: "If both lines are ok and costCents matches what Anthropic billed, set CLAUDE_HAIKU_WEB=on.",
+  };
+}
+
 export const run = internalAction({
   args: {},
   handler: async () => {
-    if (!openRouterKey()) return { ready: false as const, why: "OPENROUTER_API_KEY is not set on this deployment." };
+    if (!openRouterKey()) return { ready: false as const, why: "OPENROUTER_API_KEY is not set on this deployment.", haikuWeb: await haikuWeb() };
     const models = [];
     for (const model of MODELS) {
       models.push({
@@ -270,6 +305,8 @@ export const run = internalAction({
       /** GPT images: what one costs, per shape. They stay closed until GPT_IMAGE_MEASURED_CENTS is set from this. */
       gptImage: await gptImage(),
       account: await account(),
+      /** Claude Haiku 5.5 on web work, direct at Anthropic. It needs no OpenRouter credit. */
+      haikuWeb: await haikuWeb(),
       whyNoCredit: await whyNoCredit(),
       badKey: await badKey(),
       next: "If every search line is ok, set OPENROUTER_WEB_SEARCH=on. If reportedCents and tableCents differ by more than a few percent, the price table needs correcting. If gptImage.setTo is a number, set GPT_IMAGE_MEASURED_CENTS to it to open GPT images.",

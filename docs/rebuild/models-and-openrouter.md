@@ -26,6 +26,32 @@ prove. Where a decision rests on something unproven, the product keeps that path
 
 ---
 
+## Questions for the owner, first
+
+Each has a recommendation. Nothing below is switched on until these are answered; the build in PRs 2 to 4
+follows the recommendations and each is one small change to reverse.
+
+1. **Who may choose the model for a piece of work?** Proposed: Owners, Admins and Members (anyone who may
+   start the work). The organization's default: Owners and Admins only. Or should Members always get the
+   default?
+2. **One default per organization, or per person?** Proposed: per organization, with the choice per piece
+   of work on top. A person's last choice is not remembered.
+3. **Strongest or sensible GPT?** Proposed: GPT-6.1 Sol ($2 / $10), because GPT-6 Astra ($10 / $50) would
+   hit today's run caps before a research run finished. Offering Astra means raising caps for it, which is
+   a spending decision.
+4. **Gemini 4 Carbon or Argon** for the Thorough slot? Same price. Proposed: Carbon (section 1).
+5. **Which stays the platform default?** Proposed: Claude direct, unchanged.
+6. **GPT images.** Offer them later with an "up to N credits" price and no 4:5 shape, once a real call has
+   measured what one costs? Proposed: not now.
+7. **Gemini's Safety Retention** (section 4): acceptable for customer content? If not, Gemini text is not
+   offered and images stay on the direct Google key only.
+8. **When does the privacy policy change go live,** and are the three sub-processors added to the public
+   list the same day? GPT and Gemini stay off (`MODEL_FAMILIES`) until then.
+9. **OpenRouter's 5.5% fee on credit purchases** is not in any call's reported cost. Leave the markup as it
+   is, or raise it for OpenRouter work?
+
+---
+
 ## 0. What exists today (read from the code)
 
 | Thing | Where | What it does |
@@ -62,7 +88,9 @@ What each skill's model steps need:
 | Task Proposer | yes | no |
 
 No skill uses forced tool choice or client tools today; the router supports client tools but nothing
-declares one. Web fetch is used in one place only (6).
+declares one. That matters: through OpenRouter, every endpoint of the newest Claude models reports forced
+tool choice as unsupported (facts 2), so a skill that needed "you must call this tool" could not move. Every
+skill asks for its answer with structured output instead, which is supported. Web fetch is used in one place only (6).
 
 One thing found on the way: the privacy policy names Anthropic as "our AI provider" and does not mention
 that images and reference videos already go to Google. That gap predates this work; the proposed policy
@@ -422,24 +450,7 @@ new access rule is written by hand.
 
 ## 7. Open questions for the owner
 
-1. **Who may choose the model for a piece of work?** Proposed: Owners, Admins and Members (anyone who may
-   start the work). The organization's default: Owners and Admins only. Or should Members always get the
-   default?
-2. **One default per organization, or per person?** Proposed: per organization, with the choice per piece
-   of work on top. A person's last choice is not remembered.
-3. **Strongest or sensible GPT?** Proposed: GPT-6.1 Sol ($2 / $10), because GPT-6 Astra ($10 / $50) would
-   hit today's run caps before a research run finished. Offering Astra means raising caps for it, which is
-   a spending decision.
-4. **Gemini 4 Carbon or Argon** for the Thorough slot? Same price. Proposed: Carbon (section 1).
-5. **Which stays the platform default?** Proposed: Claude direct, unchanged.
-6. **GPT images.** Offer them later with an "up to N credits" price and no 4:5 shape, once a real call has
-   measured what one costs? Proposed: not now.
-7. **Gemini's Safety Retention** (section 4): acceptable for customer content? If not, Gemini text is not
-   offered and images stay on the direct Google key only.
-8. **When does the privacy policy change go live,** and are the three sub-processors added to the public
-   list the same day? GPT and Gemini stay off (`MODEL_FAMILIES`) until then.
-9. **OpenRouter's 5.5% fee on credit purchases** is not in any call's reported cost. Leave the markup as it
-   is, or raise it for OpenRouter work?
+Moved to the top of this document: "Questions for the owner, first".
 
 ---
 

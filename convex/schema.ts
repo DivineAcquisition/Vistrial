@@ -471,6 +471,11 @@ export default defineSchema({
     notifyReportReady: v.optional(v.boolean()),
     /** Off stops reminder emails for this member. Missing means on. The switches above still choose which notices. */
     notifyByEmail: v.optional(v.boolean()),
+    /**
+     * The model this member last chose, per kind of work (lib/modelChoice.ts `ChoiceGroup`): a model id from
+     * lib/models.ts, and for images a family. Their next piece of that kind of work starts on it. Missing means the platform's route.
+     */
+    models: v.optional(v.object({ text: v.optional(v.string()), search: v.optional(v.string()), read: v.optional(v.string()), /** The family last chosen for making images: gemini or gpt. */ image: v.optional(v.string()) })),
     updatedAt: v.number(),
   }).index("by_workspace_user", ["workspaceId", "userId"]),
 
@@ -821,6 +826,10 @@ export default defineSchema({
     inputRef: v.string(),
     /** Quality mode: thorough (the default) or fast (faster models, lower cap). */
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    /** The model family chosen for this: claude, gpt or gemini (lib/models.ts). Missing means the platform's own route. */
+    modelChoice: v.optional(v.string()),
+    /** The model that did the writing, stored when it ran. Missing on records from before this was kept: a screen then shows nothing. */
+    madeWith: v.optional(v.object({ provider: v.string(), model: v.string() })),
     startedAt: v.number(),
     finishedAt: v.optional(v.number()),
     stopReason: v.optional(
@@ -1364,6 +1373,10 @@ export default defineSchema({
     storageId: v.optional(v.id("_storage")),
     failCode: v.optional(v.string()),
     model: v.string(),
+    /** How it was made: "google" (direct) or "openrouter". Stored when it is made; missing on older images. */
+    provider: v.optional(v.string()),
+    /** What OpenRouter reported this image cost, in cents, kept to compare with the price charged. Missing when made directly. */
+    reportedCents: v.optional(v.number()),
     /** What the image cost us once it was delivered. Zero for one that failed. */
     costCents: v.number(),
     /** The price held from the balance while it is being made, so two batches cannot spend the same credit. */
@@ -1586,6 +1599,8 @@ export default defineSchema({
     platformNote: v.optional(v.string()),
     /** Quality mode chosen in the chat box; thorough when missing. */
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    /** The model family chosen for this: claude, gpt or gemini (lib/models.ts). Missing means the platform's own route. */
+    modelChoice: v.optional(v.string()),
     projectId: v.optional(v.id("researchProjects")),
     /**
      * The skill this conversation is for. Missing means Market Intelligence (the research intake). Offer
@@ -1619,6 +1634,8 @@ export default defineSchema({
     text: v.string(),
     chips: v.optional(v.array(v.string())),
     data: v.optional(v.any()),
+    /** The model that wrote this turn, when one did. Stored when it ran; missing on older turns and on turns written in code. */
+    madeWith: v.optional(v.object({ provider: v.string(), model: v.string() })),
     at: v.number(),
   }).index("by_intake", ["intakeId", "at"]),
 
@@ -1659,6 +1676,10 @@ export default defineSchema({
     status: v.union(v.literal("thinking"), v.literal("done"), v.literal("failed"), v.literal("proposed"), v.literal("running"), v.literal("declined")),
     data: v.optional(v.any()),
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    /** The model family chosen for this: claude, gpt or gemini (lib/models.ts). Missing means the platform's own route. */
+    modelChoice: v.optional(v.string()),
+    /** The model that did the writing, stored when it ran. Missing on records from before this was kept: a screen then shows nothing. */
+    madeWith: v.optional(v.object({ provider: v.string(), model: v.string() })),
     costCents: v.number(),
     createdBy: v.string(),
     at: v.number(),

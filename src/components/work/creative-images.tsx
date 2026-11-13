@@ -17,6 +17,9 @@ import type { DesignStyle, Look, Tone } from "../../../convex/lib/creativeImages
 import type { CreativeImageList, CreativeImageQuote } from "./types";
 import { SectionTitle } from "./work-shell";
 import { useCredits } from "@/lib/credits";
+import { ModelMark } from "@/components/models/model-mark";
+import { ModelSwitch } from "@/components/models/model-switch";
+import { Banner } from "@/components/ui/banner";
 
 type VariationCopy = { key: string; headline: string; cta: string };
 type ImageRow = CreativeImageList["images"][number];
@@ -41,7 +44,9 @@ export type CreativeImagesProps = {
   /** Makes one image per variation per placement, for the total the person was shown. */
   onGenerate: (placements: Placement[], confirmedCents: number) => Promise<void>;
   /** Makes one image again, for the price of one. */
-  onRetake: (variationKey: string, placement: Placement, confirmedCents: number) => Promise<void>;
+  onRetake: (variationKey: string, placement: Placement, confirmedCents: number, model: string) => Promise<void>;
+  /** Picks the image model. Left out where it cannot be changed. */
+  onModel?: (model: string) => void;
 };
 
 const ASPECT: Record<Placement, string> = { "1:1": "1 / 1", "4:5": "4 / 5", "9:16": "9 / 16", "16:9": "16 / 9", "1.91:1": "1.91 / 1" };
@@ -83,8 +88,10 @@ function Composed({ image, copy, brand, placement, node }: { image: ImageRow; co
   );
 }
 
-function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { image: ImageRow; copy: VariationCopy; brand: Brand; placement: Placement; editor: boolean; eachCents: number; onRetake: () => Promise<void> }) {
+function Tile({ image, copy, brand, placement, editor, onRetake }: { image: ImageRow; copy: VariationCopy; brand: Brand; placement: Placement; editor: boolean; onRetake: () => Promise<void> }) {
   const credits = useCredits();
+  // For a model priced by what each image really costs, the figure is the most it can be.
+  const price = `${image.retake.upTo ? "up to " : ""}${credits.words(image.retake.cents)}`;
   const node = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState<"save" | "retake" | null>(null);
   const [asking, setAsking] = useState(false);
@@ -136,10 +143,13 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
         </div>
       )}
       <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-        <span className="mr-auto">
-          {PLACEMENT_WORDS[placement]} {placement}
-          {image.status === "generating" && image.url ? " · making a new one" : ""}
-          {image.stale && image.status !== "generating" ? <span className="text-warning"> · the words were edited after this was made</span> : null}
+        <span className="mr-auto grid gap-0.5">
+          <span>
+            {PLACEMENT_WORDS[placement]} {placement}
+            {image.status === "generating" && image.url ? " · making a new one" : ""}
+            {image.stale && image.status !== "generating" ? <span className="text-warning"> · the words were edited after this was made</span> : null}
+          </span>
+          <ModelMark model={image.model} />
         </span>
         {image.url ? (
           <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => void save()}>
@@ -150,7 +160,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
           asking ? (
             <>
               <Button size="sm" variant="outline" disabled={busy !== null} onClick={retake}>
-                {busy === "retake" ? "Starting…" : `Spend ${credits.words(eachCents)}`}
+                {busy === "retake" ? "Starting…" : `Spend ${price}`}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>
                 Keep
@@ -158,7 +168,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
             </>
           ) : (
             <Button size="sm" variant="ghost" onClick={() => setAsking(true)}>
-              Try again · {credits.words(eachCents)}
+              Try again · {price}
             </Button>
           )
         ) : null}
@@ -168,7 +178,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
 }
 
 /** Images for an ad set: choose the placements, see the price, confirm, then the finished ads. */
-export function CreativeImagesView({ editor, variations, placements, onPlacements, look, onLook, tone, onTone, style, onStyle, quote, list, onGenerate, onRetake }: CreativeImagesProps) {
+export function CreativeImagesView({ editor, variations, placements, onPlacements, look, onLook, tone, onTone, style, onStyle, quote, list, onGenerate, onRetake, onModel }: CreativeImagesProps) {
   const credits = useCredits();
   const [confirming, setConfirming] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -180,7 +190,7 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
     if (!quote) return;
     setStarting(true);
     setProblem("");
-    void onGenerate(placements, quote.totalCents)
+    void onGenerate(quote.placements, quote.totalCents)
       .then(() => setConfirming(false))
       .catch((error: unknown) => setProblem(showError(error, "The images were not started.")))
       .finally(() => setStarting(false));
@@ -203,7 +213,17 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                     setConfirming(false);
                     onLook(value as Look);
                   }}
-                  options={quote.looks.map((row) => ({ value: row.value, label: `${row.label} · ${credits.words(row.eachCents)}` }))}
+                  options={quote.looks.map((row) => ({ value: row.value, label: `${row.label} · ${quote.upTo ? "up to " : ""}${credits.words(row.eachCents)}` }))}
+                />
+                {/* Which model makes the picture. Only the ones that really make images here are listed. */}
+                <ModelSwitch
+                  options={quote.models.options}
+                  value={quote.models.value}
+                  locked={!onModel}
+                  onChange={(model) => {
+                    setConfirming(false);
+                    onModel?.(model);
+                  }}
                 />
                 {look === "designed" ? (
                   <SegmentedRadioGroup
@@ -222,21 +242,26 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                 {quote.looks.find((row) => row.value === look)?.what}
                 {look === "designed" ? ` ${quote.styles.find((row) => row.value === style)?.what ?? ""}` : ""}
               </p>
+              {quote.notice ? <p className="text-xs text-muted-foreground">{quote.notice}</p> : null}
             </div>
           ) : null}
           <div className="flex flex-wrap gap-2" role="group" aria-label="Placements to make">
             {PLACEMENTS.map((placement) => {
-              const on = placements.includes(placement);
+              // A shape the chosen model cannot make is shown, not selectable, and is never in the price.
+              const off = quote?.placementsOff.includes(placement) ?? false;
+              const on = placements.includes(placement) && !off;
               return (
                 <button
                   key={placement}
                   type="button"
                   aria-pressed={on}
+                  disabled={off}
+                  title={off ? "This model does not make this shape" : undefined}
                   onClick={() => {
                     setConfirming(false);
                     onPlacements(on ? placements.filter((row) => row !== placement) : PLACEMENTS.filter((row) => row === placement || placements.includes(row)));
                   }}
-                  className={cn("flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors", on ? "border-primary bg-primary/10 text-card-foreground" : "border-border text-muted-foreground hover:text-card-foreground")}
+                  className={cn("flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors", on ? "border-primary bg-primary/10 text-card-foreground" : "border-border text-muted-foreground hover:text-card-foreground", off && "opacity-50 hover:text-muted-foreground")}
                 >
                   {on ? <Check aria-hidden className="size-3.5" /> : null}
                   {PLACEMENT_WORDS[placement]} <span className="text-xs text-muted-foreground">{placement}</span>
@@ -244,13 +269,30 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
               );
             })}
           </div>
+          {quote && quote.placementsOff.length > 0 ? (
+            <p className="text-xs text-muted-foreground">
+              {quote.models.options.find((row) => row.id === quote.models.value)?.name ?? "This model"} does not make the {quote.placementsOff.join(" or ")} shape.
+            </p>
+          ) : null}
           {placements.length === 0 ? <p className="text-sm text-muted-foreground">Choose at least one placement.</p> : null}
           {placements.length > 0 && !quote ? <p className="text-sm text-muted-foreground">Working out the price.</p> : null}
-          {placements.length > 0 && quote && quote.count > 0 ? (
+          {quote?.setup ? (
+            // Checked before anything is started: no button is offered, so nothing can be charged.
+            <Banner tone="warning" role="status" title={quote.setup.admin ? "Image making is not set up" : "Images are not available yet"}>
+              {quote.setup.words}
+            </Banner>
+          ) : null}
+          {placements.length > 0 && quote && quote.count > 0 && !quote.setup ? (
             <>
               <p className="text-sm text-card-foreground">
-                {quote.count} image{quote.count === 1 ? "" : "s"}: {quote.variations} variations × {quote.placements.length} placement{quote.placements.length === 1 ? "" : "s"}. <span className="font-medium">{credits.words(quote.totalCents)} of credits</span>{" "}
-                <span className="text-muted-foreground">({credits.words(quote.eachCents)} each, charged only for images that are delivered)</span>
+                {quote.count} image{quote.count === 1 ? "" : "s"}: {quote.variations} variations × {quote.placements.length} placement{quote.placements.length === 1 ? "" : "s"}. <span className="font-medium">
+                  {quote.upTo ? "Up to " : ""}
+                  {credits.words(quote.totalCents)} of credits
+                </span>{" "}
+                <span className="text-muted-foreground">
+                  ({quote.upTo ? "up to " : ""}
+                  {credits.words(quote.eachCents)} each, charged only for images that are delivered{quote.upTo ? ", and only what each one really cost" : ""})
+                </span>
               </p>
               {quote.blocked ? <p className="text-sm text-warning">{quote.blocked}</p> : null}
               {!quote.blocked && !quote.canAfford ? (
@@ -271,7 +313,7 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                 {confirming ? (
                   <>
                     <Button size="sm" disabled={starting} onClick={start}>
-                      {starting ? "Starting…" : `Spend ${credits.words(quote.totalCents)} and make them`}
+                      {starting ? "Starting…" : `Spend ${quote.upTo ? "up to " : ""}${credits.words(quote.totalCents)} and make them`}
                     </Button>
                     <Button size="sm" variant="ghost" disabled={starting} onClick={() => setConfirming(false)}>
                       Cancel
@@ -301,7 +343,7 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                 <ul className="grid grid-cols-2 items-start gap-3 md:grid-cols-3 lg:grid-cols-4">
                   {PLACEMENTS.filter((placement) => mine.some((row) => row.placement === placement)).map((placement) => {
                     const image = mine.find((row) => row.placement === placement)!;
-                    return <Tile key={image.id} image={image} copy={copy} brand={list.brand} placement={placement} editor={editor} eachCents={list.eachCents[image.look]} onRetake={() => onRetake(copy.key, placement, list.eachCents[image.look])} />;
+                    return <Tile key={image.id} image={image} copy={copy} brand={list.brand} placement={placement} editor={editor} onRetake={() => onRetake(copy.key, placement, image.retake.cents, image.retake.model)} />;
                   })}
                 </ul>
               </div>
@@ -319,9 +361,12 @@ export function CreativeImages({ workspaceId, assetId, editor, variations }: { w
   const [look, setLook] = useState<Look>("designed");
   const [tone, setTone] = useState<Tone>("dark");
   const [style, setStyle] = useState<DesignStyle>("brand");
-  const first = useQuery(api.creativeImages.quote, { workspaceId, assetId, placements: [], look });
+  // Sent only once the person picks: until then the server uses the image model they last chose.
+  const [model, setModel] = useState<string | null>(null);
+  const picked = model ? { model } : {};
+  const first = useQuery(api.creativeImages.quote, { workspaceId, assetId, placements: [], look, ...picked });
   const placements = chosen ?? (first ? (first.kitPlacements.length > 0 ? first.kitPlacements : (["1:1"] as Placement[])) : []);
-  const quote = useQuery(api.creativeImages.quote, placements.length > 0 ? { workspaceId, assetId, placements, look } : "skip");
+  const quote = useQuery(api.creativeImages.quote, placements.length > 0 ? { workspaceId, assetId, placements, look, ...picked } : "skip");
   const list = useQuery(api.creativeImages.list, { workspaceId, assetId });
   const generate = useMutation(api.creativeImages.generate);
   return (
@@ -339,11 +384,12 @@ export function CreativeImages({ workspaceId, assetId, editor, variations }: { w
       quote={placements.length > 0 ? (quote ?? null) : (first ?? null)}
       list={list ?? null}
       onGenerate={async (rows, confirmedCents) => {
-        await generate({ workspaceId, assetId, placements: rows, confirmedCents, look, tone, style });
+        await generate({ workspaceId, assetId, placements: rows, confirmedCents, look, tone, style, ...picked });
       }}
-      onRetake={async (variationKey, placement, confirmedCents) => {
-        await generate({ workspaceId, assetId, placements: [], confirmedCents, only: { variationKey, placement } });
+      onRetake={async (variationKey, placement, confirmedCents, retakeModel) => {
+        await generate({ workspaceId, assetId, placements: [], confirmedCents, model: retakeModel, only: { variationKey, placement } });
       }}
+      onModel={editor ? setModel : undefined}
     />
   );
 }

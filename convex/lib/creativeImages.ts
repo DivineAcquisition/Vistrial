@@ -166,10 +166,12 @@ export function missingText(expected: string[], seen: string[]): string[] {
 
 /** What a failed image says, in plain words. */
 export const IMAGE_FAIL_WORDS: Record<string, string> = {
-  no_key: "Image making is not switched on yet. A platform admin adds the key.",
+  no_key: "Image making is not set up on this workspace yet, so this image was not made and nothing was charged. Ask your Vistrial contact to switch images on.",
+  no_credit: "The image service could not be paid for on our side, so this image was not made and nothing was charged. Your Vistrial contact has to fix this.",
+  blocked: "The image service did not allow this request. Nothing was charged.",
   unpriced_model: "The image model has no price set, so it cannot run.",
   rate_limited: "The image service was busy. Try this one again in a minute.",
-  auth_failed: "The image service did not accept our key. A platform admin fixes this.",
+  auth_failed: "The image service did not accept our key, so this image was not made and nothing was charged. Your Vistrial contact has to fix this.",
   bad_request: "The image service could not make this one.",
   refused: "The image service declined to make this one. Try again, or edit the image direction.",
   connection_failed: "The image service could not be reached. Try again in a minute.",

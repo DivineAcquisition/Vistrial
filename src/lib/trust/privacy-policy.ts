@@ -288,7 +288,11 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "Vercel, which hosts the website and the application.",
             "Convex, which stores the application's data.",
             "Clerk, which handles sign-in and accounts.",
-            "Anthropic, which provides the AI models our agents use, including their web search and web page reading.",
+            "Anthropic, which provides the Claude AI models our agents use, including their web search and web page reading.",
+            "Google, which provides the AI models that make ad images and read reference videos, and, when someone on your team chooses a Gemini model, the model that does that piece of work.",
+            "OpenRouter, which passes a piece of work to the AI model someone on your team chose when that model is a GPT or Gemini model, and passes requests for ad images when they are made that way.",
+            "Microsoft, whose Azure service runs OpenAI's GPT models for us when someone on your team chooses a GPT model.",
+            "OpenAI, which makes the picture when someone on your team chooses its image model for an ad image.",
             "Cloudflare, which runs the bot check on our public forms when it is switched on.",
             "Resend, which delivers the email that tells our team a website form was submitted.",
             "Autumn, which runs our plans, credit balances and top-ups.",
@@ -334,7 +338,19 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Vistrial uses AI to research, sort, and write inside a customer workspace. When an agent runs, the relevant workspace information and the public sources it found are sent to our AI provider, Anthropic, to do that work. Web searches and web page reading for research also run through Anthropic.",
+          text: "Vistrial uses AI to research, sort, and write inside a customer workspace. When an agent runs, the relevant workspace information and the public sources it found are sent to the AI model that does the work. Unless someone on your team chooses otherwise, that is a Claude model from Anthropic, and web searches and web page reading for research also run through Anthropic.",
+        },
+        {
+          kind: "p",
+          text: "A person who starts a piece of work can choose a GPT model or a Gemini model for it. Their choice is remembered and used for their next work of the same kind until they change it. That work is sent through OpenRouter to the company that runs the model: Microsoft Azure for GPT models, Google Cloud for Gemini models. With every request we tell OpenRouter to use only companies on its zero data retention list that do not collect the content, and the request fails if none is available. A web search made by one of these models runs on that company's own search service. Each result in Vistrial shows which model made it.",
+        },
+        {
+          kind: "p",
+          text: "Google Cloud is on that list with one exception we want you to know about: Google may keep the requests and answers of Gemini work for a time, only to detect and prevent abuse. OpenRouter keeps a record of each request's size, timing and cost, not its content, unless the content is flagged as possible child sexual abuse material.",
+        },
+        {
+          kind: "p",
+          text: "Ad images are made by Google's image models unless the person making them chooses OpenAI's image model. An image request holds the description of the picture, and for a designed ad the words of the ad and pictures of your own past ads from your brand kit. Requests to Google go to Google directly or through OpenRouter to Google Cloud. Requests to OpenAI's image model go through OpenRouter to OpenAI. OpenAI is not on the zero data retention list for image requests, so it may keep such a request for a time under its own terms. Reference videos you add are read by a Google model.",
         },
         { kind: "ul", items: ai },
       ],

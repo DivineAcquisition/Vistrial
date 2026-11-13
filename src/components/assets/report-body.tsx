@@ -1,5 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 
+import { headingId } from "@/lib/readable/report";
+
 /**
  * Renders the small Markdown subset our reports are written in: headings (#, ##, ###), "- " lists,
  * **bold**, _italic_, and paragraphs. It builds React elements only and never sets HTML, so text from a
@@ -59,7 +61,7 @@ export function ReportBody({ body }: { body: string }) {
       const Tag = level === 1 ? "h2" : level === 2 ? "h3" : "h4";
       const size = level === 1 ? "text-xl" : level === 2 ? "text-lg" : "text-base";
       blocks.push(
-        <Tag key={`h-${blocks.length}`} className={`font-heading ${size} pt-2 text-card-foreground`}>
+        <Tag key={`h-${blocks.length}`} id={level === 2 ? headingId(heading[2]) : undefined} className={`font-heading ${size} scroll-mt-24 pt-2 text-card-foreground`}>
           {inline(heading[2])}
         </Tag>,
       );

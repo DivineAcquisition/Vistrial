@@ -29,6 +29,16 @@ export function weakestEvidence(labels: readonly string[]): EvidenceWord | null 
   return weakest === null ? null : EVIDENCE_ORDER[weakest];
 }
 
+/**
+ * The weakest label among lines that make a claim. A "Not enough data" line makes none (it only says what is
+ * missing), so it does not drag a summary of real findings down to "Not enough data"; it is still counted and
+ * shown beside the summary. When every line is "Not enough data", so is the summary.
+ */
+export function weakestClaim(labels: readonly string[]): EvidenceWord | null {
+  const claims = labels.filter((label) => label !== "Not enough data");
+  return weakestEvidence(claims.length > 0 ? claims : labels);
+}
+
 /** How many of each label, in weakest-first order, leaving out labels with none. For "3 observed, 2 inferences". */
 export function evidenceCounts(labels: readonly string[]): { label: EvidenceWord; count: number }[] {
   return EVIDENCE_ORDER.map((label) => ({ label, count: labels.filter((row) => (isEvidenceWord(row) ? row : "Inference") === label).length })).filter((row) => row.count > 0);

@@ -17,6 +17,9 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { EMPTY_OFFER, cleanOffer, compareOffers, type OfferContent, type OfferInput } from "../../../convex/lib/offerCards";
 
 import { ViewSwitch, useWorkView, type WorkView } from "./board-canvas";
+import { ModelMark, NextStep, VerdictStrip } from "@/components/readable";
+import { offerGlance } from "@/lib/readable/analysis";
+
 import { CompetitorSideBySide, GapsList, TestPlan } from "./offer-analysis";
 import { OfferBuilder } from "./offer-builder";
 import { OfferCardView, OfferCompareView, exportOfferImage, exportOfferPdf } from "./offer-card";
@@ -283,6 +286,8 @@ function AnalysisPanel({ base, tab, analysis, analysisId, onSelectAnalysis, onCa
     );
   }
   const ready = analysis !== null && analysis.status !== "rejected";
+  const glance = analysis ? offerGlance(analysis) : null;
+  const next = analysis?.changes.find((row) => !decisions.has(row.index)) ?? null;
   return (
     <Panel className="grid gap-5 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -298,13 +303,25 @@ function AnalysisPanel({ base, tab, analysis, analysisId, onSelectAnalysis, onCa
         ) : null}
       </div>
       {card ? <AnalysisRun card={card} /> : null}
-      {analysis ? (
+      {analysis && glance ? (
         <>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <StatusBadge label={analysis.status === "approved" ? "Approved" : analysis.status === "needsReview" ? "Needs review" : "Draft"} tone={analysis.status === "approved" ? "good" : "warning"} className="[&_span]:normal-case" />
             <span>Built on {analysis.reports.map((row) => `${row.title} (v${row.version})`).join(", ") || "approved research"}</span>
           </div>
-          {analysis.summary ? <p className="text-sm text-card-foreground">{analysis.summary}</p> : null}
+          <VerdictStrip
+            text={analysis.summary || "This analysis has no summary. The comparison is below."}
+            label={glance.weakest}
+            counts={[
+              { value: String(glance.competitors), words: glance.competitors === 1 ? "competitor compared" : "competitors compared" },
+              { value: String(glance.fieldsBehind.length), words: `of 2 fields a competitor states and you do not${glance.fieldsBehind.length ? ` (${glance.fieldsBehind.join(", ")})` : ""}` },
+              { value: String(glance.gaps), words: glance.gaps === 1 ? "gap" : "gaps" },
+              { value: String(glance.risks), words: glance.risks === 1 ? "risk" : "risks" },
+              { value: String(glance.changes), words: glance.changes === 1 ? "change to test" : "changes to test" },
+            ]}
+          >
+            <ModelMark />
+          </VerdictStrip>
           <CompetitorSideBySide ours={analysis.ours} competitors={analysis.competitors} />
           {editor && analysis.ours.basis !== "insufficient" ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -335,6 +352,7 @@ function AnalysisPanel({ base, tab, analysis, analysisId, onSelectAnalysis, onCa
             <p className="text-sm text-muted-foreground">Two or three changes to test. Pick one, set a check-in, and record what happened.</p>
             <TestPlan changes={analysis.changes} decisions={decisions} actions={tryActions} editor={editor} ready={ready} />
           </div>
+          {ready && next ? <NextStep title={next.title} label={next.basisLabel} note={`Change ${next.index + 1} of ${analysis.changes.length} in the test plan. Nothing changes in your offer until you change it.`} href={`#offer-change-${next.index + 1}`} /> : null}
         </>
       ) : (
         <p className="text-sm text-muted-foreground">Loading the analysis.</p>

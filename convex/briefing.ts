@@ -17,6 +17,7 @@ import { accountFor, billingOn } from "./lib/billing";
 import { post } from "./lib/briefing";
 import { selfMutation, workspaceQuery } from "./lib/builders";
 import { creditWords } from "./lib/credits";
+import { BASIS_LABEL } from "./lib/evidence";
 import { BRIEFING_KINDS, briefingKind, type BriefingKind } from "./lib/taskShapes";
 
 const FEED_LIMIT = 150;
@@ -125,6 +126,8 @@ export const feed = workspaceQuery({
         href: await hrefOf(ctx, row),
         sources: row.sources ?? [],
         credits: row.credits ?? null,
+        /** Three rows written in code, with the evidence label of the "changed" row when it states the business's own figures. Null on older posts and on anything a model wrote. */
+        digest: row.digest ? { changed: row.digest.changed, means: row.digest.means, todo: row.digest.todo, changedLabel: row.digest.firstParty ? BASIS_LABEL.firstParty : null } : null,
         approval: approval && approval.workspaceId === ctx.workspaceId ? await approvalView(ctx, approval) : null,
         draft: await draftPreview(ctx, row),
       });
@@ -173,17 +176,17 @@ export async function alertsFor(ctx: MutationCtx, workspace: Doc<"workspaces">) 
     .take(50);
   for (const decision of due) {
     if (decision.outcome) continue;
-    await post(ctx, { workspaceId, clientId: decision.clientId, kind: "alert", title: "A check-in is due", body: `You said you would try this: ${decision.proposedAction} Say what happened, and the next proposal builds on it.`, ref: { table: "decisions", id: decision._id }, key: `checkin:${decision._id}` });
+    await post(ctx, { workspaceId, clientId: decision.clientId, kind: "alert", title: "A check-in is due", body: `You said you would try this: ${decision.proposedAction} Say what happened, and the next proposal builds on it.`, digest: { changed: `The check-in date has come for a change you said you would try: ${decision.proposedAction}`, means: "Nothing is measured until you say what happened, and the next proposal builds on what you record.", todo: "Record what happened: it helped, it did not, or it is too early to tell." }, ref: { table: "decisions", id: decision._id }, key: `checkin:${decision._id}` });
   }
 
   // A connection broke.
   const meta = await ctx.db.query("metaConnections").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).take(20);
   for (const row of meta) {
-    if (row.status === "needsReconnect") await post(ctx, { workspaceId, clientId: row.clientId, kind: "alert", title: "Meta ads needs reconnecting", body: "Results from Meta have stopped updating. An Owner or Admin can reconnect it in Settings, Data.", ref: { table: "connections", id: row._id }, key: `connection:${row._id}:${row.connectedAt ?? 0}` });
+    if (row.status === "needsReconnect") await post(ctx, { workspaceId, clientId: row.clientId, kind: "alert", title: "Meta ads needs reconnecting", body: "Results from Meta have stopped updating. An Owner or Admin can reconnect it in Settings, Data.", digest: { changed: "Results from Meta have stopped updating.", means: "Figures from Meta stay as they were at the last update, so anything that reads them is reading old numbers.", todo: "An Owner or Admin reconnects Meta in Settings, Data." }, ref: { table: "connections", id: row._id }, key: `connection:${row._id}:${row.connectedAt ?? 0}` });
   }
   const others = await ctx.db.query("integrationConnections").withIndex("by_workspace_provider", (q) => q.eq("workspaceId", workspaceId)).take(50);
   for (const row of others) {
-    if (row.status === "needsReconnect") await post(ctx, { workspaceId, clientId: row.clientId, kind: "alert", title: "A connected account needs reconnecting", body: "One of your connected accounts has stopped updating. An Owner or Admin can reconnect it in Settings, Data.", ref: { table: "connections", id: row._id }, key: `connection:${row._id}:${row.connectedAt ?? 0}` });
+    if (row.status === "needsReconnect") await post(ctx, { workspaceId, clientId: row.clientId, kind: "alert", title: "A connected account needs reconnecting", body: "One of your connected accounts has stopped updating. An Owner or Admin can reconnect it in Settings, Data.", digest: { changed: "One of your connected accounts has stopped updating.", means: "Figures from that account stay as they were at the last update, so anything that reads them is reading old numbers.", todo: "An Owner or Admin reconnects it in Settings, Data." }, ref: { table: "connections", id: row._id }, key: `connection:${row._id}:${row.connectedAt ?? 0}` });
   }
 
   // Results dropped: the newest results file against the one before it, for the same source and client.
@@ -199,7 +202,7 @@ export async function alertsFor(ctx: MutationCtx, workspace: Doc<"workspaces">) 
     if (before === undefined || after === undefined || before <= 0) continue;
     const percent = Math.round(((after - before) / before) * 100);
     if (percent > -DROP_PERCENT) continue;
-    const posted = await post(ctx, { workspaceId, clientId: later.clientId, kind: "alert", title: `Results dropped: ${later.label}`, body: `Conversions went from ${before.toLocaleString("en-US")} to ${after.toLocaleString("en-US")} (${percent}%) between the last two results files.`, ref: { table: "resultUploads", id: later._id }, key: `drop:${later._id}` });
+    const posted = await post(ctx, { workspaceId, clientId: later.clientId, kind: "alert", title: `Results dropped: ${later.label}`, body: `Conversions went from ${before.toLocaleString("en-US")} to ${after.toLocaleString("en-US")} (${percent}%) between the last two results files.`, digest: { changed: `Conversions went from ${before.toLocaleString("en-US")} to ${after.toLocaleString("en-US")} (${percent}%) between the last two results files.`, means: "This compares two files you uploaded. It shows that the count fell, not why.", todo: "Check that both files cover the same length of time, then run a diagnosis to see where the drop is.", firstParty: true }, ref: { table: "resultUploads", id: later._id }, key: `drop:${later._id}` });
     // Results dropping is something real that changed. Only the first time it is seen.
     if (posted) await ctx.scheduler.runAfter(0, internal.planner.changed, { workspaceId, key: `drop:${later._id}` });
   }
@@ -209,7 +212,7 @@ export async function alertsFor(ctx: MutationCtx, workspace: Doc<"workspaces">) 
     const account = await accountFor(ctx, workspaceId);
     const balance = account?.balanceCents ?? 0;
     if (balance <= LOW_CREDITS) {
-      await post(ctx, { workspaceId, kind: "alert", title: balance <= 0 ? "You are out of credits" : "Credits are running low", body: `${creditWords(Math.max(0, balance))} left in the shared balance. An Owner can add credits in Billing.`, ref: { table: "billing", id: "balance" }, key: `credits:${weekKey(now)}:${balance <= 0 ? "empty" : "low"}` });
+      await post(ctx, { workspaceId, kind: "alert", title: balance <= 0 ? "You are out of credits" : "Credits are running low", body: `${creditWords(Math.max(0, balance))} left in the shared balance. An Owner can add credits in Billing.`, digest: { changed: `${creditWords(Math.max(0, balance))} left in the shared balance.`, means: balance <= 0 ? "Work that uses credits cannot run until credits are added." : "A run stops early if the balance runs out before it finishes.", todo: "An Owner adds credits in Billing." }, ref: { table: "billing", id: "balance" }, key: `credits:${weekKey(now)}:${balance <= 0 ? "empty" : "low"}` });
     }
   }
 }

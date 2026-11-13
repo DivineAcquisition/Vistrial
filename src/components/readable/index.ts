@@ -3,6 +3,7 @@ export { CoverageMap, CoverageSummary, type CoverageLook } from "./coverage-map"
 export { Detail } from "./detail";
 export { Digest, type DigestRow } from "./digest";
 export { EvidenceLabel, EvidenceLegend } from "./evidence-label";
+export { LongText } from "./long-text";
 export { HighlightLegend, MarkedText, type MarkStyle } from "./marked-text";
 export { ModelMark } from "./model-mark";
 export { NextStep } from "./next-step";

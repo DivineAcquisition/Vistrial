@@ -2005,6 +2005,12 @@ export default defineSchema({
     sources: v.optional(v.array(v.object({ title: v.string(), url: v.string() }))),
     /** What writing the post used, in credits (the weekly report, a trend post). */
     credits: v.optional(v.number()),
+    /**
+     * The post in three short rows: what changed, what it means, what to do. Only on posts whose words are
+     * written in code (alerts), never on a post a model wrote. `firstParty` marks a "changed" row that states
+     * the business's own figures. Older posts have none and show their body.
+     */
+    digest: v.optional(v.object({ changed: v.string(), means: v.string(), todo: v.string(), firstParty: v.optional(v.boolean()) })),
     key: v.optional(v.string()),
     at: v.number(),
   })

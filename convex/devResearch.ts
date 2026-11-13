@@ -18,7 +18,7 @@ import { cleanScope } from "./research";
 import { startRunFor } from "./runs";
 import { moveFilesToProject } from "./files";
 
-/** Creates (or finds) a test workspace owned by `userId`, set up and with Growth Architect on. */
+/** Creates (or finds) a test workspace owned by `userId`, set up and with Strategist on. */
 export const setUpWorkspace = internalMutation({
   args: { userId: v.string(), name: v.string(), displayName: v.string(), timezone: v.optional(v.string()) },
   handler: async (ctx, args) => {

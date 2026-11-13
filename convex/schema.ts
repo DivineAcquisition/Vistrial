@@ -1435,7 +1435,7 @@ export default defineSchema({
     code: v.optional(v.string()),
     /** Present only until the file is read, then deleted from storage. */
     storageId: v.optional(v.id("_storage")),
-    /** Agents granted use of these figures. Missing means the Growth Architect only. */
+    /** Agents granted use of these figures. Missing means the Strategist only. */
     agents: v.optional(v.array(v.string())),
     summary: v.optional(
       v.object({
@@ -1468,7 +1468,7 @@ export default defineSchema({
     connectedBy: v.string(),
     connectedAt: v.number(),
     status: v.union(v.literal("connected"), v.literal("needsReconnect")),
-    /** Agents granted use of this workspace connection. Missing means the Growth Architect only. */
+    /** Agents granted use of this workspace connection. Missing means the Strategist only. */
     agents: v.optional(v.array(v.string())),
     adAccountId: v.optional(v.string()),
     adAccountName: v.optional(v.string()),
@@ -1835,7 +1835,7 @@ export default defineSchema({
     accountLabel: v.string(),
     connectedBy: v.string(),
     connectedAt: v.number(),
-    /** Agents granted use of this connection. Missing means the Growth Architect only. */
+    /** Agents granted use of this connection. Missing means the Strategist only. */
     agents: v.optional(v.array(v.string())),
     lastSyncAt: v.optional(v.number()),
     lastSyncCode: v.optional(v.string()),
@@ -1891,7 +1891,7 @@ export default defineSchema({
     createdAt: v.number(),
     /** When the person adding it confirmed the call was recorded lawfully and may be shared. */
     consentConfirmedAt: v.number(),
-    /** Agents granted use of this transcript. Missing means the Growth Architect only. */
+    /** Agents granted use of this transcript. Missing means the Strategist only. */
     agents: v.optional(v.array(v.string())),
   }).index("by_workspace", ["workspaceId"]),
 

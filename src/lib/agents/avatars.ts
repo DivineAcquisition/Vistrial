@@ -24,9 +24,23 @@ export function agentAvatarSrc(slug: string | null | undefined): string | null {
 
 export const AGENTS_WITH_AVATARS = Object.keys(AVATAR_FILE);
 
+/**
+ * The names the agents had before 2026-11-13, when each took a one-word title. Text saved before then (a
+ * post, a report) may still print the old name, and should still find the same agent.
+ */
+const FORMER_NAMES: Record<string, string> = {
+  "growth architect": "growth-architect",
+  "campaign execution": "campaign-execution",
+  "sales conversion": "sales-conversion",
+  activation: "activation",
+  retention: "retention",
+  expansion: "expansion",
+  "operations intelligence": "operations-intelligence",
+};
+
 /** Some screens only know an agent by the name they print. The catalog's names are unique. */
 export function agentSlugForName(name: string | null | undefined): string | null {
   if (!name) return null;
   const wanted = name.trim().toLowerCase();
-  return CATALOG.find((agent) => agent.name.toLowerCase() === wanted)?.slug ?? null;
+  return CATALOG.find((agent) => agent.name.toLowerCase() === wanted)?.slug ?? FORMER_NAMES[wanted] ?? null;
 }

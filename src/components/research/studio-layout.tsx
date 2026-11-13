@@ -77,7 +77,7 @@ export function StudioLayout({
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-6">
       <PageHeader
-        eyebrow="Growth Architect · Market Intelligence"
+        eyebrow="Strategist · Market Intelligence"
         title={studio.project.title}
         status={meta?.label}
         statusTone={meta?.tone}

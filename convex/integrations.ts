@@ -39,7 +39,7 @@ function provider(key: string) {
   return PROVIDERS[key];
 }
 
-/** The agents a connection is granted to. Missing means the Growth Architect only. */
+/** The agents a connection is granted to. Missing means the Strategist only. */
 export function grantedAgents(connection: Pick<Doc<"integrationConnections">, "agents">) {
   return connection.agents ?? [GROWTH_ARCHITECT];
 }

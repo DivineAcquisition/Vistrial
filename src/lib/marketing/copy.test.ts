@@ -11,7 +11,7 @@ describe("public landing copy", () => {
     expect(NAV.signInHref).toBe("https://app.vistrial.io/login");
     expect(NAV.links.map((link) => link.label)).toEqual([
       "How it works",
-      "Growth Architect",
+      "Strategist",
       "Agents",
       "Pricing",
       "FAQ",
@@ -20,7 +20,7 @@ describe("public landing copy", () => {
 
   it("answers the product questions without a payment step", () => {
     expect(FAQ.items.map((item) => item.q)).toEqual([
-      "What is Growth Architect?",
+      "What is Strategist?",
       "Where does the research come from?",
       "Can I trust what it says?",
       "Will it post or spend on its own?",

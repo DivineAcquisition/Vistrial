@@ -373,7 +373,7 @@ export function OffersTabView(props: OffersTabProps) {
   const hero = (
     <WorkHero
       icon={Store}
-      eyebrow="Growth Architect · Offer Intelligence"
+      eyebrow="Strategist · Offer Intelligence"
       title="Offers"
       promise="Build your offer step by step, keep every version, and set it beside what competitors lead with."
       action={

@@ -1,6 +1,6 @@
 /**
  * First-party results for research: the business's own Meta ad results, from the workspace connection the
- * Growth Architect is granted, saved on the project as `customerData` sources so a report can cite them as
+ * Strategist is granted, saved on the project as `customerData` sources so a report can cite them as
  * "Your data". Read from the last saved read of the account; nothing calls Meta from here.
  */
 

@@ -313,7 +313,7 @@ describe("email reminders", () => {
       await t.action(internal.emailReminders.sendReportReady, { assetId: draft.assetId });
       expect(recipientsOf(sent)).toEqual(["user_admin@example.com", "user_owner@example.com"]);
       expect(sent[0].subject).toBe("Report ready: Market report: Retainer pricing");
-      expect(sent[0].text).toContain("Growth Architect, Research tab");
+      expect(sent[0].text).toContain("Strategist, Research tab");
       expect(sent[0].text).toContain(`Open the report: https://app.vistrial.io/app/assets/${draft.assetId}`);
       expect(sent[0].text).toContain("https://app.vistrial.io/app/settings?section=you");
       expect(sent.map((row) => row.idempotencyKey).sort()).toEqual([`report-ready/${draft.versionId}/user_admin`, `report-ready/${draft.versionId}/user_owner`]);
@@ -321,7 +321,7 @@ describe("email reminders", () => {
       await t.action(internal.emailReminders.sendReportReady, { assetId: review.assetId });
       expect(sent).toHaveLength(4);
       expect(sent[2].subject).toBe("Report needs review: Growth diagnosis: Q4 pipeline");
-      expect(sent[2].text).toContain("Growth Architect, Diagnostics tab");
+      expect(sent[2].text).toContain("Strategist, Diagnostics tab");
       expect(sent[2].idempotencyKey).toContain(`report-ready/${review.versionId}/`);
 
       const audit = await emailAudit(t, a.workspaceId);
@@ -485,7 +485,7 @@ describe("email reminders", () => {
     it("says a report that failed its checks needs review", () => {
       const email = reportReadyEmail({ workspaceName: "Northside Agency", title: "Offer analysis: Growth retainer", kind: "offerAnalysis", needsReview: true, assetId: "abc", appUrl: "https://app.vistrial.io" });
       expect(email.subject).toBe("Report needs review: Offer analysis: Growth retainer");
-      expect(email.text).toContain("Growth Architect, Offers tab");
+      expect(email.text).toContain("Strategist, Offers tab");
       expect(email.text).toContain("Review the report: https://app.vistrial.io/app/assets/abc");
     });
   });

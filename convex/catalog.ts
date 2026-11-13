@@ -1,5 +1,5 @@
 /**
- * The agentic workforce: four departments, seven agents. Only Growth Architect is live in V1.
+ * The agentic workforce: four departments, seven agents. Only Strategist is live in V1.
  * These are seed rows. The rail, the agent pages and `runs.start` read the tables, not this file.
  */
 
@@ -68,12 +68,12 @@ export const CATALOG: CatalogAgent[] = [
   {
     slug: GROWTH_ARCHITECT,
     number: 1,
-    name: "Growth Architect",
+    name: "Strategist",
     department: "growth",
     status: "live",
     lifecycle: "Attract",
     job: "Researches your market and hands back reports and strategies, each claim with its source, for a person to approve.",
-    promise: "Growth Architect never publishes or contacts anyone. A person approves every report before it is used.",
+    promise: "Strategist never publishes or contacts anyone. A person approves every report before it is used.",
     sort: 0,
     skills: [
       skill("market-intelligence", "Market Intelligence", "A market report with sources: competitors, ads, content and patterns.", "It reads public sources and links you give it. It does not log in anywhere.", 0),
@@ -88,7 +88,7 @@ export const CATALOG: CatalogAgent[] = [
   {
     slug: "campaign-execution",
     number: 2,
-    name: "Campaign Execution",
+    name: "Marketer",
     department: "growth",
     status: "planned",
     lifecycle: "Attract",
@@ -100,7 +100,7 @@ export const CATALOG: CatalogAgent[] = [
   {
     slug: "sales-conversion",
     number: 3,
-    name: "Sales Conversion",
+    name: "Dealmaker",
     department: "sales",
     status: "planned",
     lifecycle: "Convert",
@@ -112,7 +112,7 @@ export const CATALOG: CatalogAgent[] = [
   {
     slug: "activation",
     number: 4,
-    name: "Activation",
+    name: "Starter",
     department: "customer-success",
     status: "planned",
     lifecycle: "Onboard",
@@ -124,7 +124,7 @@ export const CATALOG: CatalogAgent[] = [
   {
     slug: "retention",
     number: 5,
-    name: "Retention",
+    name: "Keeper",
     department: "customer-success",
     status: "planned",
     lifecycle: "Keep",
@@ -136,7 +136,7 @@ export const CATALOG: CatalogAgent[] = [
   {
     slug: "expansion",
     number: 6,
-    name: "Expansion",
+    name: "Expander",
     department: "customer-success",
     status: "planned",
     lifecycle: "Grow",
@@ -148,7 +148,7 @@ export const CATALOG: CatalogAgent[] = [
   {
     slug: "operations-intelligence",
     number: 7,
-    name: "Operations Intelligence",
+    name: "Operator",
     department: "operations",
     status: "planned",
     lifecycle: "Run",

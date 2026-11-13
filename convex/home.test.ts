@@ -15,7 +15,7 @@ const DAY = 86_400_000;
 
 async function seed() {
   const t = convexTest(schema, modules);
-  // A workspace with Growth Architect on and a confirmed profile.
+  // A workspace with Strategist on and a confirmed profile.
   const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
   const ids = await t.run(async (ctx) => {
     await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });

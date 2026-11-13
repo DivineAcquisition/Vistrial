@@ -12,7 +12,7 @@ export function BriefingStory({ state, theme, kind: asked }: { state: string; th
   const role = state === "viewer" ? "viewer" : state === "member" ? "member" : state === "admin" ? "admin" : "owner";
   return (
     <Step2Frame theme={theme} role={role} path="/app/briefing" state={state === "empty" ? "empty" : "busy"}>
-      <BriefingView feed={storyFeed(state, kind)} kind={kind} agent={null} onKind={setKind} onAgent={() => undefined} agentName={() => "Growth Architect"} decide={async () => undefined} now={NOW} trendsOn={state !== "trends-off"} />
+      <BriefingView feed={storyFeed(state, kind)} kind={kind} agent={null} onKind={setKind} onAgent={() => undefined} agentName={() => "Strategist"} decide={async () => undefined} now={NOW} trendsOn={state !== "trends-off"} />
     </Step2Frame>
   );
 }

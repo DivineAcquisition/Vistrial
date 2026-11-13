@@ -312,13 +312,13 @@ function decisionFigures(list: FigureList, input: DecisionInput) {
   }
 }
 
-const CONNECT_META = "connect your Meta ad account under Connections → Meta ads and allow the Growth Architect to use it";
+const CONNECT_META = "connect your Meta ad account under Connections → Meta ads and allow the Strategist to use it";
 const UPLOAD = "upload a results file under Connections → Results files (a CSV export from Google Ads, your CRM or your bookings tool)";
 
 const META_WORDS: Record<MetaState, string> = {
-  none: `Connect your Meta ad account under Connections → Meta ads and allow the Growth Architect to use it.`,
+  none: `Connect your Meta ad account under Connections → Meta ads and allow the Strategist to use it.`,
   needsReconnect: "Reconnect your Meta ad account under Connections → Meta ads: its access has expired.",
-  notGranted: "Allow the Growth Architect to use your Meta ad account under Connections → Meta ads.",
+  notGranted: "Allow the Strategist to use your Meta ad account under Connections → Meta ads.",
   noAccount: "Choose which Meta ad account to read under Connections → Meta ads.",
   noSpend: "Your Meta ad account shows no spend in its last read. Refresh it under Connections → Meta ads once ads have run.",
   ok: "",
@@ -376,7 +376,7 @@ export function computeDiagnostics(input: ComputeInput) {
     });
     missing.push({ stage: "all", text: META_WORDS[input.metaState === "ok" ? "none" : input.metaState] });
     missing.push({ stage: "all", text: `Or ${UPLOAD}, with columns for spend, impressions, clicks, conversions or revenue.` });
-    missing.push({ stage: "all", text: "Outcomes you record for decisions made after a Growth Architect report also count." });
+    missing.push({ stage: "all", text: "Outcomes you record for decisions made after a Strategist report also count." });
   } else {
     if (input.metaState !== "ok" && input.metaState !== "none") missing.push({ stage: "all", text: META_WORDS[input.metaState] });
     for (const stage of STAGES) if (!stagesWithData.includes(stage)) missing.push({ stage, text: STAGE_MISSING[stage] });

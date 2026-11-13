@@ -21,7 +21,7 @@ function Chat() {
         workspaceId={shell.workspaceId}
         base={`/app/agents/${params.slug}`}
         slug={params.slug}
-        agentName={agent?.name ?? "Growth Architect"}
+        agentName={agent?.name ?? "Strategist"}
         editor={canWork(shell.role) && agent?.state !== "off"}
         conversationId={(query.get("c") ?? query.get("intake")) as Id<"intakes"> | null}
         skill={query.get("skill")}

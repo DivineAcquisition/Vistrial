@@ -96,7 +96,7 @@ export function HomeStory({ state, theme }: { state: string; theme: string }) {
       <HomeView
         chat={<ChatComposer size="hero" placeholder={role === "viewer" ? "Owners, Admins and Members start sessions." : "Ask in your own words: who are we losing to, which offer to lead with, why enquiries dropped…"} disabled={role === "viewer"} onSubmit={async () => undefined} />}
         data={dashboard(role === "viewer" ? "viewer" : state)}
-        agentName={() => "Growth Architect"}
+        agentName={() => "Strategist"}
         decide={async () => undefined}
         recordOutcome={async () => undefined}
         onPickClient={setPicked}

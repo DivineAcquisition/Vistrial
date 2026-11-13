@@ -137,7 +137,7 @@ export const status = workspaceQuery({
   },
 });
 
-/** The agents a workspace connection is granted to. Missing means the Growth Architect only. */
+/** The agents a workspace connection is granted to. Missing means the Strategist only. */
 export function grantedAgents(connection: Pick<Doc<"metaConnections">, "agents">) {
   return connection.agents ?? [GROWTH_ARCHITECT];
 }

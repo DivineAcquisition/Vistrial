@@ -15,7 +15,7 @@ export const PRICING_DISPLAY = {
     price: "$179 per month, with 15,000 credits included.",
     includes: [
       "Your own private workspace",
-      "Growth Architect: market research, offer analysis, growth diagnosis, ad sets, and landing page teardowns",
+      "Strategist: market research, offer analysis, growth diagnosis, ad sets, and landing page teardowns",
       "A Tasks board and a Briefing: proposed work with its expected return, credit cost and evidence, and approvals in one place",
       "15,000 credits each month. Each piece of work shows its cost in credits, and every run has a credit limit.",
       "Credit packs when you need more. Included credits reset each month.",

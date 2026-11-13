@@ -153,7 +153,7 @@ export function EmptyState({
   secondaryAction?: ReactNode;
   /** Show a faded sketch of what will fill this page. Only for "empty" and "no-results". */
   preview?: EmptyPreview;
-  /** The line under the agent visual, e.g. "Growth Architect is ready". */
+  /** The line under the agent visual, e.g. "Strategist is ready". */
   agentLabel?: string;
   className?: string;
   bare?: boolean;

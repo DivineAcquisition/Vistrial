@@ -382,7 +382,7 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
       <GoalCard key={goal?.text ?? "none"} goal={goal} editor={editor} onSave={onSaveGoal} />
       <WorkHero
         icon={Gauge}
-        eyebrow="Growth Architect · Growth Diagnostics"
+        eyebrow="Strategist · Growth Diagnostics"
         title="Diagnostics"
         promise="Finds where growth stalls in your own data and turns it into a 90-day plan: Fix, Build, Scale."
         action={

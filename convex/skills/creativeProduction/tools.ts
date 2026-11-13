@@ -159,7 +159,7 @@ const check: MutationTool = async (ctx, run, steps) => {
  * variation is an untested hypothesis; each factual line in the copy cites the context record its fact or
  * offer was read from. A listed claim that does not stand is left out, and the check names it.
  */
-function creativeClaims(creative: CreativeSet | null, context: CreativeContext, contextRecordId: string | null): Claim[] {
+export function creativeClaims(creative: CreativeSet | null, context: CreativeContext, contextRecordId: string | null): Claim[] {
   const kit = context.kit.content;
   const claims: Claim[] = [{ claimKey: "brand", statement: `Made for ${kit.name}, brand kit version ${context.kit.version}.`, computed: true }];
   if (!creative) return claims;
@@ -180,9 +180,9 @@ function creativeClaims(creative: CreativeSet | null, context: CreativeContext, 
   return claims;
 }
 
-async function writeVersion(ctx: MutationCtx, run: Doc<"agentRuns">, assetId: Id<"assets">, version: number, body: string, claims: Claim[]) {
+export async function writeVersion(ctx: MutationCtx, run: Pick<Doc<"agentRuns">, "workspaceId">, assetId: Id<"assets">, version: number, body: string, claims: Claim[], createdBy: "agent" | "person" = "agent") {
   const screened = await screenClaims(ctx, run.workspaceId, claims);
-  const versionId = await ctx.db.insert("assetVersions", { workspaceId: run.workspaceId, assetId, version, body, createdBy: "agent" });
+  const versionId = await ctx.db.insert("assetVersions", { workspaceId: run.workspaceId, assetId, version, body, createdBy });
   for (const claim of screened.kept) {
     const ids = (claim.sourceRefIds ?? []).map((raw) => ctx.db.normalizeId("sourceRefs", raw)).filter((id): id is Id<"sourceRefs"> => id !== null);
     await ctx.db.insert("evidence", {

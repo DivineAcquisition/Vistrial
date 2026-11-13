@@ -111,9 +111,18 @@ export type AdDesign = {
   visual: string;
   labels: string[];
   subline: string;
+  /**
+   * The labels on the visual carry made-up figures that illustrate the point (a funnel, a receipt, a
+   * comparison). The picture then also shows EXAMPLE_NOTE, and the figures are never the business's own
+   * results. Missing on ad sets made before this existed.
+   */
+  illustrative?: boolean;
 };
 
-export const EMPTY_DESIGN: AdDesign = { eyebrow: "", kicker: "", accent: "", visual: "", labels: [], subline: "" };
+export const EMPTY_DESIGN: AdDesign = { eyebrow: "", kicker: "", accent: "", visual: "", labels: [], subline: "", illustrative: false };
+
+/** The small print a designed ad carries when its labels are example figures. */
+export const EXAMPLE_NOTE = "Example figures";
 
 export type CopyClaim = {
   /** The factual statement as it appears in the copy. */
@@ -170,7 +179,7 @@ export const CREATIVE_SCHEMA = object({
       cta: str,
       imageDirection: str,
       hypothesis: str,
-      design: object({ eyebrow: str, kicker: str, accent: str, visual: str, labels: strs, subline: str }),
+      design: object({ eyebrow: str, kicker: str, accent: str, visual: str, labels: strs, subline: str, illustrative: { type: "boolean" } }),
     }),
   },
   script: object({ beats: { type: "array", items: object({ seconds: str, voiceover: str, onScreen: str }) } }),
@@ -198,7 +207,7 @@ function rows(value: unknown, max: number): Record<string, unknown>[] {
 
 export function readDesign(value: unknown): AdDesign {
   const row = obj(value);
-  return { eyebrow: text(row.eyebrow, 120), kicker: text(row.kicker, 120), accent: text(row.accent, 120), visual: text(row.visual, 600), labels: list(row.labels, 8, 80), subline: text(row.subline, 200) };
+  return { eyebrow: text(row.eyebrow, 120), kicker: text(row.kicker, 120), accent: text(row.accent, 120), visual: text(row.visual, 600), labels: list(row.labels, 8, 80), subline: text(row.subline, 200), illustrative: row.illustrative === true };
 }
 
 /** A model's answer read into the shape the checks and screens use. Null when it is not an object at all. */
@@ -243,7 +252,20 @@ export function designWords(row: Variation) {
 
 /** Every piece of text a designed ad shows, in reading order. The picture must show exactly these. */
 export function designText(row: Variation) {
-  return [row.design.eyebrow, row.design.kicker, row.headline, ...row.design.labels, row.design.subline, row.cta].filter(Boolean);
+  return [row.design.eyebrow, row.design.kicker, row.headline, ...row.design.labels, ...(exampleFigures(row) ? [EXAMPLE_NOTE] : []), row.design.subline, row.cta].filter(Boolean);
+}
+
+/** Whether a variation's designed ad shows example figures on its visual. */
+export function exampleFigures(row: Variation) {
+  return row.design?.illustrative === true && row.design.labels.length > 0;
+}
+
+/**
+ * The copy that is held to the claim rule: everything except the labels of a visual marked as example
+ * figures. Those are shown as examples, in the picture only, with the note beside them.
+ */
+export function factualCopy(creative: CreativeSet) {
+  return allCopy({ ...creative, variations: creative.variations.map((row) => (exampleFigures(row) ? { ...row, design: { ...row.design, labels: [] } } : row)) });
 }
 
 /** All the copy of a creative: the variations, the script and the captions. */

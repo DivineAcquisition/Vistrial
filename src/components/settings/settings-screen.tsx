@@ -71,6 +71,8 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
   const uploads = useQuery(api.resultUploads.list, staffView && section === "data" ? { workspaceId } : "skip");
 
   const rememberMe = useMutation(api.settings.rememberMe);
+  const leaveEverything = useMutation(api.account.leaveEverything);
+  const closing = useQuery(api.account.closing, section === "you" ? {} : "skip");
   const rename = useMutation(api.settings.renameWorkspace);
   const setCountry = useMutation(api.settings.setCountry);
   const invite = useMutation(api.workspace.invite);
@@ -231,7 +233,14 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
           void attempt(setPrefs({ workspaceId, theme: choice }));
         }}
         onNotice={(key, on) => attempt(setPrefs({ workspaceId, [key]: on }))}
-        security={<AccountSecurity />}
+        security={
+          <AccountSecurity
+            closing={closing ?? null}
+            onLeaveEverything={() => leaveEverything({})}
+            // The next sign-in token carries the new address; it is under a minute away.
+            onEmailChanged={() => window.setTimeout(() => void rememberMe({ workspaceId }).catch(() => undefined), 70_000)}
+          />
+        }
         onSignOut={() => void clerk.signOut({ redirectUrl: "/sign-in" })}
       />
     );

@@ -203,7 +203,7 @@ export type TeardownPage = {
   skipped: SectionKey[];
   /** Quotes the model gave that are not on the page. They were removed. */
   droppedQuotes: number;
-  /** At-a-glance lines (the verdict, a section headline) removed because they claimed a result. Absent on older teardowns. */
+  /** Lines in the model's own words (goal, verdict, a section's headline or note, the proof note) removed because they claimed a result. Absent on older teardowns. */
   droppedLines?: number;
 };
 

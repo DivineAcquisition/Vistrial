@@ -83,9 +83,10 @@ export function flatPage(snapshot: PageSnapshot) {
  * A model's reading of a page with everything unverifiable removed: sections outside the page or out of
  * order are dropped, and any quote that is not on the page is blanked. Returns how many quotes went.
  *
- * The at-a-glance lines (the page's verdict and each section's headline) are the first thing a person reads,
- * so they pass the same refusal as the findings: a line that claims a cause or a result is blanked, and the
- * screen falls back to words written in code. Returns how many lines went.
+ * Every line the model writes about a page in its own words (the goal, the verdict, each section's headline
+ * and note, the proof note) passes the same refusal as the findings: a line that claims a cause or a result
+ * is blanked. For the verdict and a headline the screen falls back to words written in code; a blanked note
+ * is simply absent. Returns how many lines went.
  */
 export function sanitise(analysis: PageAnalysis, snapshot: PageSnapshot): { analysis: PageAnalysis; droppedQuotes: number; droppedLines: number } {
   const pageText = flatPage(snapshot);
@@ -112,15 +113,16 @@ export function sanitise(analysis: PageAnalysis, snapshot: PageSnapshot): { anal
       if (section.from < floor || section.from > last || section.to < section.from) return [];
       const to = Math.min(section.to, last);
       floor = to + 1;
-      return [{ ...section, to, headline: plain(section.headline) }];
+      return [{ ...section, to, headline: plain(section.headline), note: plain(section.note) }];
     });
   const cleaned: PageAnalysis = {
       ...analysis,
+      goal: plain(analysis.goal),
       verdict: plain(analysis.verdict),
       sections,
       qualifier: { quote: keep(analysis.qualifier.quote), threshold: analysis.qualifier.quote && onPage(analysis.qualifier.quote, pageText) ? analysis.qualifier.threshold : "" },
       headline: { quote: keep(analysis.headline.quote), statesOutcome: analysis.headline.statesOutcome },
-      proof: { ...analysis.proof, quotes: keepAll(analysis.proof.quotes) },
+      proof: { ...analysis.proof, quotes: keepAll(analysis.proof.quotes), note: plain(analysis.proof.note) },
       pains: keepAll(analysis.pains),
       solutions: keepAll(analysis.solutions),
       offer: { deliverables: keepAll(analysis.offer.deliverables), effortLine: keep(analysis.offer.effortLine), price: keep(analysis.offer.price), delivery: keep(analysis.offer.delivery) },

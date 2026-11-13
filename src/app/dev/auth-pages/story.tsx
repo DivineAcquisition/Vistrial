@@ -63,7 +63,12 @@ export function AuthPagesStory({ screen, step, problem, theme }: { screen: strin
     return (
       <main className="mx-auto grid max-w-2xl gap-4 p-4">
         <StoryTheme theme={theme} />
-        <AccountSecurity />
+        <AccountSecurity
+          closing={{ leaves: ["Brooks Cleaning"], blockedBy: [] }}
+          onLeaveEverything={async () => {
+            (window as unknown as { leftEverything?: boolean }).leftEverything = true;
+          }}
+        />
       </main>
     );
   }

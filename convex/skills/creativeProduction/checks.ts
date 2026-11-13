@@ -1,7 +1,7 @@
 import type { Regulated } from "../../lib/brandKits";
 import { offerDetailsText } from "../../lib/offerCards";
 import { containsPhrase, longestSharedRun, sharedPhraseShare, words } from "../../lib/similarity";
-import { COPY_MAX, MAX_SHARED_RUN, MAX_SHARED_SHARE, VARIATIONS, allCopy, referenceText, type CheckResult, type ChecksRecord, type CopyClaim, type CreativeContext, type CreativeSet } from "./shapes";
+import { COPY_MAX, MAX_SHARED_RUN, MAX_SHARED_SHARE, VARIATIONS, allCopy, exampleFigures, factualCopy, referenceText, type CheckResult, type ChecksRecord, type CopyClaim, type CreativeContext, type CreativeSet } from "./shapes";
 
 /**
  * The completion check for a creative. Code decides; no model call says a creative passed. Every check
@@ -28,6 +28,9 @@ const REGULATED_WORDS: Record<Exclude<Regulated, "none">, RegExp> = {
   finance: /\bearn(s|ed|ings)?\b|\bincome\b|\breturns?\b|\bprofits?\b|\bmake\s+(money|[$£€]?\d)|\brisk[- ]free\b|\bpassive\b|\bfinancial freedom\b/i,
   other: /\bcertified\b|\blicensed\b|\bapproved\b|\bcompliant\b/i,
 };
+
+/** Wording that turns an example into a claim about this business or its customers. */
+const OWN_RESULT = /\b(our|we|my)\b|\bclients?\b|\bcustomers?\b|\bguarantee|\btestimonial|\breviews?\b|\brated\b/i;
 
 export function sentences(text: string): string[] {
   return text
@@ -145,16 +148,26 @@ export function runChecks(input: CheckInput): ChecksRecord {
 
   // 5. A sentence that states a result, a price or a promise must be a listed claim backed by a verified fact or the offer card.
   const standing = creative.claims.filter((claim) => claimStands(claim, context));
-  const unbacked = claimSentences(copy, kit.regulated).filter((sentence) => !standing.some((claim) => containsPhrase(sentence, claim.text) || containsPhrase(claim.text, sentence)));
+  // Example figures on a designed ad's visual are the one exception: marked as examples in the picture, never in a
+  // regulated field, and never worded as this business's own result.
+  const examples = creative.variations.filter(exampleFigures);
+  const ownResult = examples.filter((row) => row.design.labels.some((label) => OWN_RESULT.test(label)));
+  const unbacked = claimSentences(factualCopy(creative), kit.regulated).filter((sentence) => !standing.some((claim) => containsPhrase(sentence, claim.text) || containsPhrase(claim.text, sentence)));
   const fallen = creative.claims.length - standing.length;
   add(
     5,
-    unbacked.length === 0 && fallen === 0,
-    fallen > 0
+    unbacked.length === 0 && fallen === 0 && (examples.length === 0 || kit.regulated === "none") && ownResult.length === 0,
+    examples.length > 0 && kit.regulated !== "none"
+      ? "This brand is in a regulated field, so example figures are not allowed on its ads. Remove them from the labels."
+      : ownResult.length > 0
+        ? `Example figures cannot be worded as this business's own results (${ownResult.map((row) => row.key).join(", ")}). Reword the labels.`
+        : fallen > 0
       ? `${fallen} listed claim(s) cite no verified fact, or state something the offer card does not.`
       : unbacked.length
         ? `These state a result, a price or a promise with nothing on record behind them: ${unbacked.slice(0, 3).map((row) => `"${row}"`).join("; ")}. Back each with a verified fact or the offer, or reword it.`
-        : "Every result, price and promise in the copy is backed by a verified fact or the offer card.",
+        : examples.length > 0
+          ? `Every result, price and promise in the copy is backed. The figures on the visual of ${examples.map((row) => row.key).join(", ")} are examples, and the picture says so.`
+          : "Every result, price and promise in the copy is backed by a verified fact or the offer card.",
   );
 
   // 6. The context it says it used is real, and it used some when there is any.

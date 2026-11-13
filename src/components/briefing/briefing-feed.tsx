@@ -19,6 +19,7 @@ import { selectClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { ModelMark } from "@/components/models/model-mark";
 
 export type Feed = FunctionReturnType<typeof api.briefing.feed>;
 export type Post = Feed["items"][number];
@@ -188,6 +189,7 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
             </Link>
           ) : null}
           {post.credits && !post.approval ? <span>Used {creditWords(post.credits)}</span> : null}
+          <ModelMark model={post.model} />
         </p>
       </div>
     </li>

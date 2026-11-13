@@ -86,3 +86,51 @@ export const CANNOT_RUN_WORDS: Record<CannotRun, string> = {
   no_web_search: "Cannot search the web here yet",
   no_web_fetch: "Cannot read web pages here",
 };
+
+/** What a screen shows for a model that ran: its family (for the mark) and its plain name. */
+export type ModelMark = { family: Family; name: string };
+
+/**
+ * The mark for a stored model. Null when nothing was stored (an older record), or the model has no known
+ * family or name (the fake one): the screen then shows nothing rather than a guess.
+ */
+export function markOf(madeWith: { model: string } | null | undefined): ModelMark | null {
+  if (!madeWith) return null;
+  const family = familyOf(madeWith.model);
+  const name = MODEL_NAMES[madeWith.model];
+  return family && name ? { family, name } : null;
+}
+
+/** A run step stores its route as "provider/model". The provider never holds a slash; an OpenRouter model id does. */
+export function parseModelRoute(modelRoute: string | undefined): { provider: string; model: string } | null {
+  if (!modelRoute) return null;
+  const cut = modelRoute.indexOf("/");
+  return cut > 0 ? { provider: modelRoute.slice(0, cut), model: modelRoute.slice(cut + 1) } : null;
+}
+
+export type CostHint = "less" | "more" | "same";
+
+/**
+ * How a family's list prices compare with another route's, input and output of both its models. Only said
+ * when every price points the same way; mixed prices return null and the screen says nothing. Never a
+ * number: models use different amounts of tokens for the same work.
+ */
+export function costHint(
+  prices: Record<string, { input: number; output: number } | undefined>,
+  family: Record<WorkKind, ModelRoute>,
+  base: Record<"research" | "classify", { model: string } | null>,
+): CostHint | null {
+  const pairs: [number, number][] = [];
+  for (const kind of ["research", "classify"] as const) {
+    const mine = prices[family[kind].model];
+    const theirs = base[kind] ? prices[base[kind].model] : undefined;
+    if (!mine || !theirs) return null;
+    pairs.push([mine.input, theirs.input], [mine.output, theirs.output]);
+  }
+  if (pairs.every(([a, b]) => a === b)) return "same";
+  if (pairs.every(([a, b]) => a <= b)) return "less";
+  if (pairs.every(([a, b]) => a >= b)) return "more";
+  return null;
+}
+
+export const COST_HINT_WORDS: Record<CostHint, string> = { less: "Usually costs less", more: "Usually costs more", same: "About the same cost" };

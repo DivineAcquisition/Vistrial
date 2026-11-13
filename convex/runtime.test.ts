@@ -585,6 +585,129 @@ describe("step 4 runtime", () => {
     }
   });
 
+  describe("choosing a model", () => {
+    const reply = (body: Record<string, unknown>) => ({
+      status: 200,
+      body: { id: "gen-1", type: "message", role: "assistant", model: body.model, content: [{ type: "text", text: "ok", citations: null }], stop_reason: "end_turn", stop_sequence: null, usage: { input_tokens: 50, output_tokens: 10, server_tool_use: null, cost: 0.01 } },
+    });
+    const hook = globalThis as { __vistrialScriptedOpenRouter?: unknown };
+    const on = () => {
+      process.env.ALLOW_DEV_SKILLS = "true";
+      // Offered, but with no real key: the scripted replies stand in for the network.
+      process.env.MODEL_FAMILIES = "gpt,gemini";
+      hook.__vistrialScriptedOpenRouter = reply;
+    };
+    afterEach(() => {
+      delete hook.__vistrialScriptedOpenRouter;
+      delete process.env.MODEL_FAMILIES;
+      delete process.env.OPENROUTER_API_KEY;
+      delete process.env.OPENROUTER_WEB_SEARCH;
+    });
+
+    it("refuses a family that is not switched on, before anything starts", async () => {
+      process.env.ALLOW_DEV_SKILLS = "true";
+      const t = convexTest(schema, modules);
+      const { owner, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      await expect(owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "gpt" })).rejects.toThrow("GPT cannot run this: not switched on yet");
+      await expect(owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "llama" })).rejects.toThrow("not one you can choose");
+      expect(await t.run((ctx) => ctx.db.query("agentRuns").take(5))).toHaveLength(0);
+    });
+
+    it("stores the family picked on the run, and its steps are routed to that family", async () => {
+      on();
+      process.env.OPENROUTER_API_KEY = "test-key";
+      const t = convexTest(schema, modules);
+      const { owner, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo", model: "gpt" });
+      expect((await t.run((ctx) => ctx.db.get(runId)))?.modelChoice).toBe("gpt");
+      // The first step is a tool. Commit it, then the model step's plan names the family's route.
+      const first = await t.mutation(internal.runs.prepare, { runId });
+      if (first.done || first.kind !== "tool") throw new Error("expected a tool step");
+      await t.mutation(internal.runs.commitTool, { runId, idempotencyKey: first.idempotencyKey, index: first.index, toolSlug: first.toolSlug });
+      const second = await t.mutation(internal.runs.prepare, { runId });
+      expect(second).toMatchObject({ kind: "model", route: { provider: "openrouter", model: "openai/gpt-6.1-sol", fallbackProvider: "openrouter", fallbackModel: "openai/gpt-6.1-terra" } });
+    });
+
+    it("an Owner or Admin sets the organization's default, and work with no pick starts on it", async () => {
+      on();
+      const t = convexTest(schema, modules);
+      const { owner, admin, viewer, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      process.env.OPENROUTER_API_KEY = "test-key";
+      await expect(viewer.mutation(api.models.setDefault, { workspaceId, model: "gemini" })).rejects.toThrow(NOT_ALLOWED);
+      await admin.mutation(api.models.setDefault, { workspaceId, model: "gemini" });
+      const options = await owner.query(api.models.options, { workspaceId });
+      expect(options.orgDefault).toBe("gemini");
+      expect(options.current).toBe("gemini");
+      expect(options.families.map((row) => [row.family, row.thorough, row.off])).toEqual([
+        ["claude", "Claude Opus 5.5", null],
+        ["gpt", "GPT-6.1 Sol", null],
+        ["gemini", "Gemini 4 Carbon", null],
+      ]);
+      // Research searches the web, which is not proven through OpenRouter yet: greyed with the reason, and
+      // the default falls back to the platform's own route for it.
+      const research = await owner.query(api.models.options, { workspaceId, skillSlug: "market-intelligence" });
+      expect(research.families.map((row) => row.off)).toEqual([null, "Cannot search the web here yet", "Cannot search the web here yet"]);
+      const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+      expect((await t.run((ctx) => ctx.db.get(runId)))?.modelChoice).toBe("gemini");
+      await owner.mutation(api.models.setDefault, { workspaceId, model: null });
+      expect((await owner.query(api.models.options, { workspaceId })).orgDefault).toBeNull();
+    });
+
+    it("shows which model ran: on the run, on each model step, and on what the run made", async () => {
+      process.env.ALLOW_DEV_SKILLS = "true";
+      const t = convexTest(schema, modules);
+      const { owner, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      await t.mutation(internal.staffAdmin.enroll, { userId: "staff", role: "platform_admin" });
+      const staff = t.withIdentity(person("staff", "staff@example.com", { secondFactor: true }));
+      delete process.env.OPENROUTER_API_KEY;
+      hook.__vistrialScriptedOpenRouter = reply;
+      await staff.mutation(api.platform.setRoute, { workKind: "write", provider: "openrouter", model: "google/gemini-4-carbon", fallbackProvider: "openrouter", fallbackModel: "google/gemini-4-hydrogen" });
+      const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+      expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
+      const run = await owner.query(api.runs.get, { workspaceId, runId });
+      expect(run.model).toEqual({ family: "gemini", name: "Gemini 4 Carbon" });
+      expect(run.steps.filter((step) => step.kind === "model").map((step) => step.model)).toEqual([{ family: "gemini", name: "Gemini 4 Carbon" }]);
+      expect(run.steps.filter((step) => step.kind !== "model").every((step) => step.model === null)).toBe(true);
+      const asset = await owner.query(api.assets.get, { workspaceId, assetId: run.assets[0].id });
+      expect(asset.model).toEqual({ family: "gemini", name: "Gemini 4 Carbon" });
+    });
+
+    it("shows nothing for a run made by a model with no known name, and for older runs", async () => {
+      process.env.ALLOW_DEV_SKILLS = "true";
+      const t = convexTest(schema, modules);
+      const { owner, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
+      expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
+      // The fake model ran. It is recorded, and no mark is shown for it.
+      expect((await t.run((ctx) => ctx.db.get(runId)))?.madeWith).toEqual({ provider: "fake", model: "fake-writer" });
+      expect((await owner.query(api.runs.get, { workspaceId, runId })).model).toBeNull();
+      await t.run((ctx) => ctx.db.patch(runId, { madeWith: undefined }));
+      expect((await owner.query(api.runs.get, { workspaceId, runId })).model).toBeNull();
+    });
+
+    it("a chat carries the model picked, and refuses one that cannot do the chat's work", async () => {
+      on();
+      process.env.OPENROUTER_API_KEY = "test-key";
+      const t = convexTest(schema, modules);
+      const { owner, viewer, workspaceId } = await seedPeople(t);
+      await confirmProfile(owner, workspaceId);
+      await expect(owner.mutation(api.agentChat.send, { workspaceId, text: "Research my market", skill: "market-intelligence", model: "gpt" })).rejects.toThrow("GPT cannot run this: cannot search the web here yet");
+      const { intakeId } = await owner.mutation(api.agentChat.send, { workspaceId, text: "Is my retainer priced right?", skill: "offer-intelligence", model: "gpt" });
+      expect((await owner.query(api.agentChat.get, { workspaceId, intakeId })).model).toBe("gpt");
+      await owner.mutation(api.agentChat.setModel, { workspaceId, intakeId, model: "gemini" });
+      expect((await owner.query(api.agentChat.get, { workspaceId, intakeId })).model).toBe("gemini");
+      await expect(viewer.mutation(api.agentChat.setModel, { workspaceId, intakeId, model: "claude" })).rejects.toThrow();
+      // A chat with no pick stays on the default.
+      const plain = await owner.mutation(api.agentChat.send, { workspaceId, text: "Is my retainer priced right?", skill: "offer-intelligence" });
+      expect((await owner.query(api.agentChat.get, { workspaceId, intakeId: plain.intakeId })).model).toBeNull();
+    });
+  });
+
   it("lets only a Platform Admin change model routes", async () => {
     const t = convexTest(schema, modules);
     await t.mutation(internal.staffAdmin.enroll, { userId: "service", role: "service_team" });

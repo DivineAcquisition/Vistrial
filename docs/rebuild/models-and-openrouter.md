@@ -415,6 +415,15 @@ No picture is ever shown that was not made: a failed image stays a failed tile w
 Marks are the three companies' own logos as local SVG files, unmodified, each beside its name, following
 each company's published brand rules; sources go in PR 3's description.
 
+**Where the marks came from (added with PR 3).** The four files in `public/model-logos/` were downloaded
+on 2026-11-13 from svgl.app, the logo library this repository already uses for the Meta mark
+(`claude-ai-icon.svg`, `openai.svg`, `openai_dark.svg`, `gemini.svg`), and are stored exactly as downloaded.
+They are shown small, uncropped and unrecoloured, always beside the model's name, only to say which model
+did a piece of work. OpenAI publishes its rules at <https://openai.com/brand/> (black mark on light, white
+on dark, which is why there are two files). Anthropic's and Google's own brand pages were not read in this
+work, so whether each permits this use is for the owner to confirm before launch; swapping a file needs no
+code change.
+
 Roles, client scoping and the archived-organization rule come from the builders in `lib/builders.ts`; no
 new access rule is written by hand.
 

@@ -17,6 +17,7 @@ import { ReportBody, reportMarkdown } from "@/components/assets/report-body";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
 import { showError } from "@/lib/errors/show-error";
+import { ModelMark } from "@/components/models/model-mark";
 
 function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"> }) {
   const asset = useQuery(api.assets.get, { workspaceId: shell.workspaceId, assetId });
@@ -62,6 +63,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
             "Added by a person."
           )}
         </p>
+        <ModelMark model={asset.model} />
         {status === "needsReview" ? (
           <p className="text-sm text-destructive">
             This draft did not pass its checks. Edit it to add a new version, or reject it with a reason.

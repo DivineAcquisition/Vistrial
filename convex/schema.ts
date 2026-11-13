@@ -459,6 +459,8 @@ export default defineSchema({
     weeklyPlan: v.optional(v.boolean()),
     /** Posts about changes in the organization's industry, read from the web. Missing means off. They use credits. */
     trendPosts: v.optional(v.boolean()),
+    /** The model family work starts on unless a person picks another: claude, gpt or gemini. Missing means the platform's own route. Set by an Owner or Admin. */
+    defaultModel: v.optional(v.string()),
   }).index("by_workspace", ["workspaceId"]),
 
   /** One member's own choices: theme and which in-app notices they want. Missing fields mean the default. */
@@ -821,6 +823,10 @@ export default defineSchema({
     inputRef: v.string(),
     /** Quality mode: thorough (the default) or fast (faster models, lower cap). */
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    /** The model family chosen for this: claude, gpt or gemini (lib/models.ts). Missing means the platform's own route. */
+    modelChoice: v.optional(v.string()),
+    /** The model that did the writing, stored when it ran. Missing on records from before this was kept: a screen then shows nothing. */
+    madeWith: v.optional(v.object({ provider: v.string(), model: v.string() })),
     startedAt: v.number(),
     finishedAt: v.optional(v.number()),
     stopReason: v.optional(
@@ -1582,6 +1588,8 @@ export default defineSchema({
     platformNote: v.optional(v.string()),
     /** Quality mode chosen in the chat box; thorough when missing. */
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    /** The model family chosen for this: claude, gpt or gemini (lib/models.ts). Missing means the platform's own route. */
+    modelChoice: v.optional(v.string()),
     projectId: v.optional(v.id("researchProjects")),
     /**
      * The skill this conversation is for. Missing means Market Intelligence (the research intake). Offer
@@ -1615,6 +1623,8 @@ export default defineSchema({
     text: v.string(),
     chips: v.optional(v.array(v.string())),
     data: v.optional(v.any()),
+    /** The model that wrote this turn, when one did. Stored when it ran; missing on older turns and on turns written in code. */
+    madeWith: v.optional(v.object({ provider: v.string(), model: v.string() })),
     at: v.number(),
   }).index("by_intake", ["intakeId", "at"]),
 
@@ -1655,6 +1665,10 @@ export default defineSchema({
     status: v.union(v.literal("thinking"), v.literal("done"), v.literal("failed"), v.literal("proposed"), v.literal("running"), v.literal("declined")),
     data: v.optional(v.any()),
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    /** The model family chosen for this: claude, gpt or gemini (lib/models.ts). Missing means the platform's own route. */
+    modelChoice: v.optional(v.string()),
+    /** The model that did the writing, stored when it ran. Missing on records from before this was kept: a screen then shows nothing. */
+    madeWith: v.optional(v.object({ provider: v.string(), model: v.string() })),
     costCents: v.number(),
     createdBy: v.string(),
     at: v.number(),

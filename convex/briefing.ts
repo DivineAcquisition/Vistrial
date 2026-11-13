@@ -18,6 +18,7 @@ import { post } from "./lib/briefing";
 import { selfMutation, workspaceQuery } from "./lib/builders";
 import { creditWords } from "./lib/credits";
 import { BRIEFING_KINDS, briefingKind, type BriefingKind } from "./lib/taskShapes";
+import { markOfRef } from "./lib/modelMarks";
 
 const FEED_LIMIT = 150;
 const PREVIEW_CHARS = 1400;
@@ -125,6 +126,8 @@ export const feed = workspaceQuery({
         href: await hrefOf(ctx, row),
         sources: row.sources ?? [],
         credits: row.credits ?? null,
+        /** The model behind a post about a run or about something a run made. Null for every other post. */
+        model: await markOfRef(ctx, ctx.workspaceId, row.refTable, row.refId),
         approval: approval && approval.workspaceId === ctx.workspaceId ? await approvalView(ctx, approval) : null,
         draft: await draftPreview(ctx, row),
       });

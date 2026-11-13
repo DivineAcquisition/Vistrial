@@ -23,6 +23,7 @@ import { RoadmapCanvas } from "./work-canvases";
 import type { ConnectedData, DiagnosisView, GoalView, ItemDecision, ReviewActions, TabData } from "./types";
 import { useReviewActions } from "./use-review";
 import { RefineInChat, ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, refineLink, suggestionHref } from "./work-shell";
+import { ModelMark } from "@/components/models/model-mark";
 
 const PHASES: { key: "fix" | "build" | "scale"; name: string; weeks: string; icon: LucideIcon; blurb: string }[] = [
   { key: "fix", name: "Fix", weeks: "Weeks 1–4", icon: WrenchIcon, blurb: "Stop the leak where growth stalls." },
@@ -403,6 +404,7 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
               </Link>
             ) : null}
             {editor ? <RefineInChat href={refineLink(base, "growth-diagnostics", { kind: "asset", id: diagnosis.assetId, title: diagnosis.title })} /> : null}
+            <ModelMark model={diagnosis.model} />
           </div>
         </>
       ) : null}

@@ -25,6 +25,9 @@ import type { ItemDecision, PagesQuote, PagesTabData, ReviewActions, TeardownPag
 import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
 import { useCredits } from "@/lib/credits";
+import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
+import { useModelChoice } from "@/components/models/use-model-choice";
+import { ModelMark } from "@/components/models/model-mark";
 
 export type TeardownAsk = { industry: string; ownUrl: string; urls: string[]; find: boolean; note: string };
 
@@ -36,6 +39,8 @@ export type PagesTabProps = {
   quote: PagesQuote | null;
   onAskChange: (ask: TeardownAsk | null) => void;
   onStart: (ask: TeardownAsk, confirmedCents: number) => Promise<void>;
+  /** The model switch for work started here. Left out where no model can be chosen. */
+  model?: ModelSwitchProps | null;
   view: TeardownView | null;
   page: TeardownPageView | null;
   onSelect: (assetId: string) => void;
@@ -80,7 +85,7 @@ function Honest({ words }: { words: string }) {
 }
 
 /** The ask: industry, your page, other pages, and whether to look for more. The plan and budget sit under it. */
-function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial: TeardownAsk; quote: PagesQuote | null; onAskChange: (ask: TeardownAsk | null) => void; onStart: PagesTabProps["onStart"]; onClose: () => void }) {
+function StartForm({ initial, quote, onAskChange, onStart, onClose, model }: { model?: ModelSwitchProps | null; initial: TeardownAsk; quote: PagesQuote | null; onAskChange: (ask: TeardownAsk | null) => void; onStart: PagesTabProps["onStart"]; onClose: () => void }) {
   const credits = useCredits();
   const [industry, setIndustry] = useState(initial.industry);
   const [ownUrl, setOwnUrl] = useState(initial.ownUrl);
@@ -194,6 +199,7 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
                     {busy ? <LoaderCircle aria-hidden className="size-4 animate-spin" /> : <Search aria-hidden className="size-4" />}
                     {busy ? "Starting…" : `Start teardown · up to ${credits.words(quote.maxCents)}`}
                   </Button>
+                  {model ? <ModelSwitch {...model} /> : null}
                   {!quote.ready && !quote.industry ? <span className="text-xs text-muted-foreground">Name the industry first.</span> : null}
                   {!quote.ready && quote.industry && quote.maxPages === 0 ? <span className="text-xs text-muted-foreground">Add a page, or tick the box to find some.</span> : null}
                 </div>
@@ -392,7 +398,10 @@ function Teardown({ view, page, editor, onSelectPage, decisions, tryActions, rev
             {shortDate(view.createdAt)} · {view.pages.length} {view.pages.length === 1 ? "page" : "pages"} read{view.unread.length ? ` · ${view.unread.length} not read` : ""}
           </p>
         </div>
-        <AssetStatusBadge status={view.status} />
+        <span className="flex flex-wrap items-center gap-3">
+          <ModelMark model={view.model} />
+          <AssetStatusBadge status={view.status} />
+        </span>
       </div>
       <Honest words={view.limits[0] ?? ""} />
       {view.summary ? <p className="text-sm text-card-foreground">{view.summary}</p> : null}
@@ -580,7 +589,7 @@ function Teardown({ view, page, editor, onSelectPage, decisions, tryActions, rev
 }
 
 /** The Pages workspace, drawn from data so the screen and its story are the same component. */
-export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, view, page, onSelect, onSelectPage, decisions, tryActions, review, briefJson, initialAsk }: PagesTabProps) {
+export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, model, view, page, onSelect, onSelectPage, decisions, tryActions, review, briefJson, initialAsk }: PagesTabProps) {
   const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialAsk));
   const close = () => {
@@ -604,7 +613,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
         }
       />
 
-      {form ? <StartForm initial={initialAsk ?? EMPTY_ASK} quote={quote} onAskChange={onAskChange} onStart={onStart} onClose={close} /> : null}
+      {form ? <StartForm initial={initialAsk ?? EMPTY_ASK} quote={quote} onAskChange={onAskChange} onStart={onStart} onClose={close} model={model} /> : null}
 
       {tab.running.length > 0 ? (
         <section className="grid gap-2" aria-label="Running now">
@@ -699,6 +708,7 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
   const [pageId, setPageId] = useState<string | null>(null);
   const [ask, setAsk] = useState<TeardownAsk | null>(null);
   const start = useMutation(api.landingTeardown.start);
+  const modelChoice = useModelChoice(workspaceId, "landing-page-teardown");
   const review = useReviewActions(workspaceId);
 
   const assetId = (selected ?? tab?.results[0]?.id ?? null) as Id<"assets"> | null;
@@ -717,8 +727,9 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
       tab={tab}
       quote={quote ?? null}
       onAskChange={setAsk}
+      model={editor ? modelChoice.props : null}
       onStart={async (next, confirmedCents) => {
-        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents, clientId });
+        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents, clientId, ...(modelChoice.picked ? { model: modelChoice.picked } : {}) });
       }}
       view={view ?? null}
       page={page ?? null}

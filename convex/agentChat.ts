@@ -18,6 +18,8 @@ import { beginResearch, replyResearch } from "./intake";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { ROUTE_CHOICES, ROUTE_QUESTION, UNDECIDED, isChatRoute, routeChoice, routeIntent, type ChatRoute } from "./lib/chatRouting";
 import { notFound, userError } from "./lib/errors";
+import { assertCanRun, skillNeeds } from "./lib/modelChoice";
+import { isFamily, markOf } from "./lib/models";
 import { SKILL_TAB } from "./lib/workTabs";
 import { beginSkill, isChatSkill, replySkill, type ChatSkill } from "./skillIntake";
 
@@ -108,6 +110,21 @@ async function firstText(ctx: QueryCtx, intakeId: Id<"intakes">) {
 }
 
 type Access = MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } };
+
+/**
+ * Stores the model family a person picked for a conversation. It must be able to run the skill the
+ * conversation is on, or the message is refused with the reason; while the chat is still asking which skill,
+ * it is checked when the skill is chosen. `picked` undefined leaves the conversation as it is.
+ */
+async function pickModel(ctx: MutationCtx, intakeId: Id<"intakes">, picked: string | undefined, route: ChatRoute | null) {
+  const row = await ctx.db.get(intakeId);
+  if (!row) return;
+  const choice = picked ?? row.modelChoice;
+  if (choice === undefined) return;
+  if (!isFamily(choice)) throw userError("That model is not one you can choose.");
+  assertCanRun(choice, route ? skillNeeds(route) : {});
+  if (picked !== undefined && picked !== row.modelChoice && row.status !== "started") await ctx.db.patch(row._id, { modelChoice: picked });
+}
 type Choices = { mode?: "thorough" | "fast"; platforms?: string[]; links?: string[] };
 
 /** Hands a conversation to its skill. `row` is an undecided conversation being routed. */
@@ -175,6 +192,8 @@ export const send = workspaceMutation({
     links: v.optional(v.array(v.string())),
     /** The client a new conversation is about. Fixed when it starts; missing means the organization itself. */
     clientId: v.optional(v.id("clients")),
+    /** The model family picked for this conversation and the work it starts: claude, gpt or gemini. */
+    model: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<{ intakeId: Id<"intakes">; route: ChatRoute | null }> => {
     requireWork(ctx.member.role);
@@ -186,6 +205,8 @@ export const send = workspaceMutation({
       const row = await ownIntake(ctx, args.intakeId);
       if (row.status === "abandoned") throw userError("This conversation has ended. Start a new one.");
       const current = routeOf(row);
+      // Before the reply is read: the model picked now is the one that reads it.
+      if (current) await pickModel(ctx, row._id, args.model, current);
       if (current === "market-intelligence") {
         await replyResearch(ctx, row, { text, ...choices });
         return { intakeId: row._id, route: current };
@@ -199,12 +220,15 @@ export const send = workspaceMutation({
       const route = routeChoice(text);
       await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId: row._id, role: "you", kind: tapped ? "choice" : "text", text, at: await nextAt(ctx, row._id) });
       if (!route) {
+        await pickModel(ctx, row._id, args.model, null);
         await askWhich(ctx, row, true);
         await ctx.db.patch(row._id, { updatedAt: Date.now() });
         return { intakeId: row._id, route: null };
       }
       // The skill reads the question the person first asked, not the choice they tapped.
       const asked = tapped ? (await firstText(ctx, row._id)) || text : text;
+      // The skill is known now, so the model picked earlier is checked against it before anything begins.
+      await pickModel(ctx, row._id, args.model, route);
       await begin(ctx, route, { text: asked, row, ...choices });
       return { intakeId: row._id, route };
     }
@@ -213,8 +237,21 @@ export const send = workspaceMutation({
     const context = args.context ? await readContext(ctx, args.context) : undefined;
     const forClient = await clientForNew(ctx, args.clientId);
     const started = await startConversation(ctx, { text, skill: args.skill as ChatRoute | undefined, context, choices, forClient });
+    await pickModel(ctx, started.intakeId, args.model, started.route);
     if (isChatPage(args.page)) await ctx.db.patch(started.intakeId, { page: args.page });
     return started;
+  },
+});
+
+/** Changes the model family of a conversation whose work has not started. Owners, Admins and Members. */
+export const setModel = workspaceMutation({
+  args: { intakeId: v.id("intakes"), model: v.string() },
+  handler: async (ctx, args) => {
+    requireWork(ctx.member.role);
+    const row = await ownIntake(ctx, args.intakeId);
+    if (row.status === "started") throw userError("This work has already started on the model it was given.");
+    await pickModel(ctx, row._id, args.model, routeOf(row));
+    return null;
   },
 });
 
@@ -360,7 +397,9 @@ export const get = workspaceQuery({
       context: row.context ?? null,
       page: isChatPage(row.page) ? CHAT_PAGES[row.page] : null,
       result: await resultOf(ctx, row, route),
-      messages: messages.map((message) => ({ id: message._id, role: message.role, kind: message.kind, text: message.text, chips: message.chips ?? [], data: message.data ?? null, at: message.at })),
+      /** The model family picked for this conversation, or null for the organization's default. */
+      model: isFamily(row.modelChoice) ? row.modelChoice : null,
+      messages: messages.map((message) => ({ id: message._id, role: message.role, kind: message.kind, text: message.text, chips: message.chips ?? [], data: message.data ?? null, model: markOf(message.madeWith), at: message.at })),
     };
   },
 });

@@ -29,6 +29,7 @@ import { PAGE_COST_CENTS, checkUrls, createJob, plannedDriver } from "./pageRead
 import { startRunFor } from "./runs";
 import { FAQ_TOPICS, FAQ_TOPIC_WORDS, FRAMEWORK, SECTION_BY_KEY } from "./skills/landingTeardown/framework";
 import { HONEST_LIMIT, MAX_FOUND, MAX_INDUSTRY, MAX_NOTE, MAX_PAGES, PHASE, SKILL_SLUG, parseJson, readIndustry, type TeardownRecord } from "./skills/landingTeardown/shapes";
+import { markOfAsset } from "./lib/modelMarks";
 
 const OPEN = ["queued", "running", "waiting", "needsInput"] as const;
 const STATUS_ORDER: Record<Doc<"assets">["status"], number> = { needsReview: 0, draft: 1, approved: 2, rejected: 3, archived: 4 };
@@ -126,7 +127,7 @@ export const quote = workspaceQuery({
  * starts and they are shown the new one. Owners, Admins and Members.
  */
 export const start = workspaceMutation({
-  args: { industry: v.string(), ownUrl: v.optional(v.string()), urls: v.array(v.string()), find: v.boolean(), note: v.optional(v.string()), confirmedCents: v.number(), clientId: v.optional(v.id("clients")) },
+  args: { industry: v.string(), ownUrl: v.optional(v.string()), urls: v.array(v.string()), find: v.boolean(), note: v.optional(v.string()), confirmedCents: v.number(), clientId: v.optional(v.id("clients")), /** The model family picked for this teardown. Missing means the organization's default. */ model: v.optional(v.string()) },
   handler: async (ctx, args) => {
     requireWork(ctx.member.role);
     const forClient = await clientForNew(ctx, args.clientId);
@@ -171,7 +172,7 @@ export const start = workspaceMutation({
       createdBy: ctx.identity.subject,
       createdAt: now,
     });
-    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, projectId });
+    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: SKILL_SLUG, projectId, model: args.model });
     await ctx.db.patch(requestId, { runId });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "teardown.started", subject: requestId, count: asked.maxPages });
     return { requestId, runId, projectId };
@@ -255,6 +256,8 @@ export const view = workspaceQuery({
       assetId: asset._id,
       title: asset.title,
       status: asset.status,
+      /** The model that made it, as stored on its run. Null for older work. */
+      model: await markOfAsset(ctx, asset),
       createdAt: asset.createdAt,
       versions: saved.versions,
       industry: saved.industry,

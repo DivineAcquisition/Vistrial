@@ -16,7 +16,8 @@ import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
-import { platformRoute } from "./lib/modelChoice";
+import { choiceFor, resolveRoute, skillNeeds } from "./lib/modelChoice";
+import { isFamily, markOf, parseModelRoute } from "./lib/models";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isActionTool, isCollectTool, wrapUntrusted } from "./lib/registry";
 import { collectResult, type Platform } from "./lib/researchShapes";
 import { saveSourceRef, setSourceStatus } from "./lib/sourceRefs";
@@ -239,6 +240,8 @@ export const get = workspaceQuery({
       startedAt: run.startedAt,
       finishedAt: run.finishedAt ?? null,
       startedByName: starter?.displayName ?? null,
+      /** The model that did this run's writing, as stored when it ran. Null on older runs. */
+      model: markOf(run.madeWith),
       caps: {
         maxCostCentsPerRun: caps.maxCostCentsPerRun,
         maxCostCentsPerDay: caps.maxCostCentsPerDay,
@@ -257,6 +260,8 @@ export const get = workspaceQuery({
           kind: step.kind,
           toolSlug: step.toolSlug ?? null,
           workKind: step.kind === "model" ? (step.workKind ?? "write") : null,
+          /** The model this step ran on, from the route stored with it. */
+          model: step.kind === "model" ? markOf(parseModelRoute(step.modelRoute)) : null,
           status: step.status,
           resultCode: step.resultCode,
           durationMs: step.durationMs,
@@ -321,6 +326,8 @@ export async function startRunFor(
     /** The client the run is for, when it has no project to take one from. The caller has already checked it. */
     clientId?: Id<"clients">;
     mode?: "thorough" | "fast";
+    /** The model family a person picked for this run. Missing means the organization's default, else the platform's route. */
+    model?: string;
   },
 ) {
   if (checkCredit && !free) await assertCanSpend(ctx, workspaceId);
@@ -342,6 +349,9 @@ export async function startRunFor(
   const skill = skillFor(args.skillSlug);
   if (!skill) throw userError("This skill is not built yet.");
   if (skill.needsProject && !projectId) throw userError("Choose a research project first.");
+  // The free session runs on the platform's route. Otherwise: the family picked by hand, refused here if it
+  // cannot run this skill, else the organization's default.
+  const modelChoice = free ? undefined : await choiceFor(ctx, workspaceId, args.model, skillNeeds(args.skillSlug));
   const agent = await ctx.db
     .query("agents")
     .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
@@ -368,6 +378,7 @@ export async function startRunFor(
     startedBy: userId,
     inputRef: project?._id ?? inputRef ?? args.skillSlug,
     ...(args.mode ? { mode: args.mode } : {}),
+    ...(modelChoice ? { modelChoice } : {}),
     startedAt: Date.now(),
     finishedAt: blocked ? Date.now() : undefined,
     stopReason: blocked ? (gate.halted || gate.paused ? "cancelled" : "cap") : undefined,
@@ -404,6 +415,8 @@ export const start = workspaceMutation({
     projectId: v.optional(v.id("researchProjects")),
     /** Quality mode; thorough when missing. */
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    /** The model family picked for this run: claude, gpt or gemini. Missing means the organization's default. */
+    model: v.optional(v.string()),
   },
   handler: async (ctx, { projectId, ...input }) =>
     startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, projectId, ...input }),
@@ -523,7 +536,9 @@ export const prepare = internalMutation({
     }
     // Fast mode runs research and writing on the faster route.
     const workKindRoute = run.mode === "fast" && (next.workKind === "research" || next.workKind === "write") ? "classify" : next.workKind;
-    const route = await platformRoute(ctx, workKindRoute);
+    // The run's family decides, judged against everything the skill may ask of a model, so one run never
+    // mixes families: where the family cannot run this skill here, the platform's route runs every step.
+    const { route } = await resolveRoute(ctx, workKindRoute, isFamily(run.modelChoice) ? run.modelChoice : null, skillNeeds(run.skillSlug));
     if (!route) {
       await recordFailure(ctx, run, index, idempotencyKey, "no_route", "model", NO_SPEND, 0, undefined, next.phase);
       return { done: true as const };
@@ -880,6 +895,8 @@ export const commitModel = internalMutation({
       outputTokens: args.outputTokens,
       costCents: args.costCents,
     });
+    // Which model made this run's work, kept as it runs: the one that wrote, else the first one that ran.
+    if (args.workKind === "write" || !run.madeWith) await ctx.db.patch(run._id, { madeWith: { provider: args.provider, model: args.model } });
     const stepId = await ctx.db.insert("runSteps", {
       workspaceId: run.workspaceId,
       runId: run._id,

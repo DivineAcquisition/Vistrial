@@ -17,6 +17,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { CONTEXT_LABEL, ROUTE_LOOK, chatStatus, type ChatDetail } from "@/components/chat/agent-chat";
 import { ChatComposer } from "@/components/chat/chat-composer";
+import type { ModelSwitchProps } from "@/components/models/model-switch";
+import { useConversationModel, useModelChoice } from "@/components/models/use-model-choice";
 import { ArrowRight, MapPin, MessagesSquare, Paperclip, Plus, Users, X } from "@/components/icons";
 import { useClientScope, useWorkspaceShell } from "@/components/shell/shell-context";
 import { showError } from "@/lib/errors/show-error";
@@ -314,6 +316,8 @@ export type ChatPanelViewProps = {
   onClose: () => void;
   /** The Growth Architect's pages, for links to the full conversation and results. */
   base: string;
+  /** The model switch for the chat shown. Left out where no model can be chosen. */
+  model?: ModelSwitchProps | null;
   problem?: string;
 };
 
@@ -321,7 +325,7 @@ export type ChatPanelViewProps = {
  * The panel. On a wide screen it is a column on the right that stays while pages change; on a phone or
  * tablet it is a full-height sheet over the page. Escape closes the sheet.
  */
-export function ChatPanelView({ chats, chat, chatId, canSend, chips, onRemovePage, onRemoveRecord, onSelect, onSend, onClose, base, problem }: ChatPanelViewProps) {
+export function ChatPanelView({ chats, chat, chatId, canSend, chips, onRemovePage, onRemoveRecord, onSelect, onSend, onClose, base, problem, model }: ChatPanelViewProps) {
   const isNew = chatId === null;
   const ended = chat?.status === "abandoned";
   const started = chat?.status === "started";
@@ -405,6 +409,7 @@ export function ChatPanelView({ chats, chat, chatId, canSend, chips, onRemovePag
             size="compact"
             placeholder={!canSend ? "Owners, Admins and Members start chats." : isNew ? "Ask about your market, your offer or your growth…" : "Answer, or tap a choice…"}
             disabled={!canSend || (!isNew && !chat)}
+            model={canSend ? model : null}
             onSubmit={onSend}
           />
         )}
@@ -434,6 +439,9 @@ function OpenPanel({ panel, workspaceId }: { panel: PanelState; workspaceId: Id<
   const intakeId = panel.chatId as Id<"intakes"> | null;
   const detail = useQuery(api.agentChat.get, intakeId ? { workspaceId, intakeId } : "skip");
   const send = useMutation(api.agentChat.send);
+  // A new chat carries the model picked here; a chat that exists keeps its own, changeable until its work starts.
+  const fresh = useModelChoice(workspaceId);
+  const ongoing = useConversationModel(workspaceId, intakeId && detail ? { id: intakeId, route: detail.route, model: detail.model, started: detail.status === "started" } : null);
 
   // What a new chat is told. Removing a chip lasts until the page or the record changes.
   const page: ChatPage | null = here.page && hidePage !== pathname ? here.page : null;
@@ -456,6 +464,7 @@ function OpenPanel({ panel, workspaceId }: { panel: PanelState; workspaceId: Id<
       }}
       onClose={() => panel.setOpen(false)}
       base="/app/agents/growth-architect"
+      model={intakeId ? ongoing : fresh.props}
       problem={problem}
       onSend={async (text) => {
         setProblem("");
@@ -463,7 +472,7 @@ function OpenPanel({ panel, workspaceId }: { panel: PanelState; workspaceId: Id<
           const result = await send(
             intakeId
               ? { workspaceId, intakeId, text }
-              : { workspaceId, text, ...(clientId ? { clientId } : {}), ...(page ? { page } : {}), ...(record ? { context: { kind: record.kind, id: record.id } } : {}) },
+              : { workspaceId, text, ...(fresh.picked ? { model: fresh.picked } : {}), ...(clientId ? { clientId } : {}), ...(page ? { page } : {}), ...(record ? { context: { kind: record.kind, id: record.id } } : {}) },
           );
           if (!intakeId) panel.setChatId(result.intakeId);
         } catch (error) {

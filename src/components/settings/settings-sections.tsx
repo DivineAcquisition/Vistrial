@@ -45,6 +45,8 @@ import { captionText, selectClass } from "@/lib/ui";
 import type { ThemeChoice } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useCredits } from "@/lib/credits";
+import type { ModelFamily } from "@/components/models/model-mark";
+import { ModelSwitch, type ModelOption } from "@/components/models/model-switch";
 
 /** Every action resolves when the server has the change, or rejects with the error to show. */
 type Act<A extends unknown[] = []> = (...args: A) => Promise<unknown>;
@@ -573,6 +575,8 @@ export type AgentsData = {
   canEdit: boolean;
   agents: AgentRow[];
   defaultResearchMode: "fast" | "thorough";
+  /** The model switch for the organization's default. Null while it loads. */
+  models: { options: ModelOption[]; current: ModelFamily | null; chosen: ModelFamily | null } | null;
   controls: {
     paused: boolean;
     halted: boolean;
@@ -588,6 +592,7 @@ export function AgentsSection({
   data,
   onAgent,
   onMode,
+  onModel,
   onPause,
   onCaps,
 }: {
@@ -595,6 +600,7 @@ export function AgentsSection({
   data: AgentsData;
   onAgent: Act<[string, boolean]>;
   onMode: Act<["fast" | "thorough"]>;
+  onModel: Act<[ModelFamily]>;
   onPause: Act<[boolean]>;
   onCaps: Act<[number, number]>;
 }) {
@@ -633,6 +639,23 @@ export function AgentsSection({
           />
         ) : null}
       </StatusCard>
+
+      {data.models ? (
+        <StatusCard
+          icon={Sparkles}
+          title="Default model"
+          status={data.models.options.find((row) => row.family === data.models?.current)?.label ?? "Not set"}
+          tone="brand"
+          sentence={
+            data.models.chosen
+              ? "New work starts on this model. Anyone who starts a piece of work can pick another for it. Work a model cannot do, such as searching the web, runs on Vistrial's own default, and every result shows the model that made it."
+              : "New work starts on Vistrial's own default model. Anyone who starts a piece of work can pick another for it, and every result shows the model that made it."
+          }
+          affects={AFFECTS_ALL}
+        >
+          <ModelSwitch className="justify-self-start" options={data.models.options} value={data.models.current} onChange={(family) => void onModel(family)} locked={!data.canEdit} />
+        </StatusCard>
+      ) : null}
 
       <StatusCard
         icon={Gauge}

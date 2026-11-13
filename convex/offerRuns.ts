@@ -22,7 +22,7 @@ import { startRunFor } from "./runs";
  * Owners, Admins and Members.
  */
 export const analyse = workspaceMutation({
-  args: { cardId: v.id("offerCards") },
+  args: { cardId: v.id("offerCards"), /** The model family picked for this analysis. Missing means the organization's default. */ model: v.optional(v.string()) },
   handler: async (ctx, args) => {
     requireWork(ctx.member.role);
     const card = await ownCard(ctx, ctx.workspaceId, args.cardId);
@@ -43,7 +43,7 @@ export const analyse = workspaceMutation({
     if ((await liveFact(ctx, ctx.workspaceId, "offerDetails"))?.value !== details) {
       await writeFact(ctx, { workspaceId: ctx.workspaceId, sourceType: "owner", recordedBy: ctx.identity.subject, verifiedBy: ctx.identity.subject, factKey: "offerDetails", value: details });
     }
-    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: "offer-intelligence" });
+    const runId = await startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: "offer-intelligence", model: args.model });
     const now = Date.now();
     await ctx.db.patch(card._id, { analyses: [...(card.analyses ?? []), { runId, version: current.version, at: now }].slice(-20), updatedAt: now });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "offer.analyse", subject: card._id, count: current.version });

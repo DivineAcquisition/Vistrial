@@ -333,7 +333,8 @@ export const start = workspaceMutation({
       }
       await saveCardFromChat(ctx, answers);
     }
-    const runId = await startRunFor(ctx, { ...base, ...(projectId ? { projectId } : {}) });
+    // The family picked in the chat goes with the run it starts.
+    const runId = await startRunFor(ctx, { ...base, ...(projectId ? { projectId } : {}), ...(row.modelChoice ? { model: row.modelChoice } : {}) });
     await ctx.db.patch(row._id, { status: "started", runId, ...(projectId ? { projectId } : {}), updatedAt: Date.now() });
     return { runId, projectId: projectId ?? null };
   },

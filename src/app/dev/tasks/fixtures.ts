@@ -28,6 +28,7 @@ function card(input: Partial<TaskCard> & Pick<TaskCard, "title" | "column">): Ta
     approvalId: null,
     link: null,
     checkInAt: null,
+    model: null,
     decisionId: null,
     result: null,
     skippedReason: null,
@@ -47,6 +48,7 @@ export function storyBoard(state: string): Board {
   const proposed: TaskCard[] = [
     card({
       column: "proposed",
+      model: { family: "claude", name: "Claude Opus 5.5" },
       title: "Test a two-call close for Aster's leadership program",
       why: "Aster's booked calls rose in October but fewer became clients. Three competing programs now split the sale into a fit call and a decision call.",
       client: "Aster Coaching",
@@ -62,6 +64,7 @@ export function storyBoard(state: string): Board {
     }),
     card({
       column: "proposed",
+      model: { family: "gemini", name: "Gemini 4 Carbon" },
       title: "Research what fractional CFO firms charge agencies",
       why: "Ledgerline is repricing in January and the last market report is five months old.",
       client: "Ledgerline CFO",

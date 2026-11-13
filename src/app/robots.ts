@@ -19,7 +19,6 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     "/contact",
     // Drafts stay out of search until they are live.
     ...(trust.termsLive ? [] : ["/terms"]),
-    "/book",
     "/security/review",
     trust.privacyLive ? "/privacy/requests" : "/privacy",
   ];

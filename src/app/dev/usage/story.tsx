@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 
 import { UsageView, type UsageFilters, type UsageItems, type UsageOverview } from "@/components/usage/usage-view";
 import { DIMENSIONS, breakdown, daily, matches, periodDays, typicalUse, workItems, type Dimension, type UsageRow } from "../../../../convex/lib/usageReport";
+import { CATALOG } from "../../../../convex/catalog";
+import { EXTRA_ORG, PLAN } from "../../../../convex/lib/billing";
 import { StoryTheme } from "../story-theme";
 
 const NOW = Date.UTC(2026, 10, 13, 16);
@@ -28,14 +30,9 @@ type Sample = {
   rows: UsageRow[];
 };
 
-const AGENTS = { "growth-architect": "Growth Architect", "campaign-execution": "Campaign Execution", "sales-conversion": "Sales Conversion" };
-const SKILLS = {
-  "market-intelligence": "Market Intelligence",
-  "offer-intelligence": "Offer Intelligence",
-  "growth-diagnostics": "Growth Diagnostics",
-  "creative-production": "Creative Production",
-  "landing-page-teardown": "Landing Page Teardown",
-};
+/** Agents and skills are named as the catalog names them, never by hand. */
+const AGENTS: Record<string, string> = Object.fromEntries(CATALOG.map((agent) => [agent.slug, agent.name]));
+const SKILLS: Record<string, string> = Object.fromEntries(CATALOG.flatMap((agent) => agent.skills.map((skill) => [skill.slug, skill.name])));
 const MODELS = { "claude-opus-5-5": "Claude Opus 5.5", "claude-sonnet-5-5": "Claude Sonnet 5.5", "claude-haiku-5-5": "Claude Haiku 5.5", "gemini-3-pro-image": "Gemini 3 Pro Image" };
 
 /** What each kind of work spends, roughly, in credits: a range the sample draws from. */
@@ -132,9 +129,11 @@ function build(state: string, filters: UsageFilters, limit: number): { overview:
     access,
     balance: {
       on: true,
-      planName: "Growth",
+      planName: PLAN.name,
       balance: balanceLeft,
-      includedThisMonth: coach ? 15_000 : 20_000,
+      // The coach has one organization; the agency pays for a second one, which adds its own credits.
+      includedThisMonth: PLAN.includedCents + (coach ? 0 : EXTRA_ORG.includedCents),
+      includedParts: { plan: PLAN.includedCents, extraOrganizations: coach ? 0 : 1, perOrganization: EXTRA_ORG.includedCents },
       usedThisMonth: access === "account" || access === "organization" ? used : null,
       packs: coach || access === "summary" ? null : 5_000,
       resetAt: NOW + 21 * DAY,

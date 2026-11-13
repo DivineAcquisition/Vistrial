@@ -15,7 +15,6 @@ import { Panel } from "@/components/ui/panel";
 import { Textarea } from "@/components/ui/textarea";
 import { ReportBody, reportMarkdown } from "@/components/assets/report-body";
 import { ReportGlanceView } from "@/components/assets/report-glance";
-import { ModelMark } from "@/components/readable";
 import { reportGlance } from "@/lib/readable/report";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
@@ -65,7 +64,6 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
             "Added by a person."
           )}{" "}
           </p>
-        <ModelMark model={asset.model} />
         {status === "needsReview" ? (
           <p className="text-sm text-destructive">
             This draft did not pass its checks. Edit it to add a new version, or reject it with a reason.

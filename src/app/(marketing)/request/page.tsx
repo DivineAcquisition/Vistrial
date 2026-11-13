@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 
+import { publicPageMetadata } from "@/lib/seo";
+
 import { AccessRequestForm } from "@/components/marketing/access-form";
 import { MarketingShell } from "@/components/marketing/chrome";
 import { FormAside } from "@/components/marketing/form-aside";
 import { FORMS } from "@/lib/marketing/content";
 import { marketingHeroTitle, marketingSubhead } from "@/lib/marketing/ui";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: FORMS.accessTitle,
   description: FORMS.accessLead,
-  robots: { index: false, follow: false },
-};
+  path: "/request",
+  index: false,
+});
 
 export default function RequestPage() {
   return (

@@ -124,7 +124,7 @@ export const refresh = viewerAction({
   },
 });
 
-/** Starts (or resumes) the Growth plan. Returns Stripe's checkout page when payment is needed. */
+/** Starts (or resumes) the plan. Returns Stripe's checkout page when payment is needed. */
 export const subscribe = memberAction({
   /** `returnPath` is where Stripe sends the person back to; only app pages are allowed. */
   args: { returnOrigin: v.optional(v.string()), returnPath: v.optional(v.string()) },
@@ -209,7 +209,7 @@ export const addOrganization = memberAction({
       return { url: null, workspaceId };
     }
     if (!extraOrgsOpen()) throw userError(ADD_ORGANIZATION_CLOSED, "not_allowed");
-    if (!context.planActive) throw userError("Start the Growth plan first. Another organization is added on top of it.");
+    if (!context.planActive) throw userError(`Start the ${PLAN.name} plan first. Another organization is added on top of it.`);
     await ctx.runMutation(internal.billing.holdOrganization, { accountId: context.accountId, userId: ctx.userId, name: args.name });
     // Paid organizations after this one: never fewer than exist, so a retry cannot buy two.
     const units = Math.max(context.organizations - 1, 0) + 1;

@@ -146,7 +146,15 @@ function BalancePanel({ data }: { data: UsageOverview }) {
             {balance.planName} plan
           </h2>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-            <Stat label="Included this month" value={balance.includedThisMonth > 0 ? creditWords(balance.includedThisMonth) : "No plan yet"} />
+            <Stat
+              label="Included this month"
+              value={balance.includedThisMonth > 0 ? creditWords(balance.includedThisMonth) : "No plan yet"}
+              hint={
+                balance.includedParts && balance.includedParts.extraOrganizations > 0
+                  ? `${creditCount(balance.includedParts.plan)} with the plan, ${creditCount(balance.includedParts.extraOrganizations * balance.includedParts.perOrganization)} for ${balance.includedParts.extraOrganizations === 1 ? "1 more organization" : `${balance.includedParts.extraOrganizations} more organizations`}`
+                  : undefined
+              }
+            />
             <Stat label="Used this month" value={balance.usedThisMonth === null ? "Shown to Owners and Admins" : creditWords(balance.usedThisMonth)} muted={balance.usedThisMonth === null} />
             <Stat label="Left" value={balance.balance === null ? "Not set up" : creditWords(left)} tone={low ? "warning" : undefined} />
             <Stat label="Packs bought" value={balance.packs === null ? "Not reported yet" : creditWords(balance.packs)} muted={balance.packs === null} />
@@ -175,11 +183,12 @@ function BalancePanel({ data }: { data: UsageOverview }) {
   );
 }
 
-function Stat({ label, value, tone, muted }: { label: string; value: string; tone?: "warning"; muted?: boolean }) {
+function Stat({ label, value, tone, muted, hint }: { label: string; value: string; tone?: "warning"; muted?: boolean; hint?: string }) {
   return (
     <div className="min-w-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className={cn("font-medium break-words tabular-nums", tone === "warning" ? "text-warning" : muted ? "text-muted-foreground" : "text-card-foreground")}>{value}</dd>
+      {hint ? <dd className="text-[11px] break-words text-muted-foreground">{hint}</dd> : null}
     </div>
   );
 }
@@ -192,7 +201,14 @@ function BalanceRing({ share, left, on, low }: { share: number; left: number; on
   const gradient = useId();
   return (
     <div className="relative mx-auto size-40 shrink-0 sm:size-44" role="img" aria-label={on ? `${creditWords(left)} left, ${Math.round(share * 100)}% of this month's credits` : "No balance yet"}>
-      <svg viewBox="0 0 128 128" className="size-full -rotate-90">
+      <motion.div
+        aria-hidden
+        className="absolute inset-3 rounded-full bg-primary/25 blur-2xl"
+        initial={{ opacity: reduced ? 0.7 : 0 }}
+        animate={reduced ? { opacity: 0.7 } : { opacity: [0.45, 0.8, 0.45] }}
+        transition={reduced ? { duration: 0 } : { duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <svg viewBox="0 0 128 128" className="relative size-full -rotate-90">
         <defs>
           <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.55} />
@@ -212,7 +228,7 @@ function BalanceRing({ share, left, on, low }: { share: number; left: number; on
           initial={{ strokeDashoffset: reduced ? CIRCUMFERENCE * (1 - share) : CIRCUMFERENCE }}
           animate={{ strokeDashoffset: CIRCUMFERENCE * (1 - share) }}
           transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          style={{ filter: "drop-shadow(0 0 6px color-mix(in oklab, var(--color-primary) 45%, transparent))" }}
+          style={{ filter: "drop-shadow(0 0 8px color-mix(in oklab, var(--color-primary) 60%, transparent))" }}
         />
       </svg>
       <div className="absolute inset-0 grid place-content-center text-center">
@@ -308,12 +324,19 @@ function OverTime({ data }: { data: UsageOverview }) {
         </div>
       </div>
 
-      {daily.keys.length > 1 ? (
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Agents">
+      {daily.keys.length > 0 ? (
+        <ul className="flex flex-wrap gap-2 text-xs text-muted-foreground" aria-label="Agents">
           {daily.keys.map((key) => (
-            <li key={key.key} className="flex items-center gap-1.5">
-              <span aria-hidden className="size-2.5 rounded-sm" style={{ background: agentColor(key.key) }} />
-              {key.label}
+            <li key={key.key} className="flex items-center gap-1.5 rounded-full border border-border bg-background/60 py-0.5 pr-2.5 pl-0.5">
+              {key.key === "none" ? (
+                <span aria-hidden className="grid size-5 place-content-center rounded-full bg-muted">
+                  <Coins weight="duotone" className="size-3" />
+                </span>
+              ) : (
+                <AgentAvatar slug={key.key} name={key.label} size="xs" className="size-5" />
+              )}
+              <span aria-hidden className="size-2 rounded-full" style={{ background: agentColor(key.key), boxShadow: `0 0 6px ${agentColor(key.key)}` }} />
+              <span className="text-card-foreground">{key.label}</span>
             </li>
           ))}
         </ul>

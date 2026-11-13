@@ -8,6 +8,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { CATALOG } from "./catalog";
 import { internalMutation, type QueryCtx } from "./_generated/server";
 import { AUTO_REFILL, EXTRA_ORG, PLAN, accountFor, billingOn, billingOwner, planActive, priceFor } from "./lib/billing";
 import { workspaceQuery } from "./lib/builders";
@@ -158,15 +159,18 @@ async function namesFor(ctx: Ctx, rows: UsageRow[], organizations: Doc<"workspac
   const people = new Set(rows.map((row) => row.startedBy).filter(Boolean) as string[]);
   const models = new Set(rows.map((row) => row.model).filter(Boolean));
 
+  // Agents and skills are named as the catalog names them today, so a renamed agent shows its new name on old work.
   const agent: Record<string, string> = {};
   for (const slug of agentSlugs) {
-    const row = await ctx.db.query("agents").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
-    agent[slug] = row?.name ?? pretty(slug);
+    const known = CATALOG_AGENT_NAMES[slug];
+    const row = known ? null : await ctx.db.query("agents").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
+    agent[slug] = known ?? row?.name ?? pretty(slug);
   }
   const skill: Record<string, string> = {};
   for (const slug of skillSlugs) {
-    const row = await ctx.db.query("skills").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
-    skill[slug] = row?.name ?? pretty(slug);
+    const known = CATALOG_SKILL_NAMES[slug];
+    const row = known ? null : await ctx.db.query("skills").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
+    skill[slug] = known ?? row?.name ?? pretty(slug);
   }
   const client: Record<string, string> = {};
   for (const id of clientIds) {
@@ -194,6 +198,9 @@ async function namesFor(ctx: Ctx, rows: UsageRow[], organizations: Doc<"workspac
   const organization: Record<string, string> = Object.fromEntries(organizations.map((row) => [row._id, row.name]));
   return { agent, skill, client, person, model, organization };
 }
+
+const CATALOG_AGENT_NAMES: Record<string, string> = Object.fromEntries(CATALOG.map((row) => [row.slug, row.name]));
+const CATALOG_SKILL_NAMES: Record<string, string> = Object.fromEntries(CATALOG.flatMap((row) => row.skills.map((skill) => [skill.slug, skill.name])));
 
 function pretty(slug: string) {
   const words = slug.replace(/[-_]+/g, " ").trim();
@@ -263,6 +270,8 @@ export const overview = workspaceQuery({
       planName: PLAN.name,
       balance: mirror?.balanceCents ?? null,
       includedThisMonth: included,
+      /** What the month's credits are made of: the plan's, and those each extra organization adds. */
+      includedParts: included > 0 ? { plan: PLAN.includedCents, extraOrganizations: extra, perOrganization: EXTRA_ORG.includedCents } : null,
       usedThisMonth,
       packs: access === "summary" ? null : (mirror?.packsCents ?? null),
       resetAt,
@@ -324,12 +333,14 @@ export const overview = workspaceQuery({
 
 /** The caps that bound spending here, in credits: per skill per run and per day, the approval limit, refill and chat caps. */
 async function limitsFor(ctx: Ctx) {
-  const skills = await ctx.db.query("skills").withIndex("by_sort").take(100);
   const perSkill = [];
-  for (const skill of skills) {
-    if (skill.status !== "available") continue;
-    const caps = await loadCaps(ctx, ctx.workspaceId, skill.agentSlug, skill.slug);
-    perSkill.push({ skillSlug: skill.slug, agentSlug: skill.agentSlug, label: skill.name, perRun: priceFor(caps.maxCostCentsPerRun), perDay: priceFor(caps.maxCostCentsPerDay) });
+  for (const agent of CATALOG) {
+    if (agent.status !== "live") continue;
+    for (const skill of agent.skills) {
+      if (skill.status !== "available") continue;
+      const caps = await loadCaps(ctx, ctx.workspaceId, agent.slug, skill.slug);
+      perSkill.push({ skillSlug: skill.slug, agentSlug: agent.slug, label: skill.name, perRun: priceFor(caps.maxCostCentsPerRun), perDay: priceFor(caps.maxCostCentsPerDay) });
+    }
   }
   return {
     perSkill,

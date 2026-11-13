@@ -18,8 +18,11 @@ export const PLAN_ID = () => process.env.AUTUMN_PLAN_ID || "growth";
 export const TOPUP_ID = () => process.env.AUTUMN_TOPUP_ID || "topup";
 export const EXTRA_ORG_ID = () => process.env.AUTUMN_EXTRA_ORG_ID || "extra_org";
 
-/** The owner's choices: $179 a month with $150 of credits, packs of $10, $25 or $50, refill $10 under $2. */
-export const PLAN = { name: "Growth", priceCents: 17900, includedCents: 15000 } as const;
+/**
+ * The owner's choices: $179 a month with $150 of credits, packs of $10, $25 or $50, refill $10 under $2.
+ * Its name is the one the pricing page sells (src/lib/marketing/pricing.ts); Autumn still knows it by PLAN_ID.
+ */
+export const PLAN = { name: "Private Access", priceCents: 17900, includedCents: 15000 } as const;
 /** Each organization after the first: $99 a month, and $50 more credits in the account's shared balance. */
 export const EXTRA_ORG = { priceCents: 9900, includedCents: 5000 } as const;
 export const TOPUP_PACKS_CENTS = [1000, 2500, 5000] as const;
@@ -64,7 +67,7 @@ export function extraUnitsFrom(subscriptions: { planId?: string; status?: string
   return quantity >= EXTRA_ORG.includedCents ? Math.round(quantity / EXTRA_ORG.includedCents) : Math.max(1, quantity);
 }
 
-/** The Growth plan is paid for: Autumn lists it and has not ended it. */
+/** The plan is paid for: Autumn lists it and has not ended it. */
 export function planActive(account: { planId?: string | null; planStatus?: string | null } | null | undefined): boolean {
   if (!account?.planId || account.planId !== PLAN_ID()) return false;
   return !["canceled", "cancelled", "expired", "incomplete", "incomplete_expired", "unpaid"].includes(account.planStatus ?? "");

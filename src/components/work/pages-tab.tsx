@@ -209,6 +209,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, m
         eyebrow="Landing Page Teardown"
         title="Pages"
         promise="Read landing pages in your industry section by section: which objections each one answers, in what order, what they share, and what yours lacks."
+        working={tab.running.length > 0}
         action={
           editor && !form ? (
             <Button type="button" onClick={() => setForm(true)}>

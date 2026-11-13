@@ -379,6 +379,7 @@ export function OffersTabView(props: OffersTabProps) {
       eyebrow="Strategist · Offer Intelligence"
       title="Offers"
       promise="Build your offer step by step, keep every version, and set it beside what competitors lead with."
+      working={tab.running.length > 0}
       action={
         <>
           {props.card ? <ViewSwitch view={view} onChange={setView} /> : null}

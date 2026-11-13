@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 
+import { publicPageMetadata } from "@/lib/seo";
+
 import { MarketingShell } from "@/components/marketing/chrome";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import { marketingHeroTitle, marketingSubhead } from "@/lib/marketing/ui";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "VistrialBot",
   description: "What VistrialBot is, which pages it reads, and how to keep it off a site.",
-  alternates: { canonical: "/bot" },
-  robots: { index: true, follow: true },
-};
+  path: "/bot",
+});
 
 /** The page VistrialBot's user agent points to, so a site owner who sees it in their logs can find out what it is. */
 export default function BotPage() {

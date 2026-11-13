@@ -613,6 +613,7 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
         eyebrow="Creative"
         title="Your own version of an ad that works"
         promise="Pick a brand and a reference ad or an offer. You get a brief, four copy variations to test, a script and captions, checked and waiting for your approval."
+        working={tab.running.length > 0}
         action={
           editor && !form ? (
             <Button size="sm" onClick={() => setForm(true)}>

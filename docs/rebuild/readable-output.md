@@ -18,10 +18,10 @@ Measured on the dev stories, at the fixture each story ships with.
 
 | Screen | Height at 1280 | Height at 390 | What a person meets first |
 |---|---|---|---|
-| Pages (landing page teardown) | 5,103 px, 6.4 screens | 7,563 px, 9 screens | The standing limit, one summary sentence, then eight boxes of prose |
-| Offers (offer analysis) | 2,804 px | 5,266 px | The offer card; the analysis starts 1.5 screens down |
-| Diagnostics | 2,046 px | 4,520 px | "Your data", then the constraint |
-| Briefing | 2,870 px | 3,755 px | Eleven posts of the same weight |
+| Pages (landing page teardown) | 5,123 px, 6.4 screens | 7,619 px, 9 screens | The standing limit, one summary sentence, then eight boxes of prose |
+| Offers (offer analysis) | 2,824 px | 5,356 px | The offer card; the analysis starts 1.5 screens down |
+| Diagnostics | 2,046 px | 4,540 px | "Your data", then the constraint |
+| Briefing | 2,870 px | 3,757 px | Eleven posts of the same weight |
 | Tasks | 1,748 px | 1,841 px | Cards whose reason is a paragraph |
 | Research | 807 px | 1,838 px | A list of reports; the report itself is a PDF or the asset page |
 

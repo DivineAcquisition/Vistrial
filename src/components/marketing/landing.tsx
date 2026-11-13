@@ -8,14 +8,16 @@ import { AgentFlow } from "@/components/marketing/agentic-visuals";
 import { LandingFaq } from "@/components/marketing/faq";
 import { PhilosophySection } from "@/components/marketing/philosophy";
 import {
+  DoctrineFlow,
   EvidenceReport,
   PainList,
   ResearchStudioHero,
   ScatteredScene,
   SectionEyebrow,
+  SkillMap,
   WorkforceMap,
 } from "@/components/marketing/growth-visuals";
-import { LoopDemo, RunTimeline, SkillPlans } from "@/components/marketing/agentic-sections";
+import { LoopDemo } from "@/components/marketing/agentic-sections";
 import { GuardedRun } from "@/components/marketing/guarded-run";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { IndustrySwitcher } from "@/components/marketing/saas-blocks";
@@ -161,27 +163,23 @@ export function LandingPage() {
 
       {SECTIONS.how ? (
         <Section id={HOW.id} headline={HOW.headline} lead={HOW.lead}>
-          <RunTimeline />
-          <div className="mt-14">
-            <LoopDemo />
-          </div>
-          {/* The same loop on two real screens: picking a change, then what was measured. */}
-          <div className="mt-12">
-            <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_SCREENS.loopTitle}</h3>
-            <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
-              {picturesFor("loop").map((picture) => (
-                <ProductPicture key={picture.id} picture={picture} crop="max-h-[24rem]" />
-              ))}
-            </div>
-          </div>
+          <DoctrineFlow />
         </Section>
       ) : null}
 
       {SECTIONS.growthArchitect ? (
         <Section id={GROWTH_ARCHITECT.id} eyebrow={GROWTH_ARCHITECT.eyebrow} headline={GROWTH_ARCHITECT.headline} lead={GROWTH_ARCHITECT.lead}>
-          <SkillPlans />
+          <SkillMap />
+        </Section>
+      ) : null}
+
+      {/* The app itself: Tasks, the Briefing, Home and clients, one real screen after another. */}
+      {SECTIONS.growthArchitect ? (
+        <Section id={APP_SCREENS.id} eyebrow={APP_SCREENS.eyebrow} headline={APP_SCREENS.headline} lead={APP_SCREENS.lead}>
+          <AppTour pictures={picturesFor("app")} />
+
           {/* What three of the skills hand back, as real screens. */}
-          <div className="mt-12">
+          <div className="mt-14">
             <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_SCREENS.skillsTitle}</h3>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{APP_SCREENS.skillsLead}</p>
             <div className="mt-5 grid gap-5 lg:grid-cols-2">
@@ -196,13 +194,19 @@ export function LandingPage() {
               ))}
             </div>
           </div>
-        </Section>
-      ) : null}
 
-      {/* The app itself: Tasks, the Briefing, Home and clients, one real screen after another. */}
-      {SECTIONS.growthArchitect ? (
-        <Section id={APP_SCREENS.id} eyebrow={APP_SCREENS.eyebrow} headline={APP_SCREENS.headline} lead={APP_SCREENS.lead}>
-          <AppTour pictures={picturesFor("app")} />
+          {/* Then the loop: one change followed from proposed to measured, and the two screens it happens on. */}
+          <div className="mt-14">
+            <LoopDemo />
+            <div className="mt-8">
+              <h3 className="font-heading text-xl tracking-tight text-strong sm:text-2xl">{APP_SCREENS.loopTitle}</h3>
+              <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
+                {picturesFor("loop").map((picture) => (
+                  <ProductPicture key={picture.id} picture={picture} crop="max-h-[24rem]" />
+                ))}
+              </div>
+            </div>
+          </div>
         </Section>
       ) : null}
 

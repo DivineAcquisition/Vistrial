@@ -270,9 +270,58 @@ next" at the foot of the result; on a screen it is held to the bottom edge while
 New model words: an optional verdict for each page and a headline for each section (see
 `landing-page-teardown.md`, "At-a-glance lines"). Everything else in the top layers is computed in code.
 
+## Research report, offer analysis and growth diagnosis (part 3)
+
+No skill, schema or saved shape changed in this part. Each result already has a summary of its own, so the
+answer layer uses those words and code adds only counts and labels.
+
+**Research report** (the report page, `/app/assets/[id]`; story `/dev/asset-viewer`). Above the full report:
+the report's own first paragraph, the weakest label among its claims, counts (opportunities, claims,
+distinct sources cited), how many claims carry each label, each opportunity as a short card (title,
+evidence, proposed action; "why" and "how to tell" one step away), an outline that links to each section
+with a count of what is in it, and the first proposed action as "what to do next". All of it is read back
+out of the report's Markdown and its evidence rows (`reportGlance`); the full report and the claims list
+are below, unchanged, and print as before. A claim with no source shows as a red chip in the answer.
+
+A "Not enough data" line makes no claim, so it is counted beside the summary but does not set the
+summary's label (`weakestClaim`). When every line is "Not enough data", the summary is too.
+
+**Offer analysis** (Offers tab; story `/dev/offers-tab?state=full`). The analysis's own summary with the
+weakest label among its gaps, risks and changes, and counts: competitors compared, how many of the two
+compared fields (price, guarantee) a competitor states and the offer does not, gaps, risks, changes to
+test. In the table, the amber fill that marked such a field by colour alone is now a chip with an icon and
+the words "A competitor states this". Gaps, risks and each change carry an evidence label with its icon;
+"how to tell" and the evidence sentence are one step away; the first change nobody is trying is held as
+"what to do next".
+
+**Growth diagnosis** (Diagnostics tab; story `/dev/diagnostics-tab?state=full`). "Where growth stalls" now
+comes before the data checklist and leads with the stage and its reason, labelled by the rule the skill
+saves its evidence with (Your data when figures stand behind the stage, otherwise Not enough data), the
+stage's own figures, steps under way, and steps with no figures behind them. Findings, which the tab did
+not show before, are one step away with their figures. Each roadmap step carries its label (Inference when
+it cites figures, Not enough data when it cites none), and the first step nobody is trying, Fix before
+Build before Scale, is "what to do next". The two figures that sat above the roadmap moved into the answer.
+
+| Indicator | Computed from |
+|---|---|
+| Report summary, objective, opportunities, outline | the report's Markdown body, as written by `renderReport` |
+| Claims, sources cited, claims by label, claims with no source | the report's evidence rows |
+| Competitors compared; fields a competitor states and you do not | `competitors.length`; `competitors[].gaps.price / .guarantee` |
+| Gaps, risks, changes to test | `gapsAndRisks[].kind`, `changes.length` |
+| Stall stage label | `hasData`, `stage`, `stageFigures` |
+| Roadmap step label; steps without figures | `roadmap[].figures.length` |
+| Steps under way; what to do next | "We'll try this" decisions against `roadmap[].index` or `changes[].index` |
+
+Pictures: `report-before-*`, `report-after-*`, `offers-before-*`, `offers-after-*`, `diagnostics-before-*`,
+`diagnostics-after-*` in `docs/screenshots/readable-output/`.
+
+Not done in this part: the Research tab's list of reports is unchanged (its rows carry a title and a
+status, nothing to summarise without a new query); the PDF is unchanged; the Canvas views of Offers and
+Diagnostics are unchanged apart from the shared chips.
+
 ## Not done, not tested
 
-- Only the Pages tab uses the blocks so far.
+- The Pages tab, the report page, the offer analysis and the diagnosis use the blocks. Briefing and Tasks do not yet.
 - No real model was run. The new verdict and headline fields were exercised with the scripted model in
   `convex/landingTeardown.test.ts`; what a real model writes in them has not been seen.
 - Not tested with a screen reader by a person. The markup is a list, a table with row and column headers,

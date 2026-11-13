@@ -100,6 +100,19 @@ const NOTES: Record<string, string> = {
   finalCta: "It restates the outcome and repeats the scarcity line, but asks for an application where every other button says Book a call.",
 };
 
+const HEADLINES: Partial<Record<SectionKey, string>> = {
+  nav: "One button, no menu",
+  hero: "Names who it is for, then the outcome",
+  results: "Three numbered results with named quotes",
+  problem: "Three recognisable pains, each with a cost",
+  solution: "One fix per pain, in the same order",
+  offer: "Deliverables, an effort line and a stated price",
+  compare: "Matched rows, with and without",
+  process: "Four steps; the last has no time on it",
+  faq: "Covers price, timing and fit; no guarantee",
+  finalCta: "Restates the outcome but asks for an application",
+};
+
 const SHARED: Record<string, { statement: string; why: string }> = {
   nav: { statement: "Both keep the header to a logo and one button that says Book a call.", why: "With nothing else to tap, a visitor from an ad may stay on the one path the page is built for." },
   hero: { statement: "Both open with a qualifier that names coaches and a revenue threshold, above an outcome headline.", why: "A coach under the threshold leaves early, and one above it may read on feeling the page is for them." },
@@ -118,6 +131,10 @@ type Plan = {
   inventQuote?: boolean;
   /** What the search step returns. */
   found?: string[];
+  /** The page reading is in the shape from before verdicts and section headlines existed. */
+  oldShape?: boolean;
+  /** The page reading's verdict claims a result. */
+  causalVerdict?: boolean;
 };
 
 /** A scripted model that reads the numbered page it is given and answers like a real one would. */
@@ -139,10 +156,11 @@ function script(plan: Plan = {}) {
         if (job) starts.push({ job, from: job === "hero" ? line.index - 1 : line.index });
       }
       const last = lines[lines.length - 1]?.index ?? 0;
-      const sections = starts.map((row, i) => ({ job: row.job, from: row.from, to: i + 1 < starts.length ? starts[i + 1].from - 1 : last, does: row.job === "faq" || row.job === "finalCta" || row.job === "process" ? "partly" : "yes", note: NOTES[row.job] }));
+      const sections = starts.map((row, i) => ({ job: row.job, from: row.from, to: i + 1 < starts.length ? starts[i + 1].from - 1 : last, does: row.job === "faq" || row.job === "finalCta" || row.job === "process" ? "partly" : "yes", headline: plan.oldShape ? undefined : HEADLINES[row.job], note: NOTES[row.job] }));
       const has = (text: string) => input.includes(text);
       const analysis: PageAnalysis = {
         goal: "Get a qualified coach to book a call.",
+        ...(plan.oldShape ? {} : { verdict: plan.causalVerdict ? "This page is proven and will increase bookings." : has("41 booked calls in 30 days") ? "Qualifies its reader, proves results before explaining how, and states a price. The last button changes what it asks for." : "Qualifies its reader and states a price, but shows no proof and leaves the remaining questions unanswered." }),
         sections: sections as PageAnalysis["sections"],
         qualifier: { quote: "For coaches and consultants doing $10K+ a month", threshold: "$10K+ a month" },
         headline: { quote: "Fill your calendar with sales calls from people who can afford you", statesOutcome: true },
@@ -288,6 +306,42 @@ describe("what code counts on a page", () => {
     expect(cleaned.analysis.faqTopics).toEqual(["price"]);
     expect(cleaned.droppedQuotes).toBe(3);
     expect(orderOf(cleaned.analysis)).toEqual({ order: ["hero", "offer"], skipped: ["nav", "problem", "solution", "compare", "process", "roles", "faq", "finalCta"] });
+  });
+
+  it("refuses an at-a-glance line that claims a result, and keeps a plain one", () => {
+    const base = { qualifier: { quote: "", threshold: "" }, headline: { quote: "", statesOutcome: false }, proof: { kind: "none", named: false, quotes: [], note: "" }, pains: [], solutions: [], offer: { deliverables: [], effortLine: "", price: "", delivery: "" }, faqTopics: [], scarcity: "" };
+    const raw = readAnalysis({
+      ...base,
+      goal: "Book a call",
+      verdict: "This page is proven and will increase bookings.",
+      sections: [
+        { job: "hero", from: 2, to: 6, does: "yes", headline: "Names who it is for, then the outcome", note: "Clear." },
+        { job: "offer", from: 10, to: 12, does: "partly", headline: "The best-performing offer box in the industry", note: "Boxed." },
+      ],
+    })!;
+    const cleaned = sanitise(raw, snapshot);
+    expect(cleaned.analysis.verdict).toBe("");
+    expect(cleaned.analysis.sections.map((row) => row.headline)).toEqual(["Names who it is for, then the outcome", ""]);
+    expect(cleaned.droppedLines).toBe(2);
+
+    const plain = sanitise(readAnalysis({ ...base, goal: "Book a call", verdict: "Qualifies its reader and states a price, but shows no proof.", sections: [] })!, snapshot);
+    expect(plain.analysis.verdict).toBe("Qualifies its reader and states a price, but shows no proof.");
+    expect(plain.droppedLines).toBe(0);
+  });
+
+  it("reads a page saved before verdicts and section headlines existed", () => {
+    const old = readAnalysis({ goal: "Book a call", sections: [{ job: "hero", from: 2, to: 6, does: "yes", note: "Clear." }], qualifier: {}, headline: {}, proof: {}, pains: [], solutions: [], offer: {}, faqTopics: [], scarcity: "" })!;
+    expect(old.verdict).toBe("");
+    expect(old.sections[0].headline).toBe("");
+    const cleaned = sanitise(old, snapshot);
+    expect(cleaned.droppedLines).toBe(0);
+    expect(cleaned.analysis.sections).toHaveLength(1);
+  });
+
+  it("caps the at-a-glance lines", () => {
+    const long = readAnalysis({ goal: "", verdict: "word ".repeat(200), sections: [{ job: "hero", from: 0, to: 1, does: "yes", headline: "word ".repeat(60), note: "" }] })!;
+    expect(long.verdict!.length).toBeLessThanOrEqual(280);
+    expect(long.sections[0].headline!.length).toBeLessThanOrEqual(90);
   });
 
   it("counts shared sections across the other pages only", () => {
@@ -483,6 +537,8 @@ describe("landing page teardown", () => {
     expect(page.qualifier).toEqual({ quote: "For coaches and consultants doing $10K+ a month", threshold: "$10K+ a month" });
     expect(page.pains).toHaveLength(3);
     expect(page.solutions).toHaveLength(3);
+    expect(page.verdict).toBe("Qualifies its reader and states a price, but shows no proof and leaves the remaining questions unanswered.");
+    expect(page.sections[1]).toMatchObject({ job: "hero", headline: "Names who it is for, then the outcome" });
     expect(page.faq.filter((row) => row.covered)).toEqual([]);
     expect(page.screenshots).toEqual({ desktop: null, phone: null });
     expect(await message(a.owner.query(api.landingTeardown.page, { workspaceId: a.workspaceId, assetId, pageId: "p9" }))).toBe(NOT_FOUND);

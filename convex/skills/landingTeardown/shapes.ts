@@ -28,6 +28,9 @@ export const MAX_SEARCHES = 3;
 export const MAX_PAGE_CHARS = 24_000;
 export const MAX_INDUSTRY = 80;
 export const MAX_NOTE = 600;
+/** The at-a-glance lines a page reading may carry. Short on purpose: they are read before anything else. */
+export const MAX_VERDICT = 280;
+export const MAX_SECTION_HEADLINE = 90;
 
 /** The standing limit on every teardown, written in code so it is always there, in these words. */
 export const HONEST_LIMIT = "Vistrial reads the page, not its results. A pattern several running pages share is something they do, not proof of why they convert. Only your own results can show what works for you.";
@@ -42,12 +45,13 @@ export const PAGE_SCHEMA = {
   type: "object",
   properties: {
     goal: str,
+    verdict: str,
     sections: {
       type: "array",
       items: {
         type: "object",
-        properties: { job: { type: "string", enum: [...SECTION_KEYS, "other"] }, from: int, to: int, does: { type: "string", enum: ["yes", "partly", "no"] }, note: str },
-        required: ["job", "from", "to", "does", "note"],
+        properties: { job: { type: "string", enum: [...SECTION_KEYS, "other"] }, from: int, to: int, does: { type: "string", enum: ["yes", "partly", "no"] }, headline: str, note: str },
+        required: ["job", "from", "to", "does", "headline", "note"],
         additionalProperties: false,
       },
     },
@@ -65,7 +69,7 @@ export const PAGE_SCHEMA = {
     faqTopics: { type: "array", items: { type: "string", enum: [...FAQ_TOPICS] } },
     scarcity: str,
   },
-  required: ["goal", "sections", "qualifier", "headline", "proof", "pains", "solutions", "offer", "faqTopics", "scarcity"],
+  required: ["goal", "verdict", "sections", "qualifier", "headline", "proof", "pains", "solutions", "offer", "faqTopics", "scarcity"],
   additionalProperties: false,
 } as const;
 
@@ -130,10 +134,17 @@ export const DISCOVER_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-export type SectionRead = { job: SectionKey | "other"; from: number; to: number; does: "yes" | "partly" | "no"; note: string };
+/**
+ * `headline` is the section in a dozen words, for the at-a-glance layer. Teardowns saved before it existed
+ * have none, and one that claims a result is blanked when the reading is applied; the screen then falls back
+ * to the objection the section answers.
+ */
+export type SectionRead = { job: SectionKey | "other"; from: number; to: number; does: "yes" | "partly" | "no"; note: string; headline?: string };
 
 export type PageAnalysis = {
   goal: string;
+  /** The page in a sentence or two. Optional for the same reasons as a section's headline; the screen falls back to a sentence of counts written in code. */
+  verdict?: string;
   sections: SectionRead[];
   qualifier: { quote: string; threshold: string };
   headline: { quote: string; statesOutcome: boolean };
@@ -192,6 +203,8 @@ export type TeardownPage = {
   skipped: SectionKey[];
   /** Quotes the model gave that are not on the page. They were removed. */
   droppedQuotes: number;
+  /** At-a-glance lines (the verdict, a section headline) removed because they claimed a result. Absent on older teardowns. */
+  droppedLines?: number;
 };
 
 export type UnreadPage = { url: string; own: boolean; reasonCode: string; reason: string };
@@ -262,13 +275,14 @@ export function readAnalysis(raw: unknown): PageAnalysis | null {
   const headline = object(value.headline);
   return {
     goal: text(value.goal, 300),
+    verdict: text(value.verdict, MAX_VERDICT),
     sections: value.sections.slice(0, 30).flatMap((row): SectionRead[] => {
       const section = object(row);
       const job = isSectionKey(section.job) ? section.job : section.job === "other" ? "other" : null;
       const from = Number(section.from);
       const to = Number(section.to);
       if (!job || !Number.isInteger(from) || !Number.isInteger(to)) return [];
-      return [{ job, from, to, does: oneOf(["yes", "partly", "no"] as const, section.does) ?? "partly", note: text(section.note, 400) }];
+      return [{ job, from, to, does: oneOf(["yes", "partly", "no"] as const, section.does) ?? "partly", note: text(section.note, 400), headline: text(section.headline, MAX_SECTION_HEADLINE) }];
     }),
     qualifier: { quote: text(qualifier.quote, 300), threshold: text(qualifier.threshold, 120) },
     headline: { quote: text(headline.quote, 300), statesOutcome: headline.statesOutcome === true },

@@ -5,6 +5,7 @@
  * ranges that exist, and quotes that are really on the page.
  */
 import { snapshotText, type PageBlock, type PageSnapshot } from "../../lib/pageReader/extract";
+import { causalPhrase } from "./checks";
 import { FRAMEWORK, SECTION_KEYS, WEAK_CTA, type SectionKey } from "./framework";
 import { MAX_PAGE_CHARS, type PageAnalysis, type PageFacts, type PatternRow, type TeardownPage } from "./shapes";
 
@@ -81,8 +82,12 @@ export function flatPage(snapshot: PageSnapshot) {
 /**
  * A model's reading of a page with everything unverifiable removed: sections outside the page or out of
  * order are dropped, and any quote that is not on the page is blanked. Returns how many quotes went.
+ *
+ * The at-a-glance lines (the page's verdict and each section's headline) are the first thing a person reads,
+ * so they pass the same refusal as the findings: a line that claims a cause or a result is blanked, and the
+ * screen falls back to words written in code. Returns how many lines went.
  */
-export function sanitise(analysis: PageAnalysis, snapshot: PageSnapshot): { analysis: PageAnalysis; droppedQuotes: number } {
+export function sanitise(analysis: PageAnalysis, snapshot: PageSnapshot): { analysis: PageAnalysis; droppedQuotes: number; droppedLines: number } {
   const pageText = flatPage(snapshot);
   let dropped = 0;
   const keep = (quote: string) => {
@@ -92,6 +97,13 @@ export function sanitise(analysis: PageAnalysis, snapshot: PageSnapshot): { anal
     return "";
   };
   const keepAll = (quotes: string[]) => quotes.map(keep).filter(Boolean);
+  let droppedLines = 0;
+  const plain = (line: string | undefined) => {
+    if (!line) return "";
+    if (!causalPhrase(line)) return line;
+    droppedLines += 1;
+    return "";
+  };
   const last = snapshot.blocks.length - 1;
   let floor = 0;
   const sections = [...analysis.sections]
@@ -100,10 +112,11 @@ export function sanitise(analysis: PageAnalysis, snapshot: PageSnapshot): { anal
       if (section.from < floor || section.from > last || section.to < section.from) return [];
       const to = Math.min(section.to, last);
       floor = to + 1;
-      return [{ ...section, to }];
+      return [{ ...section, to, headline: plain(section.headline) }];
     });
   const cleaned: PageAnalysis = {
       ...analysis,
+      verdict: plain(analysis.verdict),
       sections,
       qualifier: { quote: keep(analysis.qualifier.quote), threshold: analysis.qualifier.quote && onPage(analysis.qualifier.quote, pageText) ? analysis.qualifier.threshold : "" },
       headline: { quote: keep(analysis.headline.quote), statesOutcome: analysis.headline.statesOutcome },
@@ -113,7 +126,7 @@ export function sanitise(analysis: PageAnalysis, snapshot: PageSnapshot): { anal
       offer: { deliverables: keepAll(analysis.offer.deliverables), effortLine: keep(analysis.offer.effortLine), price: keep(analysis.offer.price), delivery: keep(analysis.offer.delivery) },
       scarcity: keep(analysis.scarcity),
   };
-  return { analysis: cleaned, droppedQuotes: dropped };
+  return { analysis: cleaned, droppedQuotes: dropped, droppedLines };
 }
 
 /** The framework jobs a page does, in the order they first appear, and the expected ones it has no section for. */

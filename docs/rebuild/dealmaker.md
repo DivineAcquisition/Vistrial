@@ -237,6 +237,25 @@ day, and `SEND` typed per message. Dealmaker only ever *proposes* a message thro
 off (or the CRM has no messaging capability), the same draft is shown with **Copy** instead (owner,
 2026-11-14).
 
+### 3.6A What step 3 built
+
+`convex/lib/crm/`: `types.ts` (the shared model), `adapter.ts` (the `CrmAdapter` interface and the one
+registry, HighLevel only), `highlevel.ts` (HighLevel's adapter, wrapping the merged `lib/crmActions.ts`
+rules unchanged), `read.ts` (`crmFor`, the read view) and `act.ts` (`proposeCrmAction`, the act door, with
+`doItYourself` for the fallback). `crmActions.ts` exports `proposeAgentAction`, which `proposeForAgent` now
+calls. A test fails if any file under `convex/skills/` imports HighLevel, the action rules or an adapter.
+
+Two choices differ from the sketch above, to keep this step free of schema changes:
+
+- **Appointments are not a table of their own.** HighLevel's sync already saves them as activities of kind
+  `appointment`; the read view returns them through `appointments()` and leaves them out of `activities()`.
+  A `crmAppointments` table can come with the HubSpot adapter if a CRM needs more fields.
+- **`provider` stays `"highlevel"` in the schema.** The shared types already name HubSpot and Salesforce; the
+  schema widens in the pull request that adds the first of them, together with its connection page.
+
+Reading stays in each CRM's own module (sign-in, paging and rate limits differ); what every CRM writes is
+the shared model.
+
 ### 3.7 Other sources, and what each can and cannot give
 
 | Source | Today | What Dealmaker uses it for | Limit, said on screen |

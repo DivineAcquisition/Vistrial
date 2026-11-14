@@ -29,7 +29,7 @@ export type BriefInput = {
   transcripts: { id: string; title: string; callDate: string | null; text: string }[];
   handoff: { text: string; by: string } | null;
   about: { text: string; by: string } | null;
-  playbook: { id: string; folder: string; kind: string; title: string; body: string; basis: string }[];
+  playbook: { id: string; folder: string; kind: string; title: string; body: string; basis: string; heard?: number }[];
   /** The lead's business site, as a person gave it, else the domain of a work email. */
   site: { url: string; domain: string; from: "given" | "email" } | null;
   now: number;
@@ -65,9 +65,10 @@ const PLAYBOOK_ORDER: Record<string, number> = { package: 0, price: 1, guarantee
 function playbookRefs(items: BriefInput["playbook"]): PlaybookRef[] {
   return items
     .filter((row) => Object.hasOwn(PLAYBOOK_ORDER, row.kind))
-    .sort((a, b) => PLAYBOOK_ORDER[a.kind] - PLAYBOOK_ORDER[b.kind])
+    // Objections most heard on the business's calls first.
+    .sort((a, b) => PLAYBOOK_ORDER[a.kind] - PLAYBOOK_ORDER[b.kind] || (b.heard ?? 0) - (a.heard ?? 0))
     .slice(0, BRIEF_LIMITS.playbookItems)
-    .map((row, i) => ({ id: `p${i + 1}`, folder: row.folder, kind: row.kind, title: row.title, body: row.body.slice(0, 600), basis: row.basis }));
+    .map((row, i) => ({ id: `p${i + 1}`, folder: row.folder, kind: row.kind, title: row.title, body: row.body.slice(0, 600), basis: row.basis, ...(row.heard ? { heard: row.heard } : {}) }));
 }
 
 function cut(value: string, max: number) {

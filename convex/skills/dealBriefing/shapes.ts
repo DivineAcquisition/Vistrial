@@ -116,6 +116,8 @@ export type PlaybookRef = {
   body: string;
   /** The item's own evidence label (a starter objection is untested until heard on a call). */
   basis: string;
+  /** For an objection: the calls it was heard on, counted in code by the Objection Playbook. */
+  heard?: number;
 };
 
 /** What the read step saw and worked out, saved as its record. The other steps read it from there. */

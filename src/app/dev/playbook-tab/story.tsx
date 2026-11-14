@@ -106,7 +106,27 @@ function objections(state: string): ObjectionData {
           { id: "i20" as Id<"playbookItems">, title: STARTER_OBJECTIONS[2].title, tag: STARTER_OBJECTIONS[2].tag, starter: true },
         ];
   const owner = state !== "viewer";
-  return { ...objectionPlaybook({ items, calls: heard(state), showLeads: owner, showReps: owner }), starterMissing: state === "empty" ? STARTER_OBJECTIONS.length : 6, canEdit: owner, isOwner: owner };
+  const figures = objectionPlaybook({ items, calls: heard(state), showLeads: owner, showReps: owner });
+  const written = figures.enough;
+  const approved = state !== "tracksWaiting";
+  const TRACKS: Record<string, { text: string; offer: string[] }> = {
+    [MONEY]: { text: "That's fair to ask. Harbor Dental booked 41 consultations in 60 days on the Growth Sprint. If one extra patient a month covers the fee, is it the amount or the timing that worries you?", offer: ["Harbor Dental: 41 booked consultations in 60 days", "Growth Sprint: $4,500 a month"] },
+    [TRUST]: { text: "That makes sense after a bad run. You get the same monthly report Harbor Dental gets, and you can see last month's before you decide.", offer: ["Harbor Dental: 41 booked consultations in 60 days"] },
+  };
+  return {
+    ...figures,
+    rows: figures.rows.map((row) => ({ ...row, track: written && TRACKS[row.itemId] ? { ...TRACKS[row.itemId], approved } : null })),
+    tracksState: written ? ("ready" as const) : null,
+    tracksAt: written ? AT - 2 * DAY : null,
+    tracksAssetId: null,
+    canAskTracks: owner && written,
+    tracksBlocked: written ? null : `Talk tracks need at least 5 calls reviewed or noted. You have ${figures.calls}.`,
+    maxCredits: 450,
+    weekly: { on: state === "tracksWaiting", canChange: owner },
+    starterMissing: state === "empty" ? STARTER_OBJECTIONS.length : 6,
+    canEdit: owner,
+    isOwner: owner,
+  };
 }
 
 export function PlaybookTabStory({ state, folder, theme }: { state: string; folder: string; theme: string }) {
@@ -146,7 +166,7 @@ export function PlaybookTabStory({ state, folder, theme }: { state: string; fold
               }
         }
         editor={editor}
-        objections={{ data: objections(state), actions: { addStarter: noop, addHeard: noop } }}
+        objections={{ data: objections(state), actions: { addStarter: noop, addHeard: noop, requestTracks: noop, setWeekly: noop } }}
         initialFolder={open}
         actions={{ addItem: noop, updateItem: noop, archiveItem: noop, addLesson: noop, decideLesson: noop, editLesson: noop, removeLesson: noop, study: noop }}
       />

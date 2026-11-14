@@ -9,12 +9,13 @@ import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { AnalyticsSnapshot } from "../../../convex/lib/integrations/google/analytics";
+import { fmtMoney, type AdsSnapshot } from "../../../convex/lib/integrations/google/googleAds";
 import type { SearchRow, SearchSnapshot } from "../../../convex/lib/integrations/google/searchConsole";
 
 export type GoogleDataView = NonNullable<FunctionReturnType<typeof api.googleData.view>>;
 
 /** The Google data connections read here, with a chooser and totals on their cards. */
-export const GOOGLE_DATA = ["google_analytics", "search_console"];
+export const GOOGLE_DATA = ["google_analytics", "search_console", "google_ads"];
 
 const n = (value: number) => value.toLocaleString("en-US");
 
@@ -125,6 +126,39 @@ function SearchTotals({ data }: { data: SearchSnapshot }) {
   );
 }
 
+function AdsTotals({ data }: { data: AdsSnapshot }) {
+  if (!data.campaigns.length) return <p className="text-sm text-muted-foreground">No campaign activity in the last 30 days.</p>;
+  return (
+    <div className="grid gap-3">
+      <p className="text-xs text-muted-foreground">
+        {data.from} to {data.to}, as Google Ads reports it. {data.totals.campaigns} campaigns, {data.totals.active} running.
+        {data.truncated ? " More rows than Vistrial reads; these are the first." : ""}
+      </p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Figure label="Spend" value={fmtMoney(data.totals.spend, data.currency)} />
+        <Figure label="Clicks" value={n(data.totals.clicks)} />
+        <Figure label="Conversions" value={n(data.totals.conversions)} />
+        <Figure label="Conv. value" value={fmtMoney(data.totals.value, data.currency)} />
+      </div>
+      <div className="grid gap-1">
+        <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Campaigns by spend</h4>
+        <ul className="grid gap-0.5 text-sm">
+          {data.campaigns.slice(0, 5).map((row) => (
+            <li key={row.id} className="flex min-w-0 justify-between gap-3">
+              <span className="truncate text-foreground">
+                {row.name} <span className="text-muted-foreground">· {row.status}</span>
+              </span>
+              <span className="shrink-0 text-muted-foreground tabular-nums">
+                {fmtMoney(row.spend, data.currency)} · {n(row.conversions)} conv.
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 /** The chooser and the last totals for one Google data connection. */
 export function GoogleDataPanel({ provider, view, onChoose }: { provider: string; view: GoogleDataView; onChoose: (choiceId: string) => Promise<unknown> }) {
   const [pick, setPick] = useState(view.selected?.id ?? "");
@@ -175,6 +209,8 @@ export function GoogleDataPanel({ provider, view, onChoose }: { provider: string
         <AnalyticsTotals data={view.summary.data as AnalyticsSnapshot} />
       ) : view.summary && provider === "search_console" ? (
         <SearchTotals data={view.summary.data as SearchSnapshot} />
+      ) : view.summary && provider === "google_ads" ? (
+        <AdsTotals data={view.summary.data as AdsSnapshot} />
       ) : view.selected ? (
         <p className="text-muted-foreground">Reading the totals now.</p>
       ) : null}

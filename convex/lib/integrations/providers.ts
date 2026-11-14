@@ -107,7 +107,7 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     // No developer token: Google retired them on 2026-09-09; access follows the Cloud project.
     extraEnv: [],
     webhook: null,
-    stage: "designed",
+    stage: "connect",
   },
   google_analytics: {
     key: "google_analytics",

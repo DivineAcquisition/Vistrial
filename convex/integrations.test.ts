@@ -117,7 +117,7 @@ describe("connections: what screens read", () => {
     const result = await owner.query(api.integrations.list, { workspaceId });
     expect(result).toMatchObject({ canManage: true, canRefresh: true });
     const state = Object.fromEntries(result.providers.map((row) => [row.key, row.readiness]));
-    expect(state).toMatchObject({ google_calendar: "ready", google_ads: "not_built", google_analytics: "ready", search_console: "ready", calendly: "not_set_up" });
+    expect(state).toMatchObject({ google_calendar: "ready", google_ads: "ready", google_analytics: "ready", search_console: "ready", calendly: "not_set_up" });
     const text = JSON.stringify(result);
     expect(text).not.toContain("GOOGLE-APP-SECRET");
     expect(text).not.toContain("GOOGLE_OAUTH_CLIENT");

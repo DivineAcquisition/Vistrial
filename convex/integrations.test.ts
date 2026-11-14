@@ -147,7 +147,7 @@ describe("connections: sign-in", () => {
     await expect(viewer.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(member.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(stranger.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
-    await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "google_ads" })).rejects.toThrow(/cannot be connected yet/);
+    await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "business_profile" })).rejects.toThrow(/cannot be connected yet/);
     await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "nope" })).rejects.toThrow(/does not exist/);
   });
 

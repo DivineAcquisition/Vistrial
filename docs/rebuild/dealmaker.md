@@ -534,6 +534,21 @@ tests, lint, both typechecks and the build, never deploying Convex:
     (HighLevel `attachments`, a fresh link at send time), never a voicemail drop. The approver hears it in
     Connections before approving.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.
+    *15a, built:* the code part, no model and no credits (`convex/objectionPlaybook.ts`,
+    `convex/lib/dealmaker/objections.ts`, `src/components/work/objection-playbook.tsx`, shown in the Playbook's
+    Objections folder). A call review now names the Playbook objection it heard (`itemId`, checked in code against
+    the items it was shown). From the passing call reviews and the closer's notes (a noted call that was reviewed
+    counts once), each objection shows how many calls it was heard on, the buyer's own words (only quotes on the
+    lead's speaker line; a rep's line is not an objection, a line with no speaker is counted unquoted, notes are
+    counted unquoted), and what worked: answered against not answered, by whether the deal was later won, lost
+    or still open (the CRM's deal status, else how the closer said the call ended), with what our side said on
+    calls later won. Below 5 calls it says "Not enough data" and compares nothing. Per rep is the Owner's only;
+    leads' names show only to people who see every deal. "Add the starter set" files eight objections for
+    agencies, consultants, coaches and course sellers, each "Starter set: not yet heard on your calls" until a
+    call hears it; objections heard that the Playbook does not hold are listed with "Add to Objections" (filed as
+    from that call, with the buyer's words). Next, 15b: talk tracks written from the Offer folder (Untested
+    hypothesis until used), grouping what was heard, the weekly refresh, and feeding the brief's likely
+    objections.
 16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
 17. **Calendar tab.**
     *17, built:* `convex/dealCalendar.ts` (`week`), `convex/lib/dealmaker/calendar.ts`, the tab at

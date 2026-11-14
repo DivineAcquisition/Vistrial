@@ -37,7 +37,7 @@ export type Speaker = { name: string; words: number; share: number; questions: n
 /** What the review may quote: the call itself (the buyer's words), or the closer's notes and memo (their account). */
 export type ReviewSource = { id: string; type: "call" | "notes"; label: string; by?: string; text: string; cut: boolean };
 
-export type PlaybookRef = { id: string; folder: string; kind: string; stage: string | null; title: string; body: string; basis: string };
+export type PlaybookRef = { id: string; folder: string; kind: string; stage: string | null; title: string; body: string; basis: string; /** The item's own id, kept out of the prompt. */ itemId?: string };
 
 /** What the read step saw and worked out, saved as its record. */
 export type ReviewRecord = {
@@ -68,7 +68,7 @@ export const REVIEW_SCHEMA = {
     fit: { type: "array", items: { type: "object", properties: { field: { type: "string", enum: [...FIT_FIELDS] }, finding: str, quote: str, sourceId: str }, required: ["field", "finding", "quote", "sourceId"], additionalProperties: false } },
     objections: {
       type: "array",
-      items: { type: "object", properties: { objection: str, quote: str, sourceId: str, answered: { type: "boolean" }, answerQuote: str }, required: ["objection", "quote", "sourceId", "answered", "answerQuote"], additionalProperties: false },
+      items: { type: "object", properties: { objection: str, itemId: str, quote: str, sourceId: str, answered: { type: "boolean" }, answerQuote: str }, required: ["objection", "itemId", "quote", "sourceId", "answered", "answerQuote"], additionalProperties: false },
     },
     commitments: {
       type: "array",
@@ -85,7 +85,8 @@ export const REVIEW_SCHEMA = {
 };
 
 export type Fit = { field: FitField; finding: string; quote: string; sourceId: string };
-export type Objection = { objection: string; quote: string; sourceId: string; answered: boolean; answerQuote: string };
+/** `itemId` is the Playbook objection it is, by its id in the prompt ("p3"), or "". */
+export type Objection = { objection: string; itemId: string; quote: string; sourceId: string; answered: boolean; answerQuote: string };
 export type Commitment = { owner: "us" | "lead"; what: string; due: string; quote: string; sourceId: string };
 
 export type Review = {
@@ -128,7 +129,7 @@ export function readReview(value: unknown): Review | null {
     fit: rows(row.fit, FIT_FIELDS.length * 2)
       .filter((item) => (FIT_FIELDS as readonly unknown[]).includes(item.field))
       .map((item) => ({ field: item.field as FitField, finding: text(item.finding, 300), quote: text(item.quote, 400), sourceId: text(item.sourceId, 10) })),
-    objections: rows(row.objections, REVIEW_LIMITS.objections + 4).map((item) => ({ objection: text(item.objection, 300), quote: text(item.quote, 400), sourceId: text(item.sourceId, 10), answered: item.answered === true, answerQuote: text(item.answerQuote, 400) })),
+    objections: rows(row.objections, REVIEW_LIMITS.objections + 4).map((item) => ({ objection: text(item.objection, 300), itemId: text(item.itemId, 10), quote: text(item.quote, 400), sourceId: text(item.sourceId, 10), answered: item.answered === true, answerQuote: text(item.answerQuote, 400) })),
     commitments: rows(row.commitments, REVIEW_LIMITS.commitments + 4)
       .filter((item) => item.owner === "us" || item.owner === "lead")
       .map((item) => ({ owner: item.owner as "us" | "lead", what: text(item.what, 300), due: text(item.due, 20), quote: text(item.quote, 400), sourceId: text(item.sourceId, 10) })),

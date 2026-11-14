@@ -3,6 +3,7 @@
  * "said on the call" is decided here, in code: a field or an objection stands only when its quote is in its source.
  */
 
+import type { Id } from "../../_generated/dataModel";
 import type { ReviewView } from "../../lib/dealmaker/reviewView";
 import { quoted } from "../dealBriefing/checks";
 import { quoteSpeaker, speakerWords, type QuoteSpeaker } from "../../lib/dealmaker/speakers";
@@ -29,7 +30,11 @@ export function settled(review: Review, record: ReviewRecord) {
     const row = review.fit.find((item) => item.field === field && ok(item.quote, item.sourceId));
     return row ? { field, label: FIT_WORDS[field], said: true, finding: row.finding, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), sourceId: row.sourceId } : { field, label: FIT_WORDS[field], said: false, finding: "", quote: "" };
   });
-  const objections = review.objections.filter((row) => row.quote && ok(row.quote, row.sourceId)).map((row) => ({ text: row.objection, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), answered: row.answered && Boolean(call) && quoted(row.answerQuote, call!.text), answerQuote: row.answerQuote, sourceId: row.sourceId }));
+  // The Playbook objection it is, by the item's own id: only an objection item the review was shown.
+  const objectionItems = new Map(record.playbook.filter((row) => row.kind === "objection" && row.itemId).map((row) => [row.id, row.itemId!]));
+  const objections = review.objections
+    .filter((row) => row.quote && ok(row.quote, row.sourceId))
+    .map((row) => ({ text: row.objection, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), answered: row.answered && Boolean(call) && quoted(row.answerQuote, call!.text), answerQuote: row.answerQuote, sourceId: row.sourceId, ...(objectionItems.has(row.itemId) ? { itemId: objectionItems.get(row.itemId)! } : {}) }));
   const commitments = review.commitments
     .filter((row) => row.quote && row.what && ok(row.quote, row.sourceId))
     .map((row) => {
@@ -100,7 +105,7 @@ export function viewOf(review: Review, record: ReviewRecord, checksPassed: boole
     checksPassed,
     ...(record.talk ? { talk: record.talk } : {}),
     fit: parts.fit.map(({ field, label, said, finding, quote, ...rest }) => ({ field, label, said, finding, quote, ...("kind" in rest && rest.kind ? { kind: rest.kind } : {}) })),
-    objections: parts.objections.map(({ text, quote, kind, answered, answerQuote }) => ({ text, quote, kind, answered, answerQuote })),
+    objections: parts.objections.map(({ text, quote, kind, answered, answerQuote, itemId }) => ({ text, quote, kind, answered, answerQuote, ...(itemId ? { itemId: itemId as Id<"playbookItems"> } : {}) })),
     commitments: parts.commitments.map((row) => ({ owner: row.owner === "us" ? "We" : record.leadName, what: row.what, ...(row.due ? { due: row.due } : {}), quote: row.quote, kind: row.kind })),
     coverage: parts.coverage,
     updates,

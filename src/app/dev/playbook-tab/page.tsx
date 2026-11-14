@@ -4,7 +4,7 @@ import { PlaybookTabStory } from "./story";
 
 export const metadata = { title: "Playbook tab story", robots: { index: false, follow: false } };
 
-/** ?state=full|empty|viewer, ?folder=offer|prospect|objections|closing and ?theme=light|dark, for screenshots. */
+/** ?state=full|few|empty|viewer (few: two calls, so the objection playbook says Not enough data), ?folder=offer|prospect|objections|closing and ?theme=light|dark, for screenshots. */
 export default async function PlaybookTabStoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (process.env.NODE_ENV === "production") notFound();
   const query = await searchParams;

@@ -364,6 +364,8 @@ export default defineSchema({
     state: agentState,
     updatedAt: v.number(),
     updatedBy: v.string(),
+    /** When the agent was first switched on here: where "before and after" is measured from. */
+    firstOnAt: v.optional(v.number()),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_agent", ["workspaceId", "agentId"]),

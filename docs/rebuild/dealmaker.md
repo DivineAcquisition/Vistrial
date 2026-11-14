@@ -527,6 +527,16 @@ tests, lint, both typechecks and the build, never deploying Convex:
 16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
 17. **Calendar tab.**
 18. **Chat, the weekly scorecard and the proof** (before and after, deals touched, time saved).
+    *18a, built (proof and scorecard):* `convex/dealmakerProof.ts`, `convex/lib/dealmaker/proof.ts`, the
+    "How Dealmaker is doing" panel on the Pipeline tab. `workspaceAgents.firstOnAt` records when an agent was
+    first switched on. Before and after compares close rate, show rate and the typical time to first reply
+    over the same stretch either side of that day (up to 90 days), only after 14 days on and each figure
+    only from five or more cases, from the business's own CRM, and says it shows what happened, not what
+    caused it. Deals involved counts deals with Dealmaker's ready brief or its own sent follow-up, worded
+    "involved". Time saved counts briefs (20 minutes each), Dealmaker's sent messages (5) and CRM updates it
+    proposed that were done (2), with the time each shown. A cron posts last week's scorecard to the
+    Briefing once per CRM connection where Dealmaker is on, as three rows written in code: what moved, what
+    Dealmaker did, what is next. Next: 18b, Dealmaker's chat.
 19. **Go live** (catalog, landing page, waitlist email), then HubSpot, Salesforce, rep training, WhatsApp,
     Slack and Discord notifications.
 

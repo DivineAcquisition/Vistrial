@@ -431,6 +431,20 @@ tests, lint, both typechecks and the build, never deploying Convex:
     Next: 10d the automatic brief 3 hours before each booked call, with its monthly cap.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
     recordings; the Zoom and Meet note taker.
+    *11a, built:* the closer's notes after a call (`convex/callNotes.ts`, `src/components/work/call-notes.tsx`).
+    The Calls tab now also lists the last two days of booked calls; a past call offers "Add call notes" (or,
+    with no CRM, "Notes after a call" by name). The form: how it ended (booked another call, asked for a
+    proposal, wants time to think, said yes, said no, not a fit, did not show), the next step and its date,
+    the five fit fields, the objections heard (picked from the Playbook's Objections folder, or a few words),
+    and a voice memo of up to a minute. **Everything is the closer's account**: with a deal, each fit field
+    becomes a `dealFacts` row of kind "rep" with the closer's name and `sourceRef` `callNote:<id>`, and the next
+    step a `dealCommitments` row the closer owns, so the Pipeline shows both. A "said yes" or "said no" is
+    recorded as their account only; marking the deal won or lost stays the Owner's hard stop. Nothing changes
+    the CRM or contacts the lead. **The memo** is the closer's own voice, never the call (the form says so):
+    uploaded to Convex storage, transcribed by Deepgram (`nova-3`, `DEEPGRAM_API_KEY`), and the audio deleted
+    whatever happens; without the key the notes are kept and the memo says "not set up yet". Conversation
+    Intelligence (step 12) reads the notes and the memo as the closer's account. Next: 11b the business's own
+    note taker and HighLevel recordings; the Zoom and Meet note taker waits for a vendor (0.10 item 1).
 12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the
     readiness inputs, commitments, owner-only coaching, the live checklist, and the end-of-day reports.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
@@ -445,8 +459,16 @@ tests, lint, both typechecks and the build, never deploying Convex:
     only, and only for a draft Dealmaker wrote itself (created by the internal drafting path, its kind from the trigger) that no person has edited; a message a person wrote or edited always needs the typed SEND. `crmActions.approveByStandingSwitch` approves such a message as `owner-switch:<kind>`, recorded on
     the approval and in the audit log. Every send-time check still runs: messaging on, Do Not Disturb or
     opted out, quiet hours, one message a day, Dealmaker pauses, and consent tags (now also checked in
-    `claim`). Everything else still needs the typed SEND. Next, 13b: the Follow-up Engine's triggers and
-    drafting.
+    `claim`). Everything else still needs the typed SEND.
+    *13b, built (server):* the Follow-up Engine (`convex/skills/followUpEngine`, started by
+    `dealFollowUps.draft`). Code reads the same board the Pipeline tab shows (`pipelineBoard.boardInputFor`)
+    and takes each deal's next move as its trigger: the lead wrote last (answer), something promised is due
+    (deliver what was promised), a missed call (offer a new time), a quiet deal (ask honestly whether more
+    contact is welcome), or a new lead (first message). The trigger sets the message kind, never the model.
+    Paused, won and lost deals, leads with a message already open in Comms, and leads no allowed channel
+    reaches are skipped; with nothing due no model is called. One model step writes up to ten messages in
+    the Playbook's voice; code drops any that names a price, invents urgency, runs too long or has no email
+    subject; what passes is filed through `fileAgentDraft` as Dealmaker's own draft, and nothing is sent.
     *13c, built (screen):* the Comms tab (`work/comms`, `src/components/work/comms-tab.tsx`, story
     `/dev/comms-tab`). Five lanes with counts (drafted, held, waiting for approval, sent, not sent), each
     message with the lead's name, its kind, channel, why it was written and who wrote it (Dealmaker or the
@@ -454,7 +476,7 @@ tests, lint, both typechecks and the build, never deploying Convex:
     words; waiting messages point to the approvals in Connections. A person writes a new message to any lead
     with an open deal, on a channel the CRM can reach. When messaging is off, the tab says so and drafts can
     still be copied. `comms.view` now also returns lead names, that lead list and whether messaging is on.
-    The "Draft follow-ups" button follows once 13b-2 is merged.
+    "Draft follow-ups" starts the Follow-up Engine after the most it may use is shown and confirmed.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
     attachment only.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.

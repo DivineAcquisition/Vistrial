@@ -5,7 +5,7 @@ import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { useState } from "react";
 
-import { BotIcon, CheckCircle2, Clock, Hand, Mail, MessageSquareText, PenLine, SendIcon, Trash2, User, XCircle, type LucideIcon } from "@/components/icons";
+import { BotIcon, CheckCircle2, Clock, Hand, Mail, MessageSquareText, PenLine, SendIcon, Sparkles, Trash2, User, XCircle, type LucideIcon } from "@/components/icons";
 import { useClientScope } from "@/components/shell/shell-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,8 @@ export type CommsActions = {
   update: (id: string, input: { channel: Channel; title?: string; body: string }) => Promise<unknown>;
   discard: (id: string) => Promise<unknown>;
   submit: (id: string) => Promise<SubmitResult>;
+  /** Starts the Follow-up Engine once a person has seen the most it may use. */
+  draftFollowUps: (confirmedCredits: number) => Promise<unknown>;
 };
 
 /** Colour is never alone: every lane has an icon and its word. */
@@ -322,7 +324,50 @@ function Compose({ data, actions }: { data: CommsData; actions: CommsActions }) 
 }
 
 /** Comms with its data handed in, so a story can show it without a server. */
-export function CommsView({ data, editor, actions }: { data: CommsData; editor: boolean; actions: CommsActions }) {
+/** Dealmaker drafts the next message for every deal that needs one; a person confirms the most it may use first. */
+function DraftFollowUps({ maxCredits, actions }: { maxCredits: number; actions: CommsActions }) {
+  const [state, setState] = useState<"idle" | "confirm" | "busy" | "started">("idle");
+  return (
+    <div className="grid gap-2" data-draft-follow-ups>
+      <p className="text-sm text-muted-foreground">
+        Dealmaker reads your pipeline and drafts the one next message each deal needs: a reply that is ours, something promised, a new time after a missed call, an honest check-in, or a first hello.
+        Drafts land under Drafted. Nothing is sent.
+      </p>
+      {state === "started" ? (
+        <p className="text-sm text-foreground" role="status">
+          Drafting now. New drafts appear under Drafted when they are ready.
+        </p>
+      ) : state === "idle" ? (
+        <div>
+          <Button size="sm" onClick={() => setState("confirm")}>
+            <Sparkles aria-hidden className="size-3.5" />
+            Draft follow-ups
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            disabled={state === "busy"}
+            onClick={async () => {
+              setState("busy");
+              const done = await run(() => actions.draftFollowUps(maxCredits));
+              setState(done === undefined ? "confirm" : "started");
+            }}
+          >
+            Draft them now
+          </Button>
+          <Button size="sm" variant="outline" disabled={state === "busy"} onClick={() => setState("idle")}>
+            Cancel
+          </Button>
+          <span className="text-xs text-muted-foreground">Up to {maxCredits} credits for this round. Nothing runs until you press it.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function CommsView({ data, maxCredits, editor, actions }: { data: CommsData; maxCredits: number | null; editor: boolean; actions: CommsActions }) {
   const canEdit = editor && data.canEdit;
   const [lane, setLane] = useState<LaneId>("drafted");
   const shown = data.lanes.find((row) => row.id === lane) ?? data.lanes[0];
@@ -347,6 +392,12 @@ export function CommsView({ data, editor, actions }: { data: CommsData; editor: 
           </Link>
           . You can still draft here, then copy the text and send it yourself.
         </p>
+      ) : null}
+      {canEdit && data.connected && maxCredits !== null ? (
+        <Panel className="grid gap-3 p-4 sm:p-6">
+          <SectionTitle icon={Sparkles}>Follow-ups</SectionTitle>
+          <DraftFollowUps maxCredits={maxCredits} actions={actions} />
+        </Panel>
       ) : null}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="group" aria-label="Messages by where they stand">
         {data.lanes.map((row) => {
@@ -397,12 +448,15 @@ export function CommsTab({ workspaceId, editor }: { workspaceId: Id<"workspaces"
   const update = useMutation(api.comms.updateDraft);
   const discard = useMutation(api.comms.discardDraft);
   const submit = useMutation(api.comms.submitDraft);
+  const quote = useQuery(api.dealFollowUps.quote, editor ? { workspaceId } : "skip");
+  const draftFollowUps = useMutation(api.dealFollowUps.draft);
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your messages…</p>;
   const actions: CommsActions = {
     create: (input) => create({ workspaceId, clientId, ...input }),
     update: (id, input) => update({ workspaceId, draftId: id as Id<"dealmakerDrafts">, ...input }),
     discard: (id) => discard({ workspaceId, draftId: id as Id<"dealmakerDrafts"> }),
     submit: (id) => submit({ workspaceId, draftId: id as Id<"dealmakerDrafts"> }),
+    draftFollowUps: (confirmedCredits) => draftFollowUps({ workspaceId, clientId, confirmedCredits }),
   };
-  return <CommsView data={data} editor={editor} actions={actions} />;
+  return <CommsView data={data} maxCredits={quote?.maxCredits ?? null} editor={editor} actions={actions} />;
 }

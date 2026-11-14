@@ -110,6 +110,7 @@ import {
   Sparkle as PhSparkle,
   SpinnerGap as PhSpinnerGap,
   Square as PhSquare,
+  Microphone as PhMicrophone,
   SquaresFour as PhSquaresFour,
   Storefront as PhStorefront,
   Sun as PhSun,
@@ -276,6 +277,7 @@ export const Sparkles = wrap(PhSparkle, "Sparkles", true);
 export const SparklesIcon = wrap(PhSparkle, "SparklesIcon", true);
 export const Split = wrap(PhArrowsSplit, "Split", true);
 export const Square = wrap(PhSquare, "Square", true);
+export const Mic = wrap(PhMicrophone, "Mic", false);
 export const Store = wrap(PhStorefront, "Store", true);
 export const SunIcon = wrap(PhSun, "SunIcon", true);
 export const Target = wrap(PhTarget, "Target", true);

@@ -128,6 +128,7 @@ export function CommsTabStory({ messaging, theme }: { messaging: boolean; theme:
     <StoryFrame theme={theme} role="owner">
       <CommsView
         data={data(messaging)}
+        maxCredits={12}
         editor
         actions={{
           create: noop,
@@ -137,6 +138,7 @@ export function CommsTabStory({ messaging, theme }: { messaging: boolean; theme:
             outcome: "proposed",
             reason: "A person approves it.",
           }),
+          draftFollowUps: async () => ({ runId: "story" }),
         }}
       />
     </StoryFrame>

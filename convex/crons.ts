@@ -73,4 +73,7 @@ crons.interval("monthly industry trends", { hours: 6 }, internal.planner.monthly
 /** First packages that waited for the day's free budget: started as the budget allows. Hourly. */
 crons.interval("start waiting first packages", { hours: 1 }, internal.firstPackage.startWaiting, {});
 
+/** Dealmaker's weekly scorecard: last week's, posted once per CRM connection where Dealmaker is on. */
+crons.interval("Dealmaker weekly scorecard", { hours: 6 }, internal.dealmakerProof.weekly, {});
+
 export default crons;

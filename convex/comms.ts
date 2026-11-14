@@ -19,7 +19,7 @@ import { crmConnectionFor } from "./lib/crm/read";
 import { notFound, userError } from "./lib/errors";
 import { MESSAGE_KINDS, MESSAGE_KIND_LABEL, decideSend, hasPrice, type MessageKind } from "./lib/dealmaker/autonomy";
 import { SALES_CONVERSION } from "./catalog";
-import { FAILURE_WORDS } from "./crmActions";
+import { FAILURE_WORDS, approveByStandingSwitch } from "./crmActions";
 import { isPaused } from "./dealmakerTeam";
 import { settingsOf } from "./playbookInterview";
 
@@ -162,7 +162,7 @@ export const updateDraft = workspaceMutation({
   args: { draftId: v.id("dealmakerDrafts"), channel, title: v.optional(v.string()), body: v.string() },
   handler: async (ctx, args) => {
     const row = await editable(ctx, args.draftId);
-    await ctx.db.patch(row._id, { channel: args.channel, ...checkBody(args), ...(args.channel === "sms" ? { title: undefined } : {}), updatedAt: Date.now() });
+    await ctx.db.patch(row._id, { channel: args.channel, ...checkBody(args), ...(args.channel === "sms" ? { title: undefined } : {}), editedBy: ctx.identity.subject, updatedAt: Date.now() });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "dealmaker.draft_edited", subject: row._id });
     return null;
   },
@@ -201,8 +201,8 @@ async function tagsOf(ctx: Pick<QueryCtx, "db">, scope: Scope, contactRef: strin
 }
 
 /**
- * Sends a draft for approval. Dealmaker's checks first, then the approvals path. Until the Owner decides how
- * the switch for low-stakes kinds and SEND fit together, every message waits for a person here.
+ * Sends a draft for approval. Dealmaker's checks first, then the approvals path. A low-stakes kind the Owner
+ * made automatic is approved by that switch, their standing SEND; everything else waits for a person.
  */
 export const submitDraft = workspaceMutation({
   args: { draftId: v.id("dealmakerDrafts") },
@@ -220,7 +220,8 @@ export const submitDraft = workspaceMutation({
       }
     }
     const decision = decideSend({
-      kind: row.kind as MessageKind,
+      // Only Dealmaker's own untouched drafts may count as a low-stakes kind; anything else is a person's message.
+      kind: row.createdBy === "agent" && row.editedBy === undefined ? (row.kind as MessageKind) : "followUp",
       autonomous: settings?.autonomous ?? [],
       hasPrice: hasPrice(`${row.title ?? ""} ${row.body}`),
       firstToLead: !(await everMessaged(ctx, scope, row.contactRef)),
@@ -244,12 +245,23 @@ export const submitDraft = workspaceMutation({
     }
     await ctx.db.patch(row._id, { status: "proposed", actionId: outcome.actionId as Id<"crmActions">, reason: decision.reason, updatedAt: now });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "dealmaker.draft_proposed", subject: row._id });
+    // The Owner's switch for this low-stakes kind is their standing SEND, and only for a draft Dealmaker
+    // wrote itself and nobody changed: a person's own words always wait for the typed SEND.
+    const dealmakersOwn = row.createdBy === "agent" && row.editedBy === undefined;
+    if (decision.action === "send" && dealmakersOwn) {
+      const approved = await approveByStandingSwitch(ctx, outcome.actionId as Id<"crmActions">, row.kind);
+      if (approved.state === "approved") return { outcome: "sending" as const, reason: decision.reason };
+    }
     return { outcome: "proposed" as const, reason: decision.reason };
   },
 });
 
-/** For Dealmaker's own drafting (13b): files a draft as the agent. */
-export async function fileAgentDraft(ctx: MutationCtx, input: Omit<Doc<"dealmakerDrafts">, "_id" | "_creationTime" | "status" | "createdBy" | "createdAt" | "updatedAt">) {
+/**
+ * For Dealmaker's own drafting (13b): files a draft as the agent. Internal only, never reachable from a
+ * client; the kind comes from the trigger that started it and must be a known kind.
+ */
+export async function fileAgentDraft(ctx: MutationCtx, input: Omit<Doc<"dealmakerDrafts">, "_id" | "_creationTime" | "status" | "createdBy" | "editedBy" | "createdAt" | "updatedAt">) {
+  if (!(MESSAGE_KINDS as readonly string[]).includes(input.kind)) throw new Error(`Unknown message kind ${input.kind}`);
   const now = Date.now();
   return ctx.db.insert("dealmakerDrafts", { ...input, status: "draft", createdBy: "agent", createdAt: now, updatedAt: now });
 }

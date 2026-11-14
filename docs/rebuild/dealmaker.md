@@ -164,7 +164,7 @@ And, from the doctrine itself:
 
 ### 0.2 How much it does on its own
 
-- **Anything that talks to a lead waits for approval by default.** The owner may make only low-stakes kinds
+- **Anything that talks to a lead waits for approval by default.** The Owner's switch for a low-stakes kind is their standing SEND for that kind (decided 2026-11-14; see 0.9 step 13a). The owner may make only low-stakes kinds
   autonomous: reminders, confirmations, and delivering something already promised (doctrine IV, 0.0).
   Anything that persuades, prices, re-engages or closes always waits.
 - **Always stops for a person, whatever is autonomous:**
@@ -424,8 +424,12 @@ tests, lint, both typechecks and the build, never deploying Convex:
     first (a paused lead is held; with consent tags set, a lead without one is held; `decideSend` marks a
     price or a first message as needing a person) and then `proposeCrmAction`, where the Owner's SEND,
     quiet hours, Do Not Disturb and one message a day still apply. `crmActions.claim` now also refuses a
-    message to a paused lead. **Open for the owner:** the switch for low-stakes kinds and the typed SEND
-    conflict; until decided, every message waits for SEND. Next, 13b: the Follow-up Engine's triggers and
+    message to a paused lead. **Owner's decision (2026-11-14):** the Owner's switch for a low-stakes kind
+    (reminders, confirmations, sending something already promised) is their standing SEND for that kind
+    only, and only for a draft Dealmaker wrote itself (created by the internal drafting path, its kind from the trigger) that no person has edited; a message a person wrote or edited always needs the typed SEND. `crmActions.approveByStandingSwitch` approves such a message as `owner-switch:<kind>`, recorded on
+    the approval and in the audit log. Every send-time check still runs: messaging on, Do Not Disturb or
+    opted out, quiet hours, one message a day, Dealmaker pauses, and consent tags (now also checked in
+    `claim`). Everything else still needs the typed SEND. Next, 13b: the Follow-up Engine's triggers and
     drafting; 13c: the Comms tab.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
     attachment only.

@@ -82,6 +82,35 @@ export function PlaybookTabStory({ state, folder, theme }: { state: string; fold
     <StoryFrame theme={theme} role={editor ? "owner" : "viewer"}>
       <PlaybookView
         data={data(state)}
+        interview={
+          state === "viewer"
+            ? null
+            : {
+                data: {
+                  questions: [
+                    { id: "stages", title: "What each pipeline stage means", ask: "In your own words, what has happened when a deal reaches each stage?" },
+                    { id: "proof", title: "Proof you may quote", ask: "Results, case studies or testimonials Dealmaker may quote to a lead." },
+                  ],
+                  total: 7,
+                  stages: [
+                    { ref: "s1", name: "New lead", meaning: "" },
+                    { ref: "s2", name: "Call booked", meaning: "" },
+                    { ref: "s3", name: "Proposal sent", meaning: "" },
+                  ],
+                  scriptStages: [],
+                  quietDays: { value: 14, choices: [7, 14, 21, 30], suggested: 14 },
+                  channels: [
+                    { id: "sms", label: "Text messages", on: true },
+                    { id: "email", label: "Email", on: true },
+                    { id: "voice", label: "Voice notes", on: false },
+                    { id: "dm", label: "Instagram and Facebook messages", on: false },
+                  ],
+                  consentTags: [],
+                  canEdit: true,
+                },
+                actions: { stages: noop, quietDays: noop, script: noop, pkg: noop, proof: noop, voice: noop, consent: noop, skip: noop },
+              }
+        }
         editor={editor}
         initialFolder={open}
         actions={{ addItem: noop, updateItem: noop, archiveItem: noop, addLesson: noop, decideLesson: noop, editLesson: noop, removeLesson: noop, study: noop }}

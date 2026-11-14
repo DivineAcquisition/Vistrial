@@ -112,6 +112,7 @@ import type * as lib_integrations_bookings from "../lib/integrations/bookings.js
 import type * as lib_integrations_oauth from "../lib/integrations/oauth.js";
 import type * as lib_integrations_providers from "../lib/integrations/providers.js";
 import type * as lib_integrations_signatures from "../lib/integrations/signatures.js";
+import type * as lib_interview from "../lib/interview.js";
 import type * as lib_leadBuilders from "../lib/leadBuilders.js";
 import type * as lib_leadGuard from "../lib/leadGuard.js";
 import type * as lib_metaGraph from "../lib/metaGraph.js";
@@ -180,6 +181,7 @@ import type * as personalNotes from "../personalNotes.js";
 import type * as planner from "../planner.js";
 import type * as platform from "../platform.js";
 import type * as playbook from "../playbook.js";
+import type * as playbookInterview from "../playbookInterview.js";
 import type * as playbookStudyActions from "../playbookStudyActions.js";
 import type * as playbookStudySite from "../playbookStudySite.js";
 import type * as profile from "../profile.js";
@@ -376,6 +378,7 @@ declare const fullApi: ApiFromModules<{
   "lib/integrations/oauth": typeof lib_integrations_oauth;
   "lib/integrations/providers": typeof lib_integrations_providers;
   "lib/integrations/signatures": typeof lib_integrations_signatures;
+  "lib/interview": typeof lib_interview;
   "lib/leadBuilders": typeof lib_leadBuilders;
   "lib/leadGuard": typeof lib_leadGuard;
   "lib/metaGraph": typeof lib_metaGraph;
@@ -444,6 +447,7 @@ declare const fullApi: ApiFromModules<{
   planner: typeof planner;
   platform: typeof platform;
   playbook: typeof playbook;
+  playbookInterview: typeof playbookInterview;
   playbookStudyActions: typeof playbookStudyActions;
   playbookStudySite: typeof playbookStudySite;
   profile: typeof profile;

@@ -346,6 +346,12 @@ tests, lint, both typechecks and the build, never deploying Convex:
    honoured, no browser, no screenshots, nothing kept but the text); a page it cannot read is named with the
    reason. Up to 3 public YouTube links are read by the same step through Gemini from the link (0.10 item 7):
    never downloaded, only the words kept. The tool is `pbs.read`, one page or video per step.
+   *7d, built:* the guided interview (`convex/lib/interview.ts`, `convex/playbookInterview.ts`). Seven fixed
+   questions, no model: what each CRM stage means (read from the CRM first), the quiet-days setting (7, 14,
+   21 or 30), the script for each call stage still missing, packages with the price a proposal may use,
+   proof it may quote, the voice and sign-off, and the consent tags with the channels it may draft for.
+   Only open questions are asked; one can be skipped. Answers become Playbook items from the interview
+   ("Your data") or the new `dealmakerSettings` row for the organization or client. Step 7 is complete.
 8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.

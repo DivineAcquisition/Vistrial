@@ -2531,6 +2531,27 @@ export default defineSchema({
     finishedAt: v.optional(v.number()),
   }).index("by_workspace_client", ["workspaceId", "clientId", "createdAt"]),
 
+  /**
+   * Dealmaker's settings for one business (the organization, or one client): what the guided interview
+   * asked that is not a Playbook item. One row per organization or client.
+   */
+  dealmakerSettings: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    /** Days with no activity and no stage change before a deal is quiet. */
+    quietDays: v.optional(v.number()),
+    /** What each CRM stage means, in the business's words. */
+    stageMeanings: v.optional(v.array(v.object({ stageRef: v.string(), name: v.string(), meaning: v.string() }))),
+    /** CRM tags that mean a lead agreed to be contacted. */
+    consentTags: v.optional(v.array(v.string())),
+    /** Channels Dealmaker may draft for. */
+    channels: v.optional(v.array(v.union(v.literal("sms"), v.literal("email"), v.literal("voice"), v.literal("dm")))),
+    /** Interview questions a person chose to skip. */
+    skipped: v.optional(v.array(v.string())),
+    updatedBy: v.string(),
+    updatedAt: v.number(),
+  }).index("by_workspace_client", ["workspaceId", "clientId"]),
+
   /** "What I've learned about how you sell": proposed until a person approves it; only approved ones guide drafts. */
   playbookLessons: defineTable({
     workspaceId: v.id("workspaces"),

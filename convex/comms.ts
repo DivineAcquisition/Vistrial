@@ -26,7 +26,7 @@ import { settingsOf } from "./playbookInterview";
 type Ctx = QueryCtx & { workspaceId: Id<"workspaces">; clients: ClientScope };
 type Scope = { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> };
 
-export const COMMS_LIMITS = { sms: 640, title: 150, email: 5000, why: 300 } as const;
+export const COMMS_LIMITS = { sms: 640, title: 150, email: 5000, why: 300, leads: 200 } as const;
 export const LANES = ["drafted", "held", "waiting", "sent", "failed"] as const;
 export type Lane = (typeof LANES)[number];
 export const LANE_LABEL: Record<Lane, string> = { drafted: "Drafted", held: "Held", waiting: "Waiting for approval", sent: "Sent", failed: "Not sent" };
@@ -37,6 +37,7 @@ export const COMMS_TEXT = {
   noSubject: "An email needs a subject.",
   notEditable: "This message has already been proposed, so it can no longer be edited.",
   badKind: "Choose what kind of message this is.",
+  unnamed: "A lead with no name in the CRM",
 } as const;
 
 const kindValidator = v.string();
@@ -85,6 +86,21 @@ export const view = workspaceQuery({
       );
     }
     const mine = rows.filter((row) => row.clientId === scope.clientId);
+    const connection = await crmConnectionFor(ctx, scope);
+    const contacts = new Map<string, Doc<"crmContacts"> | null>();
+    const contactOf = async (ref: string) => {
+      if (!connection) return null;
+      if (!contacts.has(ref)) {
+        contacts.set(
+          ref,
+          await ctx.db
+            .query("crmContacts")
+            .withIndex("by_connection", (q) => q.eq("connectionId", connection._id).eq("externalId", ref))
+            .first(),
+        );
+      }
+      return contacts.get(ref) ?? null;
+    };
     const items = await Promise.all(
       mine.map(async (row) => {
         const action = row.actionId ? await ctx.db.get(row.actionId) : null;
@@ -93,6 +109,7 @@ export const view = workspaceQuery({
           id: row._id,
           lane,
           contactRef: row.contactRef,
+          leadName: (await contactOf(row.contactRef))?.name ?? COMMS_TEXT.unnamed,
           dealRef: row.dealRef ?? null,
           kind: row.kind,
           kindLabel: MESSAGE_KIND_LABEL[row.kind as MessageKind] ?? "Message",
@@ -106,7 +123,27 @@ export const view = workspaceQuery({
         };
       }),
     );
+    // The leads a person can write to: those with an open deal, by name, with the channels that reach them.
+    const leads: { contactRef: string; dealRef: string; name: string; sms: boolean; email: boolean }[] = [];
+    if (connection && ctx.role !== "viewer") {
+      const deals = await ctx.db
+        .query("crmDeals")
+        .withIndex("by_connection", (q) => q.eq("connectionId", connection._id))
+        .take(500);
+      const seen = new Set<string>();
+      for (const deal of deals) {
+        if (deal.status !== "open" || !deal.contactId || seen.has(deal.contactId) || leads.length >= COMMS_LIMITS.leads) continue;
+        seen.add(deal.contactId);
+        const contact = await contactOf(deal.contactId);
+        leads.push({ contactRef: deal.contactId, dealRef: deal.externalId, name: contact?.name ?? COMMS_TEXT.unnamed, sms: !!contact?.phone, email: !!contact?.email });
+      }
+      leads.sort((a, b) => a.name.localeCompare(b.name));
+    }
     return {
+      connected: connection !== null,
+      messaging: connection?.messagingEnabled === true,
+      limits: { sms: COMMS_LIMITS.sms, email: COMMS_LIMITS.email, title: COMMS_LIMITS.title },
+      leads,
       lanes: LANES.map((id) => ({ id, label: LANE_LABEL[id], items: items.filter((row) => row.lane === id).sort((a, b) => b.updatedAt - a.updatedAt) })),
       kinds: MESSAGE_KINDS.map((id) => ({ id, label: MESSAGE_KIND_LABEL[id] })),
       canEdit: ctx.role !== "viewer",

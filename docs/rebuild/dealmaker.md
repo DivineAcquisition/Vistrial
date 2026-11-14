@@ -469,7 +469,14 @@ tests, lint, both typechecks and the build, never deploying Convex:
     reaches are skipped; with nothing due no model is called. One model step writes up to ten messages in
     the Playbook's voice; code drops any that names a price, invents urgency, runs too long or has no email
     subject; what passes is filed through `fileAgentDraft` as Dealmaker's own draft, and nothing is sent.
-    Next, 13c: the Comms tab.
+    *13c, built (screen):* the Comms tab (`work/comms`, `src/components/work/comms-tab.tsx`, story
+    `/dev/comms-tab`). Five lanes with counts (drafted, held, waiting for approval, sent, not sent), each
+    message with the lead's name, its kind, channel, why it was written and who wrote it (Dealmaker or the
+    team). Drafted and held messages can be edited, discarded or sent for approval, and the result is said in
+    words; waiting messages point to the approvals in Connections. A person writes a new message to any lead
+    with an open deal, on a channel the CRM can reach. When messaging is off, the tab says so and drafts can
+    still be copied. `comms.view` now also returns lead names, that lead list and whether messaging is on.
+    "Draft follow-ups" starts the Follow-up Engine after the most it may use is shown and confirmed.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
     attachment only.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.

@@ -145,6 +145,16 @@ describe("Comms", () => {
     expect(proposed).toHaveLength(3);
   });
 
+  it("names each lead and lists the leads with an open deal, with the channels that reach them; Viewers get no list", async () => {
+    const { owner, viewer, workspaceId } = await setup();
+    await owner.mutation(api.comms.createDraft, { workspaceId, ...draft });
+    const view = await owner.query(api.comms.view, { workspaceId });
+    expect(view).toMatchObject({ connected: true, messaging: true });
+    expect(view.lanes.find((row) => row.id === "drafted")!.items[0].leadName).toBe("Jordan Lee");
+    expect(view.leads).toEqual([{ contactRef: "con1", dealRef: "opp1", name: "Jordan Lee", sms: true, email: true }]);
+    expect((await viewer.query(api.comms.view, { workspaceId })).leads).toEqual([]);
+  });
+
   it("files Dealmaker's drafts only with a known kind", async () => {
     const { t, workspaceId } = await setup();
     await expect(t.run((ctx) => fileAgentDraft(ctx, { workspaceId, contactRef: "con1", kind: "anything", channel: "sms", body: "Hi.", why: "x" }))).rejects.toThrow(/Unknown message kind/);

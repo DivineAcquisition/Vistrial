@@ -107,7 +107,7 @@ export const setAuto = adminMutation({
   },
 });
 
-async function dealmakerOn(ctx: Pick<QueryCtx, "db">, workspaceId: Id<"workspaces">) {
+export async function dealmakerOn(ctx: Pick<QueryCtx, "db">, workspaceId: Id<"workspaces">) {
   const agent = await ctx.db
     .query("agents")
     .withIndex("by_slug", (q) => q.eq("slug", SALES_CONVERSION))

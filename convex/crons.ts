@@ -81,5 +81,6 @@ crons.interval("Dealmaker weekly objection playbook", { hours: 6 }, internal.obj
 
 /** Dealmaker's automatic pre-call briefs, where an Owner or Admin turned them on: about 3 hours before each call. */
 crons.interval("Dealmaker automatic briefs", { minutes: 15 }, internal.autoBriefs.sweep, {});
+crons.interval("Dealmaker end-of-day reports", { hours: 1 }, internal.endOfDay.sweep, {});
 
 export default crons;

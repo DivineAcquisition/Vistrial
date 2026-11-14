@@ -536,7 +536,25 @@ tests, lint, both typechecks and the build, never deploying Convex:
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.
 16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
 17. **Calendar tab.**
+    *17, built:* `convex/dealCalendar.ts` (`week`), `convex/lib/dealmaker/calendar.ts`, the tab at
+    `work/calendar` and the story `/dev/calendar-tab`. One week of booked calls from the CRM's appointments
+    (Monday first, in the CRM's time zone), paged up to eight weeks either way, with a Today rail. Each call
+    shows its time, the lead, the deal's stage, its status (booked, confirmed, showed, no-show, cancelled)
+    with an icon and a word, and its brief (ready, being written, due for a call within a day with none, none,
+    or needs a look), linking to Calls. On top: the show rate from the last 30 days' calls marked showed or
+    no-show ("Not enough data" under five; a call never marked is not counted as a no-show), showed,
+    no-shows and cancelled, how many of this week's calls are confirmed, and briefs due. Filtered to the
+    deals the person's home shows, like the Pipeline. Nothing here contacts anyone or changes the CRM.
 18. **Chat, the weekly scorecard and the proof** (before and after, deals touched, time saved).
+    *18b, built (chat):* `convex/dealmakerChat.ts`, `convex/lib/dealmaker/chat.ts`, the Chat tab for
+    Dealmaker (`work/chat` renders `src/components/work/dealmaker-chat.tsx` for `sales-conversion`; Strategist's
+    chat is unchanged) and the story `/dev/dealmaker-chat`. Routed in code: simple questions (open deals,
+    who needs a move, show rate, calls coming up) are answered from the CRM with no model call, within the
+    person's home; work goes to pipeline review, pre-call brief (asks which call), call review (asks which
+    transcript or notes) or follow-ups; when nothing clearly leads it asks which, never picking silently. Each
+    plan says what it will do and the most it may use, and nothing runs until Start, which uses the work's
+    own start mutation and its checks (`dealmakerChat.startPipelineReview` for a pipeline review). A chat is
+    its writer's own (`dealmakerChats`).
 19. **Go live** (catalog, landing page, waitlist email), then HubSpot, Salesforce, rep training, WhatsApp,
     Slack and Discord notifications.
 

@@ -2743,6 +2743,44 @@ export default defineSchema({
   }).index("by_workspace_client", ["workspaceId", "clientId"]),
 
   /**
+   * Dealmaker's chat (build step 18b): one conversation, its messages kept on the row (a chat is short).
+   * Simple questions are answered in code; work is planned and priced here and started by the person.
+   */
+  dealmakerChats: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    createdBy: v.string(),
+    title: v.string(),
+    messages: v.array(
+      v.object({
+        role: v.union(v.literal("person"), v.literal("dealmaker")),
+        text: v.string(),
+        at: v.number(),
+        /** Taps the person can answer with: a kind of work, a call or a transcript. */
+        choices: v.optional(v.array(v.object({ label: v.string(), value: v.string() }))),
+        /** The work and its budget, waiting for Start. */
+        plan: v.optional(
+          v.object({
+            skill: v.string(),
+            maxCredits: v.number(),
+            target: v.optional(
+              v.object({
+                kind: v.union(v.literal("call"), v.literal("transcript"), v.literal("note")),
+                ref: v.string(),
+                label: v.string(),
+                /** For a call: the lead it is with, as the CRM's own id. */
+                contactRef: v.optional(v.string()),
+              }),
+            ),
+          }),
+        ),
+      }),
+    ),
+    runId: v.optional(v.id("agentRuns")),
+    updatedAt: v.number(),
+  }).index("by_workspace_creator", ["workspaceId", "createdBy", "updatedAt"]),
+
+  /**
    * What is established about one deal's fit (need, budget, who decides, timing, fit), each with the kind of
    * evidence it rests on (doctrine II). Written by a person now, and by call reviews later. Newest per field wins;
    * older rows stay as history.

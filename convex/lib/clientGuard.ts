@@ -37,6 +37,7 @@ const DIRECT: readonly TableNames[] = [
   "crmPipelines",
   "crmSummaries",
   "crmSyncRuns",
+  "dealmakerChats",
   "dealmakerDrafts",
   "dealCommitments",
   "dealFacts",

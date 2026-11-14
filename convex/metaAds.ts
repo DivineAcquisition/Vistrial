@@ -14,6 +14,7 @@ import { writeAudit } from "./lib/audit";
 import { memberAction, adminMutation, workspaceQuery } from "./lib/builders";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { notAllowed, notFound, userError } from "./lib/errors";
+import { SECRET_FIELDS, openRow, sealSecret } from "./lib/secrets";
 import {
   ACCOUNT_STATUS,
   dailySeries,
@@ -235,7 +236,8 @@ export const saveConnection = internalMutation({
       .query("metaConnections")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
       .unique();
-    const { calls, ...fields } = args;
+    const { calls, ...rest } = args;
+    const fields = { ...rest, accessToken: await sealSecret(rest.accessToken) };
     if (existing) {
       const sameUser = existing.metaUserId === args.metaUserId;
       await ctx.db.patch(existing._id, {
@@ -294,11 +296,14 @@ async function graphList<T>(token: string, path: string, counter: Counter) {
 
 export const connectionFor = internalQuery({
   args: { workspaceId: v.id("workspaces") },
-  handler: async (ctx, args) =>
-    ctx.db
+  handler: async (ctx, args) => {
+    const row = await ctx.db
       .query("metaConnections")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .unique(),
+      .unique();
+    // Decrypted here, for the action that uses it; no public function returns the token.
+    return row ? openRow(row, SECRET_FIELDS.metaConnections) : null;
+  },
 });
 
 export const roleOf = internalQuery({

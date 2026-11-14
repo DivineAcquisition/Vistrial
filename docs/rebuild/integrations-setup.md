@@ -704,9 +704,48 @@ setting it needs is present.
 | `CALENDLY_CLIENT_SECRET` | The Calendly app's secret | Calendly |
 | `CALENDLY_WEBHOOK_SIGNING_KEY` | Checks that a notification came from Calendly | Calendly |
 | `FATHOM_CLIENT_ID`, `FATHOM_CLIENT_SECRET` | The Fathom app's keys | Fathom, when built |
+| `TOKEN_ENCRYPTION_KEY` | Encrypts every stored token and key (next section) | Every connection |
+| `TOKEN_ENCRYPTION_KEY_PREVIOUS` | Optional. The old key, only while rotating | Every connection |
 
 Not needed: a Google Ads developer token (retired by Google), any Fireflies key of Vistrial's own, and
 anything for upload or paste.
+
+## Token encryption
+
+Every third-party credential Vistrial stores is encrypted in the database with AES-256-GCM
+(`convex/lib/secrets.ts`): Google and Calendly access and refresh tokens, the Fireflies API key a customer
+pastes, HighLevel access and refresh tokens, the Meta ads token, any webhook signing secret stored per
+connection, and the PKCE verifier kept during a sign-in. A stored value looks like
+`enc:v1:<iv>:<ciphertext>`, with a new random IV for every value. The full list of fields is `SECRET_FIELDS`
+in that file; a new credential field must be added there.
+
+**Make a key.** One per deployment, never shared between dev and prod:
+
+```
+openssl rand -base64 32
+```
+
+**Where it goes.** Convex dashboard, Settings, Environment Variables: `TOKEN_ENCRYPTION_KEY` on the dev
+deployment, and a different `TOKEN_ENCRYPTION_KEY` on production. Never in Vercel, in the repository or in a
+chat. Keep a copy in the team's password manager: a lost key means every connection must be reconnected.
+
+**Run order on a deployment that already has connections.**
+
+1. Deploy the code. Without a key it keeps storing plaintext and logs a warning (never a value), and it reads
+   both plaintext and encrypted values, so nothing breaks.
+2. Set `TOKEN_ENCRYPTION_KEY`. From then on every new or renewed token is stored encrypted.
+3. Encrypt what is already stored: `npx convex run secretsMigration:encryptExisting '{}'` (add `--prod` for
+   production). It pages through each table and schedules itself; it is safe to run again, and leaves values
+   that are already encrypted alone. Its last log line says every stored credential is encrypted.
+
+**Rotation.** Make a new key. Set the current key as `TOKEN_ENCRYPTION_KEY_PREVIOUS` and the new one as
+`TOKEN_ENCRYPTION_KEY`; reads try the current key, then the previous one. Run
+`secretsMigration:encryptExisting` again: it re-encrypts every value made with the previous key. When it
+finishes, remove `TOKEN_ENCRYPTION_KEY_PREVIOUS`.
+
+**Never** remove or change `TOKEN_ENCRYPTION_KEY` without keeping the old value as the previous key until the
+migration has run: values encrypted with a key that is gone cannot be read, and those connections have to be
+connected again.
 
 ## Cost and limits at a glance
 

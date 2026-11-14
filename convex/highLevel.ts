@@ -49,6 +49,7 @@ import {
 } from "./lib/highLevel";
 import { isAllowedWrite } from "./lib/crmActions";
 import { isAdmin, isOwner } from "./lib/roles";
+import { SECRET_FIELDS, openRow, openSecret, sealSecret } from "./lib/secrets";
 
 const STATE_MS = 10 * 60 * 1000;
 const DAY = 86_400_000;
@@ -265,6 +266,8 @@ export const saveConnection = internalMutation({
     const { calls, ...fields } = args;
     const row = {
       ...fields,
+      accessToken: await sealSecret(args.accessToken),
+      refreshToken: await sealSecret(args.refreshToken),
       provider: "highlevel" as const,
       status: "connected" as const,
       connectedAt: Date.now(),
@@ -359,7 +362,11 @@ async function tokenRequest(fields: Record<string, string>): Promise<{ ok: true;
 
 export const connectionById = internalQuery({
   args: { connectionId: v.id("crmConnections") },
-  handler: async (ctx, args) => ctx.db.get(args.connectionId),
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.connectionId);
+    // Decrypted here, for the action that uses it; no public function returns these fields.
+    return row ? openRow(row, SECRET_FIELDS.crmConnections) : null;
+  },
 });
 
 export const claimRefresh = internalMutation({
@@ -369,7 +376,7 @@ export const claimRefresh = internalMutation({
     if (!row || row.status !== "connected") return { state: "gone" };
     if (row.refreshingSince && Date.now() - row.refreshingSince < REFRESH_LOCK_MS) return { state: "busy" };
     await ctx.db.patch(row._id, { refreshingSince: Date.now() });
-    return { state: "claimed", refreshToken: row.refreshToken };
+    return { state: "claimed", refreshToken: await openSecret(row.refreshToken) };
   },
 });
 
@@ -379,7 +386,7 @@ export const saveTokens = internalMutation({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.connectionId);
     if (!row) return null;
-    await ctx.db.patch(row._id, { accessToken: args.accessToken, refreshToken: args.refreshToken, tokenExpiresAt: args.tokenExpiresAt, refreshingSince: undefined });
+    await ctx.db.patch(row._id, { accessToken: await sealSecret(args.accessToken), refreshToken: await sealSecret(args.refreshToken), tokenExpiresAt: args.tokenExpiresAt, refreshingSince: undefined });
     return null;
   },
 });

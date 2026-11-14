@@ -8,6 +8,7 @@ import type { HttpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { isCalendarProvider } from "./bookings";
+import { isGoogleDataProvider } from "./googleData";
 import { completeConnect } from "./integrationActions";
 import { isOAuthAppKey, isProviderKey, OAUTH_APPS, PROVIDERS, type OAuthAppKey } from "./lib/integrations/providers";
 import { bodyDigest, verifyWebhook } from "./lib/integrations/signatures";
@@ -53,6 +54,10 @@ export function addIntegrationRoutes(http: HttpRouter) {
         // A calendar is read once straight after it is connected, so the person does not come back to an empty card.
         if (result.outcome === "connected" && result.workspaceId && result.provider && isCalendarProvider(result.provider)) {
           await ctx.scheduler.runAfter(0, internal.bookings.syncOne, { workspaceId: result.workspaceId, provider: result.provider });
+        }
+        // Google data reads its choices straight away, and its totals too when there is only one to read.
+        if (result.outcome === "connected" && result.workspaceId && isGoogleDataProvider(result.provider)) {
+          await ctx.scheduler.runAfter(0, internal.googleData.syncOne, { workspaceId: result.workspaceId, provider: result.provider });
         }
         return back(result.returnOrigin, result.returnPath, result.provider, result.outcome);
       }),

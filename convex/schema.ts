@@ -2323,6 +2323,8 @@ export default defineSchema({
     /** The unguessable part of this connection's webhook address, and its own signing secret when the provider issues one per subscription. */
     hookId: v.optional(v.string()),
     hookSecret: v.optional(v.string()),
+    /** The account, property, site or location this connection reads, chosen by an Owner or Admin (Google data). */
+    selected: v.optional(v.object({ id: v.string(), label: v.string() })),
   })
     .index("by_workspace_provider", ["workspaceId", "provider"])
     .index("by_hook", ["hookId"]),

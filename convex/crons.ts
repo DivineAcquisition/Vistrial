@@ -45,6 +45,7 @@ crons.interval("email check-ins due", { hours: 1 }, internal.emailReminders.send
 
 /** Keeps connected calendars' booked-call counts fresh (read-only). Does nothing while none is connected. */
 crons.interval("refresh calendar bookings", { hours: 6 }, internal.bookings.syncAll, {});
+crons.interval("refresh Google data", { hours: 6 }, internal.googleData.syncAll, {});
 
 /** Removes export files a week after they were built. The record that an export was made stays. */
 crons.interval("remove old exports", { hours: 6 }, internal.exports.removeExpired, {});

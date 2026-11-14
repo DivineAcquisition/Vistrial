@@ -270,6 +270,19 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
           kind: "p",
           text: "The access tokens HighLevel issues are kept on our servers and are never shown in the app. Disconnecting the sub-account in Connections deletes the tokens and everything read from it. Uninstalling the Vistrial app in HighLevel does the same, and also ends Vistrial's access in HighLevel.",
         },
+        { kind: "h", text: "M. Connected Google data" },
+        {
+          kind: "p",
+          text: "Each Google product is its own connection and asks only for its own read-only permission. After an Owner or Admin connects one, they choose which property it reads, and Vistrial keeps only totals for that one.",
+        },
+        {
+          kind: "p",
+          text: "Google Analytics. With read-only access to Google Analytics, Vistrial lists the properties the connected person can open, and for the chosen property reads totals for the last 28 days: sessions, users and key events by day, and the top traffic sources, landing pages and key events with their counts. It never reads individual visitors, and it never changes a property, its settings, audiences or users.",
+        },
+        {
+          kind: "p",
+          text: "These totals are shown to the workspace that connected them and, when an Owner grants the connection to an agent, cited in that workspace's reports as the business's own data. The access token is kept on our servers and is never shown in the app. Disconnecting in Connections deletes the token, the chosen property and every saved total straight away, and asks Google to cancel the token. Vistrial's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements. It is not sold and not used for advertising.",
+        },
       ],
     },
     {

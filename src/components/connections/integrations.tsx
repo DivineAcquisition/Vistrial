@@ -2,6 +2,7 @@
 
 import { useAction, useMutation, useQuery } from "convex/react";
 
+import { GOOGLE_DATA, GoogleDataCard } from "@/components/connections/google-data";
 import { IntegrationsView } from "@/components/connections/integrations-view";
 import { TranscriptLead } from "@/components/connections/transcript-lead";
 import { TranscriptsView } from "@/components/connections/transcripts-view";
@@ -33,6 +34,7 @@ export function Integrations({
   const startConnect = useMutation(api.integrations.startConnect);
   const disconnect = useAction(api.integrationActions.disconnect);
   const syncNow = useAction(api.bookings.syncNow);
+  const syncGoogle = useAction(api.googleData.syncNow);
   const addTranscript = useMutation(api.transcripts.add);
   const removeTranscript = useMutation(api.transcripts.remove);
   const grantTranscript = useMutation(api.transcripts.setAgentAccess);
@@ -52,7 +54,7 @@ export function Integrations({
       providers={data.providers}
       canManage={data.canManage}
       canRefresh={data.canRefresh}
-      refreshable={CALENDARS}
+      refreshable={[...CALENDARS, ...GOOGLE_DATA]}
       notes={CALENDAR_NOTES}
       returned={returned}
       actions={{
@@ -62,9 +64,10 @@ export function Integrations({
             window.location.assign(url);
           }),
         disconnect: (provider) => attempt(() => disconnect({ workspaceId, provider })),
-        refresh: (provider) => attempt(() => syncNow({ workspaceId, provider })),
+        refresh: (provider) => attempt(() => (GOOGLE_DATA.includes(provider) ? syncGoogle({ workspaceId, provider }) : syncNow({ workspaceId, provider }))),
       }}
       extra={{
+        card: (key) => (GOOGLE_DATA.includes(key) ? <GoogleDataCard workspaceId={workspaceId} provider={key} /> : null),
         group: {
           notes: transcripts ? (
             <TranscriptsView

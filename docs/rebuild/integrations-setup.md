@@ -339,7 +339,15 @@ or read individual visitors.
   summary uses a few hundred.
 - No approval beyond Google's sensitive-scope verification. Cost: none published (**not verified**).
 
-**Customer side:** at least Viewer on the GA4 property. **Status:** designed, not built.
+**Customer side:** at least Viewer on the GA4 property. **Status:** built (`convex/googleData.ts`,
+`convex/lib/integrations/google/analytics.ts`). After the sign-in Vistrial lists the properties from account
+summaries; with one it is chosen for the person, with several an Owner or Admin chooses on the card. For
+the chosen property it reads four reports for the last 28 days (sessions, users and key events by day; top
+sources, landing pages and key events) and keeps the totals as the connection's summary, refreshed every
+6 hours or with Refresh. The card shows them. Research cites them as "Your data" (`customerData` sources)
+when the connection is granted to that agent, for the organization's own work only. Disconnect deletes the
+choice, the totals and the token. Shared by the Google products that follow: each adds a reader to
+`READERS` in `convex/googleData.ts`.
 
 ## 3. Search Console
 

@@ -545,7 +545,16 @@ tests, lint, both typechecks and the build, never deploying Convex:
     "involved". Time saved counts briefs (20 minutes each), Dealmaker's sent messages (5) and CRM updates it
     proposed that were done (2), with the time each shown. A cron posts last week's scorecard to the
     Briefing once per CRM connection where Dealmaker is on, as three rows written in code: what moved, what
-    Dealmaker did, what is next. Next: 18b, Dealmaker's chat.
+    Dealmaker did, what is next.
+    *18b, built (chat):* `convex/dealmakerChat.ts`, `convex/lib/dealmaker/chat.ts`, the Chat tab for
+    Dealmaker (`work/chat` renders `src/components/work/dealmaker-chat.tsx` for `sales-conversion`; Strategist's
+    chat is unchanged) and the story `/dev/dealmaker-chat`. Routed in code: simple questions (open deals,
+    who needs a move, show rate, calls coming up) are answered from the CRM with no model call, within the
+    person's home; work goes to pipeline review, pre-call brief (asks which call), call review (asks which
+    transcript or notes) or follow-ups; when nothing clearly leads it asks which, never picking silently. Each
+    plan says what it will do and the most it may use, and nothing runs until Start, which uses the work's
+    own start mutation and its checks (`dealmakerChat.startPipelineReview` for a pipeline review). A chat is
+    its writer's own (`dealmakerChats`).
 19. **Go live** (catalog, landing page, waitlist email), then HubSpot, Salesforce, rep training, WhatsApp,
     Slack and Discord notifications.
 

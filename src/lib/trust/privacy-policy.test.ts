@@ -10,8 +10,8 @@ describe("privacy policy stays inside verified behavior", () => {
   it("names the operator and the Lanham address", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Effective: November 13, 2026");
-    expect(text).toContain("Last updated: November 13, 2026");
+    expect(text).toContain("Effective: November 14, 2026");
+    expect(text).toContain("Last updated: November 14, 2026");
   });
 
   it("says plainly where GPT, Gemini and image work goes, and what may be kept", () => {
@@ -112,7 +112,7 @@ describe("privacy policy stays inside verified behavior", () => {
     });
     expect(on).toMatch(/not used to train/i);
     expect(on).toMatch(/encrypted at rest/i);
-    expect(on).toContain("Effective: November 13, 2026");
+    expect(on).toContain("Effective: November 14, 2026");
     expect(on).toContain("Registered agent, Maryland");
   });
 });

@@ -227,7 +227,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         { kind: "h", text: "K. Call transcripts" },
         {
           kind: "p",
-          text: "An Owner, Admin or Member of an organization can upload or paste the transcript of a call they recorded with a note-taking tool. Vistrial keeps the transcript's text, the title and call date the person gives it, the name of the tool, who added it, and when that person confirmed the call was recorded lawfully. Vistrial takes text only and does not accept audio or video. A transcript contains the names and words of the people on the call. It is stored for that workspace only, shown to its Owners and Managers, and read by the agents the Owner allows, to prepare that workspace's reports; a report may quote up to 300 characters of it as a source.",
+          text: "An Owner, Admin or Member of an organization can upload or paste the transcript of a call they recorded with a note-taking tool. Vistrial keeps the transcript's text, the title and call date the person gives it, the name of the tool, who added it, and when that person confirmed the call was recorded lawfully. Vistrial takes text only and does not accept audio or video. A transcript contains the names and words of the people on the call. It is stored for that workspace only, shown to its Owners, Admins and Members, and read by the agents the Owner allows, to prepare that workspace's reports; a report may quote up to 300 characters of it as a source.",
         },
         {
           kind: "p",

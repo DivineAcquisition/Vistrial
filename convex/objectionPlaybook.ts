@@ -6,20 +6,32 @@
  *
  * People can add the starter set (labelled "not yet heard on your calls") and add an objection heard on a call
  * that the Playbook does not hold yet. Neither reaches a lead.
+ *
+ * The talk tracks are model work (skills/objectionPlaybook): on request, or weekly once the Owner turns that on
+ * with the cap shown. Both need at least five calls. Each run's tracks wait for a person's review, and are shown
+ * as an untested hypothesis.
  */
 
 import { v } from "convex/values";
 
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
+import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { SALES_CONVERSION } from "./catalog";
 import { writeAudit } from "./lib/audit";
+import { priceFor } from "./lib/billing";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { clientForNew, clientHere, type ClientScope } from "./lib/clients";
-import { crmFor } from "./lib/crm/read";
 import { notFound, userError } from "./lib/errors";
-import { OBJECTION_LIMITS, STARTER_OBJECTIONS, titleKey, objectionPlaybook, outcomeOf, reviewObjections, type HeardCall } from "./lib/dealmaker/objections";
-import { crmUserNames, dealScope, type TeamRow } from "./lib/dealmaker/roles";
+import { heardCalls } from "./lib/dealmaker/objectionCalls";
+import { MIN_CALLS, STARTER_OBJECTIONS, titleKey, objectionPlaybook } from "./lib/dealmaker/objections";
+import { dealScope, type TeamRow } from "./lib/dealmaker/roles";
+import { capsFor, previewChoice, skillNeeds } from "./lib/modelChoice";
 import { LIMITS, PLAYBOOK_TEXT, basisFor, clean, itemsOf, objectionTag } from "./lib/playbook";
+import { isOwner, requireWork } from "./lib/roles";
+import { weekKey } from "./planner";
+import { startRunFor } from "./runs";
+import { SKILL_SLUG } from "./skills/objectionPlaybook/shapes";
 import { settingsOf } from "./playbookInterview";
 
 type Ctx = QueryCtx & { workspaceId: Id<"workspaces">; clients: ClientScope };
@@ -35,66 +47,69 @@ async function readScope(ctx: Ctx, clientId: Id<"clients"> | undefined): Promise
   return { workspaceId: ctx.workspaceId, clientId: client._id };
 }
 
-/** The calls the business reviewed (passing reviews only) or noted, newest first. A noted call that was reviewed counts once. */
-async function heardCalls(ctx: Pick<QueryCtx, "db">, scope: Scope): Promise<HeardCall[]> {
-  const [reviews, notes] = await Promise.all([
-    ctx.db
-      .query("callReviews")
-      .withIndex("by_workspace_client", (q) => q.eq("workspaceId", scope.workspaceId).eq("clientId", scope.clientId))
-      .order("desc")
-      .take(OBJECTION_LIMITS.calls),
-    ctx.db
-      .query("callNotes")
-      .withIndex("by_workspace_client", (q) => q.eq("workspaceId", scope.workspaceId).eq("clientId", scope.clientId))
-      .order("desc")
-      .take(OBJECTION_LIMITS.calls),
-  ]);
-  const passed = reviews.filter((row): row is Doc<"callReviews"> & { view: NonNullable<Doc<"callReviews">["view"]> } => row.status === "ready" && Boolean(row.view?.checksPassed));
-  const reviewedNotes = new Set(passed.flatMap((row) => (row.callNoteId ? [row.callNoteId] : [])));
-  const noteOf = new Map(notes.map((row) => [row._id, row]));
+export const TRACK_TEXT = {
+  notEnough: `Talk tracks need at least ${MIN_CALLS} calls reviewed or noted.`,
+  noneHeard: "No objection in the Playbook has been heard on a call yet.",
+  running: "Talk tracks are already being written.",
+  budgetMoved: "The budget changed. Check the new one and confirm again.",
+  ownerOnly: "Only an Owner can change the weekly talk tracks.",
+} as const;
 
-  const crm = await crmFor(ctx, scope);
-  const dealRefs = [...new Set([...passed.map((row) => row.dealRef), ...notes.map((row) => row.dealRef)].filter((ref): ref is string => Boolean(ref)))];
-  const deals = new Map(crm ? (await Promise.all(dealRefs.map(async (ref) => [ref, await crm.deal(ref)] as const))) : []);
-  const settings = await settingsOf(ctx, scope);
-  const members = await ctx.db
-    .query("members")
-    .withIndex("by_workspace", (q) => q.eq("workspaceId", scope.workspaceId))
-    .take(500);
-  const owners = [...new Set([...deals.values()].flatMap((deal) => (deal?.ownerRef ? [deal.ownerRef] : [])))];
-  const repNames = crmUserNames(owners, settings?.team ?? [], (memberId) => members.find((member) => member._id === memberId)?.displayName ?? null);
-  const repOf = (dealRef: string | undefined) => {
-    const owner = dealRef ? deals.get(dealRef)?.ownerRef : null;
-    return owner ? (repNames.get(owner) ?? null) : null;
-  };
+async function budgetCaps(ctx: QueryCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } }) {
+  const choice = await previewChoice(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, picked: undefined, needs: skillNeeds(SKILL_SLUG) });
+  return capsFor(ctx, { workspaceId: ctx.workspaceId, agentSlug: SALES_CONVERSION, skillSlug: SKILL_SLUG, choice });
+}
 
-  const fromReviews: HeardCall[] = passed.map((row) => {
-    const note = row.callNoteId ? noteOf.get(row.callNoteId) : undefined;
-    return {
-      id: row._id,
-      from: "review",
-      at: row.createdAt,
-      leadName: row.leadName,
-      dealRef: row.dealRef ?? null,
-      rep: repOf(row.dealRef) ?? note?.writtenBy ?? null,
-      outcome: outcomeOf(row.dealRef ? deals.get(row.dealRef)?.status : null, note?.outcome),
-      objections: reviewObjections(row.view),
-    };
+type TrackState = "running" | "ready" | "needsReview" | "failed";
+
+async function stateOf(ctx: Pick<QueryCtx, "db">, row: Doc<"objectionRuns">): Promise<TrackState> {
+  if (row.status === "ready") return row.checksPassed ? "ready" : "needsReview";
+  if (row.status === "failed") return "failed";
+  const run = row.runId ? await ctx.db.get(row.runId) : null;
+  return run && run.status !== "queued" && run.status !== "running" ? "failed" : "running";
+}
+
+/** Whether talk tracks may be written for this Playbook now, and why not. */
+async function readiness(ctx: Pick<QueryCtx, "db">, scope: Scope): Promise<string | null> {
+  const items = (await itemsOf(ctx, scope)).filter((row) => row.kind === "objection");
+  const figures = objectionPlaybook({ items: items.map((row) => ({ id: row._id, title: row.title, tag: row.tag ?? null, starter: row.source.type === "starter" })), calls: await heardCalls(ctx, scope), showLeads: false, showReps: false });
+  if (!figures.enough) return `${TRACK_TEXT.notEnough} You have ${figures.calls}.`;
+  if (!figures.rows.some((row) => row.heard > 0)) return TRACK_TEXT.noneHeard;
+  const latest = await ctx.db
+    .query("objectionRuns")
+    .withIndex("by_workspace_client", (q) => q.eq("workspaceId", scope.workspaceId).eq("clientId", scope.clientId))
+    .order("desc")
+    .first();
+  if (latest && (await stateOf(ctx, latest)) === "running") return TRACK_TEXT.running;
+  return null;
+}
+
+/** Starts one talk-track run on its own project. A refused start leaves nothing behind. */
+async function startTracks(ctx: MutationCtx, scope: Scope, by: { userId: string; role: string; unattended?: boolean }, trigger: "request" | "weekly", week?: string) {
+  const now = Date.now();
+  const projectId = await ctx.db.insert("researchProjects", {
+    ...scope,
+    title: "Objection playbook",
+    objective: "Talk tracks for the objections leads raise on this business's calls.",
+    market: "",
+    geography: "",
+    competitors: [],
+    platforms: ["customerData"],
+    suppliedUrls: [],
+    status: "draft",
+    createdBy: by.userId,
+    createdAt: now,
+    updatedAt: now,
   });
-  const fromNotes: HeardCall[] = notes
-    .filter((row) => !reviewedNotes.has(row._id) && row.outcome !== "noShow")
-    .map((row) => ({
-      id: row._id,
-      from: "notes",
-      at: row.createdAt,
-      leadName: row.leadName,
-      dealRef: row.dealRef ?? null,
-      rep: repOf(row.dealRef) ?? row.writtenBy,
-      outcome: outcomeOf(row.dealRef ? deals.get(row.dealRef)?.status : null, row.outcome),
-      // The closer's account: heard, never quoted, and not known to be answered.
-      objections: row.objections.map((item) => ({ title: item.title, itemId: item.itemId ?? null, quote: null, answered: false, answerQuote: null })),
-    }));
-  return [...fromReviews, ...fromNotes].sort((a, b) => b.at - a.at).slice(0, OBJECTION_LIMITS.calls);
+  let runId: Id<"agentRuns">;
+  try {
+    runId = await startRunFor(ctx, { workspaceId: scope.workspaceId, userId: by.userId, role: by.role, agentSlug: SALES_CONVERSION, skillSlug: SKILL_SLUG, projectId, ...(by.unattended ? { unattended: true } : {}) });
+  } catch (error) {
+    await ctx.db.delete(projectId);
+    throw error;
+  }
+  const rowId = await ctx.db.insert("objectionRuns", { ...scope, projectId, trigger, ...(week ? { week } : {}), status: "running", runId, createdBy: by.userId, createdAt: now });
+  return { rowId, runId };
 }
 
 /** The Objection Playbook for the organization or a client. */
@@ -115,8 +130,32 @@ export const view = workspaceQuery({
       showReps: ctx.role === "owner",
     });
     const held = new Set(items.map((row) => titleKey(row.title)));
+    // The talk tracks: from the newest run that passed its checks. They show once a person approved them.
+    const runs = await ctx.db
+      .query("objectionRuns")
+      .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", scope.clientId))
+      .order("desc")
+      .take(20);
+    const latest = runs[0] ?? null;
+    const source = runs.find((row) => row.status === "ready" && row.checksPassed && row.tracks?.length) ?? null;
+    const asset = source?.assetId ? await ctx.db.get(source.assetId) : null;
+    const approved = asset?.status === "approved";
+    const tracks = new Map((source?.tracks ?? []).map((row) => [row.itemId, row]));
+    const heard = result.rows.some((row) => row.heard > 0);
+    const caps = await budgetCaps(ctx);
     return {
       ...result,
+      rows: result.rows.map((row) => {
+        const track = tracks.get(row.itemId);
+        return { ...row, track: track ? { text: track.track, offer: track.offer.map((item) => item.title), approved } : null };
+      }),
+      tracksState: latest ? await stateOf(ctx, latest) : null,
+      tracksAt: source?.finishedAt ?? null,
+      tracksAssetId: source?.assetId ?? null,
+      canAskTracks: ctx.role !== "viewer" && result.enough && heard,
+      tracksBlocked: !result.enough ? `${TRACK_TEXT.notEnough} You have ${result.calls}.` : !heard ? TRACK_TEXT.noneHeard : null,
+      maxCredits: priceFor(caps.maxCostCentsPerRun),
+      weekly: { on: settings?.objectionWeekly === true, canChange: ctx.role === "owner" },
       starterMissing: STARTER_OBJECTIONS.filter((row) => !held.has(titleKey(row.title))).length,
       canEdit: ctx.role !== "viewer",
       isOwner: ctx.role === "owner",
@@ -192,5 +231,85 @@ export const addHeard = workspaceMutation({
     });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "playbook.item_added", subject: id });
     return id;
+  },
+});
+
+/** The most one talk-track run may use, in credits, shown before a person confirms or the Owner turns on weekly runs. */
+export const quote = workspaceQuery({
+  args: {},
+  handler: async (ctx) => ({ maxCredits: priceFor((await budgetCaps(ctx)).maxCostCentsPerRun) }),
+});
+
+/** A person asks for talk tracks now, after confirming the budget. Needs five calls and an objection heard. */
+export const request = workspaceMutation({
+  args: { clientId: v.optional(v.id("clients")), confirmedCredits: v.number() },
+  handler: async (ctx, args) => {
+    requireWork(ctx.member.role);
+    const forClient = await clientForNew(ctx, args.clientId);
+    if (args.confirmedCredits !== priceFor((await budgetCaps(ctx)).maxCostCentsPerRun)) throw userError(TRACK_TEXT.budgetMoved);
+    const scope = { workspaceId: ctx.workspaceId, ...forClient };
+    const blocked = await readiness(ctx, scope);
+    if (blocked) throw userError(blocked);
+    const started = await startTracks(ctx, scope, { userId: ctx.identity.subject, role: ctx.member.role }, "request");
+    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "objectionPlaybook.requested", subject: started.rowId });
+    return started;
+  },
+});
+
+/** The Owner's switch for weekly talk tracks. Off by default; the screen shows the cap before it is turned on. */
+export const setWeekly = workspaceMutation({
+  args: { clientId: v.optional(v.id("clients")), on: v.boolean() },
+  handler: async (ctx, args) => {
+    if (ctx.role !== "owner") throw userError(TRACK_TEXT.ownerOnly);
+    const forClient = await clientForNew(ctx, args.clientId);
+    const scope = { workspaceId: ctx.workspaceId, ...forClient };
+    const row = await settingsOf(ctx, scope);
+    const stamp = { updatedBy: ctx.identity.subject, updatedAt: Date.now() };
+    if (row) await ctx.db.patch(row._id, { objectionWeekly: args.on, ...stamp });
+    else await ctx.db.insert("dealmakerSettings", { ...scope, objectionWeekly: args.on, ...stamp });
+    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: args.on ? "objectionPlaybook.weekly_on" : "objectionPlaybook.weekly_off", subject: forClient.clientId ?? ctx.workspaceId });
+    return null;
+  },
+});
+
+/** Each Playbook reads its calls, so a page is small. */
+const PAGE = 5;
+
+/**
+ * The weekly refresh: one talk-track run per Playbook whose Owner turned it on, once a week, in the Owner's name.
+ * A Playbook without five calls, with nothing heard, or with a run already this week is left alone; so is any
+ * refusal an ordinary run can meet (agents paused, Dealmaker off, out of credits, the day's cap reached).
+ */
+export const weekly = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  handler: async (ctx, args) => {
+    const week = weekKey(Date.now());
+    const page = await ctx.db.query("dealmakerSettings").paginate({ numItems: PAGE, cursor: args.cursor ?? null });
+    for (const settings of page.page) {
+      if (!settings.objectionWeekly) continue;
+      const scope = { workspaceId: settings.workspaceId, ...(settings.clientId ? { clientId: settings.clientId } : {}) };
+      const workspace = await ctx.db.get(settings.workspaceId);
+      if (!workspace || workspace.status !== "active") continue;
+      const done = await ctx.db
+        .query("objectionRuns")
+        .withIndex("by_workspace_client", (q) => q.eq("workspaceId", scope.workspaceId).eq("clientId", scope.clientId))
+        .order("desc")
+        .take(20);
+      if (done.some((row) => row.week === week)) continue;
+      if (await readiness(ctx, scope)) continue;
+      const members = await ctx.db
+        .query("members")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", scope.workspaceId))
+        .take(200);
+      const owner = members.find((row) => row.active && isOwner(row.role));
+      if (!owner) continue;
+      try {
+        await startTracks(ctx, scope, { userId: owner.userId, role: owner.role, unattended: true }, "weekly", week);
+      } catch (error) {
+        if (!(error as { data?: { code?: string } }).data?.code) throw error;
+      }
+    }
+    if (!page.isDone) await ctx.scheduler.runAfter(0, internal.objectionPlaybook.weekly, { cursor: page.continueCursor });
+    return null;
   },
 });

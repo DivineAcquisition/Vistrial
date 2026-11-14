@@ -15,7 +15,7 @@ import type { Id } from "./_generated/dataModel";
 import type { ScriptedModel } from "./lib/toolRouter";
 import { moneyIn, runChecks } from "./skills/dealBriefing/checks";
 import { computeBrief, type BriefInput } from "./skills/dealBriefing/compute";
-import { readinessOf } from "./skills/dealBriefing/render";
+import { playbookWhere, readinessOf } from "./skills/dealBriefing/render";
 import { siteFor, type Brief, type BriefRecord } from "./skills/dealBriefing/shapes";
 import schema from "./schema";
 
@@ -339,6 +339,32 @@ describe("a pre-call brief, run end to end", () => {
     // A brief proposes nothing in the CRM and contacts nobody.
     expect(await s.t.run((ctx) => ctx.db.query("crmActions").collect())).toEqual([]);
     expect(await s.t.run((ctx) => ctx.db.query("approvals").collect())).toEqual([]);
+  });
+
+  it("puts the Playbook's objections most heard first, with the count and an approved talk track only", async () => {
+    const inputs = script();
+    const s = await setup();
+    await s.t.run(async (ctx) => {
+      const partner = (await ctx.db.query("playbookItems").collect()).find((row) => row.kind === "objection")!;
+      for (const leadName of ["Ana", "Ben"]) await ctx.db.insert("callNotes", { workspaceId: s.workspaceId, leadName, outcome: "thinking", fit: [], objections: [{ title: "", itemId: partner._id }], writtenBy: "Milo", createdBy: "milo", createdAt: NOW - DAY });
+      const projectId = await ctx.db.insert("researchProjects", { workspaceId: s.workspaceId, title: "Objection playbook", objective: "", market: "", geography: "", competitors: [], platforms: ["customerData"], suppliedUrls: [], status: "draft", createdBy: "dana", createdAt: 1, updatedAt: 1 });
+      const assetId = await ctx.db.insert("assets", { workspaceId: s.workspaceId, kind: "objectionPlaybook", title: "Objection playbook", status: "draft", currentVersion: 1, createdAt: 1 });
+      await ctx.db.insert("objectionRuns", { workspaceId: s.workspaceId, projectId, trigger: "request", status: "ready", checksPassed: true, assetId, tracks: [{ itemId: partner._id, track: "Would a one-page summary help you go through it together?", offer: [] }], createdBy: "dana", createdAt: 1 });
+      return assetId;
+    });
+    const before = await runBrief(s, { contactRef: "c1", appointmentRef: "a1" });
+    expect(before.status).toBe("completed");
+    expect(inputs[0]).toContain("Heard on 2 of the business's calls.");
+    // A talk track no person has approved never reaches a brief.
+    expect(inputs[0]).not.toContain("one-page summary");
+    await s.t.run(async (ctx) => {
+      const asset = (await ctx.db.query("assets").collect()).find((row) => row.kind === "objectionPlaybook")!;
+      await ctx.db.patch(asset._id, { status: "approved" });
+    });
+    await runBrief(s, { contactRef: "c1", appointmentRef: "a1" });
+    expect(inputs.find((row, i) => i > 0 && row.startsWith("Brief the closer"))).toContain("Talk track (untested hypothesis): Would a one-page summary help you go through it together?");
+    expect(playbookWhere({ basis: "hypothesis", heard: 2 }, true)).toBe("From your Playbook, heard on 2 of your calls");
+    expect(playbookWhere({ basis: "hypothesis" })).toBe("from the Playbook's starter set, not yet heard on your calls");
   });
 
   it("lists the week's booked calls with each brief, and draws a brief from its saved view", async () => {

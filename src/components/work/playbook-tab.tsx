@@ -556,6 +556,8 @@ export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspac
   const objectionData = useQuery(api.objectionPlaybook.view, { workspaceId, clientId });
   const addStarter = useMutation(api.objectionPlaybook.addStarter);
   const addHeard = useMutation(api.objectionPlaybook.addHeard);
+  const requestTracks = useMutation(api.objectionPlaybook.request);
+  const setWeekly = useMutation(api.objectionPlaybook.setWeekly);
   if (data === undefined) return <p className="text-sm text-muted-foreground">Opening the Playbook…</p>;
   const actions: PlaybookActions = {
     addItem: (draft) => addItem({ workspaceId, clientId, ...draft }),
@@ -589,6 +591,8 @@ export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspac
   const objectionActions: ObjectionActions = {
     addStarter: () => addStarter({ workspaceId, clientId }),
     addHeard: (reviewId, title, tag) => addHeard({ workspaceId, reviewId: reviewId as Id<"callReviews">, title, tag }),
+    requestTracks: (confirmedCredits) => requestTracks({ workspaceId, clientId, confirmedCredits }),
+    setWeekly: (on) => setWeekly({ workspaceId, clientId, on }),
   };
   return (
     <PlaybookView

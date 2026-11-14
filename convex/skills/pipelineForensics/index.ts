@@ -1,10 +1,12 @@
 import { wrapUntrusted, type ToolSlug } from "../../lib/registry";
 import { latest, latestDone, recordOf } from "../marketIntelligence/records";
 import type { SkillModule, SkillStep } from "../types";
+import { DOCTRINE_PROMPT } from "../dealmaker/doctrine";
 import { forensicsOf } from "./tools";
 import { AGENT_SLUG, MAX_STEPS, NOT_ENOUGH_DATA, PHASE, REVIEW_SCHEMA, SKILL_SLUG, type ChecksRecord, type ForensicsRecord } from "./shapes";
 
-const SYSTEM = [
+export const SYSTEM = [
+  DOCTRINE_PROMPT,
   "You are Dealmaker, reviewing one business's sales pipeline from its own CRM only. The business is usually an agency, a consultant or a coach that sells through booked sales calls.",
   "Every number you may use is in the figures list, worked out in code from the CRM. Never work out, estimate or round a new number; quote a figure's display exactly.",
   "Never compare with industry averages, benchmarks or what is typical elsewhere: compare the pipeline only with itself (stage against stage).",

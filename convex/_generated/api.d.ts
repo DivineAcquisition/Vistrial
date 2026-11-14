@@ -193,6 +193,7 @@ import type * as sharedReferences from "../sharedReferences.js";
 import type * as siteCapture from "../siteCapture.js";
 import type * as siteCaptureActions from "../siteCaptureActions.js";
 import type * as skillIntake from "../skillIntake.js";
+import type * as skills_dealmaker_doctrine from "../skills/dealmaker/doctrine.js";
 import type * as skills_pipelineForensics_checks from "../skills/pipelineForensics/checks.js";
 import type * as skills_pipelineForensics_compute from "../skills/pipelineForensics/compute.js";
 import type * as skills_pipelineForensics_index from "../skills/pipelineForensics/index.js";
@@ -449,6 +450,7 @@ declare const fullApi: ApiFromModules<{
   siteCapture: typeof siteCapture;
   siteCaptureActions: typeof siteCaptureActions;
   skillIntake: typeof skillIntake;
+  "skills/dealmaker/doctrine": typeof skills_dealmaker_doctrine;
   "skills/pipelineForensics/checks": typeof skills_pipelineForensics_checks;
   "skills/pipelineForensics/compute": typeof skills_pipelineForensics_compute;
   "skills/pipelineForensics/index": typeof skills_pipelineForensics_index;

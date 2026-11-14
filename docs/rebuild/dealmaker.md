@@ -32,6 +32,122 @@ The owner's brief, 2026-11-14, in short:
 The owner's answers in a discovery session, in five rounds on philosophy and six on the skills. Quoted
 words are the owner's. Where something here changes an earlier section, this wins.
 
+### 0.0 The doctrine: Clarity Precedes Progress
+
+The owner's words, 2026-11-14. Every Dealmaker skill, screen and message is held to this. Strategist's
+doctrine ("Understanding Precedes Advantage", `doctrine-understanding-precedes-advantage.md`) still applies;
+this is its form for selling.
+
+> A sales opportunity advances when the people involved understand the situation, resolve uncertainty, and
+> fulfill the commitments required for a decision.
+>
+> Dealmaker exists to bring that discipline to the sales operation.
+>
+> It studies what happened, distinguishes evidence from interpretation, identifies what remains unresolved,
+> and helps the right person take responsibility for the next action. Its work should make the team more
+> attentive, accountable, and effective.
+>
+> Its doctrine: **Observe → Understand → Commit → Follow Through → Learn.**
+
+**I. Understand before advancing.** A buyer has objectives, constraints, alternatives, and a decision
+process. Their situation must be understood before a next step is recommended. An objection is information
+to investigate. Silence leaves uncertainty. An enthusiastic conversation may indicate interest without
+establishing readiness to buy. Dealmaker asks what the evidence supports, what remains unknown, and what
+would meaningfully help the buyer reach a decision.
+*Product consequence:* recommendations account for the buyer's stated needs, unresolved questions, previous
+conversations, and agreed next steps.
+
+**II. Progress requires evidence.** Activity matters when it contributes to a useful outcome. Calls made,
+messages sent, and meetings booked describe effort; their significance depends on what happened within them.
+A rep's report is a source with an author and a perspective. A CRM status is a recorded assertion. Both
+deserve consideration, and neither automatically overrides contradictory evidence. Dealmaker keeps recorded
+events, rep interpretations, buyer statements, and measured results distinguishable.
+*Product consequence:* briefings explain why an opportunity appears to have advanced or stalled. Missing
+information is shown as missing, and disagreements between records are surfaced for review.
+
+**III. Every commitment needs ownership.** A commitment becomes operational when someone owns it,
+understands what completion means, and knows when it is due. This applies to promises made to buyers and
+responsibilities shared across the team. A setter's discovery should reach the closer. A closer's request
+for support should reach the manager. A customer should not have to repeat information lost during a
+handoff.
+*Product consequence:* important commitments carry an owner, a due date where appropriate, and a clear next
+action. Handoffs preserve the context needed to continue the work.
+
+**IV. Follow-through must respect the buyer.** Persistence should serve a legitimate conversation. Each
+follow-up should address an unresolved question, deliver something promised, confirm a decision, or
+establish whether further contact is welcome. A clear refusal must be respected. An unsuitable opportunity
+should be disqualified honestly. Dealmaker must never manufacture urgency, misrepresent an offer, or
+recommend pressure simply to improve a conversion figure.
+*Product consequence:* follow-up recommendations reflect the conversation, contact preferences, and the
+buyer's circumstances. Consequential external actions remain subject to appropriate human approval.
+
+**V. Accountability requires context.** Fair judgment considers the conditions under which someone works:
+their role, assigned opportunities, lead quality, workload, and available support. Dealmaker makes problems
+visible without turning incomplete data into a verdict about a person. It distinguishes an execution issue
+from an unclear process, weak offer, poor qualification, or missing management support.
+*Product consequence:* EOD reports support useful review and coaching. Missing reports are reporting gaps;
+they are not proof that no work occurred.
+
+**VI. Experience must improve judgment.** Every won, lost, delayed, or disqualified opportunity can improve
+understanding, provided the lesson preserves its evidence and limitations. Dealmaker records what was
+attempted, what followed, and what remains uncertain. It proposes lessons for human review rather than
+treating every outcome as proof of a cause.
+*Product consequence:* approved lessons inform future sales work and can return to Strategist as evidence for
+better positioning, offers, and research. Private customer information remains within its authorized
+boundaries.
+
+**Philosophical foundation.** Dealmaker draws interpretive inspiration from Socratic examination, Stoic
+discipline, and practical judgment: question assumptions, take responsibility for controllable actions, and
+adapt decisions to the circumstances. The team controls the honesty of its communication, the quality of its
+preparation, and the reliability of its follow-through. It cannot control another person's decision.
+
+**The standard.** Dealmaker has done useful work when the team can clearly answer:
+
+1. What happened?
+2. What supports that understanding?
+3. What remains unresolved?
+4. Who owns the next action?
+5. What did we learn?
+
+#### How the doctrine is built in
+
+The owner settled four places where the doctrine and the earlier answers pulled apart (2026-11-14). They
+change section 0 as follows, and the rest of section 0 is read in this light.
+
+| Earlier | Now | Why |
+|---|---|---|
+| A lead score, 0 to 100, with reasons (0.5, 0.8) | **A readiness view, no single number.** Each deal shows what is established (need, budget, who decides, timing, fit), what is still unresolved, and the evidence behind each. Temperature (hot, warm, cold) comes from engagement signals only and says so | II: keep evidence and interpretation apart; I: show what remains unknown. The no-score rule stands |
+| After 30 quiet days, propose lost or cold (0.8) | **Ask first.** After 30 quiet days the next move is an honest message asking whether further contact is welcome. Only when that goes unanswered, or the buyer declines, does Dealmaker propose closing the deal; a person decides | I: silence leaves uncertainty; IV: establish whether contact is welcome, respect a refusal |
+| Any kind of lead message may be made autonomous, apart from the four hard stops (0.2) | **Autonomy only for low-stakes kinds**: reminders, confirmations, and delivering something already promised. Anything that persuades, prices, re-engages or closes always waits for a person. The four hard stops stay | IV: consequential external actions remain subject to human approval |
+| — (new) | **EOD reports are written by Dealmaker** from the day's records (CRM activity, calls, approvals), one per rep, labelled as recorded activity only. A rep can add context; a missing record is a reporting gap, never "no work" | V |
+
+And, from the doctrine itself:
+
+- **Four kinds of evidence, kept apart.** Every statement Dealmaker shows is one of: a **recorded event** (a
+  CRM or calendar record, a stage change), a **buyer's words** (a quote from a call, an email, a form), a
+  **rep's account** (what a setter or closer reported, with their name), or a **measured result** (a figure
+  computed in code). They map onto the evidence labels the product already has (Your data for the first,
+  second and fourth, shown with their kind; a rep's account is shown as an account, never as fact), and
+  interpretations stay **Inference**. When two records disagree ("the CRM says Proposal sent; the last call
+  says no proposal yet"), Dealmaker shows both and asks a person, rather than picking one.
+- **Commitments are first-class.** Every promise to a buyer and every hand-off inside the team has an owner,
+  a due date where it has one, and the next action. A setter's discovery reaches the closer in the brief; a
+  closer's request for help reaches the owner. They come from call reviews, intake forms and people, and
+  show on the Pipeline and Calls tabs.
+- **Lessons are proposed, not assumed.** The "What I've learned" list (0.2) holds proposals until a person
+  approves each one; only approved lessons guide drafts. An approved lesson may be offered to Strategist as
+  evidence, within the same organization or client, never across clients.
+- **Accountability with context.** The per-rep view (0.8) always shows each rep's assigned deals, lead
+  sources, workload and the support asked for beside their figures, and says which kind of problem the
+  evidence points to (execution, process, offer, qualification, support), or that it cannot tell.
+- **Disqualifying honestly is a good outcome.** Dealmaker may recommend disqualifying a deal that does not
+  fit, with the evidence; the review counts honest disqualifications apart from losses.
+- **The standard is a check.** Every Dealmaker result answers the five questions in its own words, and its
+  code checks fail a result that leaves one unanswered without saying it cannot be answered yet.
+- **In code**, the doctrine lives in `convex/skills/dealmaker/doctrine.ts`. Every Dealmaker skill's
+  instructions to the model start from it, and a test keeps it that way.
+
+
 ### 0.1 What Dealmaker is
 
 - **One agent that earns its role in stages** ("all three, in stages"): it starts as a **sales assistant**
@@ -48,8 +164,9 @@ words are the owner's. Where something here changes an earlier section, this win
 
 ### 0.2 How much it does on its own
 
-- **Anything that talks to a lead waits for approval by default, and the user may make a kind of message
-  autonomous** (for example, no-show rebook texts). The owner turns each kind on.
+- **Anything that talks to a lead waits for approval by default.** The owner may make only low-stakes kinds
+  autonomous: reminders, confirmations, and delivering something already promised (doctrine IV, 0.0).
+  Anything that persuades, prices, re-engages or closes always waits.
 - **Always stops for a person, whatever is autonomous:**
   1. anything with a price;
   2. the first message to a lead;
@@ -86,7 +203,7 @@ other's moves and handing deals off. Colour is never alone: every status has an 
 |---|---|---|
 | **Chat** | Talk to Dealmaker; it routes to a skill and shows the plan and budget first | All six |
 | **Calendar** | Booked calls in a week grid with a Today rail; each call shows its brief status (ready, due, none), confirmed or not, showed, no-show, cancelled; show-rate figures on top | Deal Briefing |
-| **Pipeline** | Deals by stage, colour-coded by **health** (active, cooling, quiet, won, lost), with a badge for **who has the ball** (the lead, us, waiting for approval) and the lead's **temperature**; the lead score with its reasons; today's moves; the weekly review on top; dragging a card *proposes* the stage move | Pipeline Forensics, Follow-up Engine |
+| **Pipeline** | Deals by stage, colour-coded by **health** (active, cooling, quiet, won, lost), with a badge for **who has the ball** (the lead, us, waiting for approval) and the lead's **temperature**; each deal's readiness (what is established, what is unresolved); open commitments with their owners; today's moves; the weekly review on top; dragging a card *proposes* the stage move | Pipeline Forensics, Follow-up Engine |
 | **Calls** | Before the call: the brief. During: a live checklist and Dealmaker taking notes. After: the review, the recap, the proposal, the next step. A short intake form for calls taken on a mobile phone | Deal Briefing, Conversation Intelligence, Objection Playbook, Proposal Architect |
 | **Comms** | Every message drafted for sending: SMS, email, voice notes (the user's cloned voice), DMs (Instagram, Facebook); WhatsApp marked coming soon. Lanes: drafted, waiting for approval, held for quiet hours, sent, failed | Follow-up Engine, Proposal Architect |
 | **Playbook** | Dealmaker's sales brain: what it knows about how this business sells (section 0.7), what it learned, and the objection playbook | Feeds every skill; holds Objection Playbook |
@@ -127,17 +244,19 @@ evidence label. The Playbook is one per organization and one per client.
 ### 0.8 Each skill, refined
 
 **Pipeline Forensics.**
-- **Live and weekly.** The figures, the stage flow, the health colours and the lead score are recomputed in
+- **Live and weekly.** The figures, the stage flow, the health colours and each deal's readiness are recomputed in
   code after every CRM read, at no model cost. The written review (the stall explained, the plan) runs
   **weekly, automatically**, with its cap shown before it is switched on, and on request.
-- **The lead score lives here**, worked out in code from **engagement** (replied lately, showed, answered
-  messages, reply speed), **fit** (source, value, budget, who decides and timing from call reviews) and
-  **what the business's own won deals had in common** (only once there are enough won deals; until then it
-  says "Not enough data" for that part). Shown as a number **with every reason listed under it**, labelled
-  an estimate, and never shown to a lead. **This is the owner's decision to break the app's no-score rule**
-  (readable-output: "there is no score, grade or percentage") for this one place.
-- **Lead temperature** (hot, warm, cold) is the engagement part of the score in three bands, named so the
-  colour has words.
+- **Readiness, not a score** (the owner's decision under the doctrine, 0.0; it replaces the lead score this
+  section first had). For each deal, worked out in code: what is **established** (need, budget, who decides,
+  timing, fit, each with the evidence and its kind: recorded event, buyer's words, rep's account), what is
+  **unresolved**, and what the business's own won deals had in common that this deal does or does not have
+  (only once there are enough won deals; until then "Not enough data"). No single number. Never shown to a
+  lead.
+- **Lead temperature** (hot, warm, cold) comes from engagement signals only (replied lately, showed,
+  answered messages, reply speed) and says so.
+- **Disagreements between records** (the CRM's stage against what the last call said) are shown for a
+  person to settle.
 - **Hands back, beyond the stall**: today's moves (the deals to act on now, each with one next move), a
   per-rep breakdown, source quality (booked calls and won deals per source; cost per won deal with Meta),
   and a **forecast** of revenue from open deals, as a range with its basis, or "Not enough data".
@@ -153,7 +272,7 @@ evidence label. The Playbook is one per organization and one per client.
   fields, objections heard from the Playbook's list, and a 60-second voice memo Dealmaker transcribes and
   uses to fill in the rest).
 - **Hands back, added**: talk time and questions asked, which steps of the business's own script were
-  covered or skipped, a recap for the lead drafted in Comms, and the fit answers that feed the lead score.
+  covered or skipped, a recap for the lead drafted in Comms, the fit answers that feed readiness, and the commitments made on the call, each with its owner and date.
 - **Coaching notes are the owner's only.**
 - **The live checklist** during the call holds both the script's steps and this lead's points from the
   brief, marked apart. It does not listen to the call; real-time prompts are not built.
@@ -162,7 +281,7 @@ evidence label. The Playbook is one per organization and one per client.
 - As decided: automatic 3 hours before each booked call, and on request; at most 200 briefs and 600
   credits a month, shown before the switch is turned on.
 - **Adds**: a short public read of the lead's business (website, public profile), sourced and labelled the
-  Strategist way; the lead score and why; the package that fits what is known (no price unless it is in the
+  Strategist way; the deal's readiness (established, unresolved) and what the setter found, so nothing is asked twice; the package that fits what is known (no price unless it is in the
   offer); and a suggested opening question.
 - **Delivered** on the Calls tab, by email to the closer, and as a link added to the calendar event (this
   writes to the closer's calendar, so it needs the calendar's write permission and a setting).
@@ -174,9 +293,11 @@ evidence label. The Playbook is one per organization and one per client.
 - **Channel**: Dealmaker suggests one with its reason; the approver can switch it before sending.
 - **When the lead replies**, it drafts the answer **and** hands it to the deal's person. A negative reply
   stops everything for that lead. Notifications to Slack or Discord come later.
-- **Dead deals**: people decide when a deal is dead; Dealmaker may **propose** moving a deal to the
-  business's lost or cold stage after **30 days with no engagement** (this replaces the 45 days of answer
-  12.5), as a proposal like any other.
+- **Dead deals**: people decide when a deal is dead. After **30 days with no engagement** the next move is an
+  honest message asking whether further contact is welcome (doctrine I and IV). Only when that goes
+  unanswered, or the buyer declines, does Dealmaker **propose** moving the deal to the business's lost or
+  cold stage, as a proposal like any other. A clear refusal stops all contact. Dealmaker may also recommend
+  disqualifying a deal that does not fit, with its evidence.
 
 **Objection Playbook.** The objections folder of the Playbook.
 - **From day one**: the owner's own answers, a starter set for agencies, coaches and consultants labelled
@@ -205,14 +326,14 @@ tests, lint, both typechecks and the build, never deploying Convex:
 7. **Playbook, the fuel**: the four folders, uploads, transcripts, YouTube links, the guided interview
    (reading the CRM and website first), what it still needs, and the "learned" list.
 8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
-9. **Pipeline tab**: live figures and colours on every read, the lead score with reasons, temperature,
+9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.
-10. **Calls tab, before**: Deal Briefing with research, score, offer fit and opening line; email and the
+10. **Calls tab, before**: Deal Briefing with research, readiness, the setter's hand-off, offer fit and opening line; email and the
     calendar-event link.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
     recordings; the Zoom and Meet note taker.
 12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the
-    score inputs, owner-only coaching, and the live checklist.
+    readiness inputs, commitments, owner-only coaching, the live checklist, and the end-of-day reports.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
     over; SMS and email through the merged messaging path; Instagram and Facebook DMs.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio

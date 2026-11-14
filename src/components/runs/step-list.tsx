@@ -15,7 +15,6 @@ import {
   type RunStepView,
   type StepGroup,
 } from "@/lib/runs/view";
-import { ModelMark } from "@/components/models/model-mark";
 
 /** How many step rows show before "Show earlier steps". Long runs stay quick to render. */
 export const VISIBLE_STEPS = 50;
@@ -44,7 +43,6 @@ const StepRow = memo(function StepRow({ step }: { step: RunStepView }) {
           {failed ? `. ${resultWords(step.resultCode)}` : ""}
           <span className="ml-1 font-mono text-[11px] opacity-70">{step.resultCode}</span>
         </p>
-        <ModelMark model={step.model} className="mt-0.5" />
       </div>
     </div>
   );

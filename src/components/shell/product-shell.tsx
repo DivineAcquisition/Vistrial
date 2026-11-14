@@ -53,7 +53,9 @@ function ProductShellInner({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div data-app-text className="min-h-dvh overflow-x-hidden bg-background text-foreground">
+    // `overflow-x-clip`, not `hidden`: `hidden` makes this wrapper a scroll container, and a sticky child
+    // then sticks to the wrapper (which never scrolls) instead of the page, so the sidebar scrolled away.
+    <div data-app-text className="min-h-dvh overflow-x-clip bg-background text-foreground">
       <a
         href="#workspace-main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-background focus:px-3 focus:py-2"
@@ -61,7 +63,7 @@ function ProductShellInner({
         Skip to content
       </a>
       <div className="flex min-h-dvh min-w-0">
-        <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-border md:flex md:flex-col print:hidden" aria-label="Workspace">
+        <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 self-start overflow-y-auto overscroll-contain border-r border-border md:flex md:flex-col print:hidden" aria-label="Workspace">
           <JourneySidebar agents={agents} pathname={pathname} />
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">

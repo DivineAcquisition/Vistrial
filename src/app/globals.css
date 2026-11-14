@@ -2284,3 +2284,201 @@ html[data-calm="true"] .live-shimmer-text {
   box-shadow: none !important;
   color: var(--muted-foreground) !important;
 }
+
+/*
+ * The usage page's chart colours: one per agent, led by the brand violet, in a fixed order that passed the
+ * colour-blind and contrast checks in both themes (dataviz validator). An agent keeps its colour whatever is filtered.
+ */
+.usage-viz {
+  --series-1: #6250d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #2a78d6;
+  --series-8: #e34948;
+  --series-none: #8a8984;
+}
+.dark .usage-viz {
+  --series-1: #9085e9;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #0ca30c;
+  --series-7: #3987e5;
+  --series-8: #e66767;
+  --series-none: #74736c;
+}
+
+/*
+ * Sidebar rows (Home, Tasks, agents, work tabs, Library). Hover is a soft brand
+ * wash with a thin left accent and a brand-tinted icon; the current page is a
+ * stronger wash with a solid accent, so the two never read the same. The focus
+ * ring is drawn inside the row, where the sidebar's scroll area cannot clip it.
+ * Reduced motion drops the transition through the global reduced-motion rule.
+ * Unlayered on purpose: the icons carry a text colour utility, and a layered
+ * rule could not tint them on hover.
+ */
+.nav-row,
+.nav-group {
+  --nav-ink: color-mix(in srgb, var(--brand) 78%, var(--strong));
+  position: relative;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+.nav-row > svg,
+.nav-row > [data-agent-avatar] {
+  transition: color 150ms ease, transform 150ms ease;
+}
+.nav-row:hover,
+.nav-group:hover {
+  background-color: rgba(var(--brand-rgb), 0.09);
+  box-shadow: inset 2px 0 0 rgba(var(--brand-rgb), 0.45);
+}
+.nav-row:hover > svg {
+  color: var(--nav-ink);
+}
+.nav-row:focus-visible {
+  outline: 2px solid rgba(var(--brand-rgb), 0.85);
+  outline-offset: -2px;
+  background-color: rgba(var(--brand-rgb), 0.09);
+}
+.nav-row[aria-current="page"],
+.nav-group:has(> .nav-row[aria-current="page"]) {
+  background-color: rgba(var(--brand-rgb), 0.16);
+  box-shadow: inset 3px 0 0 var(--brand);
+  color: var(--strong);
+  font-weight: 500;
+}
+.nav-row[aria-current="page"] > svg {
+  color: var(--nav-ink);
+}
+.nav-row[aria-current="page"]:hover,
+.nav-group:has(> .nav-row[aria-current="page"]):hover {
+  background-color: rgba(var(--brand-rgb), 0.2);
+}
+/* Inside a group the group paints the row; the link only carries the focus ring. */
+.nav-group > .nav-row,
+.nav-group > .nav-row:hover,
+.nav-group > .nav-row[aria-current="page"] {
+  background-color: transparent;
+  box-shadow: none;
+}
+/* Square icon buttons (Settings, Briefing) and a group's chevron: no left accent. */
+.nav-row.nav-icon:hover,
+.nav-row.nav-icon[aria-current="page"] {
+  box-shadow: none;
+}
+.nav-toggle {
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.nav-toggle:hover {
+  color: var(--nav-ink, var(--brand));
+  background-color: rgba(var(--brand-rgb), 0.12);
+}
+.nav-toggle:focus-visible {
+  outline: 2px solid rgba(var(--brand-rgb), 0.85);
+  outline-offset: -2px;
+}
+/* Small text links in the sidebar (Evidence, Connections). */
+.nav-link {
+  border-radius: 0.25rem;
+  transition: color 150ms ease;
+}
+.nav-link:hover {
+  color: color-mix(in srgb, var(--brand) 78%, var(--strong));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/*
+ * Work tab banners (WorkHero). A violet wash from the top-left, a faint grid on
+ * the right, a lit top edge, and the skill's icon on a brand chip pinned to the
+ * agent's face. While work runs, the orb and halo breathe and a light runs along
+ * the bottom edge; reduced motion and calm mode hold them still.
+ */
+.work-hero-wash {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(var(--brand-rgb), 0.16) 0%, rgba(var(--brand-rgb), 0.05) 38%, transparent 70%),
+    linear-gradient(100deg, transparent 55%, rgba(var(--brand-rgb), 0.07) 100%);
+}
+.work-hero-grid {
+  background-image:
+    linear-gradient(rgba(var(--brand-rgb), 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--brand-rgb), 0.1) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at 85% 30%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 85% 30%, #000 0%, transparent 70%);
+}
+.work-hero-orb {
+  background: rgba(var(--brand-rgb), 0.2);
+}
+.work-hero-orb-on {
+  animation: work-hero-breathe 3.2s ease-in-out infinite;
+}
+.work-hero-edge {
+  background: linear-gradient(90deg, transparent, rgba(var(--brand-rgb), 0.55) 30%, rgba(var(--brand-rgb), 0.15) 75%, transparent);
+}
+/* A literal gradient in both themes, so its icon is white in both. */
+.work-hero-skill {
+  color: #ffffff;
+  background: linear-gradient(135deg, #9a88fc 0%, #6650d8 100%);
+  box-shadow: 0 4px 12px -4px rgba(102, 80, 216, 0.6);
+}
+.work-hero-eyebrow {
+  color: color-mix(in srgb, var(--brand) 70%, var(--strong));
+}
+.work-hero-halo {
+  background: radial-gradient(circle, rgba(var(--brand-rgb), 0.28) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.work-hero-halo-on {
+  opacity: 1;
+  animation: work-hero-breathe 2.4s ease-in-out infinite;
+}
+.work-hero-track {
+  background: rgba(var(--brand-rgb), 0.18);
+}
+.work-hero-scan {
+  left: -33%;
+  background: linear-gradient(90deg, transparent, rgba(var(--brand-rgb), 0.95), transparent);
+  animation: work-hero-scan 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes work-hero-scan {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+@keyframes work-hero-breathe {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .work-hero-scan {
+    display: none;
+  }
+  .work-hero-orb-on,
+  .work-hero-halo-on {
+    animation: none;
+  }
+}
+html[data-calm="true"] .work-hero-scan {
+  display: none;
+}
+html[data-calm="true"] .work-hero-orb-on,
+html[data-calm="true"] .work-hero-halo-on {
+  animation: none;
+}

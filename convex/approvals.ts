@@ -12,6 +12,7 @@ import { internal } from "./_generated/api";
 import { approveTask, declineTask } from "./agentTasks";
 import { approveAsset, rejectAsset } from "./assets";
 import { decideStep } from "./browserAccess";
+import { confirmOf, decideAction } from "./crmActions";
 import { APPROVAL_KIND_LABEL, NOT_WAITING_WORDS, SPEND_LIMIT_MAX, SPEND_LIMIT_MIN, mayDecide, recordDecision, requireDecider } from "./lib/approvals";
 import { writeAudit } from "./lib/audit";
 import { askApproval, askAssetReview, settingsOf } from "./lib/briefing";
@@ -32,11 +33,17 @@ function hrefOf(approval: Doc<"approvals">) {
   if (approval.subjectTable === "assets") return `/app/assets/${approval.subjectId}`;
   if (approval.subjectTable === "browserSteps") return "/app/connections/browser";
   if (approval.subjectTable === "agentTasks") return "/app/tasks";
+  if (approval.subjectTable === "crmActions") return `/app/connections/highlevel${approval.clientId ? `?client=${approval.clientId}` : "?client=own"}`;
   return null;
 }
 
 /** What approving a restricted step asks the Owner to type, if this approval is one. */
 async function confirmFor(ctx: { db: MutationCtx["db"] | import("./_generated/server").QueryCtx["db"] }, approval: Doc<"approvals">) {
+  if (approval.subjectTable === "crmActions" && approval.ownerOnly) {
+    const id = ctx.db.normalizeId("crmActions", approval.subjectId);
+    const action = id ? await ctx.db.get(id) : null;
+    return action ? confirmOf(action) : null;
+  }
   if (approval.subjectTable !== "browserSteps" || !approval.ownerOnly) return null;
   const id = ctx.db.normalizeId("browserSteps", approval.subjectId);
   const step = id ? await ctx.db.get(id) : null;
@@ -113,6 +120,12 @@ async function carryOut(ctx: Access, approval: Doc<"approvals">, args: { approve
     const id = ctx.db.normalizeId("browserSteps", approval.subjectId);
     if (!id) notFound();
     await decideStep(ctx, { stepId: id, approve: args.approve, confirmWord: args.confirmWord });
+    return;
+  }
+  if (approval.subjectTable === "crmActions") {
+    const id = ctx.db.normalizeId("crmActions", approval.subjectId);
+    if (!id) notFound();
+    await decideAction(ctx as Access & import("./lib/builders").MemberAccess, { actionId: id, approve: args.approve, confirmWord: args.confirmWord });
     return;
   }
   if (approval.subjectTable === "agentTasks") {

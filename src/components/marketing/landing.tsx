@@ -47,6 +47,8 @@ import {
   marketingShell,
   marketingSubhead,
 } from "@/lib/marketing/ui";
+import { siteOrigin } from "@/lib/marketing/hosts";
+import { homeJsonLd, jsonLdScript } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 const landingButton = "h-12! rounded-[8px]! before:rounded-[7px]!";
@@ -81,34 +83,9 @@ function Section({
 }
 
 export function LandingPage() {
-  const home = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        name: "Vistrial",
-        url: "https://vistrial.io",
-        email: "contact@vistrial.io",
-      },
-      {
-        "@type": "SoftwareApplication",
-        name: "Vistrial",
-        applicationCategory: "BusinessApplication",
-        operatingSystem: "Web",
-        description: HERO.supporting,
-        offers: {
-          "@type": "Offer",
-          price: "179",
-          priceCurrency: "USD",
-          description: PRICING_DISPLAY.privateAccess.price,
-        },
-      },
-    ],
-  };
-
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(home) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(homeJsonLd(siteOrigin())) }} />
       {SECTIONS.hero ? (
         <section className={cn(marketingPageGutter, "relative pb-16 pt-14 sm:pb-24 sm:pt-20")}>
           <HeroAtmosphere>

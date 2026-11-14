@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 
+import { publicPageMetadata } from "@/lib/seo";
+
 import { OpenConsentButton } from "@/components/marketing/consent-banner";
 import { MarketingShell } from "@/components/marketing/chrome";
 import { loadTrackingCatalog } from "@/lib/marketing/tracking";
 import { marketingHeroTitle } from "@/lib/marketing/ui";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Cookies",
   description: "How Vistrial uses cookies on the public website.",
-};
+  path: "/cookies",
+});
 
 export default async function CookiesPage() {
   const catalog = await loadTrackingCatalog();

@@ -7,6 +7,7 @@
 import { when } from "./compute";
 import { FIT_FIELDS, FIT_WORDS, NOT_ENOUGH_DATA, type Brief, type BriefRecord, type BriefSource, type ChecksRecord, type EvidenceKind, type FitField } from "./shapes";
 import { quoted } from "./checks";
+import type { BriefView } from "../../lib/dealmaker/briefView";
 
 export const KIND_WORDS: Record<EvidenceKind, string> = { recorded: "Recorded event", buyer: "Buyer's words", rep: "Rep's account", measured: "Measured result" };
 
@@ -132,4 +133,44 @@ export function renderBrief(brief: Brief, record: BriefRecord, checks: ChecksRec
 
   lines.push("## Opening question", "", `> ${brief.openingQuestion}`, "");
   return tail(record, lines);
+}
+
+/** The brief as the Calls tab draws it, with each line's evidence label decided here, in code. */
+export function viewOf(brief: Brief | null, record: BriefRecord, checksPassed: boolean): BriefView {
+  const sources = new Map(record.sources.map((row) => [row.id, row]));
+  const items = new Map(record.playbook.map((row) => [row.id, row]));
+  const handoff = record.sources.find((row) => row.type === "handoff");
+  const fit = brief ? items.get(brief.offerFit.itemId) : undefined;
+  // A point rests on what was read when it cites a fact or a source; on the Playbook alone it is untested.
+  const grounded = (refs: string[]) => refs.some((id) => id.startsWith("F") || sources.has(id));
+  return {
+    summary: brief?.summary ?? "",
+    codeOnly: brief === null,
+    checksPassed,
+    firstCall: record.firstCall,
+    facts: record.facts.map((row) => ({ group: row.group, label: row.label, display: row.display, kind: row.kind === "measured" ? KIND_WORDS.measured : KIND_WORDS.recorded })),
+    readiness: readinessOf(brief, record).map((row) => ({
+      field: row.field,
+      label: FIT_WORDS[row.field],
+      established: row.established,
+      finding: row.finding,
+      quote: row.quote,
+      ...(row.kind ? { kind: KIND_WORDS[row.kind] } : {}),
+      ...(row.source ? { source: row.source } : {}),
+    })),
+    ...(handoff ? { handoff: { by: handoff.by ?? "a teammate", text: handoff.text } } : {}),
+    commitments: (brief?.commitments ?? []).map((row) => ({ owner: row.owner === "us" ? "We" : record.leadName, what: row.what, due: row.due, quote: row.quote })),
+    disagreements: (brief?.disagreements ?? []).map((row) => row.what),
+    cover: (brief?.cover ?? []).map((row) => ({ point: row.point, label: grounded(row.refs) ? ("Inference" as const) : ("Untested hypothesis" as const) })),
+    ...(fit ? { offerFit: { title: fit.title, why: brief!.offerFit.why } } : {}),
+    objections: (brief?.objections ?? []).map((row) => {
+      const source = sources.get(row.sourceId);
+      const item = items.get(row.sourceId);
+      return source
+        ? { text: row.objection, where: `Said on ${source.label}: "${row.quote}"`, label: "Your data" as const }
+        : { text: row.objection, where: item?.basis === "hypothesis" ? "From the Playbook's starter set, not yet heard on your calls" : "From your Playbook", label: "Untested hypothesis" as const };
+    }),
+    openingQuestion: brief?.openingQuestion ?? "",
+    missing: record.missing,
+  };
 }

@@ -9,18 +9,21 @@
 
 import { v } from "convex/values";
 
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { SALES_CONVERSION } from "./catalog";
 import { writeAudit } from "./lib/audit";
 import { priceFor } from "./lib/billing";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { clientForNew } from "./lib/clients";
+import { clientForNew, clientHere, type ClientScope } from "./lib/clients";
 import { crmFor } from "./lib/crm/read";
-import { userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
+import { dealScope, type TeamRow } from "./lib/dealmaker/roles";
 import { capsFor, previewChoice, skillNeeds } from "./lib/modelChoice";
 import { requireWork } from "./lib/roles";
+import { settingsOf } from "./playbookInterview";
 import { startRunFor } from "./runs";
+import { when } from "./skills/dealBriefing/compute";
 import { BRIEF_LIMITS, SKILL_SLUG } from "./skills/dealBriefing/shapes";
 
 const DAY = 86_400_000;
@@ -161,5 +164,119 @@ export const request = workspaceMutation({
     // The audit row names the brief only, never the lead.
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "dealBriefing.requested", subject: briefingId });
     return { briefingId, runId };
+  },
+});
+
+/* ---------------------------------------------------------------------------
+ * The Calls tab, before the call (build step 10b)
+ * ------------------------------------------------------------------------- */
+
+type ReadCtx = QueryCtx & { workspaceId: Id<"workspaces">; clients: ClientScope; member: Doc<"members">; role: string };
+
+/** How far ahead the Calls tab lists booked calls, and how many briefs it lists. */
+export const CALLS_AHEAD_DAYS = 7;
+const RECENT_BRIEFS = 20;
+
+async function readScope(ctx: ReadCtx, clientId: Id<"clients"> | undefined) {
+  if (!clientId) {
+    ctx.clients.require(undefined);
+    return { workspaceId: ctx.workspaceId };
+  }
+  const client = await clientHere(ctx, ctx.workspaceId, clientId);
+  ctx.clients.require(client._id);
+  return { workspaceId: ctx.workspaceId, clientId: client._id };
+}
+
+export type BriefState = "none" | "running" | "ready" | "needsReview" | "failed";
+
+/** A brief's state as a person reads it: a row still "running" whose run has ended without saving failed. */
+async function stateOf(ctx: Pick<QueryCtx, "db">, row: Doc<"dealBriefings">): Promise<BriefState> {
+  if (row.status === "ready") return row.view && !row.view.checksPassed ? "needsReview" : "ready";
+  if (row.status === "failed") return "failed";
+  const run = row.runId ? await ctx.db.get(row.runId) : null;
+  return run && (run.status === "failed" || run.status === "stopped" || run.status === "completed") ? "failed" : "running";
+}
+
+function briefRow(row: Doc<"dealBriefings">, state: BriefState, timezone: string | null) {
+  return { id: row._id, leadName: row.leadName, when: row.startsAt ? when(row.startsAt, timezone) : null, state, createdAt: row.createdAt };
+}
+
+/**
+ * The booked calls of the next week with each one's brief, filtered to the deals the person's home shows
+ * (an Owner, an Admin or a sales lead sees every call; a setter or closer sees calls with their own deals),
+ * and the briefs made lately. Without a CRM it lists the briefs only, and says how to brief a lead by name.
+ */
+export const calls = workspaceQuery({
+  args: { clientId: v.optional(v.id("clients")) },
+  handler: async (ctx, args) => {
+    const scope = await readScope(ctx, args.clientId);
+    const briefRows = (
+      await ctx.db
+        .query("dealBriefings")
+        .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", scope.clientId))
+        .order("desc")
+        .take(RECENT_BRIEFS * 5)
+    ).slice(0, RECENT_BRIEFS * 5);
+    const crm = await crmFor(ctx, scope);
+    const timezone = crm?.connection.timezone ?? null;
+    const caps = await budgetCaps(ctx);
+    const base = { canRequest: ctx.role !== "viewer", maxCredits: priceFor(caps.maxCostCentsPerRun) };
+
+    // The latest brief per booked call; the rest are listed as recent briefs.
+    const byCall = new Map<string, Doc<"dealBriefings">>();
+    for (const row of briefRows) if (row.appointmentRef && !byCall.has(row.appointmentRef)) byCall.set(row.appointmentRef, row);
+
+    const settings = await settingsOf(ctx, scope);
+    const team = (settings?.team ?? []).find((item) => item.memberId === ctx.member._id) as TeamRow | undefined;
+    const home = dealScope(ctx.member.role, team);
+    const visible = (row: Doc<"dealBriefings">) => home.kind === "all" || row.createdBy === ctx.identity.subject;
+    const recent = await Promise.all(briefRows.filter(visible).slice(0, RECENT_BRIEFS).map(async (row) => briefRow(row, await stateOf(ctx, row), timezone)));
+
+    if (!crm) return { ...base, connected: false as const, scopeWhy: home.why, upcoming: [], recent };
+
+    const now = Date.now();
+    const [appointments, deals, pipelines] = await Promise.all([crm.appointments({ from: now - 2 * 3_600_000, to: now + CALLS_AHEAD_DAYS * 86_400_000 }), crm.deals({ open: true }), crm.pipelines()]);
+    const stageName = new Map(pipelines.flatMap((pipeline) => pipeline.stages.map((stage) => [`${pipeline.ref}:${stage.ref}`, stage.name] as const)));
+    const dealOf = new Map<string, (typeof deals)[number]>();
+    for (const deal of deals) if (deal.contactRef && (!dealOf.has(deal.contactRef) || (deal.updatedAt ?? 0) > (dealOf.get(deal.contactRef)!.updatedAt ?? 0))) dealOf.set(deal.contactRef, deal);
+    const mine = (contactRef: string | null) => {
+      if (home.kind === "all") return true;
+      if (home.kind === "none" || !contactRef) return false;
+      return dealOf.get(contactRef)?.ownerRef === home.crmUserRef;
+    };
+    const upcoming = [];
+    for (const call of appointments) {
+      if (call.status === "cancelled" || !call.contactRef || !mine(call.contactRef)) continue;
+      const contact = await crm.contact(call.contactRef);
+      if (!contact) continue;
+      const deal = dealOf.get(call.contactRef) ?? null;
+      const brief = byCall.get(call.ref) ?? null;
+      upcoming.push({
+        ref: call.ref,
+        startsAt: call.startsAt,
+        when: when(call.startsAt, timezone),
+        status: call.status,
+        contactRef: contact.ref,
+        dealRef: deal?.ref ?? null,
+        leadName: contact.name ?? contact.email ?? "A lead",
+        source: contact.source,
+        stage: deal ? (stageName.get(`${deal.pipelineRef}:${deal.stageRef}`) ?? null) : null,
+        brief: brief ? briefRow(brief, await stateOf(ctx, brief), timezone) : null,
+      });
+      if (upcoming.length >= 50) break;
+    }
+    return { ...base, connected: true as const, crm: { label: crm.connection.label, accountName: crm.connection.accountName }, scopeWhy: home.why, upcoming, recent };
+  },
+});
+
+/** One brief as the Calls tab draws it. A person who may see the brief's client may read it. */
+export const brief = workspaceQuery({
+  args: { briefingId: v.id("dealBriefings") },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.briefingId);
+    if (!row || row.workspaceId !== ctx.workspaceId) notFound();
+    ctx.clients.require(row.clientId);
+    const crm = await crmFor(ctx, { workspaceId: ctx.workspaceId, ...(row.clientId ? { clientId: row.clientId } : {}) });
+    return { ...briefRow(row, await stateOf(ctx, row), crm?.connection.timezone ?? null), view: row.view ?? null, assetId: row.assetId ?? null };
   },
 });

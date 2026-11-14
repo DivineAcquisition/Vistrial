@@ -19,7 +19,8 @@ import { saveCrmSource } from "../pipelineForensics/tools";
 import type { SkillContext } from "../types";
 import { runChecks } from "./checks";
 import { computeBrief, when, type BriefInput } from "./compute";
-import { KIND_WORDS, kindOf, readinessOf, renderBrief, renderCodeOnly } from "./render";
+import { KIND_WORDS, kindOf, readinessOf, renderBrief, renderCodeOnly, viewOf } from "./render";
+import type { BriefView } from "../../lib/dealmaker/briefView";
 import { BRIEF_LIMITS, FIT_WORDS, NOT_ENOUGH_DATA, PHASE, readBrief, type Brief, type BriefRecord, type ChecksRecord } from "./shapes";
 
 type Step = Doc<"runSteps">;
@@ -215,12 +216,12 @@ const save: MutationTool = async (ctx, run, steps) => {
   if (!value || !briefing) return { failCode: "no_briefing" };
   const title = `Pre-call brief: ${value.leadName}${value.call ? `, ${when(value.call.startsAt, value.crm?.timezone ?? null)}` : ""}`;
   const base = { workspaceId: run.workspaceId, ...(run.clientId ? { clientId: run.clientId } : {}), kind: "preCallBrief" as const, title: title.slice(0, 200), createdByRun: run._id, createdAt: Date.now() };
-  const done = async (assetId: Id<"assets">) => ctx.db.patch(briefing._id, { status: "ready", assetId, finishedAt: Date.now() });
+  const done = async (assetId: Id<"assets">, view: BriefView) => ctx.db.patch(briefing._id, { status: "ready", assetId, view, finishedAt: Date.now() });
 
   if (!value.needsModel) {
     const assetId = await ctx.db.insert("assets", { ...base, status: "draft", currentVersion: 1 });
     const dropped = await writeVersion(ctx, run, assetId, 1, renderCodeOnly(value), briefClaims(null, value));
-    await done(assetId);
+    await done(assetId, viewOf(null, value, true));
     return { resultId: assetId, resultCode: "code_only", artifact: record("saved", { brief: null, dropped }) };
   }
 
@@ -239,7 +240,7 @@ const save: MutationTool = async (ctx, run, steps) => {
     // The model could not write within the budget: the closer still gets what code knows.
     const assetId = await ctx.db.insert("assets", { ...base, status: "needsReview", currentVersion: 1 });
     const dropped = await writeVersion(ctx, run, assetId, 1, `${renderCodeOnly(value)}\n\n_The rest of the brief could not be written within its budget._`, briefClaims(null, value));
-    await done(assetId);
+    await done(assetId, { ...viewOf(null, value, false), missing: [...value.missing, "The rest of the brief could not be written within its budget."] });
     return { resultId: assetId, resultCode: "needs_review", artifact: record("saved", { brief: null, dropped }) };
   }
 
@@ -251,7 +252,7 @@ const save: MutationTool = async (ctx, run, steps) => {
   const assetId = await ctx.db.insert("assets", { ...base, status: passed ? "draft" : "needsReview", currentVersion: second ? 2 : 1 });
   const droppedFirst = await writeVersion(ctx, run, assetId, 1, renderBrief(first, value, firstChecks, notes), briefClaims(first, value));
   const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, renderBrief(second, value, finalChecks, []), briefClaims(second, value)) : [];
-  await done(assetId);
+  await done(assetId, viewOf(final, value, passed));
   return {
     resultId: assetId,
     resultCode: passed ? "ok" : "needs_review",

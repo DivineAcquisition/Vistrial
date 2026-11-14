@@ -2,6 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 import { assetStatus } from "./lib/assetStatus";
+import { briefView } from "./lib/dealmaker/briefView";
 import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
 import { approvalKind, approvalStatus, briefingKind, expectedReturn, proposedBy, taskEvidence, taskStatus, taskTry, taskWork } from "./lib/taskShapes";
 import { folder as playbookFolder, itemSource, itemStatus, kind as playbookKind, lessonSource, lessonStatus, objectionTag, stage as playbookStage } from "./lib/playbook";
@@ -2365,6 +2366,8 @@ export default defineSchema({
     status: v.union(v.literal("running"), v.literal("ready"), v.literal("failed")),
     runId: v.optional(v.id("agentRuns")),
     assetId: v.optional(v.id("assets")),
+    /** The brief as the Calls tab draws it, saved with the asset. */
+    view: v.optional(briefView),
     createdBy: v.string(),
     createdAt: v.number(),
     finishedAt: v.optional(v.number()),

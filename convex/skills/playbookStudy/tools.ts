@@ -71,6 +71,11 @@ const gather: MutationTool = async (ctx, run) => {
   const missing: string[] = [];
   for (const [index, source] of study.sources.entries()) {
     const id = `s${index + 1}`;
+    if (source.type === "website") {
+      if (source.text) sources.push({ id, type: "website", ref: source.ref ?? id, label: source.label, ...cut(source.text) });
+      else missing.push(`${source.label} could not be read: ${source.problem ?? "it was not reached."}`);
+      continue;
+    }
     if (source.type === "text") {
       sources.push({ id, type: "text", ref: source.ref ?? id, label: source.label, ...cut(source.text ?? "") });
       continue;

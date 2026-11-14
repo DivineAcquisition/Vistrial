@@ -341,8 +341,12 @@ tests, lint, both typechecks and the build, never deploying Convex:
    analysis. Code gathers them; one model step proposes items; code keeps only items that fit the folders
    and quote their source's own words (checked against the source), drops repeats, and files the rest as an
    **inference** with the source and the quote. It runs as Dealmaker's work, so only once Dealmaker is live.
-   Next, 7c-2: the business's website and YouTube links (public videos with captions only, 0.10 item 7),
-   which need the page reader and a video reader in an action.
+   *7c-2, built (website):* a study may name up to 4 pages of the business's own website. A new action tool,
+   `pbs.site`, reads one page per step through the shared page reader as a plain request (robots.txt
+   honoured, no browser, no screenshots, nothing kept but the text); a page it cannot read is named with the
+   reason. YouTube links are held for the owner: YouTube's captions download works only for the channel's
+   own videos after it signs in, so the proposal is Gemini reading the public link (as references.ts does),
+   keeping only extracted text and quotes, never the video.
 8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.

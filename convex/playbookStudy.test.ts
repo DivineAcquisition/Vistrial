@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import type { RawResponse } from "./lib/pageReader/read";
 import type { ScriptedModel } from "./lib/toolRouter";
 import { DOCTRINE_PROMPT } from "./skills/dealmaker/doctrine";
 import { SYSTEM } from "./skills/playbookStudy";
@@ -142,7 +143,7 @@ describe("a Playbook study, run end to end", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
-    delete (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel;
+    for (const key of ["__vistrialScriptedModel", "__vistrialScriptedPages", "__vistrialScriptedRenderer"]) delete (globalThis as Record<string, unknown>)[key];
   });
 
   it("reads a call and pasted text, files only what quotes its source, as an inference with its source", async () => {
@@ -163,10 +164,42 @@ describe("a Playbook study, run end to end", () => {
     expect(view.readable.transcripts.map((row) => row.title)).toEqual(["Call with Aster"]);
   });
 
+  it("reads the business's own website pages as plain requests, and names a page it could not read", async () => {
+    const page = (text: string, status = 200): RawResponse => {
+      const body = new TextEncoder().encode(text);
+      return { status, headers: { "content-type": "text/html; charset=utf-8" }, body, truncated: false, wireBytes: body.byteLength, address: "93.184.216.34" };
+    };
+    const requested: string[] = [];
+    const globals = globalThis as Record<string, unknown>;
+    globals.__vistrialScriptedPages = (url: URL) => {
+      requested.push(url.href);
+      if (url.pathname === "/robots.txt") return page("", 404);
+      if (url.pathname === "/offer") return page("<html><head><title>Growth Sprint</title></head><body><main><h1>Growth Sprint</h1><p>Twelve weeks of ads and weekly calls for owner-led clinics.</p></main></body></html>");
+      return page("", 401);
+    };
+    globals.__vistrialScriptedRenderer = null;
+    const inputs: string[] = [];
+    globals.__vistrialScriptedModel = ((params) => {
+      const input = String(params.messages[0].content);
+      inputs.push(input);
+      return { text: JSON.stringify({ items: [item({ kind: "package", title: "Growth Sprint", body: "Twelve weeks.", sourceId: "s1", quote: "Twelve weeks of ads and weekly calls" })] }) };
+    }) as ScriptedModel;
+    const s = await setup();
+    const { runId } = await s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, website: ["northlight.example.com/offer", "https://northlight.example.com/members"] });
+    expect(await finish(s, runId)).toBe("completed");
+    expect(requested).toContain("https://northlight.example.com/offer");
+    expect(inputs[0]).toContain("a page of the business's own website");
+    const view = await s.owner.query(api.playbook.view, { workspaceId: s.workspaceId });
+    expect(view.folders[0].items[0]).toMatchObject({ title: "Growth Sprint", basisLabel: "Inference", source: { type: "website", label: "northlight.example.com/offer" } });
+    expect(view.studies[0].filed).toBe(1);
+    expect(view.studies[0].missing[0]).toMatch(/^northlight\.example\.com\/members could not be read: /);
+    expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, website: ["not a url"] }))).toBe("That is not a web address.");
+  });
+
   it("refuses a call not shared with Dealmaker, an empty request, and any study while Dealmaker is not live", async () => {
     const s = await setup();
     expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, transcriptIds: [s.strategistOnly] }))).toBe("That call is not shared with Dealmaker.");
-    expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId }))).toBe("Choose a call, paste some text, or include the offer analysis.");
+    expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId }))).toBe("Choose a call, paste some text, add a page of your website, or include the offer analysis.");
     expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, offerAnalysis: true }))).toBe("There is no approved offer analysis to read.");
 
     const planned = await setup(false);

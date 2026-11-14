@@ -3,7 +3,7 @@ import { FOLDER_LABEL, FOLDERS, KINDS, KIND_LABEL, STAGES, STAGE_FOLDER, STAGE_L
 import { latest } from "../marketIntelligence/records";
 import type { SkillModule, SkillStep } from "../types";
 import { DOCTRINE_PROMPT } from "../dealmaker/doctrine";
-import { gatheredOf } from "./tools";
+import { gatheredOf, studyOf } from "./tools";
 import { AGENT_SLUG, EXTRACT_SCHEMA, PHASE, SKILL_SLUG, STUDY_LIMITS, type GatherRecord } from "./shapes";
 
 export const SYSTEM = [
@@ -41,7 +41,7 @@ function input(record: GatherRecord) {
     record.existing.length ? `- Already in the Playbook; do not file these again: ${record.existing.slice(0, 80).join(" | ")}` : "",
     "",
     "Sources:",
-    ...record.sources.map((row) => [`Source ${row.id}: ${row.type === "transcript" ? "a sales call transcript" : row.type === "strategist" ? "Strategist's approved offer analysis" : "a document the business gave"}, "${row.label}"${row.cut ? " (cut short)" : ""}.`, wrapUntrusted(row.text)].join("\n")),
+    ...record.sources.map((row) => [`Source ${row.id}: ${row.type === "transcript" ? "a sales call transcript" : row.type === "strategist" ? "Strategist's approved offer analysis" : row.type === "website" ? "a page of the business's own website" : "a document the business gave"}, "${row.label}"${row.cut ? " (cut short)" : ""}.`, wrapUntrusted(row.text)].join("\n")),
   ]
     .filter((line) => line !== "")
     .join("\n");
@@ -57,8 +57,12 @@ export const playbookStudy: SkillModule = {
   agentSlug: AGENT_SLUG,
   name: "Playbook study",
   devOnly: false,
-  tools: ["pbs.gather", "pbs.check", "pbs.save"],
+  tools: ["pbs.site", "pbs.gather", "pbs.check", "pbs.save"],
   async nextStep({ db, run, steps }) {
+    // The website first: one page per step, in Node, until every page has been tried.
+    const study = await studyOf(db, run);
+    const unread = study?.sources.some((row) => row.type === "website" && row.text === undefined && row.problem === undefined);
+    if (unread && steps.filter((row) => row.phase === PHASE.site).length < STUDY_LIMITS.pages) return tool("pbs.site", PHASE.site);
     if (!latest(steps, PHASE.gather)) return tool("pbs.gather", PHASE.gather);
     const record = await gatheredOf(db, run, steps);
     if (!record) return null;

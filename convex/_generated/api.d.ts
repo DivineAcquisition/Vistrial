@@ -180,6 +180,8 @@ import type * as personalNotes from "../personalNotes.js";
 import type * as planner from "../planner.js";
 import type * as platform from "../platform.js";
 import type * as playbook from "../playbook.js";
+import type * as playbookStudyActions from "../playbookStudyActions.js";
+import type * as playbookStudySite from "../playbookStudySite.js";
 import type * as profile from "../profile.js";
 import type * as publicSubmissions from "../publicSubmissions.js";
 import type * as records from "../records.js";
@@ -442,6 +444,8 @@ declare const fullApi: ApiFromModules<{
   planner: typeof planner;
   platform: typeof platform;
   playbook: typeof playbook;
+  playbookStudyActions: typeof playbookStudyActions;
+  playbookStudySite: typeof playbookStudySite;
   profile: typeof profile;
   publicSubmissions: typeof publicSubmissions;
   records: typeof records;

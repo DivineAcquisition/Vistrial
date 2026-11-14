@@ -505,7 +505,7 @@ the change is built in the PR named, and the sections above are to be read with 
      verb.
    - It is written after the offer ideas, because it sells the acquisition idea. If no offer idea was
      written, it sells the offer the person confirmed.
-   - Built in a new skill, Landing Page Build (#301, stacked on #300).
+   - Built in a new skill, Landing Page Build (#305, stacked on #300).
 
 Two scope notes from the owner, applied to everything here: the model's name is never shown, and credits
 spent are not shown on work screens (a separate Usage page does that). The only credit figure shown is a

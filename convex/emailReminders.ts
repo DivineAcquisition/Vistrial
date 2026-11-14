@@ -321,6 +321,7 @@ export const packageToAnnounce = internalQuery({
       findings: (report?.findings ?? []).map((row) => ({ text: row.statement, basis: row.basis })),
       ideas,
       researchNeedsReview: pkg.research.state === "needsReview",
+      pagePart: pkg.pagePart ?? "teardown",
       teardown: (pkg.teardown.state === "done" || pkg.teardown.state === "needsReview" ? "ready" : pkg.teardown.state === "running" || pkg.teardown.state === "waiting" ? "running" : "none") as "ready" | "running" | "none",
       reportAssetId: pkg.research.assetId,
       recipients: owners,

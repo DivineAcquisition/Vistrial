@@ -142,6 +142,8 @@ export function firstPackageEmail(input: {
   /** The research arrived as "needs review" rather than approved. */
   researchNeedsReview: boolean;
   teardown: "ready" | "running" | "none";
+  /** What the page part is: a teardown of their pages, or a landing page built for them. */
+  pagePart?: "teardown" | "landingPage";
   reportAssetId: string;
   appUrl: string;
 }): ReminderEmail {
@@ -157,7 +159,9 @@ export function firstPackageEmail(input: {
   const list = [
     ...(findings.length ? findings.map((row, index) => `Finding ${index + 1}: ${row}`) : []),
     ...(ideas.length ? ideas : ["The two offer ideas were not written this time. You can ask Strategist for them from the research."]),
-    input.teardown === "ready" ? "Your pages, torn down: ready in the app." : input.teardown === "running" ? "Your pages, torn down: still being written. It will be on Home shortly." : "",
+    ...(input.pagePart === "landingPage"
+      ? [input.teardown === "ready" ? "Your first landing page: ready on Strategist's Pages tab." : input.teardown === "running" ? "Your first landing page: being written now, from the research and the offer idea to win customers. It will be on the Pages tab shortly." : ""]
+      : [input.teardown === "ready" ? "Your pages, torn down: ready in the app." : input.teardown === "running" ? "Your pages, torn down: still being written. It will be on Home shortly." : ""]),
   ].filter(Boolean);
   const body = layout({
     lines,

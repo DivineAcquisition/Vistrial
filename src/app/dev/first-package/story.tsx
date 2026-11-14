@@ -37,6 +37,17 @@ const STATES: Record<string, PackageData> = {
       part("teardown", { state: "skipped", reason: "No pages of your own were read, so there was nothing to tear down." }),
     ],
   },
+  nowebsite: {
+    status: "running",
+    reason: null,
+    emailed: true,
+    dismissed: false,
+    parts: [
+      part("research", { state: "done", assetId: "a1" }),
+      part("offers", { state: "done", assetId: "a2" }),
+      { ...part("teardown", { state: "running", phase: "write", steps: 2 }), title: "Your first landing page", gives: "A full page to the landing page framework, selling your offer idea, built from the research and what you told us. On the Pages tab." },
+    ],
+  },
   waiting: { status: "waiting", reason: null, emailed: false, dismissed: false, parts: [part("research", {}), part("offers", {}), part("teardown", {})] },
 };
 

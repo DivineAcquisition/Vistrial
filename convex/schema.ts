@@ -919,6 +919,8 @@ export default defineSchema({
       v.literal("swipeItem"),
       v.literal("growthDiagnosis"),
       v.literal("pageTeardown"),
+      /** A landing page Vistrial built for a business, to the owner's framework (Landing Page Build). */
+      v.literal("landingPage"),
     ),
     title: v.string(),
     status: assetStatus,
@@ -1859,7 +1861,10 @@ export default defineSchema({
     limitCents: v.number(),
     research: packagePart,
     offers: packagePart,
+    /** The page part: a teardown of the business's own pages, or (with no website) a landing page built for it. */
     teardown: packagePart,
+    /** Which page part this package has. Missing means a teardown. */
+    pagePart: v.optional(v.union(v.literal("teardown"), v.literal("landingPage"))),
     emailedAt: v.optional(v.number()),
     dismissedAt: v.optional(v.number()),
     createdAt: v.number(),

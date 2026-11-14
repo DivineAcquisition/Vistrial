@@ -33,6 +33,7 @@ export type ConfirmPayload = {
   goal: { kind: string; text: string };
   choices: { take: string[]; logoOwned: boolean; edits: CaptureChoices["edits"] } | undefined;
   teardownPages: string[];
+  socialLinks: string[];
   serviceTeamAccess: boolean;
 };
 
@@ -253,6 +254,7 @@ export function OnboardingSetup({ data, capture, connect, actions, upload }: { d
   const readPages = (capture?.pages ?? []).filter((page) => page.read).map((page) => ({ ...page, kind: page.kind as PageKind }));
   const [teardown, setTeardown] = useState<string[]>(() => teardownPick(readPages).map((page) => page.id));
   const [teamAccess, setTeamAccess] = useState(true);
+  const [social, setSocial] = useState("");
 
   const act = async (work: () => Promise<unknown>, fallback: string) => {
     setBusy(true);
@@ -389,11 +391,26 @@ export function OnboardingSetup({ data, capture, connect, actions, upload }: { d
                 </div>
               </section>
 
+              {!capture?.result && !reading ? (
+                <section className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:p-6">
+                  <div className="grid gap-1">
+                    <h2 className="font-heading text-base text-strong">No website yet? Strategist builds you a landing page</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Your first package includes a full landing page on the Pages tab, written from your research, your offer and what you tell us here. Add your social profiles so it knows your business as your
+                      customers see it.
+                    </p>
+                  </div>
+                  <Field label="Social profiles" htmlFor="c-social" hint="optional, one per line">
+                    <Textarea id="c-social" value={social} onChange={(event) => setSocial(event.target.value)} rows={3} placeholder={"instagram.com/yourbusiness\nlinkedin.com/in/you"} />
+                  </Field>
+                </section>
+              ) : null}
+
               {capture?.result ? (
                 <SiteCaptureView target="confirm" mode="confirm" capture={capture} quote={null} editor actions={{ start: async () => undefined, apply: async () => undefined }} choices={choices} onChoices={setChoices} />
-              ) : (
-                <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">{reading ? "Your website is still being read. What it finds will show here." : "Nothing was read from a website. Add your brand later in Settings › Brand."}</p>
-              )}
+              ) : reading ? (
+                <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Your website is still being read. What it finds will show here.</p>
+              ) : null}
 
               {readPages.length ? (
                 <section className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:p-6">
@@ -485,6 +502,7 @@ export function OnboardingSetup({ data, capture, connect, actions, upload }: { d
                       goal,
                       choices: capture?.result ? { take: [...choices.take], logoOwned: choices.logoOwned, edits: choices.edits } : undefined,
                       teardownPages: teardown,
+                      socialLinks: social.split(/\n+/).map((line) => line.trim()).filter(Boolean),
                       serviceTeamAccess: teamAccess,
                     }),
                   "That did not save. Try again.",

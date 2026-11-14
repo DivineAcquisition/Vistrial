@@ -234,6 +234,8 @@ export const confirm = signedInMutation({
     goal: v.object({ kind: v.string(), text: v.string() }),
     choices: v.optional(choiceArgs),
     teardownPages: v.optional(v.array(v.string())),
+    /** With no website: the social profiles the person gives, for Strategist to know the business by. */
+    socialLinks: v.optional(v.array(v.string())),
     serviceTeamAccess: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<Id<"workspaces">> => {
@@ -285,6 +287,8 @@ export const confirm = signedInMutation({
       ["mainGoal", goal.text ? `${goalLabel}: ${goal.text}` : goalLabel],
       ["ownerRole", person.role],
     ];
+    const social = (args.socialLinks ?? []).map((link) => parsePublicUrl(/^https?:\/\//i.test(link.trim()) ? link.trim() : `https://${link.trim()}`)?.href).filter((link): link is string => Boolean(link)).slice(0, 8);
+    if (social.length) facts.push(["socialLinks", social.join(" | ")]);
     for (const [factKey, value] of facts) {
       if (value) await writeFact(ctx, { workspaceId, factKey, value, sourceType: "owner", recordedBy: ctx.userId, verifiedBy: ctx.userId });
     }

@@ -188,6 +188,19 @@ describe("agent chat", () => {
     await expect(a.owner.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "   " })).rejects.toThrow(/Type what you want/);
   });
 
+  it("a chat is with one agent: the Strategist when none is named, and an agent with no chat is refused", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Northlight");
+    const named = await a.owner.mutation(api.agentChat.send, { workspaceId: a.workspaceId, agentSlug: AGENT, text: "Research my market" });
+    const unnamed = await a.owner.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "Is my offer strong enough?" });
+    const rows = await t.run((ctx) => Promise.all([ctx.db.get(named.intakeId), ctx.db.get(unnamed.intakeId)]));
+    expect(rows.map((row) => row?.agentSlug)).toEqual([AGENT, AGENT]);
+    // Dealmaker is in the catalog but has no chat yet: nothing is written for it.
+    await expect(a.owner.mutation(api.agentChat.send, { workspaceId: a.workspaceId, agentSlug: "sales-conversion", text: "Review my pipeline" })).rejects.toThrow(/no chat yet/);
+    expect(await a.owner.query(api.agentChat.list, { workspaceId: a.workspaceId, agentSlug: "sales-conversion" })).toEqual([]);
+    expect((await a.owner.query(api.agentChat.list, { workspaceId: a.workspaceId, agentSlug: AGENT })).length).toBe(2);
+  });
+
   it("Refine in chat attaches an offer of this workspace, so the chat does not ask for it again", async () => {
     const t = makeTester();
     const a = await seed(t, "Northlight");

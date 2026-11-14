@@ -12,6 +12,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { startConversation } from "./agentChat";
 import { GROWTH_ARCHITECT } from "./catalog";
+import { DEFAULT_CHAT_AGENT, chatAgentOf, chatRoutesOf, isChatRouteOf } from "./lib/agentSurfaces";
 import { changesBetween, planAssetItem, planOpportunity, CHECK_IN_DAYS } from "./decisions";
 import { assertMove, cleanExpectedReturn, expectedReturnWords, rankTasks, refuseClaims, taskState } from "./lib/agentTasks";
 import { APPROVAL_KIND_LABEL, needsApproval, spendLimit } from "./lib/approvals";
@@ -19,7 +20,7 @@ import { writeAudit } from "./lib/audit";
 import { askApproval } from "./lib/briefing";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { loadCaps } from "./lib/capRows";
-import { CHAT_ROUTES, ROUTE_CHOICES, isChatRoute, type ChatRoute } from "./lib/chatRouting";
+import { ROUTE_CHOICES, isChatRoute, type ChatRoute } from "./lib/chatRouting";
 import { agentWork } from "./lib/workWords";
 import { clientForNew } from "./lib/clients";
 import { priceFor } from "./lib/credits";
@@ -79,7 +80,8 @@ export type Proposal = {
   title: string;
   why: string;
   proposedBy: Doc<"agentTasks">["proposedBy"];
-  work?: { skillSlug?: string; ask: string };
+  /** Work for an agent. `agentSlug` missing means the agent whose chat starts `skillSlug`, else the Strategist. */
+  work?: { agentSlug?: string; skillSlug?: string; ask: string };
   try?: Doc<"agentTasks">["try"];
   expectedReturn: ExpectedReturn;
   evidence: TaskEvidence[];
@@ -100,14 +102,17 @@ export async function insertProposal(ctx: MutationCtx & { workspaceId: Id<"works
   const evidence = await cleanEvidence(ctx, input.evidence);
   let work: Doc<"agentTasks">["work"];
   let creditCost = 0;
+  let workAgent: string | undefined;
   if (input.work) {
     const ask = clip(input.work.ask, MAX_ASK);
     if (!ask) throw userError("Say what the agent should work on.");
-    if (input.work.skillSlug !== undefined && !isChatRoute(input.work.skillSlug)) throw userError("That work cannot be started from a task yet.");
+    workAgent = input.work.agentSlug ?? chatAgentOf(input.work.skillSlug) ?? DEFAULT_CHAT_AGENT;
+    if (chatRoutesOf(workAgent).length === 0) throw userError("That agent cannot take work from a task yet.");
+    if (input.work.skillSlug !== undefined && !isChatRouteOf(workAgent, input.work.skillSlug)) throw userError("That work cannot be started from a task yet.");
     work = { ask, ...(input.work.skillSlug ? { skillSlug: input.work.skillSlug } : {}) };
     // With no skill named the chat decides, so the card shows the most any of them can use.
-    const skills = input.work.skillSlug ? [input.work.skillSlug] : [...CHAT_ROUTES];
-    for (const skill of skills) creditCost = Math.max(creditCost, await creditCostOf(ctx, ctx.workspaceId, GROWTH_ARCHITECT, skill));
+    const skills = input.work.skillSlug ? [input.work.skillSlug] : [...chatRoutesOf(workAgent)];
+    for (const skill of skills) creditCost = Math.max(creditCost, await creditCostOf(ctx, ctx.workspaceId, workAgent, skill));
   }
   if (input.try && !CHECK_IN_DAYS.includes(input.try.checkInDays as (typeof CHECK_IN_DAYS)[number])) throw userError("Choose when to check back: 14, 30, 60 or 90 days.");
   const now = Date.now();
@@ -117,7 +122,7 @@ export async function insertProposal(ctx: MutationCtx & { workspaceId: Id<"works
     title,
     why,
     proposedBy: input.proposedBy,
-    ...(work ? { agentSlug: GROWTH_ARCHITECT, work } : {}),
+    ...(work && workAgent ? { agentSlug: workAgent, work } : {}),
     ...(input.try ? { try: input.try } : {}),
     status: "proposed",
     expectedReturn: expected,
@@ -172,8 +177,9 @@ export async function approveTask(ctx: Decider, task: Doc<"agentTasks">) {
           : notFound();
   }
   if (task.work) {
-    const skill = task.work.skillSlug && isChatRoute(task.work.skillSlug) ? (task.work.skillSlug as ChatRoute) : undefined;
-    const started = await startConversation(ctx, { text: task.work.ask, skill, forClient: task.clientId ? { clientId: task.clientId } : {} });
+    const agentSlug = task.agentSlug ?? DEFAULT_CHAT_AGENT;
+    const skill = task.work.skillSlug && isChatRouteOf(agentSlug, task.work.skillSlug) ? (task.work.skillSlug as ChatRoute) : undefined;
+    const started = await startConversation(ctx, { agentSlug, text: task.work.ask, skill, forClient: task.clientId ? { clientId: task.clientId } : {} });
     patch.intakeId = started.intakeId;
     // The agent asks before it starts, so the task waits on a person until its plan is confirmed.
     patch.status = "needsYou";
@@ -316,6 +322,8 @@ export const propose = workspaceMutation({
     why: v.string(),
     ask: v.string(),
     skillSlug: v.optional(v.string()),
+    /** The agent the work is for. Missing means the agent whose chat starts `skillSlug`, else the Strategist. */
+    agentSlug: v.optional(v.string()),
     clientId: v.optional(v.id("clients")),
     expectedReturn: v.optional(expectedReturn),
     evidence: v.optional(v.array(taskEvidence)),
@@ -328,7 +336,7 @@ export const propose = workspaceMutation({
       title: args.title,
       why: args.why,
       proposedBy: { kind: "person", userId: ctx.identity.subject },
-      work: { ask: args.ask, skillSlug: args.skillSlug },
+      work: { ask: args.ask, skillSlug: args.skillSlug, agentSlug: args.agentSlug },
       expectedReturn: args.expectedReturn ?? { basis: "insufficient" },
       evidence: args.evidence ?? [],
     });

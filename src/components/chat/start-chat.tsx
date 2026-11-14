@@ -9,6 +9,7 @@ import { ChatComposer } from "@/components/chat/chat-composer";
 import { useChatExtras } from "@/components/chat/use-chat-extras";
 import { useWorkspaceShell, useClientScope } from "@/components/shell/shell-context";
 import { api } from "../../../convex/_generated/api";
+import { DEFAULT_CHAT_AGENT, hasChat } from "../../../convex/lib/agentSurfaces";
 import { showError } from "@/lib/errors/show-error";
 
 /**
@@ -22,7 +23,7 @@ export function StartChat(props: StartChatProps) {
   return shell ? <StartChatInner {...props} /> : null;
 }
 
-function StartChatInner({ defaultAgent = "growth-architect", size = "dock", placeholder = "What should Vistrial work on?", initialText }: StartChatProps) {
+function StartChatInner({ defaultAgent = DEFAULT_CHAT_AGENT, size = "dock", placeholder = "What should Vistrial work on?", initialText }: StartChatProps) {
   const shell = useWorkspaceShell();
   const router = useRouter();
   const send = useMutation(api.agentChat.send);
@@ -31,8 +32,8 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
   const [problem, setProblem] = useState("");
   const extras = useChatExtras(shell!.workspaceId, shell ? canWork(shell.role) : false, shell ? isAdmin(shell.role) : false);
   if (!shell) return null;
-  const options = shell.agents.map((row) => ({ slug: row.slug, name: row.name, live: row.status === "live" && row.slug === "growth-architect" }));
-  const chosen = options.find((row) => row.slug === agentSlug && row.live) ? agentSlug : "growth-architect";
+  const options = shell.agents.map((row) => ({ slug: row.slug, name: row.name, live: row.status === "live" && hasChat(row.slug) }));
+  const chosen = options.find((row) => row.slug === agentSlug && row.live) ? agentSlug : DEFAULT_CHAT_AGENT;
   const canStart = canWork(shell.role);
 
   return (
@@ -55,6 +56,7 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
             // Routed in code to the skill it is for; when unclear, the chat asks which.
             const { intakeId, route } = await send({
               workspaceId: shell.workspaceId,
+              agentSlug: chosen,
               text,
               mode: extras.mode,
               ...(extras.model ? { model: extras.model } : {}),

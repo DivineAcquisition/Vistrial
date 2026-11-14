@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { agentStateLabel } from "@/lib/shell/rail";
 import { api } from "../../../../../../convex/_generated/api";
+import { GROWTH_ARCHITECT } from "../../../../../../convex/catalog";
+import { hasWorkTabs } from "../../../../../../convex/lib/agentSurfaces";
 
 /** The agent's home, reached from its name in the sidebar: status, what waits on you, recent results and skills. */
 export default function AgentOverview() {
@@ -25,11 +27,12 @@ export default function AgentOverview() {
 
 function LiveOverview({ shell, agent }: { shell: WorkspaceShell; agent: ShellAgent }) {
   const workspaceId = shell.workspaceId;
-  const hasTabs = agent.slug === "growth-architect";
+  // Strategist's overview reads its three work tabs; another agent's overview is built with its own tabs.
+  const hasTabs = agent.slug === GROWTH_ARCHITECT && hasWorkTabs(agent.slug);
   const research = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "market-intelligence" } : "skip");
   const offers = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "offer-intelligence" } : "skip");
   const diagnostics = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "growth-diagnostics" } : "skip");
-  const chats = useQuery(api.agentChat.list, hasTabs ? { workspaceId } : "skip");
+  const chats = useQuery(api.agentChat.list, hasTabs ? { workspaceId, agentSlug: agent.slug } : "skip");
   const devSkill = useQuery(api.runs.devSkill, { workspaceId });
   const start = useMutation(api.runs.start);
   const [notice, setNotice] = useState("");

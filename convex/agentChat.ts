@@ -1,5 +1,5 @@
 /**
- * The Strategist's one chat. A first message is routed in code to the skill it is for: research goes
+ * An agent's one chat (the Strategist's today; which agents have one is `lib/agentSurfaces.ts`). A first message is routed in code to the skill it is for: research goes
  * to Market Intelligence (the research intake), offer questions to Offer Intelligence, "why am I not
  * growing" to Growth Diagnostics (both on the skill intake). Each then asks its follow-up questions and
  * shows the plan and budget before anything runs. When the intent is unclear the chat asks which of the
@@ -13,7 +13,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { GROWTH_ARCHITECT } from "./catalog";
+import { DEFAULT_CHAT_AGENT, hasChat, isChatRouteOf } from "./lib/agentSurfaces";
 import { beginResearch, replyResearch } from "./intake";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { ROUTE_CHOICES, ROUTE_QUESTION, UNDECIDED, isChatRoute, routeChoice, routeIntent, type ChatRoute } from "./lib/chatRouting";
@@ -88,15 +88,21 @@ async function nextAt(ctx: QueryCtx, intakeId: Id<"intakes">) {
   return Math.max(Date.now(), (last?.at ?? 0) + 1);
 }
 
-async function askWhich(ctx: MutationCtx, row: Pick<Doc<"intakes">, "_id" | "workspaceId">, again: boolean) {
+/** The choices this agent's chat offers when it cannot tell, in the order it shows them. */
+function choicesOf(agentSlug: string) {
+  return ROUTE_CHOICES.filter((choice) => isChatRouteOf(agentSlug, choice.skill));
+}
+
+async function askWhich(ctx: MutationCtx, row: Pick<Doc<"intakes">, "_id" | "workspaceId" | "agentSlug">, again: boolean) {
+  const choices = choicesOf(row.agentSlug);
   await ctx.db.insert("intakeMessages", {
     workspaceId: row.workspaceId,
     intakeId: row._id,
     role: "agent",
     kind: "route",
     text: again ? "I still can't tell which you mean, and I won't guess. Tap one of these." : ROUTE_QUESTION,
-    chips: ROUTE_CHOICES.map((choice) => choice.chip),
-    data: { choices: ROUTE_CHOICES.map((choice) => ({ skill: choice.skill, chip: choice.chip, name: choice.name, does: choice.does })) },
+    chips: choices.map((choice) => choice.chip),
+    data: { choices: choices.map((choice) => ({ skill: choice.skill, chip: choice.chip, name: choice.name, does: choice.does })) },
     at: await nextAt(ctx, row._id),
   });
 }
@@ -146,16 +152,19 @@ async function begin(ctx: Access, route: ChatRoute, input: Choices & { text: str
 }
 
 /**
- * Starts a conversation with the Strategist: on the skill named, otherwise on the skill the text is
- * clearly about, otherwise it asks which. Shared by the chat box and by approving a task that asks an agent
- * for work, so both start work the same way. The caller has checked the client.
+ * Starts a conversation with an agent: on the skill named, otherwise on the skill the text is clearly
+ * about, otherwise it asks which. Shared by the chat box and by approving a task that asks an agent for
+ * work, so both start work the same way. The caller has checked the client.
  */
 export async function startConversation(
   ctx: Access,
-  input: { text: string; skill?: ChatRoute; context?: Doc<"intakes">["context"]; choices?: Choices; forClient: { clientId?: Id<"clients"> } },
+  input: { agentSlug: string; text: string; skill?: ChatRoute; context?: Doc<"intakes">["context"]; choices?: Choices; forClient: { clientId?: Id<"clients"> } },
 ): Promise<{ intakeId: Id<"intakes">; route: ChatRoute | null }> {
-  const { text, context, forClient } = input;
-  const route = input.skill ?? routeIntent(text);
+  const { agentSlug, text, context, forClient } = input;
+  if (!hasChat(agentSlug)) throw userError("This agent has no chat yet.");
+  if (input.skill !== undefined && !isChatRouteOf(agentSlug, input.skill)) throw userError("That work has no chat yet.");
+  const guessed = routeIntent(text);
+  const route = input.skill ?? (guessed && isChatRouteOf(agentSlug, guessed) ? guessed : null);
   if (route) {
     const intakeId = await begin(ctx, route, { text, context, ...(input.choices ?? {}), ...forClient });
     return { intakeId, route };
@@ -163,7 +172,7 @@ export async function startConversation(
   const now = Date.now();
   const intakeId = await ctx.db.insert("intakes", {
     workspaceId: ctx.workspaceId,
-    agentSlug: GROWTH_ARCHITECT,
+    agentSlug,
     ...forClient,
     skillSlug: UNDECIDED,
     ...(context ? { context } : {}),
@@ -179,7 +188,7 @@ export async function startConversation(
     updatedAt: now,
   });
   await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
-  await askWhich(ctx, { _id: intakeId, workspaceId: ctx.workspaceId }, false);
+  await askWhich(ctx, { _id: intakeId, workspaceId: ctx.workspaceId, agentSlug }, false);
   return { intakeId, route: null };
 }
 
@@ -206,6 +215,8 @@ export const send = workspaceMutation({
     clientId: v.optional(v.id("clients")),
     /** The model family picked for this conversation and the work it starts: claude, gpt or gemini. */
     model: v.optional(v.string()),
+    /** The agent a new conversation is with. Missing means the Strategist, as before agents had their own chats. */
+    agentSlug: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<{ intakeId: Id<"intakes">; route: ChatRoute | null }> => {
     requireWork(ctx.member.role);
@@ -228,8 +239,9 @@ export const send = workspaceMutation({
         return { intakeId: row._id, route: current };
       }
       // Still undecided: this message answers "which do you want?".
-      const tapped = ROUTE_CHOICES.some((choice) => choice.chip.toLowerCase() === text.toLowerCase());
-      const route = routeChoice(text);
+      const tapped = choicesOf(row.agentSlug).some((choice) => choice.chip.toLowerCase() === text.toLowerCase());
+      const chosen = routeChoice(text);
+      const route = chosen && isChatRouteOf(row.agentSlug, chosen) ? chosen : null;
       await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId: row._id, role: "you", kind: tapped ? "choice" : "text", text, at: await nextAt(ctx, row._id) });
       if (!route) {
         await pickModel(ctx, row._id, args.model, null);
@@ -245,10 +257,11 @@ export const send = workspaceMutation({
       return { intakeId: row._id, route };
     }
 
-    if (args.skill !== undefined && !isChatRoute(args.skill)) throw userError("That work has no chat yet.");
+    const agentSlug = args.agentSlug ?? DEFAULT_CHAT_AGENT;
+    if (args.skill !== undefined && !isChatRouteOf(agentSlug, args.skill)) throw userError("That work has no chat yet.");
     const context = args.context ? await readContext(ctx, args.context) : undefined;
     const forClient = await clientForNew(ctx, args.clientId);
-    const started = await startConversation(ctx, { text, skill: args.skill as ChatRoute | undefined, context, choices, forClient });
+    const started = await startConversation(ctx, { agentSlug, text, skill: args.skill as ChatRoute | undefined, context, choices, forClient });
     await pickModel(ctx, started.intakeId, args.model, started.route);
     if (isChatPage(args.page)) await ctx.db.patch(started.intakeId, { page: args.page });
     return started;
@@ -305,10 +318,11 @@ function titleOf(row: Doc<"intakes">, first: string) {
   return (first || slots?.objective || row.answers?.offer || row.answers?.goal || "New conversation").slice(0, 120);
 }
 
-/** This workspace's conversations with the agent, newest first. Everyone on the team can read them. */
+/** This workspace's conversations with one agent (the Strategist when none is named), newest first. Everyone on the team can read them. */
 export const list = workspaceQuery({
-  args: {},
-  handler: async (ctx) => {
+  args: { agentSlug: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const agentSlug = args.agentSlug ?? DEFAULT_CHAT_AGENT;
     const rows = await ctx.db
       .query("intakes")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
@@ -316,7 +330,7 @@ export const list = workspaceQuery({
       .take(40);
     const out = [];
     for (const row of ctx.clients.filter(rows)) {
-      if (row.status === "abandoned" || row.agentSlug !== GROWTH_ARCHITECT) continue;
+      if (row.status === "abandoned" || row.agentSlug !== agentSlug) continue;
       const route = routeOf(row);
       out.push({
         id: row._id,
@@ -356,7 +370,7 @@ export const library = workspaceQuery({
     const items = [];
     let more = false;
     for (const row of ctx.clients.filter(rows)) {
-      if (row.agentSlug !== GROWTH_ARCHITECT) continue;
+      if (!hasChat(row.agentSlug)) continue;
       if (row.status === "abandoned" && !args.closed) continue;
       const mine = row.createdBy === ctx.identity.subject;
       if (args.mine && !mine) continue;

@@ -36,14 +36,14 @@ function Section({ id, eyebrow, headline, lead, children }: { id?: string; eyebr
   );
 }
 
-/** The five questions, as a card: what every result must let the team answer. */
+/** The standard, as a card: what every result must let the team answer or show. */
 function StandardCard({ page }: { page: AgentPage }) {
   return (
     <SpotlightCard glow className="flex flex-col gap-4 p-6">
       <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-200 uppercase">{page.standard.title}</p>
       <p className="text-sm leading-relaxed text-muted-foreground">{page.standard.lead}</p>
       <ol className="grid gap-2.5">
-        {page.standard.questions.map((question, index) => (
+        {page.standard.items.map((question, index) => (
           <li key={question} className="flex items-baseline gap-3">
             <span className="font-heading text-sm text-brand-400 tabular-nums" aria-hidden>
               {String(index + 1).padStart(2, "0")}
@@ -94,7 +94,7 @@ export function AgentLanding({ page }: { page: AgentPage }) {
                 Read the doctrine
               </Button>
             </div>
-            {live ? null : <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">{page.notYet}</p>}
+            {live || !page.notYet ? null : <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">{page.notYet}</p>}
           </div>
           <StandardCard page={page} />
         </div>
@@ -121,9 +121,9 @@ export function AgentLanding({ page }: { page: AgentPage }) {
         </ol>
       </Section>
 
-      <Section id="principles" eyebrow="Six principles" headline="How Dealmaker thinks">
+      <Section id="principles" eyebrow="Six principles" headline={page.principles.title}>
         <ol className="grid gap-4 md:grid-cols-2">
-          {page.principles.map((principle) => (
+          {page.principles.items.map((principle) => (
             <li key={principle.id} className={cn(marketingInset, "flex flex-col gap-3 px-5 py-5")}>
               <p className="flex items-baseline gap-3">
                 <span className="font-heading text-sm text-brand-400" aria-hidden>

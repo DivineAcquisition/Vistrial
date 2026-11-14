@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { CATALOG } from "../../../convex/catalog";
 import { DOCTRINE_STEPS, THE_STANDARD } from "../../../convex/skills/dealmaker/doctrine";
-import { AGENTS_SECTION } from "@/lib/marketing/content";
-import { AGENT_PAGES, DEALMAKER_PAGE, agentOfPage, agentPageFor, agentPageHref } from "@/lib/marketing/agent-pages";
+import { AGENTS_SECTION, HOW, SOURCES } from "@/lib/marketing/content";
+import { WORK_TABS } from "../../../convex/lib/workTabs";
+import { AGENT_PAGES, DEALMAKER_PAGE, STRATEGIST_PAGE, agentOfPage, agentPageFor, agentPageHref } from "@/lib/marketing/agent-pages";
 import { PUBLIC_PAGES } from "@/lib/seo";
 
 const words = (page: (typeof AGENT_PAGES)[number]) => JSON.stringify(page);
@@ -41,10 +42,23 @@ describe("agent pages", () => {
   it("Dealmaker's page carries the doctrine the product uses", () => {
     expect(agentOfPage(DEALMAKER_PAGE).name).toBe("Dealmaker");
     expect(DEALMAKER_PAGE.doctrine.steps).toBe(DOCTRINE_STEPS);
-    expect(DEALMAKER_PAGE.standard.questions).toBe(THE_STANDARD);
-    expect(DEALMAKER_PAGE.principles.map((row) => row.numeral)).toEqual(["I", "II", "III", "IV", "V", "VI"]);
+    expect(DEALMAKER_PAGE.standard.items).toBe(THE_STANDARD);
+    expect(DEALMAKER_PAGE.principles.items.map((row) => row.numeral)).toEqual(["I", "II", "III", "IV", "V", "VI"]);
     expect(DEALMAKER_PAGE.tabs.items.map((row) => row.name)).toEqual(["Chat", "Calendar", "Pipeline", "Calls", "Comms", "Playbook"]);
     expect(agentOfPage(DEALMAKER_PAGE).skills).toHaveLength(6);
+  });
+
+  it("Strategist's page is about the live agent and uses the homepage's own steps and sources", () => {
+    const agent = agentOfPage(STRATEGIST_PAGE);
+    expect(agent.name).toBe("Strategist");
+    expect(agent.status).toBe("live");
+    expect(STRATEGIST_PAGE.doctrine.steps.map((row) => row.name)).toEqual(HOW.steps.map((row) => row.title));
+    expect(STRATEGIST_PAGE.connects.items.map((row) => row.label)).toEqual(SOURCES.items.map((row) => row.label));
+    expect(STRATEGIST_PAGE.principles.items.map((row) => row.numeral)).toEqual(["I", "II", "III", "IV", "V", "VI"]);
+    // Every work tab the app gives Strategist is described on the page.
+    const tabs = STRATEGIST_PAGE.tabs.items.map((row) => row.id);
+    for (const tab of ["chat", ...WORK_TABS, "creative", "pages"]) expect(tabs).toContain(tab);
+    expect(agent.skills).toHaveLength(7);
   });
 
   it("public words name no model, no credits and no score", () => {

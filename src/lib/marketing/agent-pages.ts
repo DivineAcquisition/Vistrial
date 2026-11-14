@@ -9,6 +9,7 @@
 
 import { CATALOG, type CatalogAgent } from "../../../convex/catalog";
 import { DOCTRINE_NAME, DOCTRINE_STEPS, THE_STANDARD } from "../../../convex/skills/dealmaker/doctrine";
+import { HOW, PHILOSOPHY, SOURCES } from "./content";
 
 export type AgentPage = {
   /** The page's address under /agents. */
@@ -19,20 +20,21 @@ export type AgentPage = {
   headline: string;
   supporting: string;
   /** Said when the agent is not live yet. */
-  notYet: string;
+  notYet?: string;
   doctrine: {
     title: string;
     lead: string;
     paragraphs: string[];
     steps: readonly { id: string; name: string; does: string }[];
   };
-  principles: { id: string; numeral: string; title: string; body: string; inProduct: string }[];
+  principles: { title: string; items: { id: string; numeral: string; title: string; body: string; inProduct: string }[] };
   foundation: { title: string; body: string; controls: string };
   tabs: { title: string; lead: string; items: { id: string; name: string; does: string }[] };
   skills: { title: string; lead: string };
   never: { title: string; items: string[] };
   connects: { title: string; items: { label: string; status: "today" | "coming" }[] };
-  standard: { title: string; lead: string; questions: readonly string[] };
+  /** What every result must let the team answer or show. */
+  standard: { title: string; lead: string; items: readonly string[] };
   cta: { headline: string; body: string; label: string; href: string };
   seo: { title: string; description: string };
 };
@@ -54,50 +56,53 @@ export const DEALMAKER_PAGE: AgentPage = {
     ],
     steps: DOCTRINE_STEPS,
   },
-  principles: [
-    {
-      id: "understand",
-      numeral: "I",
-      title: "Understand before advancing",
-      body: "A buyer has objectives, constraints, alternatives and a way of deciding. An objection is information to investigate. Silence leaves uncertainty. An enthusiastic call can show interest without showing readiness to buy.",
-      inProduct: "Recommendations account for what the buyer said they need, what is still unanswered, earlier conversations and the next steps agreed.",
-    },
-    {
-      id: "evidence",
-      numeral: "II",
-      title: "Progress requires evidence",
-      body: "Calls made and messages sent describe effort; what matters is what happened in them. A rep's report has an author. A CRM status is a recorded assertion. Neither automatically overrides contradictory evidence.",
-      inProduct: "Recorded events, the buyer's own words, a rep's account and measured results stay apart. Missing information is shown as missing, and records that disagree are shown for a person to settle.",
-    },
-    {
-      id: "ownership",
-      numeral: "III",
-      title: "Every commitment needs ownership",
-      body: "A commitment works when someone owns it, knows what done means and knows when it is due. A setter's discovery should reach the closer. A buyer should never have to repeat what a handoff lost.",
-      inProduct: "Important commitments carry an owner, a due date where it has one, and a clear next action. Handoffs keep the context.",
-    },
-    {
-      id: "respect",
-      numeral: "IV",
-      title: "Follow-through respects the buyer",
-      body: "Each follow-up answers a question, delivers something promised, confirms a decision, or asks whether more contact is welcome. A clear no is respected. A poor fit is disqualified honestly.",
-      inProduct: "Dealmaker never invents urgency, misrepresents an offer or pushes to improve a number. Messages that persuade, price, re-engage or close always wait for a person to approve them.",
-    },
-    {
-      id: "context",
-      numeral: "V",
-      title: "Accountability requires context",
-      body: "Fair judgment considers a person's role, their deals, lead quality, workload and the support they had. A problem can be execution, an unclear process, a weak offer, poor qualification or missing support.",
-      inProduct: "End-of-day reports support review and coaching. A missing report is a gap in the records, not proof that no work was done.",
-    },
-    {
-      id: "learn",
-      numeral: "VI",
-      title: "Experience improves judgment",
-      body: "Every won, lost, delayed or disqualified deal can teach something, if the lesson keeps its evidence and its limits. One outcome is not proof of a cause.",
-      inProduct: "Dealmaker proposes lessons for a person to approve. Approved lessons guide future work and can inform Strategist's research, inside the same business only.",
-    },
-  ],
+  principles: {
+    title: "How Dealmaker thinks",
+    items: [
+      {
+        id: "understand",
+        numeral: "I",
+        title: "Understand before advancing",
+        body: "A buyer has objectives, constraints, alternatives and a way of deciding. An objection is information to investigate. Silence leaves uncertainty. An enthusiastic call can show interest without showing readiness to buy.",
+        inProduct: "Recommendations account for what the buyer said they need, what is still unanswered, earlier conversations and the next steps agreed.",
+      },
+      {
+        id: "evidence",
+        numeral: "II",
+        title: "Progress requires evidence",
+        body: "Calls made and messages sent describe effort; what matters is what happened in them. A rep's report has an author. A CRM status is a recorded assertion. Neither automatically overrides contradictory evidence.",
+        inProduct: "Recorded events, the buyer's own words, a rep's account and measured results stay apart. Missing information is shown as missing, and records that disagree are shown for a person to settle.",
+      },
+      {
+        id: "ownership",
+        numeral: "III",
+        title: "Every commitment needs ownership",
+        body: "A commitment works when someone owns it, knows what done means and knows when it is due. A setter's discovery should reach the closer. A buyer should never have to repeat what a handoff lost.",
+        inProduct: "Important commitments carry an owner, a due date where it has one, and a clear next action. Handoffs keep the context.",
+      },
+      {
+        id: "respect",
+        numeral: "IV",
+        title: "Follow-through respects the buyer",
+        body: "Each follow-up answers a question, delivers something promised, confirms a decision, or asks whether more contact is welcome. A clear no is respected. A poor fit is disqualified honestly.",
+        inProduct: "Dealmaker never invents urgency, misrepresents an offer or pushes to improve a number. Messages that persuade, price, re-engage or close always wait for a person to approve them.",
+      },
+      {
+        id: "context",
+        numeral: "V",
+        title: "Accountability requires context",
+        body: "Fair judgment considers a person's role, their deals, lead quality, workload and the support they had. A problem can be execution, an unclear process, a weak offer, poor qualification or missing support.",
+        inProduct: "End-of-day reports support review and coaching. A missing report is a gap in the records, not proof that no work was done.",
+      },
+      {
+        id: "learn",
+        numeral: "VI",
+        title: "Experience improves judgment",
+        body: "Every won, lost, delayed or disqualified deal can teach something, if the lesson keeps its evidence and its limits. One outcome is not proof of a cause.",
+        inProduct: "Dealmaker proposes lessons for a person to approve. Approved lessons guide future work and can inform Strategist's research, inside the same business only.",
+      },
+    ],
+  },
   foundation: {
     title: "Where it comes from",
     body: "Socratic examination, Stoic discipline and practical judgment: question assumptions, take responsibility for what you control, and adapt to the circumstances.",
@@ -142,7 +147,7 @@ export const DEALMAKER_PAGE: AgentPage = {
   standard: {
     title: "The standard",
     lead: "Dealmaker has done useful work when your team can clearly answer:",
-    questions: THE_STANDARD,
+    items: THE_STANDARD,
   },
   cta: {
     headline: "Be first when Dealmaker is ready.",
@@ -157,8 +162,129 @@ export const DEALMAKER_PAGE: AgentPage = {
   },
 };
 
+/**
+ * Strategist's words follow its doctrine (docs/rebuild/doctrine-understanding-precedes-advantage.md, section 1).
+ * Its five steps are the homepage's own (HOW), and its sources the ones that work today (SOURCES).
+ */
+export const STRATEGIST_PAGE: AgentPage = {
+  slug: "strategist",
+  agentSlug: "growth-architect",
+  eyebrow: "Agent 01 · Attract",
+  headline: "Understanding precedes advantage.",
+  supporting:
+    "Strategist studies your market before it recommends anything. It keeps what it saw apart from what it infers, says when the evidence runs out, and hands back finished work for a person to approve.",
+  doctrine: {
+    title: "Understanding Precedes Advantage",
+    lead: "An agent must understand the task before attempting to complete it.",
+    paragraphs: [
+      "It gathers the context the task needs, separates evidence from assumptions, and recognises the limits of what it knows.",
+      "Its job is not the greatest volume of information. Its job is to turn understanding into detailed, accurate and usable work. Where the evidence is not enough, it says so. Where judgment is needed, it explains its recommendation. Where an action has consequences, a person approves it.",
+    ],
+    steps: HOW.steps.map((step) => ({ id: step.id, name: step.title, does: step.body })),
+  },
+  principles: {
+    title: "How Strategist thinks",
+    items: [
+      {
+        id: "understand",
+        numeral: "I",
+        title: "Understand the task first",
+        body: "Before it researches, it works out the objective, what a good result looks like, what it already knows about your business and what is missing.",
+        inProduct: "Every run starts from your business profile and a plan you can read. It asks you only when a gap would change the result, and writes down any assumption it makes instead.",
+      },
+      {
+        id: "evidence",
+        numeral: "II",
+        title: "Evidence apart from assumptions",
+        body: "What a source shows, what is read from it, and what is only an idea to test are different things. A popular ad is not proof that it made money.",
+        inProduct: "Every claim is labelled Observed, Inference, Untested hypothesis or Your data, with the source you can open. Labels are set by the product, never by the model.",
+      },
+      {
+        id: "limits",
+        numeral: "III",
+        title: "Say when the evidence runs out",
+        body: "A confident guess is not an answer. Knowing the limits of what was found is part of the work.",
+        inProduct: "\"Not enough data\" is shown where it applies, and any source it could not read is named in the report with the reason.",
+      },
+      {
+        id: "depth",
+        numeral: "IV",
+        title: "Depth over volume",
+        body: "Work is judged on relevance, specificity, evidence and whether someone can use it. The number of pages is not one of them.",
+        inProduct: "Reports end with the few changes worth testing first, each with its reasoning, and say what to leave for later.",
+      },
+      {
+        id: "approval",
+        numeral: "V",
+        title: "Judgment stays human",
+        body: "Agents do the study and the drafting. A person decides what is used and what goes out.",
+        inProduct: "Every report and ad set waits as a draft until an Owner or Manager approves it. Strategist never publishes, posts or contacts anyone.",
+      },
+      {
+        id: "learn",
+        numeral: "VI",
+        title: "Learning is controlled",
+        body: "Strategist gets better because your workspace holds better context and better evidence, not because it remembers everything you say.",
+        inProduct: "You pick a change to try and set a check-in. What your own figures show, and the facts a person confirms, become context for the next round.",
+      },
+    ],
+  },
+  foundation: {
+    title: "Where it comes from",
+    body: PHILOSOPHY.paragraphs[0],
+    controls: PHILOSOPHY.paragraphs[1],
+  },
+  tabs: {
+    title: "Where the work happens",
+    lead: "Six places inside Vistrial, each starting from what it needs and showing the plan before it runs.",
+    items: [
+      { id: "chat", name: "Chat", does: "Ask Strategist for anything. It shows its plan and the budget before it starts." },
+      { id: "research", name: "Research", does: "Market reports: competitors, ads, content and patterns, each claim with its source." },
+      { id: "offers", name: "Offers", does: "Your offer beside what competitors lead with, and two or three changes to test." },
+      { id: "diagnostics", name: "Diagnostics", does: "Where growth stalls, from your own figures, with a 90-day plan to fix, build and scale." },
+      { id: "creative", name: "Creative", does: "An ad set for one brand from your brand kit: a brief, four copy variations, a video script and captions." },
+      { id: "pages", name: "Pages", does: "A section-by-section read of landing pages in your industry, and what your page lacks." },
+    ],
+  },
+  skills: {
+    title: "Seven skills",
+    lead: "Each one hands back finished work with its sources, saved as a draft for you to approve.",
+  },
+  never: {
+    title: "What it will never do",
+    items: [
+      "Publish, post or send anything without a person approving it.",
+      "Log in anywhere, or get around a block, to read a source.",
+      "Present a claim without a label and a source you can open.",
+      "Treat a popular ad as proof that it worked.",
+      "Reuse another brand's words, footage, faces, voice, music or logos.",
+      "Run past its cost limit.",
+    ],
+  },
+  connects: {
+    title: "Researches across",
+    items: SOURCES.items.map((item) => ({ label: item.label, status: "today" as const })),
+  },
+  standard: {
+    title: "The standard",
+    lead: "Strategist's work is not done until it shows that it:",
+    items: ["Understood the objective.", "Used the relevant context.", "Supported its material claims.", "Produced the work you asked for."],
+  },
+  cta: {
+    headline: "Start with Strategist.",
+    body: "Request Private Access. Strategist is live today, and the agents after it join your workspace as they go live.",
+    label: "Request access",
+    href: "/request?from=strategist",
+  },
+  seo: {
+    title: "Strategist: Understanding precedes advantage",
+    description:
+      "Strategist is Vistrial's research agent. It studies your market, keeps evidence apart from assumptions, says when the evidence runs out, and hands back finished work for you to approve.",
+  },
+};
+
 /** Every agent with its own page. */
-export const AGENT_PAGES: readonly AgentPage[] = [DEALMAKER_PAGE];
+export const AGENT_PAGES: readonly AgentPage[] = [STRATEGIST_PAGE, DEALMAKER_PAGE];
 
 export function agentPageFor(slug: string): AgentPage | null {
   return AGENT_PAGES.find((page) => page.slug === slug) ?? null;

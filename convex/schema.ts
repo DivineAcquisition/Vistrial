@@ -2853,6 +2853,19 @@ export default defineSchema({
   }).index("by_workspace_creator", ["workspaceId", "createdBy", "updatedAt"]),
 
   /**
+   * The live checklist's ticks for one booked call (build step 12c): which of the script's steps and the
+   * lead's points the closer ticked. The list itself is built in code each time from the Playbook and the brief.
+   */
+  callChecklists: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    appointmentRef: v.string(),
+    ticked: v.array(v.string()),
+    by: v.string(),
+    updatedAt: v.number(),
+  }).index("by_workspace_appointment", ["workspaceId", "appointmentRef"]),
+
+  /**
    * What is established about one deal's fit (need, budget, who decides, timing, fit), each with the kind of
    * evidence it rests on (doctrine II). Written by a person now, and by call reviews later. Newest per field wins;
    * older rows stay as history.

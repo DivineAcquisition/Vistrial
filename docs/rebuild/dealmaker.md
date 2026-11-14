@@ -546,6 +546,16 @@ tests, lint, both typechecks and the build, never deploying Convex:
     no-shows and cancelled, how many of this week's calls are confirmed, and briefs due. Filtered to the
     deals the person's home shows, like the Pipeline. Nothing here contacts anyone or changes the CRM.
 18. **Chat, the weekly scorecard and the proof** (before and after, deals touched, time saved).
+    *18a, built (proof and scorecard):* `convex/dealmakerProof.ts`, `convex/lib/dealmaker/proof.ts`, the
+    "How Dealmaker is doing" panel on the Pipeline tab. `workspaceAgents.firstOnAt` records when an agent was
+    first switched on. Before and after compares close rate, show rate and the typical time to first reply
+    over the same stretch either side of that day (up to 90 days), only after 14 days on and each figure
+    only from five or more cases, from the business's own CRM, and says it shows what happened, not what
+    caused it. Deals involved counts deals with Dealmaker's ready brief or its own sent follow-up, worded
+    "involved". Time saved counts briefs (20 minutes each), Dealmaker's sent messages (5) and CRM updates it
+    proposed that were done (2), with the time each shown. A cron posts last week's scorecard to the
+    Briefing once per CRM connection where Dealmaker is on, as three rows written in code: what moved, what
+    Dealmaker did, what is next.
     *18b, built (chat):* `convex/dealmakerChat.ts`, `convex/lib/dealmaker/chat.ts`, the Chat tab for
     Dealmaker (`work/chat` renders `src/components/work/dealmaker-chat.tsx` for `sales-conversion`; Strategist's
     chat is unchanged) and the story `/dev/dealmaker-chat`. Routed in code: simple questions (open deals,

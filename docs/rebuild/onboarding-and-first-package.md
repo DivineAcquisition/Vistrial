@@ -218,10 +218,11 @@ what Strategist gets from it.
 | HubSpot | Coming soon | |
 | Salesforce | Coming soon | |
 
-- The cards come from one list (`src/lib/onboarding/connect.ts`). The HighLevel card is "Coming soon"
-  until a provider with the key `highlevel` exists in `convex/lib/integrations/providers.ts` and is set up
-  on the deployment; then it shows **Connect** with no change to onboarding. That is the clean slot: the
-  HighLevel work only has to register its provider.
+- The cards come from one list (`src/lib/onboarding/connect.ts`). HighLevel brings its own card: the HighLevel
+  connection's `HighLevelConnectSlot` (`@/components/connections/highlevel`), given the organization, the
+  return path and the `?highlevel=` outcome. Its state on Confirm is read from that connection
+  (`crmConnections`, provider `highlevel`). HighLevel reads and writes; anything it would change waits for a
+  person's approval.
 - Connecting sends the person to the provider and back. The return addresses stay as they are; the app
   frame shows the Connect step for an organization still in it, so they land back here, with the card
   showing "Connected".
@@ -477,9 +478,9 @@ the change is built in the PR named, and the sections above are to be read with 
    turns it off for a person. (#300)
 5. **Client site capture:** the **first** read of each client's website is free; later reads use credits,
    with the most they can cost shown first. (#296)
-6. **HighLevel:** the slot keys on the provider `highlevel`; the coordinator confirms the key with the
-   HighLevel session. HighLevel now reads and writes (writes approved by a person first); the slot is
-   unchanged.
+6. **HighLevel:** confirmed: provider `highlevel` (`crmConnections.provider`), card
+   `HighLevelConnectSlot`. It is on main and the Connect step uses it (#299). HighLevel reads and writes;
+   writes are approved by a person first.
 7. **No website:** step 1 keeps a clear "I don't have a website yet" choice. Then:
    - Vistrial gathers context from everywhere else it can: connected accounts (Meta, calendar, results
      files, the CRM once connected), the social profiles the person gives on Confirm, the answers on
@@ -498,7 +499,8 @@ the change is built in the PR named, and the sections above are to be read with 
      written, it sells the offer the person confirmed.
    - Built in a new skill, Landing Page Build (#305, stacked on #300).
 
-Two scope notes from the owner, applied to everything here: the model's name is never shown, and credits
-spent are not shown on work screens (a separate Usage page does that). The only credit figure shown is a
+Scope notes from the owner, applied to everything here: the model's name is never shown; credits spent are
+not shown on work screens (the Usage page does that); and skill names are not used in the app's words, so
+the package's parts are called the market report, offer ideas, page breakdown and landing page. The only credit figure shown is a
 budget a person confirms before work starts (a client's paid site read); the first package is free, so it
 shows none.

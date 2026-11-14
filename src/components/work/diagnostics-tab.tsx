@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Detail, EvidenceLabel, ModelMark, NextStep, VerdictStrip } from "@/components/readable";
+import { Detail, EvidenceLabel, NextStep, VerdictStrip } from "@/components/readable";
 import { showError } from "@/lib/errors/show-error";
 import { diagnosisGlance, stepLabel } from "@/lib/readable/analysis";
 import { shortDate } from "@/lib/research/words";
@@ -130,7 +130,6 @@ function StallSummary({ diagnosis, decisions }: { diagnosis: DiagnosisView; deci
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SectionTitle icon={Gauge}>Where growth stalls</SectionTitle>
         <span className="flex flex-wrap items-center gap-2">
-          <ModelMark model={diagnosis.model} />
           <StatusBadge
             label={diagnosis.status === "approved" ? "Approved" : diagnosis.status === "needsReview" ? "Needs review" : "Waiting for approval"}
             tone={diagnosis.status === "approved" ? "good" : "warning"}
@@ -385,6 +384,7 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
         eyebrow="Strategist · Growth Diagnostics"
         title="Diagnostics"
         promise="Finds where growth stalls in your own data and turns it into a 90-day plan: Fix, Build, Scale."
+        working={tab.running.length > 0}
         action={
           <>
             {diagnosis ? <ViewSwitch view={view} onChange={setView} /> : null}

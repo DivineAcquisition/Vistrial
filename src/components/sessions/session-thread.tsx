@@ -50,7 +50,7 @@ import { Banner } from "@/components/ui/banner";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { showError } from "@/lib/errors/show-error";
 import { useCredits } from "@/lib/credits";
-import { ModelMark, type ModelMarkData } from "@/components/models/model-mark";
+import type { ModelMarkData } from "@/components/models/model-mark";
 
 export type ThreadData = {
   studio: Studio;
@@ -253,7 +253,6 @@ function Composer({
 
 /** The chat box inside a session: follow-up questions about the report, with the quality mode and files. */
 function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspaceId: Id<"workspaces">; projectId: Id<"researchProjects">; base: string; hasReport: boolean }) {
-  const credits = useCredits();
   const router = useRouter();
   const ask = useMutation(api.followups.ask);
   const followups = useQuery(api.followups.list, { workspaceId, projectId });
@@ -272,9 +271,7 @@ function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspa
         connect={extras.composer.connect}
         footnote={
           notice ||
-          `Answers come from this session's sources and cost a few credits. New research is proposed first, with an estimate, and runs only when you tap Run.${
-            followups && followups.spentCents > 0 ? ` Follow-ups so far: ${credits.cost(followups.spentCents)}.` : ""
-          }`
+          "Answers come from this session's sources and cost a few credits. New research is proposed first, with an estimate, and runs only when you tap Run."
         }
         onSubmit={async (text) => {
           setNotice("");
@@ -383,7 +380,6 @@ export function FollowUpsView({
           <AgentSaid key={row.id} name={agentName} icon={row.kind === "proposal" ? Search : MessageSquareText} line={row.kind === "proposal" ? "researched it:" : "answered from this session's sources:"}>
             <div className="grid gap-2 rounded-xl border border-border bg-card p-4">
               <p className="text-sm whitespace-pre-line text-card-foreground">{row.text}</p>
-              <ModelMark model={row.model} />
               {cited.length ? (
                 <div className="flex flex-wrap gap-1.5">
                   {cited.map((source, index) => (
@@ -401,7 +397,6 @@ export function FollowUpsView({
               ) : row.status === "done" ? (
                 <p className="text-xs text-muted-foreground">No source in this session answers it directly.</p>
               ) : null}
-              {row.costCents > 0 ? <p className="text-[11px] text-muted-foreground">{credits.cost(row.costCents)}</p> : null}
             </div>
           </AgentSaid>
         );
@@ -553,7 +548,7 @@ export function SessionThread({
           {run && !run.waitingFor ? (
             <AgentSaid name={agentName} icon={Search} line={data.open ? "is working on it now." : diagnosis ? "diagnosed it. Here is how that went." : "researched it. Here is how that went."}>
               {data.open ? (
-                <LiveActivity steps={data.steps} sources={sourceList} status={run.status} startedAt={run.startedAt} finishedAt={run.finishedAt} costCents={run.costCents} />
+                <LiveActivity steps={data.steps} sources={sourceList} status={run.status} startedAt={run.startedAt} finishedAt={run.finishedAt} />
               ) : (
                 <Fold
                   summary={
@@ -561,11 +556,10 @@ export function SessionThread({
                       <span className="text-card-foreground">{data.steps.length} steps</span>
                       <span>{data.steps.reduce((sum, step) => sum + (step.webSearches ?? 0), 0)} searches</span>
                       <span>{sourceList.length} sources kept</span>
-                      <span>{credits.cost(run.costCents)}</span>
                     </span>
                   }
                 >
-                  <LiveActivity steps={data.steps} sources={sourceList} status={run.status} startedAt={run.startedAt} finishedAt={run.finishedAt} costCents={run.costCents} />
+                  <LiveActivity steps={data.steps} sources={sourceList} status={run.status} startedAt={run.startedAt} finishedAt={run.finishedAt} />
                 </Fold>
               )}
             </AgentSaid>
@@ -631,7 +625,7 @@ export function SessionThread({
           {run ? <StageProgress steps={data.steps} open={data.open} /> : <p className="text-sm text-muted-foreground">Not started.</p>}
           {run ? (
             <p className="text-xs text-muted-foreground">
-              Spent {credits.cost(run.costCents)} of {credits.cost(data.capCents)}
+              Budget {credits.cost(data.capCents)}
             </p>
           ) : null}
         </Panel>

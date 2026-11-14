@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { publicPageMetadata } from "@/lib/seo";
+
 import { AccessRequestForm } from "@/components/marketing/access-form";
 import { MarketingShell } from "@/components/marketing/chrome";
 import { FormAside } from "@/components/marketing/form-aside";
@@ -7,11 +9,12 @@ import { CONTACT_EMAIL } from "@/lib/constants";
 import { FORMS } from "@/lib/marketing/content";
 import { marketingHeroTitle, marketingSubhead } from "@/lib/marketing/ui";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: FORMS.customTitle,
   description: FORMS.customLead,
-  robots: { index: false, follow: false },
-};
+  path: "/contact",
+  index: false,
+});
 
 export default function ContactPage() {
   return (

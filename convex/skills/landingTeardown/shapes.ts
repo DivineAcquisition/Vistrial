@@ -218,7 +218,14 @@ export type PagesRecord = {
   /** For each framework job, which pages (other than the business's own) have a section for it. Counted in code. */
   table: PatternRow[];
   ownId: string | null;
+  /** Every page is the business's own: there are no patterns to share and no gaps against others. */
+  ownSite?: boolean;
 };
+
+/** Whether a page in a teardown is the business's own: the one it named, or every page in own-site mode. */
+export function isOwnPage(request: { mode?: string; ownUrl?: string | null }, url: string) {
+  return request.mode === "ownSite" || (Boolean(request.ownUrl) && url === request.ownUrl);
+}
 
 export type ContextRecord = {
   requestId: string;
@@ -227,6 +234,8 @@ export type ContextRecord = {
   urls: string[];
   ownUrl: string | null;
   find: boolean;
+  /** The first package's teardown of the business's own pages. */
+  ownSite?: boolean;
   profile: { offer: string; audience: string } | null;
   /** The business's own measured results, when it has any connected. Totals only. */
   figures: { label: string; period: string; spend: number | null; conversions: number | null; revenue: number | null }[];

@@ -14,7 +14,10 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
-import { DEFAULT_APP_URL, REMINDER_FROM, checkInDueEmail, isReportKind, reportReadyEmail, type ReminderEmail, type ReportKind } from "./lib/reminderEmail";
+import { DEFAULT_APP_URL, REMINDER_FROM, checkInDueEmail, firstPackageEmail, isReportKind, reportReadyEmail, type ReminderEmail, type ReportKind } from "./lib/reminderEmail";
+import { readReport } from "./skills/marketIntelligence/shapes";
+import { bareTitle, focusOf } from "./skills/offerIntelligence/firstPackage";
+import { readAnalysis } from "./skills/offerIntelligence/shapes";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** A check-in that came due longer ago than this is not emailed: it is old news, and the Home screen still lists it. */
@@ -193,6 +196,8 @@ export const reportToAnnounce = internalQuery({
     const asset = await ctx.db.get(args.assetId);
     if (!asset || !isReportKind(asset.kind) || !asset.createdByRun) return null;
     if (asset.status !== "draft" && asset.status !== "needsReview") return null;
+    // A first-package report is announced once, in the package's own email.
+    if ((await ctx.db.get(asset.createdByRun))?.packageId) return null;
     const workspace = await openWorkspace(ctx, asset.workspaceId);
     if (!workspace) return null;
     const versions = await ctx.db
@@ -257,6 +262,100 @@ export const sendReportReady = internalAction({
       await ctx.runMutation(internal.emailReminders.recordReport, { workspaceId: report.workspaceId, versionId: report.versionId, sends });
     } catch {
       console.error("Report-ready email failed.");
+    }
+    return null;
+  },
+});
+
+/* ----------------------------------------------------------- first package */
+
+export const PACKAGE_ACTION = "email.first_package";
+
+/** The structured output a run wrote last that reads as `read` accepts it: what the saved report was rendered from. */
+async function lastModelOutput<T>(ctx: QueryCtx, runId: Id<"agentRuns"> | undefined, read: (value: unknown) => T | null): Promise<T | null> {
+  if (!runId) return null;
+  const run = await ctx.db.get(runId);
+  if (!run) return null;
+  const rows = await ctx.db
+    .query("runArtifacts")
+    .withIndex("by_workspace_run", (q) => q.eq("workspaceId", run.workspaceId).eq("runId", run._id))
+    .take(300);
+  for (const row of rows.reverse()) {
+    if (row.kind !== "model" || !row.body) continue;
+    try {
+      const value = read(JSON.parse(row.body));
+      if (value) return value;
+    } catch {
+      // Not this one.
+    }
+  }
+  return null;
+}
+
+/** What the first package email says, and who it goes to: the Owner and the Admins. Null when there is nothing to send. */
+export const packageToAnnounce = internalQuery({
+  args: { packageId: v.id("firstPackages") },
+  handler: async (ctx, args) => {
+    const pkg = await ctx.db.get(args.packageId);
+    if (!pkg || !pkg.research.assetId) return null;
+    const workspace = await openWorkspace(ctx, pkg.workspaceId);
+    if (!workspace) return null;
+    const report = await lastModelOutput(ctx, pkg.research.runId, (value) => {
+      const read = readReport(value);
+      return read && read.findings.length ? read : null;
+    });
+    const analysis = pkg.offers.state === "done" || pkg.offers.state === "needsReview" ? await lastModelOutput(ctx, pkg.offers.runId, (value) => {
+      const read = readAnalysis(value);
+      return read && read.changes.length ? read : null;
+    }) : null;
+    const ideas = (analysis?.changes ?? []).flatMap((row) => {
+      const focus = focusOf(row.title);
+      return focus ? [{ focus, title: bareTitle(row.title), why: row.fit.text }] : [];
+    });
+    // The Owner and the Admins (the owner's decision), unless a person switched "Report ready" emails off.
+    const owners = await recipientsFor(ctx, pkg.workspaceId, "notifyReportReady");
+    return {
+      workspaceId: pkg.workspaceId,
+      workspaceName: workspace.name,
+      answer: report?.summary ?? "",
+      findings: (report?.findings ?? []).map((row) => ({ text: row.statement, basis: row.basis })),
+      ideas,
+      researchNeedsReview: pkg.research.state === "needsReview",
+      teardown: (pkg.teardown.state === "done" || pkg.teardown.state === "needsReview" ? "ready" : pkg.teardown.state === "running" || pkg.teardown.state === "waiting" ? "running" : "none") as "ready" | "running" | "none",
+      reportAssetId: pkg.research.assetId,
+      recipients: owners,
+    };
+  },
+});
+
+export const recordPackage = internalMutation({
+  args: { workspaceId: v.id("workspaces"), packageId: v.id("firstPackages"), sends: v.array(sendResult) },
+  handler: async (ctx, args) => {
+    for (const row of args.sends) {
+      await writeAudit(ctx, { workspaceId: args.workspaceId, actorType: "system", actorId: "email", action: PACKAGE_ACTION, subject: `${args.packageId}:${row.userId}`, count: row.sent ? 1 : 0 });
+    }
+    return null;
+  },
+});
+
+/** Scheduled by the package once the research and offer ideas are done: tells the Owner and Admins. Never throws. */
+export const sendFirstPackage = internalAction({
+  args: { packageId: v.id("firstPackages") },
+  handler: async (ctx, args): Promise<null> => {
+    try {
+      const pkg = await ctx.runQuery(internal.emailReminders.packageToAnnounce, { packageId: args.packageId });
+      if (!pkg) return null;
+      const key = resendKey();
+      if (!key) console.log("First package email skipped: RESEND_API_KEY is not set.");
+      const message = firstPackageEmail({ ...pkg, appUrl: appUrl() });
+      const sends: { userId: string; sent: boolean }[] = [];
+      for (const person of pkg.recipients) {
+        const sent = key ? await send(key, person.email, `first-package/${args.packageId}/${person.userId}`, message) : false;
+        sends.push({ userId: person.userId, sent });
+      }
+      await ctx.runMutation(internal.emailReminders.recordPackage, { workspaceId: pkg.workspaceId, packageId: args.packageId, sends });
+    } catch {
+      console.error("First package email failed.");
     }
     return null;
   },

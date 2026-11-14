@@ -5,7 +5,7 @@ import type { SkillContext, SkillModule, SkillStep } from "../types";
 import { CHECK_NAMES } from "./checks";
 import { numberedPage, pageFacts } from "./compute";
 import { SECTION_BY_KEY, frameworkBrief } from "./framework";
-import { DISCOVER_SCHEMA, HONEST_LIMIT, INDUSTRY_SCHEMA, MAX_FOUND, MAX_PAGES, MAX_SEARCHES, PAGE_SCHEMA, PHASE, SKILL_SLUG, analysePhase, type ChecksRecord, type ContextRecord, type PagesRecord } from "./shapes";
+import { DISCOVER_SCHEMA, HONEST_LIMIT, INDUSTRY_SCHEMA, MAX_FOUND, MAX_PAGES, MAX_SEARCHES, PAGE_SCHEMA, PHASE, SKILL_SLUG, analysePhase, isOwnPage, type ChecksRecord, type ContextRecord, type PagesRecord } from "./shapes";
 import { contextOf, jobPages, pagesOf, requestOf, snapshotOf } from "./tools";
 
 const SYSTEM = [
@@ -42,6 +42,19 @@ const INDUSTRY_RULES = [
   "gaps: only when the business's own page was read: what the other pages have that it lacks. job as above; pageIds: the other pages that have it. Empty otherwise.",
   "suggestions: up to five changes for the business's own page (or for a new page when it has none), most useful first. title; change: exactly what to change, specific enough to do this week; why; basis: \"inferred\" when it rests on cited pages, \"hypothesis\" when it is an untested idea; pageIds; howToTell: what the business should watch on its own results, and for how long, to learn whether the change helped.",
   "brief: a hand-off for whoever builds the next page. audience; qualifier (the line that names who it is for and the threshold); promise (the outcome, in the reader's words); cta (the button wording, a verb first); sections: the framework sections to include, in the framework's order, each with a direction of one or two sentences; proofNeeded: real proof the business must supply before a Results section can exist; avoid: what not to do.",
+  "limits: anything the reader should not assume, such as pages that could not be read.",
+  `Never write that anything is proven, converts better, performs best or will increase results. ${HONEST_LIMIT}`,
+];
+
+/** The cross-page write when every page is the business's own (the first package): improvements, not patterns. */
+const OWN_SITE_RULES = [
+  "Write the findings across these pages as JSON. Every page here is the business's own website.",
+  "Each page has an id (p1, p2, ...). Cite pages only by those ids.",
+  "summary: three plain sentences at most on how these pages work together as one path for a visitor, and the single biggest change.",
+  "patterns: leave empty. There are no other businesses' pages here.",
+  "gaps: leave empty.",
+  "suggestions: up to five changes, most useful first, across these pages. Include where the path loses a visitor between pages (a button that leads to a page with no next step, an opt-in page with no follow-up offer, a booking page with no proof). title; change: exactly what to change and on which page, specific enough to do this week; why, against the framework section's job; basis: \"inferred\" when it rests on what is on cited pages, \"hypothesis\" when it is an untested idea; pageIds: the pages it changes; howToTell: what the business should watch on its own results, and for how long.",
+  "brief: a hand-off for rebuilding the most important of these pages, as the framework orders it. audience; qualifier; promise; cta; sections with a direction each; proofNeeded; avoid.",
   "limits: anything the reader should not assume, such as pages that could not be read.",
   `Never write that anything is proven, converts better, performs best or will increase results. ${HONEST_LIMIT}`,
 ];
@@ -151,7 +164,7 @@ export const landingTeardown: SkillModule = {
         const snapshot = snapshotOf(page);
         if (!snapshot || latest(steps, analysePhase(page.order))) continue;
         const numbered = numberedPage(snapshot);
-        const own = Boolean(request.ownUrl) && page.url === request.ownUrl;
+        const own = isOwnPage(request, page.url);
         return {
           kind: "model",
           phase: analysePhase(page.order),
@@ -184,9 +197,10 @@ export const landingTeardown: SkillModule = {
     // Nothing could be read or analysed: save what there is, and say so. No model is asked to fill the gap.
     if (!pages || analysed === 0) return latest(steps, PHASE.save) ? null : tool("lp.save", PHASE.save);
 
-    const input = (lead: string[]) => [...lead, "", ...INDUSTRY_RULES, "", "The framework:", frameworkBrief(), "", businessBrief(context), "", measuredBrief(context), "", pagesBrief(pages)].join("\n");
+    const rules = context.ownSite ? OWN_SITE_RULES : INDUSTRY_RULES;
+    const input = (lead: string[]) => [...lead, "", ...rules, "", "The framework:", frameworkBrief(), "", businessBrief(context), "", measuredBrief(context), "", pagesBrief(pages)].join("\n");
     if (!latest(steps, PHASE.industry)) {
-      return { kind: "model", phase: PHASE.industry, workKind: "write", system: SYSTEM, outputSchema: INDUSTRY_SCHEMA, input: input(["Write what these pages share and what the business's own page lacks."]) };
+      return { kind: "model", phase: PHASE.industry, workKind: "write", system: SYSTEM, outputSchema: INDUSTRY_SCHEMA, input: input([context.ownSite ? "Write what to change on the business's own pages, page by page and across the funnel they make." : "Write what these pages share and what the business's own page lacks."]) };
     }
     if (!latest(steps, PHASE.check)) return tool("lp.check", PHASE.check);
     const checkStep = latest(steps, PHASE.check)!;

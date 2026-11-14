@@ -1,6 +1,7 @@
 import { creditWords, priceFor } from "../../lib/credits";
 import { CHANNEL_METRICS, EVIDENCE_PLATFORMS } from "./channels";
 import { principleFits, PRINCIPLE_IDS } from "./playbook";
+import { firstPackageProblem } from "./firstPackage";
 import { NO_CONTEXT_WORDS, PROFILE_FIELDS, type ChecksRecord, type CheckResult, type OfferAnalysis, type OfferChange, type OfferContext } from "./shapes";
 
 /**
@@ -25,6 +26,9 @@ export const CHECK_NAMES: [number, string][] = [
   [8, "Applies the offer playbook"],
   [9, "Within the cost cap"],
 ];
+
+/** The extra check in the first package's mode. */
+export const FIRST_PACKAGE_CHECK = "One idea to win customers and one to keep them, each built on your offers";
 
 function norm(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -183,5 +187,10 @@ export function runChecks(input: CheckInput): ChecksRecord {
   // 9. Cost within the cap.
   add(9, input.runCostCents <= input.capCents, `The run used ${creditWords(priceFor(input.runCostCents))} of its ${creditWords(priceFor(input.capCents))} limit.`);
 
+  // The first package: exactly one idea to win customers and one to keep them, each built on a stated offer.
+  if (context.firstPackage) {
+    const problem = firstPackageProblem(analysis, context.firstPackage.offers);
+    results.push({ id: CHECK_NAMES.length + 1, name: FIRST_PACKAGE_CHECK, passed: problem === null, detail: problem ?? "" });
+  }
   return { passed: results.every((row) => row.passed), results };
 }

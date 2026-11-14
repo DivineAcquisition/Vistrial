@@ -50,6 +50,7 @@ import type * as exports from "../exports.js";
 import type * as facts from "../facts.js";
 import type * as feedback from "../feedback.js";
 import type * as files from "../files.js";
+import type * as firstPackage from "../firstPackage.js";
 import type * as followups from "../followups.js";
 import type * as goals from "../goals.js";
 import type * as highLevel from "../highLevel.js";
@@ -215,6 +216,7 @@ import type * as skills_marketIntelligence_shapes from "../skills/marketIntellig
 import type * as skills_marketIntelligence_tools from "../skills/marketIntelligence/tools.js";
 import type * as skills_offerIntelligence_channels from "../skills/offerIntelligence/channels.js";
 import type * as skills_offerIntelligence_checks from "../skills/offerIntelligence/checks.js";
+import type * as skills_offerIntelligence_firstPackage from "../skills/offerIntelligence/firstPackage.js";
 import type * as skills_offerIntelligence_index from "../skills/offerIntelligence/index.js";
 import type * as skills_offerIntelligence_playbook from "../skills/offerIntelligence/playbook.js";
 import type * as skills_offerIntelligence_render from "../skills/offerIntelligence/render.js";
@@ -285,6 +287,7 @@ declare const fullApi: ApiFromModules<{
   facts: typeof facts;
   feedback: typeof feedback;
   files: typeof files;
+  firstPackage: typeof firstPackage;
   followups: typeof followups;
   goals: typeof goals;
   highLevel: typeof highLevel;
@@ -450,6 +453,7 @@ declare const fullApi: ApiFromModules<{
   "skills/marketIntelligence/tools": typeof skills_marketIntelligence_tools;
   "skills/offerIntelligence/channels": typeof skills_offerIntelligence_channels;
   "skills/offerIntelligence/checks": typeof skills_offerIntelligence_checks;
+  "skills/offerIntelligence/firstPackage": typeof skills_offerIntelligence_firstPackage;
   "skills/offerIntelligence/index": typeof skills_offerIntelligence_index;
   "skills/offerIntelligence/playbook": typeof skills_offerIntelligence_playbook;
   "skills/offerIntelligence/render": typeof skills_offerIntelligence_render;

@@ -22,6 +22,7 @@ import { createWorkspaceFor } from "./lib/newWorkspace";
 import { parsePublicUrl } from "./lib/sourceRefs";
 import { cleanScope } from "./research";
 import { startRunFor } from "./runs";
+import { startPackage } from "./firstPackage";
 import { applyCapture, homeOf, startCaptureFor } from "./siteCapture";
 import { parseResult, type FieldKey } from "./lib/siteCapture/fields";
 
@@ -320,9 +321,11 @@ export const confirm = signedInMutation({
       goal,
       site: { ...row.site, competitors: [] },
       teardownPages,
-      stage: "freeSession",
+      stage: "package",
       updatedAt: now,
     });
+    // Go: Strategist's first package starts now, on Vistrial (firstPackage.ts).
+    await startPackage(ctx, { workspaceId, ownerId: ctx.userId, onboardingId: row._id });
     await writeAudit(ctx, { workspaceId, actorType: "user", actorId: ctx.userId, action: "onboarding.confirmed", subject: row._id });
     await writeAudit(ctx, {
       workspaceId,
@@ -444,8 +447,14 @@ export const showPaywall = signedInMutation({
   args: { open: v.boolean() },
   handler: async (ctx, args) => {
     const row = await rowFor(ctx, ctx.userId);
-    if (!row?.workspaceId || (row.stage !== "freeSession" && row.stage !== "paywall")) return null;
-    const stage = args.open ? "paywall" : "freeSession";
+    if (!row?.workspaceId || (row.stage !== "freeSession" && row.stage !== "paywall" && row.stage !== "package")) return null;
+    // Closing the paywall goes back to what was behind it: the first package, or the old free session.
+    const hasPackage = await ctx.db
+      .query("firstPackages")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", row.workspaceId!))
+      .first();
+    const behind = hasPackage ? "package" : "freeSession";
+    const stage = args.open ? "paywall" : behind;
     if (row.stage !== stage) await ctx.db.patch(row._id, { stage, updatedAt: Date.now() });
     if (args.open && row.stage !== "paywall") {
       await writeAudit(ctx, { workspaceId: row.workspaceId, actorType: "user", actorId: ctx.userId, action: "onboarding.paywall_shown", subject: row._id });
@@ -462,7 +471,7 @@ export const unlock = signedInMutation({
   args: {},
   handler: async (ctx) => {
     const row = await rowFor(ctx, ctx.userId);
-    if (!row?.workspaceId || (row.stage !== "freeSession" && row.stage !== "paywall")) return { unlocked: true };
+    if (!row?.workspaceId || (row.stage !== "freeSession" && row.stage !== "paywall" && row.stage !== "package")) return { unlocked: true };
     if (!billingOn()) {
       await unlockOnboarding(ctx, row.workspaceId, "billingOff");
       return { unlocked: true };

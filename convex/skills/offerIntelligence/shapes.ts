@@ -289,6 +289,8 @@ export type OfferContext = {
   known: KnownItem[];
   missing: { key: string; blocking: boolean }[];
   assumptions: string[];
+  /** Set in the first package's mode: the offers the business states (its offer cards), for the two ideas to build on. */
+  firstPackage?: { offers: { id: string; name: string; price: string }[] };
 };
 
 export type CheckResult = { id: number; name: string; passed: boolean; detail: string };

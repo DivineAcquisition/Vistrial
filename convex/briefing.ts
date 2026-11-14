@@ -40,6 +40,8 @@ type Reader = { db: QueryCtx["db"]; workspaceId: Id<"workspaces"> };
 async function hrefOf(ctx: Reader, item: Doc<"briefingItems">): Promise<string | null> {
   if (!item.refTable || !item.refId) return null;
   if (item.refTable === "assets") return `/app/assets/${item.refId}`;
+  // The first package lives at the top of Home.
+  if (item.refTable === "firstPackages") return "/app";
   if (item.refTable === "agentRuns") return `/app/runs/${item.refId}`;
   if (item.refTable === "agentTasks") return "/app/tasks";
   if (item.refTable === "browserSteps") return "/app/connections/browser";

@@ -7,7 +7,7 @@ import type { MutationCtx } from "../_generated/server";
 import { writeAudit } from "./audit";
 
 /** Stages before paying. A workspace in one of these is still behind the paywall. */
-export const LOCKED_STAGES = ["freeSession", "paywall"] as const;
+export const LOCKED_STAGES = ["package", "freeSession", "paywall"] as const;
 
 export async function unlockOnboarding(ctx: MutationCtx, workspaceId: Id<"workspaces">, how: "plan" | "billingOff" | "grant") {
   const rows = await ctx.db

@@ -63,6 +63,18 @@ const bookingStatus = v.union(
 const inviteRole = v.union(v.literal("admin"), v.literal("member"), v.literal("viewer"), v.literal("manager"), v.literal("rep"));
 const stage = v.union(v.literal("foundation"), v.literal("organization"), v.literal("execution"));
 const agentState = v.union(v.literal("off"), v.literal("suggesting"), v.literal("on"));
+/** One part of the first package: where it is, its run and report, and what it has cost us. */
+const packagePart = v.object({
+  state: v.union(v.literal("waiting"), v.literal("running"), v.literal("done"), v.literal("needsReview"), v.literal("failed"), v.literal("skipped")),
+  runId: v.optional(v.id("agentRuns")),
+  assetId: v.optional(v.id("assets")),
+  projectId: v.optional(v.id("researchProjects")),
+  requestId: v.optional(v.id("teardownRequests")),
+  attempts: v.number(),
+  spentCents: v.number(),
+  /** Why it did not finish, in a code: no_pages, no_research, cap, failed, timeout. */
+  reason: v.optional(v.string()),
+});
 
 export default defineSchema({
   /**
@@ -894,6 +906,10 @@ export default defineSchema({
     outputTokens: v.number(),
     /** The free research session from onboarding. Vistrial pays for it; it never touches the workspace's credits. */
     free: v.optional(v.boolean()),
+    /** The first package this run is part of. Its runs are free and never count against the organization's day caps. */
+    packageId: v.optional(v.id("firstPackages")),
+    /** A lower per-run cap, in cents of our cost: what is left of the first package's limit for this part. */
+    capCentsOverride: v.optional(v.number()),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_status", ["workspaceId", "status"])
@@ -2085,6 +2101,8 @@ export default defineSchema({
     note: v.optional(v.string()),
     /** Pages the search step added, so a finding can say which pages a person chose and which were found. */
     foundUrls: v.optional(v.array(v.string())),
+    /** "ownSite": every page is the business's own (the first package's teardown). No competitor pages, no patterns. */
+    mode: v.optional(v.literal("ownSite")),
     jobId: v.optional(v.id("pageReadJobs")),
     runId: v.optional(v.id("agentRuns")),
     createdBy: v.string(),
@@ -2092,6 +2110,33 @@ export default defineSchema({
   })
     .index("by_workspace", ["workspaceId", "createdAt"])
     .index("by_workspace_project", ["workspaceId", "projectId"]),
+
+  /**
+   * Strategist's first package for an organization: market research, two offer ideas and a teardown of the
+   * business's own pages, free, inside a fixed limit of our cost. docs/rebuild/onboarding-and-first-package.md, part 3.
+   */
+  firstPackages: defineTable({
+    workspaceId: v.id("workspaces"),
+    accountId: v.optional(v.id("accounts")),
+    /** The Owner who confirmed onboarding: emailed when it is ready, and the approver of record. */
+    ownerId: v.string(),
+    status: v.union(v.literal("waiting"), v.literal("running"), v.literal("done")),
+    /** Why it did not run, when it did not: "account_limit". */
+    reason: v.optional(v.string()),
+    /** The most it may cost us, in cents, all parts together. */
+    limitCents: v.number(),
+    research: packagePart,
+    offers: packagePart,
+    teardown: packagePart,
+    emailedAt: v.optional(v.number()),
+    dismissedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_account", ["accountId"])
+    .index("by_status", ["status", "createdAt"])
+    .index("by_created", ["createdAt"]),
 
   /**
    * One row per site the reader has opened, shared by every workspace because the site does not care who

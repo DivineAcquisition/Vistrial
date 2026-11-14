@@ -311,17 +311,19 @@ Go ──┬── Research (Market Intelligence, thorough) ── approved ─�
 
 ### 3.2 The cost limit (D8)
 
-**$8.00 of our cost per organization**, all parts together:
+**$15.00 of our cost per organization** (the owner's decision; first proposed at $8.00), all parts together:
 
 | Part | Its share | The skill's own run cap today |
 |---|---|---|
 | Site capture | $0.50 | (new) |
-| Market research | $3.00 | $3.00 (`market-intelligence`) |
-| Offer ideas | $1.50 | $1.50 (`offer-intelligence`) |
-| Page teardown | $3.00 | $3.00 (`landing-page-teardown`) |
-| **Total** | **$8.00** | |
+| Market research | $7.00 | $3.00 (`market-intelligence`) |
+| Offer ideas | $3.00 | $1.50 (`offer-intelligence`) |
+| Page teardown, or the landing page when there is no website | $5.00 | $3.00 (`landing-page-teardown`) |
+| **Total** | **$15.00** | |
 
-Enforced in code: each package run carries a cap of `min(skill cap, limit − spent so far)` (a new optional
+How it moves: `firstPackage.advance` looks at the package's runs every 20 seconds while any part works,
+approves, starts the offer ideas, retries, emails and posts, and stops looking when all three are settled
+(or after four hours on one run). Enforced in code: each package run carries a cap of what is left of its share and of the limit (it may be above the skill's usual run cap, never past the platform's $10 run ceiling) (a new optional
 `capCentsOverride` on free runs, honoured where caps are checked), so a part can never take what another
 needs beyond its share, and a retry spends only what is left. A run that reaches its cap ends the way any
 capped run ends today. Typical spend is well under the limit; the limit is the most it can ever be.
@@ -354,9 +356,11 @@ Offer Intelligence, first-package mode (D6):
   the change itself, why it fits this business (naming the profile fields, facts and past outcomes it
   uses), the evidence with its basis label (observed, inferred, hypothesis, firstParty, stated), the
   channel, and how to tell if it worked.
-- New code checks for this mode: exactly one of each focus; each cites at least one of the business's own
-  offers or prices **by id** (so it is built from their offer, not a template); a price it quotes from the
-  business matches a captured one exactly. Failing checks get the one revision the skill already allows.
+- New code check for this mode (`skills/offerIntelligence/firstPackage.ts`): exactly two changes; one
+  title starts "Win customers:" and the other "Keep customers:" (the focus is carried in the title, so the
+  saved analysis and its existing screens need no new field); each names one of the business's own offers
+  as the business names it (so it is built from their offer, not a template); a price quoted in `fit.text`
+  matches a stated one exactly. Failing checks get the one revision the skill already allows.
 - It never stops to ask: where a fact is missing it records an assumption and says so in `limits`.
 - Saved approved when checks pass (D5).
 
@@ -372,8 +376,8 @@ Landing Page Teardown, own-site mode (D7):
   page most needs against the framework, and across the pages, where the funnel loses the visitor between
   them (for example, the opt-in page's button goes to a page with no booking step). The standing limit
   stays: Vistrial reads the page, not its results.
-- Uses the pages already read by the capture when they were read within the last day (no second read of
-  the same page), and reads any it has not.
+- Reads the chosen pages again (fractions of a cent each, under the same rules). Reusing the capture's
+  reads is a later saving, not built.
 - Saved approved when checks pass (D5).
 
 ### 3.6 Where it is shown
@@ -389,7 +393,7 @@ Landing Page Teardown, own-site mode (D7):
 
 ### 3.7 The email
 
-Sent once, to the Owner only, through the existing Resend path (`convex/emailReminders.ts`), with an audit
+Sent once, to the Owner and the Admins (the owner's decision), through the existing Resend path (`convex/emailReminders.ts`), with an audit
 row naming the recipient's user id and never the address.
 
 - **Subject:** "Your first Vistrial package: {business name}".
@@ -401,7 +405,9 @@ row naming the recipient's user id and never the address.
      line on why it fits this business.
   4. **Open the full report** (the research report in the app), and one line on the teardown (ready, or
      coming shortly).
-- Words are built in code from the saved reports (`lib/reminderEmail.ts` style, pure and tested).
+- Words are built in code (`lib/reminderEmail.ts`, `firstPackageEmail`, pure and tested) from the
+  structured output the runs saved the reports from. The usual "report ready" email is not sent for package
+  reports, so the Owner gets one email, not three.
 
 This is the first email that carries report content. Today's reminder emails carry only a title, on
 purpose. It goes to the Owner only, and it is the Owner's own report; the "report ready" notice setting

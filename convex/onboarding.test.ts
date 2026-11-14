@@ -148,7 +148,7 @@ describe("onboarding: website, connect, confirm", () => {
       serviceTeamAccess: true,
     });
     const after = await me.query(api.onboarding.mine, {});
-    expect(after).toMatchObject({ stage: "freeSession", teardownPages: ["p1", "p3"], business: { name: "Northbound Coaching Ltd", website: SAMPLE_SITE } });
+    expect(after).toMatchObject({ stage: "package", teardownPages: ["p1", "p3"], business: { name: "Northbound Coaching Ltd", website: SAMPLE_SITE } });
     // Confirming twice is harmless.
     expect(await me.mutation(api.onboarding.confirm, CONFIRM)).toBe(workspaceId);
 
@@ -186,7 +186,7 @@ describe("onboarding: website, connect, confirm", () => {
     await t.mutation(internal.seed.agents, {});
     const me = await walk(t, "new-3");
     const workspaceId = await me.mutation(api.onboarding.confirm, { ...CONFIRM, serviceTeamAccess: false });
-    expect((await me.query(api.onboarding.mine, {})).stage).toBe("freeSession");
+    expect((await me.query(api.onboarding.mine, {})).stage).toBe("package");
     await t.mutation(internal.staffAdmin.enroll, { userId: "staff-9", role: "service_team" });
     const staff = t.withIdentity(person("staff-9"));
     await expect(staff.mutation(api.staff.grant, { workspaceId, reason: "Helping with setup", hours: 4 })).rejects.toThrow(/turned off/);
@@ -199,6 +199,13 @@ async function finished(subject: string) {
   await t.mutation(internal.seed.agents, {});
   const me = await walk(t, subject);
   const workspaceId = await me.mutation(api.onboarding.confirm, CONFIRM);
+  // These tests cover rows that reached the free session before the first package replaced it.
+  await t.run(async (ctx) => {
+    const row = await ctx.db.query("onboarding").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).first();
+    await ctx.db.patch(row!._id, { stage: "freeSession" });
+    for (const pkg of await ctx.db.query("firstPackages").collect()) await ctx.db.delete(pkg._id);
+    for (const run of await ctx.db.query("agentRuns").collect()) await ctx.db.patch(run._id, { status: "stopped" });
+  });
   return { t, me, workspaceId };
 }
 

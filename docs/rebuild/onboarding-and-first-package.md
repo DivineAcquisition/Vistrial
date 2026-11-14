@@ -310,19 +310,19 @@ Go ──┬── Research (Market Intelligence, thorough) ── approved ─�
 
 ### 3.2 The cost limit (D8)
 
-**$8.00 of our cost per organization**, all parts together:
+**$15.00 of our cost per organization** (the owner's decision; first proposed at $8.00), all parts together:
 
 | Part | Its share | The skill's own run cap today |
 |---|---|---|
 | Site capture | $0.50 | (new) |
-| Market research | $3.00 | $3.00 (`market-intelligence`) |
-| Offer ideas | $1.50 | $1.50 (`offer-intelligence`) |
-| Page teardown | $3.00 | $3.00 (`landing-page-teardown`) |
-| **Total** | **$8.00** | |
+| Market research | $7.00 | $3.00 (`market-intelligence`) |
+| Offer ideas | $3.00 | $1.50 (`offer-intelligence`) |
+| Page teardown, or the landing page when there is no website | $5.00 | $3.00 (`landing-page-teardown`) |
+| **Total** | **$15.00** | |
 
 How it moves: `firstPackage.advance` looks at the package's runs every 20 seconds while any part works,
 approves, starts the offer ideas, retries, emails and posts, and stops looking when all three are settled
-(or after four hours on one run). Enforced in code: each package run carries a cap of `min(skill cap, limit − spent so far)` (a new optional
+(or after four hours on one run). Enforced in code: each package run carries a cap of what is left of its share and of the limit (it may be above the skill's usual run cap, never past the platform's $10 run ceiling) (a new optional
 `capCentsOverride` on free runs, honoured where caps are checked), so a part can never take what another
 needs beyond its share, and a retry spends only what is left. A run that reaches its cap ends the way any
 capped run ends today. Typical spend is well under the limit; the limit is the most it can ever be.
@@ -392,7 +392,7 @@ Landing Page Teardown, own-site mode (D7):
 
 ### 3.7 The email
 
-Sent once, to the Owner only, through the existing Resend path (`convex/emailReminders.ts`), with an audit
+Sent once, to the Owner and the Admins (the owner's decision), through the existing Resend path (`convex/emailReminders.ts`), with an audit
 row naming the recipient's user id and never the address.
 
 - **Subject:** "Your first Vistrial package: {business name}".

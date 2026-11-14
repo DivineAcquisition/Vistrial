@@ -292,7 +292,7 @@ async function lastModelOutput<T>(ctx: QueryCtx, runId: Id<"agentRuns"> | undefi
   return null;
 }
 
-/** What the first package email says, and who it goes to: the Owner alone. Null when there is nothing to send. */
+/** What the first package email says, and who it goes to: the Owner and the Admins. Null when there is nothing to send. */
 export const packageToAnnounce = internalQuery({
   args: { packageId: v.id("firstPackages") },
   handler: async (ctx, args) => {
@@ -312,7 +312,8 @@ export const packageToAnnounce = internalQuery({
       const focus = focusOf(row.title);
       return focus ? [{ focus, title: bareTitle(row.title), why: row.fit.text }] : [];
     });
-    const owners = (await recipientsFor(ctx, pkg.workspaceId, "notifyReportReady")).filter((row) => row.userId === pkg.ownerId);
+    // The Owner and the Admins (the owner's decision), unless a person switched "Report ready" emails off.
+    const owners = await recipientsFor(ctx, pkg.workspaceId, "notifyReportReady");
     return {
       workspaceId: pkg.workspaceId,
       workspaceName: workspace.name,
@@ -337,7 +338,7 @@ export const recordPackage = internalMutation({
   },
 });
 
-/** Scheduled by the package once the research and offer ideas are done: tells the Owner. Never throws. */
+/** Scheduled by the package once the research and offer ideas are done: tells the Owner and Admins. Never throws. */
 export const sendFirstPackage = internalAction({
   args: { packageId: v.id("firstPackages") },
   handler: async (ctx, args): Promise<null> => {

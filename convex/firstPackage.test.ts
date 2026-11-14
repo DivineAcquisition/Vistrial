@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { PACKAGE_LIMIT_CENTS, capFor, startPackage } from "./firstPackage";
+import { capsOfRun } from "./runs";
 import { firstPackageEmail } from "./lib/reminderEmail";
 import { runChecks } from "./skills/landingTeardown/checks";
 import type { IndustryRead, PagesRecord } from "./skills/landingTeardown/shapes";
@@ -99,7 +100,7 @@ describe("the first package", () => {
     expect((await me.query(api.onboarding.mine, {})).stage).toBe("package");
     expect(pkg).toMatchObject({ status: "running", limitCents: PACKAGE_LIMIT_CENTS, research: { state: "running", attempts: 1 }, teardown: { state: "skipped", reason: "no_pages" }, offers: { state: "waiting" } });
     const run = await t.run((ctx) => ctx.db.get(pkg.research.runId!));
-    expect(run).toMatchObject({ free: true, packageId: pkg._id, capCentsOverride: 300, skillSlug: "market-intelligence", mode: "thorough", status: "queued" });
+    expect(run).toMatchObject({ free: true, packageId: pkg._id, capCentsOverride: 700, skillSlug: "market-intelligence", mode: "thorough", status: "queued" });
     const project = await t.run((ctx) => ctx.db.get(pkg.research.projectId!));
     expect(project?.objective).toMatch(/Brightline Media.*Paid ads for coaches.*United States/);
     expect(project?.objective).toMatch(/More booked calls/);
@@ -125,8 +126,8 @@ describe("the first package", () => {
     expect((await t.run((ctx) => ctx.db.get(researchAsset!)))?.status).toBe("approved");
     expect(now.offers).toMatchObject({ state: "running", attempts: 1 });
     const offersRun = await t.run((ctx) => ctx.db.get(now.offers.runId!));
-    // Its share is 150; the whole limit has 800 - 210 left.
-    expect(offersRun).toMatchObject({ skillSlug: "offer-intelligence", inputRef: `first-package:${pkg._id}`, capCentsOverride: 150, packageId: pkg._id });
+    // Its share is 300; the whole limit has 1500 - 210 left.
+    expect(offersRun).toMatchObject({ skillSlug: "offer-intelligence", inputRef: `first-package:${pkg._id}`, capCentsOverride: 300, packageId: pkg._id });
     expect(now.emailedAt).toBeUndefined();
 
     const analysis = { changes: [change("Win customers: Booked-call guarantee", "Builds on Booked Calls Engine at $3,500 a month"), change("Keep customers: Quarterly growth review", "Builds on Booked Calls Engine")] };
@@ -136,7 +137,19 @@ describe("the first package", () => {
     expect(now).toMatchObject({ status: "done", offers: { state: "done", spentCents: 90 } });
     expect(now.emailedAt).toBeGreaterThan(0);
 
+    // The offer ideas may use their 300-cent share, though the skill's usual run cap is 150.
+    expect((await t.run((ctx) => capsOfRun(ctx, offersRun!))).maxCostCentsPerRun).toBe(300);
+
+    // The Owner and the Admins get it; a Member does not, and an Admin who switched "Report ready" off does not.
+    await t.run(async (ctx) => {
+      for (const member of await ctx.db.query("members").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).collect()) await ctx.db.patch(member._id, { email: "owner@brightline.example.com" });
+      await ctx.db.insert("members", { workspaceId, userId: "admin-1", role: "admin", active: true, displayName: "A", email: "admin@brightline.example.com" });
+      await ctx.db.insert("members", { workspaceId, userId: "admin-2", role: "admin", active: true, displayName: "B", email: "quiet@brightline.example.com" });
+      await ctx.db.insert("members", { workspaceId, userId: "member-1", role: "member", active: true, displayName: "C", email: "member@brightline.example.com" });
+      await ctx.db.insert("memberPreferences", { workspaceId, userId: "admin-2", notifyReportReady: false, updatedAt: 1 });
+    });
     const email = await t.query(internal.emailReminders.packageToAnnounce, { packageId: pkg._id });
+    expect(email?.recipients.map((row) => row.userId).sort()).toEqual(["admin-1", "pkg-2"]);
     expect(email).toMatchObject({ answer: REPORT.summary, researchNeedsReview: false, teardown: "none", reportAssetId: researchAsset });
     expect(email?.findings[0]).toEqual({ text: "Four of six competitors lead with a monthly retainer.", basis: "observed" });
     expect(email?.ideas.map((row) => [row.focus, row.title])).toEqual([
@@ -177,12 +190,12 @@ describe("the first package", () => {
     await t.mutation(internal.firstPackage.advance, { packageId: pkg._id });
     const now = (await t.run((ctx) => ctx.db.get(pkg._id)))!;
     expect(now.research).toMatchObject({ state: "running", attempts: 2, spentCents: 120 });
-    expect((await t.run((ctx) => ctx.db.get(now.research.runId!)))?.capCentsOverride).toBe(180);
+    expect((await t.run((ctx) => ctx.db.get(now.research.runId!)))?.capCentsOverride).toBe(580);
     await finishRun(t, now.research.runId!, { costCents: 100 });
     await t.mutation(internal.firstPackage.advance, { packageId: pkg._id });
     const after = (await t.run((ctx) => ctx.db.get(pkg._id)))!;
     expect(after).toMatchObject({ status: "done", research: { state: "failed", spentCents: 220 }, offers: { state: "skipped" } });
-    expect(capFor(after, "research")).toBe(80);
+    expect(capFor(after, "research")).toBe(480);
   });
 
   it("gives an account three packages at most, and makes a busy day's packages wait for the next", async () => {
@@ -193,7 +206,7 @@ describe("the first package", () => {
     await t.run(async (ctx) => {
       for (let i = 0; i < 2; i += 1) {
         const other = await ctx.db.insert("workspaces", { name: `Other ${i}`, slug: `other-${i}`, timezone: "UTC", status: "active", createdAt: 1, accountId });
-        await ctx.db.insert("firstPackages", { workspaceId: other, accountId, ownerId: "pkg-5", status: "done", limitCents: 800, research: part, offers: part, teardown: part, createdAt: 1 });
+        await ctx.db.insert("firstPackages", { workspaceId: other, accountId, ownerId: "pkg-5", status: "done", limitCents: 1500, research: part, offers: part, teardown: part, createdAt: 1 });
       }
     });
     const fourth = (await t.withIdentity(person("pkg-5")).mutation(api.organizations.create, { accountId, name: "Fourth" })) as Id<"workspaces">;
@@ -205,7 +218,7 @@ describe("the first package", () => {
     await t2.run(async (ctx) => {
       for (let i = 0; i < 50; i += 1) {
         const ws = await ctx.db.insert("workspaces", { name: `W${i}`, slug: `w-${i}`, timezone: "UTC", status: "active", createdAt: 1 });
-        await ctx.db.insert("firstPackages", { workspaceId: ws, ownerId: "x", status: "running", limitCents: 800, research: part, offers: part, teardown: part, createdAt: Date.now() });
+        await ctx.db.insert("firstPackages", { workspaceId: ws, ownerId: "x", status: "running", limitCents: 1500, research: part, offers: part, teardown: part, createdAt: Date.now() });
       }
     });
     const late = await onboarded(t2, "pkg-6");

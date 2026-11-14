@@ -27,10 +27,10 @@ import { startRunFor } from "./runs";
 import { FIRST_PACKAGE_REF } from "./skills/offerIntelligence/firstPackage";
 import { MAX_PAGES } from "./skills/landingTeardown/shapes";
 
-/** The most one package may cost us, all parts together, in cents: $8.00. Never the customer's credits. */
-export const PACKAGE_LIMIT_CENTS = 800;
+/** The most one package may cost us, all parts together, in cents: $15.00 (the owner's decision). Never the customer's credits. */
+export const PACKAGE_LIMIT_CENTS = 1500;
 /** Each part's share of the limit, in cents. The site capture (up to 50) is read on the same terms during onboarding. */
-export const PART_SHARE_CENTS = { research: 300, offers: 150, teardown: 300 } as const;
+export const PART_SHARE_CENTS = { research: 700, offers: 300, teardown: 500 } as const;
 /** A part that stops without a report is tried once more, inside what is left of its share. */
 export const PART_ATTEMPTS = 2;
 /** Below this much of a share left, a retry is not worth starting. */

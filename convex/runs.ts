@@ -475,10 +475,14 @@ export const expire = internalMutation({
  * module names the next step; the runtime checks it against the skill's declared tools.
  */
 /** A run's caps, raised only for a chosen model that will really run it. */
-async function capsOfRun(ctx: Pick<QueryCtx, "db">, run: Doc<"agentRuns">) {
+export async function capsOfRun(ctx: Pick<QueryCtx, "db">, run: Doc<"agentRuns">) {
   const caps = await capsFor(ctx, { workspaceId: run.workspaceId, agentSlug: run.agentSlug, skillSlug: run.skillSlug, choice: run.modelChoice, mode: run.mode });
-  // A first-package run: at most what is left of the package's limit, and never stopped by the organization's day cap.
-  if (run.packageId) return { ...caps, maxCostCentsPerRun: Math.min(caps.maxCostCentsPerRun, run.capCentsOverride ?? caps.maxCostCentsPerRun), maxCostCentsPerDay: Number.MAX_SAFE_INTEGER };
+  // A first-package run: its share of the package's limit (which may be above the skill's usual run cap, never past
+  // the platform ceiling), and never stopped by the organization's day cap.
+  if (run.packageId) {
+    const share = run.capCentsOverride ?? caps.maxCostCentsPerRun;
+    return { ...caps, maxCostCentsPerRun: Math.min(share, PLATFORM_CEILING.maxCostCentsPerRun), maxCostCentsPerDay: Number.MAX_SAFE_INTEGER };
+  }
   return caps;
 }
 

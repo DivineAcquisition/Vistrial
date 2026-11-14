@@ -129,7 +129,7 @@ export function reportReadyEmail(input: {
 const BASIS_WORDS: Record<string, string> = { observed: "Observed", inferred: "Inferred", hypothesis: "Hypothesis", firstParty: "Your data", insufficient: "Not enough data" };
 
 /**
- * The email that the first package is ready, to the Owner only. Unlike the reminders above, it carries the
+ * The email that the first package is ready, to the Owner and the Admins. Unlike the reminders above, it carries the
  * report's own words: the answer, the top three findings with their evidence labels, and the two offer
  * ideas, because the Owner asked for a package that arrives ready to use. Built in code from the saved
  * reports; nothing here is written by a model for the email.
@@ -163,7 +163,7 @@ export function firstPackageEmail(input: {
     lines,
     list,
     button: { label: "Open the full report", url: `${base}/app/assets/${input.reportAssetId}` },
-    why: `You got this because you are the Owner of ${workspace} on Vistrial and have "Report ready" emails on.`,
+    why: `You got this because you are an Owner or Admin of ${workspace} on Vistrial and have "Report ready" emails on.`,
     settingsUrl: settingsUrl(input.appUrl),
   });
   return { subject: `Your first Vistrial package: ${fewWords(input.workspaceName, 70)}`, ...body };

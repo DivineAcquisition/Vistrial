@@ -83,6 +83,8 @@ async function reasonOf(work: () => Promise<unknown>) {
 export function HighLevelActions({ workspaceId, clientId }: { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> }) {
   const data = useQuery(api.crmActions.list, { workspaceId, clientId });
   const setActing = useMutation(api.crmActions.setActing);
+  const setMessaging = useMutation(api.crmActions.setMessaging);
+  const setOrganization = useMutation(api.crmActions.setOrganizationActing);
   const propose = useMutation(api.crmActions.propose);
   const decide = useMutation(api.crmActions.decide);
   const undo = useMutation(api.crmActions.undo);
@@ -94,6 +96,14 @@ export function HighLevelActions({ workspaceId, clientId }: { workspaceId: Id<"w
         setActing: async (on) => {
           try {
             await setActing({ workspaceId, clientId, on });
+          } catch (problem) {
+            showError(problem);
+          }
+        },
+        setMessaging: (on, consentConfirmed) => reasonOf(() => setMessaging({ workspaceId, clientId, on, consentConfirmed })),
+        setOrganization: async (on) => {
+          try {
+            await setOrganization({ workspaceId, on });
           } catch (problem) {
             showError(problem);
           }

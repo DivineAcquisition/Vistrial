@@ -424,10 +424,20 @@ tests, lint, both typechecks and the build, never deploying Convex:
     for their own brief gets no email; with no linked closer, nobody does (an automatic brief, 10d, will go to
     the person who set it up). Through Resend, like the other notices: `notifyByEmail` off means none, and the
     audit row holds the user id, never the address.
-    **Not built: the link on the calendar event.** It writes to the closer's Google Calendar, which needs a new
-    Google Calendar write scope (users re-consent, and the scope may need Google's verification) and a line in
-    the privacy policy (0.10 item 5: off by default, the Owner turns it on). That is its own pull request once
-    the owner confirms the scope and the policy line.
+    *10c-2, built:* the link on the calendar event (`convex/briefCalendar.ts`), as the owner confirmed (0.10
+    item 5: off by default, an Owner turns it on). The Calls tab shows the Owner "Brief link on the calendar
+    event" with what stands in the way: "Not set up yet" while Google sign-in is not configured on the
+    deployment, "Connect Google Calendar" when it is not connected, "Allow brief links" when it is connected
+    for counts only. Allowing it starts Google's sign-in again with one more permission,
+    `calendar.events.owned` (`integrations.startConnect` with `briefLinks`, Owner only; an ordinary connect
+    never asks for it). When a brief is saved for a booked call and the switch is on, `briefCalendar.addLink`
+    finds the event that starts at the call's time on the connected person's own calendar (with the lead as a
+    guest when their email is known) and adds one line with the brief's link to its description, with
+    `sendUpdates=none` so no guest is notified; it reads the event's time, guests and description once, in
+    passing, keeps none of them, and records only whether the link was added. It never creates, moves or
+    cancels an event. The privacy policy says so in section J (brief links, and the Limited Use sentence), and
+    section K and the service providers now name Deepgram for the voice memo (11a), which is the team member's
+    own voice and never the call. The policy date stays November 14, 2026, which is today.
     *10d, built (automatic briefs):* `convex/autoBriefs.ts`, the switch on the Calendar tab. Off by default;
     an Owner or Admin turns it on only after confirming the cap shown beside it (at most 200 briefs and 600
     credits a calendar month, UTC). A cron every 15 minutes makes a brief for each booked CRM call starting
@@ -532,6 +542,21 @@ tests, lint, both typechecks and the build, never deploying Convex:
     (HighLevel `attachments`, a fresh link at send time), never a voicemail drop. The approver hears it in
     Connections before approving.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.
+    *15a, built:* the code part, no model and no credits (`convex/objectionPlaybook.ts`,
+    `convex/lib/dealmaker/objections.ts`, `src/components/work/objection-playbook.tsx`, shown in the Playbook's
+    Objections folder). A call review now names the Playbook objection it heard (`itemId`, checked in code against
+    the items it was shown). From the passing call reviews and the closer's notes (a noted call that was reviewed
+    counts once), each objection shows how many calls it was heard on, the buyer's own words (only quotes on the
+    lead's speaker line; a rep's line is not an objection, a line with no speaker is counted unquoted, notes are
+    counted unquoted), and what worked: answered against not answered, by whether the deal was later won, lost
+    or still open (the CRM's deal status, else how the closer said the call ended), with what our side said on
+    calls later won. Below 5 calls it says "Not enough data" and compares nothing. Per rep is the Owner's only;
+    leads' names show only to people who see every deal. "Add the starter set" files eight objections for
+    agencies, consultants, coaches and course sellers, each "Starter set: not yet heard on your calls" until a
+    call hears it; objections heard that the Playbook does not hold are listed with "Add to Objections" (filed as
+    from that call, with the buyer's words). Next, 15b: talk tracks written from the Offer folder (Untested
+    hypothesis until used), grouping what was heard, the weekly refresh, and feeding the brief's likely
+    objections.
 16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
 17. **Calendar tab.**
     *17, built:* `convex/dealCalendar.ts` (`week`), `convex/lib/dealmaker/calendar.ts`, the tab at
@@ -544,6 +569,16 @@ tests, lint, both typechecks and the build, never deploying Convex:
     no-shows and cancelled, how many of this week's calls are confirmed, and briefs due. Filtered to the
     deals the person's home shows, like the Pipeline. Nothing here contacts anyone or changes the CRM.
 18. **Chat, the weekly scorecard and the proof** (before and after, deals touched, time saved).
+    *18a, built (proof and scorecard):* `convex/dealmakerProof.ts`, `convex/lib/dealmaker/proof.ts`, the
+    "How Dealmaker is doing" panel on the Pipeline tab. `workspaceAgents.firstOnAt` records when an agent was
+    first switched on. Before and after compares close rate, show rate and the typical time to first reply
+    over the same stretch either side of that day (up to 90 days), only after 14 days on and each figure
+    only from five or more cases, from the business's own CRM, and says it shows what happened, not what
+    caused it. Deals involved counts deals with Dealmaker's ready brief or its own sent follow-up, worded
+    "involved". Time saved counts briefs (20 minutes each), Dealmaker's sent messages (5) and CRM updates it
+    proposed that were done (2), with the time each shown. A cron posts last week's scorecard to the
+    Briefing once per CRM connection where Dealmaker is on, as three rows written in code: what moved, what
+    Dealmaker did, what is next.
     *18b, built (chat):* `convex/dealmakerChat.ts`, `convex/lib/dealmaker/chat.ts`, the Chat tab for
     Dealmaker (`work/chat` renders `src/components/work/dealmaker-chat.tsx` for `sales-conversion`; Strategist's
     chat is unchanged) and the story `/dev/dealmaker-chat`. Routed in code: simple questions (open deals,

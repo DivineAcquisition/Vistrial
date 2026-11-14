@@ -364,6 +364,8 @@ export default defineSchema({
     state: agentState,
     updatedAt: v.number(),
     updatedBy: v.string(),
+    /** When the agent was first switched on here: where "before and after" is measured from. */
+    firstOnAt: v.optional(v.number()),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_agent", ["workspaceId", "agentId"]),
@@ -1639,6 +1641,8 @@ export default defineSchema({
     returnOrigin: v.optional(v.string()),
     /** A page inside the app to come back to, such as the chat that started the connection. */
     returnPath: v.optional(v.string()),
+    /** Permissions asked for beyond the provider's own, when an Owner turned on something that needs them. */
+    extraScopes: v.optional(v.array(v.string())),
     createdAt: v.number(),
     usedAt: v.optional(v.number()),
   }).index("by_nonce", ["nonce"]),
@@ -1767,6 +1771,8 @@ export default defineSchema({
     nonce: v.string(),
     returnOrigin: v.optional(v.string()),
     returnPath: v.optional(v.string()),
+    /** Permissions asked for beyond the provider's own, when an Owner turned on something that needs them. */
+    extraScopes: v.optional(v.array(v.string())),
     createdAt: v.number(),
     usedAt: v.optional(v.number()),
   }).index("by_nonce", ["nonce"]),
@@ -2303,6 +2309,8 @@ export default defineSchema({
     codeVerifier: v.optional(v.string()),
     returnOrigin: v.optional(v.string()),
     returnPath: v.optional(v.string()),
+    /** Permissions asked for beyond the provider's own, when an Owner turned on something that needs them. */
+    extraScopes: v.optional(v.array(v.string())),
     createdAt: v.number(),
     usedAt: v.optional(v.number()),
   }).index("by_nonce", ["nonce"]),
@@ -2437,6 +2445,8 @@ export default defineSchema({
     assetId: v.optional(v.id("assets")),
     /** The brief as the Calls tab draws it, saved with the asset. */
     view: v.optional(briefView),
+    /** Whether the brief's link was added to the call's calendar event, and when. */
+    calendarLink: v.optional(v.object({ state: v.union(v.literal("added"), v.literal("noEvent"), v.literal("failed")), at: v.number() })),
     createdBy: v.string(),
     createdAt: v.number(),
     finishedAt: v.optional(v.number()),
@@ -2659,6 +2669,8 @@ export default defineSchema({
     team: v.optional(v.array(v.object({ memberId: v.id("members"), salesRole: v.union(v.literal("setter"), v.literal("closer"), v.literal("lead")), crmUserRef: v.optional(v.string()) }))),
     /** The message kinds the Owner made automatic. Only the low-stakes kinds are ever accepted. */
     autonomous: v.optional(v.array(v.string())),
+    /** The Owner turned on a link to each pre-call brief on the booked call's Google Calendar event (0.10 item 5). */
+    calendarBriefLinks: v.optional(v.boolean()),
     /** Automatic pre-call briefs (10d): off unless an Owner or Admin turned them on, and who did. */
     autoBriefs: v.optional(v.object({ on: v.boolean(), by: v.string(), at: v.number() })),
     updatedBy: v.string(),

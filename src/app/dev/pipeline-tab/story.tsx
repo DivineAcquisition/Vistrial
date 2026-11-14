@@ -1,6 +1,7 @@
 "use client";
 
 import { PipelineView, type BoardData, type TeamData } from "@/components/work/pipeline-tab";
+import type { ProofData } from "@/components/work/proof-panel";
 import { BALL_LABEL, DAY, FIT_LABEL, HEALTH_LABEL, TEMPERATURE_BASIS, TEMPERATURE_LABEL, buildBoard } from "../../../../convex/lib/dealmaker/board";
 import { LOW_STAKES, MESSAGE_KINDS, MESSAGE_KIND_LABEL } from "../../../../convex/lib/dealmaker/autonomy";
 import { SALES_ROLES, SALES_ROLE_LABEL } from "../../../../convex/lib/dealmaker/roles";
@@ -72,10 +73,36 @@ const team: TeamData = {
   canSetAutonomy: true,
 } as unknown as TeamData;
 
+/** Twenty days after switching on: before and after from the sample business's own CRM. Sample data. */
+const proof: ProofData = {
+  connected: true,
+  onAt: NOW - 20 * DAY,
+  beforeAndAfter: {
+    ready: true,
+    days: 20,
+    rows: [
+      { label: "Close rate", before: "31%", after: "38%", basis: "Before: 4 won of 13 closed. After: 5 won of 13 closed." },
+      { label: "Show rate", before: "64%", after: "79%", basis: "Before: 9 showed of 14 with an outcome. After: 11 showed of 14 with an outcome." },
+      { label: "Typical time to first reply", before: "7.5 hours", after: "1.2 hours", basis: "Before: the middle of 18 new leads. After: the middle of 21 new leads." },
+    ],
+    note: "The 20 days before Dealmaker was switched on against the last 20 days, from your own CRM. Other things changed too, so this shows what happened, not what caused it.",
+  },
+  involved: { deals: 9, won: 3, wonValue: "$13,500", open: 6, openValue: "$27,000", words: "Dealmaker was involved in 9 deals: 3 won ($13,500) and 6 still open ($27,000)." },
+  saved: {
+    items: [
+      { key: "brief", label: "Pre-call briefs written", count: 14, minutesEach: 20 },
+      { key: "message", label: "Messages drafted and sent", count: 37, minutesEach: 5 },
+      { key: "crmUpdate", label: "CRM updates made", count: 11, minutesEach: 2 },
+    ],
+    minutes: 487,
+    words: "About 8.1 hours",
+  },
+};
+
 export function PipelineTabStory({ view, theme }: { view: string; theme: string }) {
   return (
     <StoryFrame theme={theme} role="owner">
-      <PipelineView board={board(view)} team={view === "owner" ? team : null} editor actions={{ completeCommitment: noop, setRole: noop, setAutonomy: noop }} />
+      <PipelineView board={board(view)} team={view === "owner" ? team : null} proof={proof} editor actions={{ completeCommitment: noop, setRole: noop, setAutonomy: noop }} />
     </StoryFrame>
   );
 }

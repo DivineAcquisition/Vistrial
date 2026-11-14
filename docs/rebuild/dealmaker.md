@@ -446,7 +446,15 @@ tests, lint, both typechecks and the build, never deploying Convex:
     the approval and in the audit log. Every send-time check still runs: messaging on, Do Not Disturb or
     opted out, quiet hours, one message a day, Dealmaker pauses, and consent tags (now also checked in
     `claim`). Everything else still needs the typed SEND. Next, 13b: the Follow-up Engine's triggers and
-    drafting; 13c: the Comms tab.
+    drafting.
+    *13c, built (screen):* the Comms tab (`work/comms`, `src/components/work/comms-tab.tsx`, story
+    `/dev/comms-tab`). Five lanes with counts (drafted, held, waiting for approval, sent, not sent), each
+    message with the lead's name, its kind, channel, why it was written and who wrote it (Dealmaker or the
+    team). Drafted and held messages can be edited, discarded or sent for approval, and the result is said in
+    words; waiting messages point to the approvals in Connections. A person writes a new message to any lead
+    with an open deal, on a channel the CRM can reach. When messaging is off, the tab says so and drafts can
+    still be copied. `comms.view` now also returns lead names, that lead list and whether messaging is on.
+    The "Draft follow-ups" button follows once 13b-2 is merged.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
     attachment only.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.

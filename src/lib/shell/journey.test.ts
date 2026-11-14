@@ -20,11 +20,11 @@ describe("journey tabs", () => {
     expect(journeyTabOf(null)).toBeNull();
   });
 
-  it("gives Dealmaker its own six tabs only once it is live", () => {
+  it("gives Dealmaker its own six tabs, now it is live, and none while planned", () => {
     const dealmaker = agents.find((row) => row.slug === "sales-conversion")!;
-    expect(dealmaker.status).toBe("planned");
-    expect(agentTabs(dealmaker)).toEqual([]);
-    expect(agentTabs({ ...dealmaker, status: "live" }).map((row) => [row.label, row.href])).toEqual([
+    expect(dealmaker.status).toBe("live");
+    expect(agentTabs({ ...dealmaker, status: "planned" })).toEqual([]);
+    expect(agentTabs(dealmaker).map((row) => [row.label, row.href])).toEqual([
       ["Chat", "/app/agents/sales-conversion/work/chat"],
       ["Calendar", "/app/agents/sales-conversion/work/calendar"],
       ["Pipeline", "/app/agents/sales-conversion/work/pipeline"],

@@ -15,11 +15,13 @@ describe("notify me when a planned agent is live", () => {
     const t = convexTest(schema, modules);
     const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
     const owner = t.withIdentity(identity("user_owner"));
-    expect(await owner.query(api.agentWaitlist.mine, { workspaceId, agentSlug: "sales-conversion" })).toEqual({ joined: false });
-    expect(await owner.mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "sales-conversion" })).toEqual({ joined: true });
-    expect(await owner.query(api.agentWaitlist.mine, { workspaceId, agentSlug: "sales-conversion" })).toEqual({ joined: true });
-    expect(await owner.mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "sales-conversion" })).toEqual({ joined: false });
+    expect(await owner.query(api.agentWaitlist.mine, { workspaceId, agentSlug: "retention" })).toEqual({ joined: false });
+    expect(await owner.mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "retention" })).toEqual({ joined: true });
+    expect(await owner.query(api.agentWaitlist.mine, { workspaceId, agentSlug: "retention" })).toEqual({ joined: true });
+    expect(await owner.mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "retention" })).toEqual({ joined: false });
+    // A live agent has no waitlist: Strategist, and Dealmaker now it is live.
     await expect(owner.mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "growth-architect" })).rejects.toThrow(/planned/);
+    await expect(owner.mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "sales-conversion" })).rejects.toThrow(/planned/);
     await expect(t.withIdentity(identity("user_stranger")).mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "retention" })).rejects.toThrow();
   });
 });

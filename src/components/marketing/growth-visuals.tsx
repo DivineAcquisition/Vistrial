@@ -30,7 +30,7 @@ import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { BeamFrame, GlowPanel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Popover, PopoverPopup, PopoverTrigger } from "@/components/ui/popover";
-import { AGENT_FLOW, AGENTS_SECTION, DOCTRINE_RUN, EVIDENCE, GROWTH_ARCHITECT, HERO, HOW, PROBLEM, SAFETY } from "@/lib/marketing/content";
+import { AGENT_FLOW, AGENTS_SECTION, DOCTRINE_RUN, EVIDENCE, GROWTH_ARCHITECT, HERO, HOW, LIVE_STATUSES, PROBLEM, SAFETY } from "@/lib/marketing/content";
 import { marketingInset } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
@@ -606,13 +606,14 @@ export function EvidenceReport() {
  * The workforce: seven agents by department
  * ------------------------------------------------------------------------- */
 
-/** What the live agent is doing right now, in sample terms. */
-function AgentStatusLine() {
-  const status = useCycle(AGENT_FLOW.statuses.length, 2600);
+/** What a live agent is doing right now, in sample terms. */
+function AgentStatusLine({ name }: { name: string }) {
+  const statuses = LIVE_STATUSES[name] ?? AGENT_FLOW.statuses;
+  const status = useCycle(statuses.length, 2600);
   return (
     <p className="mt-1 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground">
       <span className="live-pulse size-1.5 shrink-0 rounded-full bg-brand-400" aria-hidden />
-      <span className="live-shimmer-text truncate">{AGENT_FLOW.statuses[status]}</span>
+      <span className="live-shimmer-text truncate">{statuses[status]}</span>
     </p>
   );
 }
@@ -648,7 +649,7 @@ export function WorkforceMap() {
                         <ArrowRight className="size-3" aria-hidden />
                       </Link>
                     ) : null}
-                    <AgentStatusLine />
+                    <AgentStatusLine name={agent.name} />
                   </SpotlightCard>
                 </li>
               ) : (

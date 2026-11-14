@@ -24,8 +24,16 @@ describe("workspace rail", () => {
     expect(CATALOG.map((agent) => agent.number)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
-  it("has Strategist as the only live agent, with its seven skills", () => {
-    expect(CATALOG.filter((agent) => agent.status === "live").map((agent) => agent.slug)).toEqual(["growth-architect"]);
+  it("has exactly Strategist and Dealmaker live, with their seven and six skills", () => {
+    expect(CATALOG.filter((agent) => agent.status === "live").map((agent) => agent.slug)).toEqual(["growth-architect", "sales-conversion"]);
+    expect(CATALOG.find((agent) => agent.slug === "sales-conversion")?.skills.map((skill) => [skill.slug, skill.status])).toEqual([
+      ["pipeline-forensics", "available"],
+      ["conversation-intelligence", "available"],
+      ["deal-briefing", "available"],
+      ["follow-up-engine", "available"],
+      ["objection-playbook", "available"],
+      ["proposal-architect", "available"],
+    ]);
     expect(CATALOG.find((agent) => agent.slug === "growth-architect")?.skills.map((skill) => skill.slug)).toEqual([
       "market-intelligence",
       "offer-intelligence",

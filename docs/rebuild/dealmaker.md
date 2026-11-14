@@ -557,6 +557,18 @@ tests, lint, both typechecks and the build, never deploying Convex:
     from that call, with the buyer's words). Next, 15b: talk tracks written from the Offer folder (Untested
     hypothesis until used), grouping what was heard, the weekly refresh, and feeding the brief's likely
     objections.
+    *15b, built:* the talk tracks (`convex/skills/objectionPlaybook/`, asset `objectionPlaybook`). A person asks
+    for them with the budget shown (cap 150 cents), or an Owner turns on the weekly refresh (off by default, its
+    cap shown; `objectionPlaybook.weekly` every six hours starts at most one run per Playbook per week, in the
+    Owner's name). Both need 5 calls reviewed or noted and an objection heard; below that nothing runs. The run
+    reads the code's figures (no leads' names, no reps), the Offer folder, the voice and the approved lessons,
+    writes one talk track per objection heard (up to 12, most heard first), and code checks each: one per
+    objection, offer items that exist, no price beyond the Offer folder, no promised result, every figure from
+    the offer item it names, no pressure, nothing personal, at most 90 words. One revision from the reserve. A
+    passing set waits for review in the approvals queue (it is not internal work) and shows on each objection as
+    "Waiting for your review", then "Untested hypothesis" once approved; a set that fails shows nothing. The
+    pre-call brief now reads objections most heard first, with "heard on N of your calls", and an approved talk
+    track only. Grouping is done per call by the call review (15a), so there is no separate grouping step.
 16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
 17. **Calendar tab.**
     *17, built:* `convex/dealCalendar.ts` (`week`), `convex/lib/dealmaker/calendar.ts`, the tab at

@@ -57,6 +57,9 @@ export const TOOLS = [
   "cr.read",
   "cr.check",
   "cr.save",
+  "obp.read",
+  "obp.check",
+  "obp.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

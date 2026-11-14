@@ -10,6 +10,8 @@ import { SALES_CONVERSION } from "../../catalog";
 import { crmFor, type CrmView } from "../../lib/crm/read";
 import type { CrmAppointment, CrmDeal } from "../../lib/crm/types";
 import { screenClaims, type ClaimInput } from "../../lib/evidence";
+import { heardCalls } from "../../lib/dealmaker/objectionCalls";
+import { objectionPlaybook } from "../../lib/dealmaker/objections";
 import { playbookForSkill } from "../../lib/playbook";
 import { canonicalUrl } from "../../lib/sourceRefs";
 import { transcriptsFor, transcriptUrl } from "../../transcripts";
@@ -78,6 +80,34 @@ async function dealFor(crm: CrmView, contactRef: string, dealRef: string | undef
   return deals.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))[0] ?? null;
 }
 
+/**
+ * The Playbook items a brief may draw on. Each objection carries how often it was heard on the business's calls
+ * (counted in code by the Objection Playbook) and, once a person approved it, its talk track, labelled untested.
+ */
+async function briefPlaybook(ctx: MutationCtx, scope: { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> }) {
+  const { items } = await playbookForSkill(ctx, scope);
+  const objections = items.filter((row) => row.kind === "objection");
+  const figures = objections.length
+    ? objectionPlaybook({ items: objections.map((row) => ({ id: row._id, title: row.title, tag: row.tag ?? null, starter: row.source.type === "starter" })), calls: await heardCalls(ctx, scope), showLeads: false, showReps: false })
+    : null;
+  const heard = new Map((figures?.rows ?? []).map((row) => [row.itemId as string, row.heard]));
+  const tracks = new Map<string, string>();
+  const runs = await ctx.db
+    .query("objectionRuns")
+    .withIndex("by_workspace_client", (q) => q.eq("workspaceId", scope.workspaceId).eq("clientId", scope.clientId))
+    .order("desc")
+    .take(20);
+  const source = runs.find((row) => row.status === "ready" && row.checksPassed && row.tracks?.length);
+  const asset = source?.assetId ? await ctx.db.get(source.assetId) : null;
+  if (asset?.status === "approved") for (const row of source!.tracks!) tracks.set(row.itemId, row.track);
+  return items.map((row) => {
+    const count = heard.get(row._id) ?? 0;
+    const track = tracks.get(row._id);
+    const body = row.kind === "objection" ? [row.body, count ? `Heard on ${count} of the business's calls.` : "", track ? `Talk track (untested hypothesis): ${track}` : ""].filter(Boolean).join(" ") : row.body;
+    return { id: row._id, folder: row.folder, kind: row.kind, title: row.title, body, basis: row.basis, ...(count ? { heard: count } : {}) };
+  });
+}
+
 /** Observe: the lead as the CRM records them, their linked calls, what a person typed, and the Playbook. */
 const read: MutationTool = async (ctx, run) => {
   const project = await projectOf(ctx.db, run);
@@ -101,7 +131,7 @@ const read: MutationTool = async (ctx, run) => {
     handoff: briefing.handoff ? { text: briefing.handoff, by: briefing.writtenBy ?? "a teammate" } : null,
     about: briefing.about ? { text: briefing.about, by: briefing.writtenBy ?? "a teammate" } : null,
     site: siteFor(briefing.website, null),
-    playbook: (await playbookForSkill(ctx, scope)).items.map((row) => ({ id: row._id, folder: row.folder, kind: row.kind, title: row.title, body: row.body, basis: row.basis })),
+    playbook: await briefPlaybook(ctx, scope),
     now,
   };
   if (crm && briefing.contactRef) {

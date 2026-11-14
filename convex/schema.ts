@@ -972,6 +972,8 @@ export default defineSchema({
       v.literal("landingPage"),
       /** Where a sales pipeline's deals stop moving, from the CRM's own figures (Dealmaker, Pipeline Forensics). */
       v.literal("pipelineReview"),
+      /** One page on a lead before a booked call (Dealmaker, Deal Briefing). Internal: never leaves Vistrial. */
+      v.literal("preCallBrief"),
     ),
     title: v.string(),
     status: assetStatus,
@@ -2337,6 +2339,39 @@ export default defineSchema({
     crmContactRef: v.optional(v.string()),
     crmDealRef: v.optional(v.string()),
   }).index("by_workspace", ["workspaceId"]),
+
+  /**
+   * A pre-call brief a person asked for (Dealmaker, Deal Briefing; docs/rebuild/dealmaker.md, 4.3). The run is
+   * started on this row's own project and finds the row by it. The lead is named by the CRM's own refs; what a person typed (the setter's
+   * hand-off, or what they know about a lead when no CRM is connected) is kept here as their account.
+   */
+  dealBriefings: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    projectId: v.id("researchProjects"),
+    /** The CRM's own ids for the lead, their deal and the booked call; missing without a CRM. */
+    contactRef: v.optional(v.string()),
+    dealRef: v.optional(v.string()),
+    appointmentRef: v.optional(v.string()),
+    startsAt: v.optional(v.number()),
+    leadName: v.string(),
+    /** What a person typed about the lead when there is no CRM. */
+    about: v.optional(v.string()),
+    /** The setter's hand-off: a rep's account, never shown as fact. */
+    handoff: v.optional(v.string()),
+    /** The name of the person who typed `about` or `handoff`, shown beside it. */
+    writtenBy: v.optional(v.string()),
+    trigger: v.union(v.literal("request"), v.literal("auto")),
+    status: v.union(v.literal("running"), v.literal("ready"), v.literal("failed")),
+    runId: v.optional(v.id("agentRuns")),
+    assetId: v.optional(v.id("assets")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"])
+    .index("by_workspace_appointment", ["workspaceId", "appointmentRef"])
+    .index("by_project", ["projectId"]),
 
   /** Webhook deliveries that passed their signature check: which, when and what kind. Never the body. */
   integrationWebhookEvents: defineTable({

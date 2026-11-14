@@ -48,6 +48,9 @@ export const TOOLS = [
   "pbs.check",
   "pbs.save",
   "pbs.read",
+  "dbr.read",
+  "dbr.check",
+  "dbr.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

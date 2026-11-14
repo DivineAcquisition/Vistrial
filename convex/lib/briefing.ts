@@ -114,6 +114,13 @@ export async function askAssetReview(ctx: MutationCtx, asset: Doc<"assets">, age
   return askApproval(ctx, { ...(await assetApproval(ctx, asset, slug)), requestedBy: "agent" }, { title: `Draft to review: ${asset.title}` });
 }
 
+/**
+ * Work that is the business's own material read back to it and never leaves Vistrial, so it joins no
+ * approvals queue (Dealmaker, answer 12.3): a pre-call brief and a call review. What such work proposes (a CRM
+ * change, a message) still asks for its own approval.
+ */
+export const INTERNAL_WORK: ReadonlySet<string> = new Set(["deal-briefing", "conversation-intelligence"]);
+
 const STOP_WORDS: Record<string, string> = {
   cap: "It reached its credit or time limit before finishing.",
   error: "It failed. Nothing was charged beyond what it had already used.",
@@ -145,7 +152,7 @@ export async function runChanged(ctx: MutationCtx, runId: Id<"agentRuns">) {
       .query("assets")
       .withIndex("by_workspace_run", (q) => q.eq("workspaceId", run.workspaceId).eq("createdByRun", run._id))
       .take(10);
-    for (const asset of assets) await askAssetReview(ctx, asset, run.agentSlug);
+    if (!INTERNAL_WORK.has(run.skillSlug ?? "")) for (const asset of assets) await askAssetReview(ctx, asset, run.agentSlug);
     const first = assets[0];
     await post(ctx, {
       ...base,

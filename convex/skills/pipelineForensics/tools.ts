@@ -33,7 +33,7 @@ async function reviewAt(ctx: MutationCtx, run: Doc<"agentRuns">, step: Step | nu
 }
 
 /** The CRM as one "Your data" source on the project, so every figure can cite where it came from. */
-async function saveCrmSource(ctx: MutationCtx, project: Doc<"researchProjects">, runId: Id<"agentRuns">, crm: { id: string; label: string; accountName: string; lastReadAt: number | null }, counts: string) {
+export async function saveCrmSource(ctx: MutationCtx, project: Doc<"researchProjects">, runId: Id<"agentRuns">, crm: { id: string; label: string; accountName: string; lastReadAt: number | null }, counts: string) {
   const url = `https://vistrial.io/app/connections/crm?connection=${crm.id}`;
   const canonical = canonicalUrl(url) ?? url;
   const fields = {

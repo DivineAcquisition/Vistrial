@@ -5,10 +5,20 @@
 
 import type { ReviewView } from "../../lib/dealmaker/reviewView";
 import { quoted } from "../dealBriefing/checks";
+import { quoteSpeaker, speakerWords, type QuoteSpeaker } from "../../lib/dealmaker/speakers";
 import { dueOf } from "./checks";
 import { FIT_FIELDS, FIT_WORDS, NOT_ENOUGH_DATA, type ChecksRecord, type Review, type ReviewRecord, type ReviewSource } from "./shapes";
 
-const KIND = (source: ReviewSource | undefined) => (source?.type === "call" ? "Buyer's words" : `Rep's account, ${source?.by ?? "the closer"}`);
+/** Who said a quote, from its source: the buyer or our side on the call, by its speaker label, or the closer's account in the notes. */
+export function whoSaid(source: ReviewSource | undefined, quote: string, leadName: string): QuoteSpeaker | { kind: "notes"; speaker: string } {
+  if (source?.type === "call") return quoteSpeaker(quote, source.text, leadName);
+  return { kind: "notes", speaker: source?.by ?? "the closer" };
+}
+
+const KIND = (source: ReviewSource | undefined, quote: string, leadName: string) => {
+  const who = whoSaid(source, quote, leadName);
+  return who.kind === "notes" ? `Rep's account, ${who.speaker}` : speakerWords(who);
+};
 
 /** The parts of a review that hold: quotes found in their sources, script steps covered with a quote from the call. */
 export function settled(review: Review, record: ReviewRecord) {
@@ -17,14 +27,14 @@ export function settled(review: Review, record: ReviewRecord) {
   const call = record.sources.find((row) => row.type === "call");
   const fit = FIT_FIELDS.map((field) => {
     const row = review.fit.find((item) => item.field === field && ok(item.quote, item.sourceId));
-    return row ? { field, label: FIT_WORDS[field], said: true, finding: row.finding, quote: row.quote, kind: KIND(sources.get(row.sourceId)), sourceId: row.sourceId } : { field, label: FIT_WORDS[field], said: false, finding: "", quote: "" };
+    return row ? { field, label: FIT_WORDS[field], said: true, finding: row.finding, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), sourceId: row.sourceId } : { field, label: FIT_WORDS[field], said: false, finding: "", quote: "" };
   });
-  const objections = review.objections.filter((row) => row.quote && ok(row.quote, row.sourceId)).map((row) => ({ text: row.objection, quote: row.quote, kind: KIND(sources.get(row.sourceId)), answered: row.answered && Boolean(call) && quoted(row.answerQuote, call!.text), answerQuote: row.answerQuote, sourceId: row.sourceId }));
+  const objections = review.objections.filter((row) => row.quote && ok(row.quote, row.sourceId)).map((row) => ({ text: row.objection, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), answered: row.answered && Boolean(call) && quoted(row.answerQuote, call!.text), answerQuote: row.answerQuote, sourceId: row.sourceId }));
   const commitments = review.commitments
     .filter((row) => row.quote && row.what && ok(row.quote, row.sourceId))
     .map((row) => {
       const due = dueOf(row.due, record.callDate);
-      return { owner: row.owner, what: row.what, due: typeof due === "number" ? due : null, quote: row.quote, kind: KIND(sources.get(row.sourceId)), sourceId: row.sourceId };
+      return { owner: row.owner, what: row.what, due: typeof due === "number" ? due : null, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), sourceId: row.sourceId };
     });
   const steps = record.playbook.filter((row) => row.kind === "scriptStep");
   const coverage = steps.map((step) => {

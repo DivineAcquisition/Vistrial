@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { ScriptedModel } from "./lib/toolRouter";
+import { isLead, quoteSpeaker, speakerOf } from "./lib/dealmaker/speakers";
 import { runChecks } from "./skills/callReview/checks";
 import { computeReview, talkOf, type ReviewInput } from "./skills/callReview/compute";
 import type { Review } from "./skills/callReview/shapes";
@@ -94,6 +95,19 @@ describe("what a review knows (code)", () => {
       ["p2", "scriptStep"],
       ["p3", "package"],
     ]);
+  });
+});
+
+describe("who said a quote (code)", () => {
+  it("is the buyer only on the lead's own line; our side's line is a rep's words; no label, no known speaker", () => {
+    expect(quoteSpeaker("Our budget is around $3,000 a month.", CALL, "Jordan Lee")).toEqual({ kind: "buyer", speaker: "Jordan" });
+    expect(quoteSpeaker("I'll send the proposal and the clinic case study by Friday.", CALL, "Jordan Lee")).toEqual({ kind: "rep", speaker: "Milo" });
+    expect(quoteSpeaker("send the proposal", "We will send the proposal soon.", "Jordan Lee")).toEqual({ kind: "unknown", speaker: null });
+    // A label carries down to the unlabelled lines under it, and a quote running over a line break keeps its speaker.
+    expect(speakerOf("the second line", "Jordan: first line\nthe second line")).toBe("Jordan");
+    expect(speakerOf("end of one start of", "Milo: the end of one\nstart of two")).toBe("Milo");
+    expect(isLead("jordan", "Jordan Lee")).toBe(true);
+    expect(isLead("Milo", "Jordan Lee")).toBe(false);
   });
 });
 
@@ -204,7 +218,9 @@ describe("a call review, run end to end", () => {
       ["Timing", false, null],
       ["Fit with the offer", false, null],
     ]);
-    expect(shown.view?.objections[0]).toMatchObject({ answered: true });
+    expect(shown.view?.objections[0]).toMatchObject({ answered: true, kind: "Buyer's words" });
+    // Our side's promise is labelled as the rep's words, not the buyer's.
+    expect(shown.view?.commitments.map((row) => row.kind)).toEqual(["Rep's words, Milo", "Buyer's words"]);
     expect(shown.view?.coverage).toEqual([
       { title: "Ask what it is worth to them", covered: true, quote: "What would that be worth to you?" },
       { title: "Ask for the decision", covered: false, quote: "" },
@@ -247,6 +263,25 @@ describe("a call review, run end to end", () => {
     expect(after[0].review).toEqual({ id: out.reviewId, state: "ready" });
     const recent = await s.owner.query(api.callReviews.recent, { workspaceId: s.workspaceId });
     expect(recent.reviews.map((row) => [row.leadName, row.state])).toEqual([["Jordan Lee", "ready"]]);
+  });
+
+  it("files a rep's line from the call as the rep's, with their name, never as the buyer's", async () => {
+    script(() => ({
+      ...goodReview(),
+      fit: [
+        { field: "fit", finding: "The retainer fits", quote: "Most of the cost is the follow-up we run for you", sourceId: "t1" },
+        { field: "need", finding: "More booked calls", quote: "We need more booked calls every month", sourceId: "t1" },
+      ],
+    }));
+    const s = await setup();
+    const out = await runReview(s, { transcriptId: s.transcriptId });
+    const facts = await s.t.run((ctx) => ctx.db.query("dealFacts").collect());
+    expect(facts.map((row) => [row.field, row.kind, row.author ?? null])).toEqual([
+      ["need", "buyer", null],
+      ["fit", "rep", "Milo"],
+    ]);
+    const shown = await s.owner.query(api.callReviews.review, { workspaceId: s.workspaceId, reviewId: out.reviewId });
+    expect(shown.view?.fit.find((row) => row.field === "fit")?.kind).toBe("Rep's words, Milo");
   });
 
   it("files nothing when the review still fails its checks after the revision", async () => {

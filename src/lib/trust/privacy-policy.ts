@@ -214,7 +214,11 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         { kind: "h", text: "J. Connected calendars" },
         {
           kind: "p",
-          text: "If a workspace Owner connects Google Calendar or Calendly, Vistrial reads that person's scheduled events with read-only access, to count booked calls. From Google Calendar it asks only for each event's time, type, cancelled status, and its guests' email addresses and replies, and uses the email addresses once, in passing, to tell an outside guest from a colleague. From Calendly it reads each event's time, event type name and cancelled status, and whether the host marked an invitee as a no-show. Vistrial keeps counts only: how many calls were booked, cancelled, declined or marked no-show each week, and for Calendly by event type. It does not keep event titles, descriptions, locations, or the names or email addresses of guests and invitees. Vistrial never creates, changes or cancels events and never contacts guests.",
+          text: "If a workspace Owner connects Google Calendar or Calendly, Vistrial reads that person's scheduled events with read-only access, to count booked calls. From Google Calendar it asks only for each event's time, type, cancelled status, and its guests' email addresses and replies, and uses the email addresses once, in passing, to tell an outside guest from a colleague. From Calendly it reads each event's time, event type name and cancelled status, and whether the host marked an invitee as a no-show. Vistrial keeps counts only: how many calls were booked, cancelled, declined or marked no-show each week, and for Calendly by event type. It does not keep event titles, descriptions, locations, or the names or email addresses of guests and invitees. Vistrial never creates or cancels events and never contacts guests, and it changes an event only in the one case described next.",
+        },
+        {
+          kind: "p",
+          text: "Brief links. If a workspace Owner turns on brief links for Dealmaker, Vistrial asks Google Calendar for one more permission: to change events the connected person owns. It uses that permission only to add one line, a link to Dealmaker's pre-call brief, to the description of the event for a booked sales call, and it tells Google not to notify the guests. To do that it reads that event's time, its guests' email addresses and its description once, in passing, and keeps none of them; it keeps only whether the link was added. Brief links are off unless an Owner turns them on, and turning them off stops them.",
         },
         {
           kind: "p",
@@ -222,12 +226,16 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Vistrial's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements. Information from Google Calendar is used only to show the workspace its own booked-call counts and to cite them in that workspace's reports. It is not sold and not used for advertising.",
+          text: "Vistrial's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements. Information from Google Calendar is used only to show the workspace its own booked-call counts, to cite them in that workspace's reports, and, when an Owner turns on brief links, to add a pre-call brief's link to a booked call's event. It is not sold and not used for advertising.",
         },
         { kind: "h", text: "K. Call transcripts" },
         {
           kind: "p",
-          text: "An Owner, Admin or Member of an organization can upload or paste the transcript of a call they recorded with a note-taking tool. Vistrial keeps the transcript's text, the title and call date the person gives it, the name of the tool, who added it, and when that person confirmed the call was recorded lawfully. Vistrial takes text only and does not accept audio or video. A transcript contains the names and words of the people on the call. It is stored for that workspace only, shown to its Owners, Admins and Members, and read by the agents the Owner allows, to prepare that workspace's reports; a report may quote up to 300 characters of it as a source.",
+          text: "An Owner, Admin or Member of an organization can upload or paste the transcript of a call they recorded with a note-taking tool. Vistrial keeps the transcript's text, the title and call date the person gives it, the name of the tool, who added it, and when that person confirmed the call was recorded lawfully. Vistrial takes text only and does not accept recordings of calls. A transcript contains the names and words of the people on the call. It is stored for that workspace only, shown to its Owners, Admins and Members, and read by the agents the Owner allows, to prepare that workspace's reports; a report may quote up to 300 characters of it as a source.",
+        },
+        {
+          kind: "p",
+          text: "Voice memos. After a sales call, a member of the team can record a voice memo of up to a minute in their own voice, to go with their notes on the call. It is never a recording of the call itself. The memo is sent to Deepgram to be turned into text; Vistrial keeps the text and deletes the audio as soon as it has been transcribed or could not be.",
         },
         {
           kind: "p",
@@ -321,6 +329,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "OpenAI, which makes the picture when someone on your team chooses its image model for an ad image.",
             "Cloudflare, which runs the bot check on our public forms when it is switched on.",
             "Resend, which delivers the email that tells our team a website form was submitted.",
+            "Deepgram, which turns a team member's short voice memo after a sales call into text.",
             "Autumn, which runs our plans, credit balances and top-ups.",
             "Stripe, which takes payments and manages cards and invoices. Card details go to Stripe, not to Vistrial.",
           ],

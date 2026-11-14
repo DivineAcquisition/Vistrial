@@ -92,7 +92,16 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("It does not keep event titles, descriptions, locations, or the names or email addresses of guests and invitees");
     expect(text).toContain("adheres to the Google API Services User Data Policy, including the Limited Use requirements");
     expect(text).toContain("K. Call transcripts");
-    expect(text).toContain("Vistrial takes text only and does not accept audio or video");
+    expect(text).toContain("Vistrial takes text only and does not accept recordings of calls");
+    // A voice memo is the team member's own voice, never the call; the audio is deleted once transcribed.
+    expect(text).toContain("It is never a recording of the call itself");
+    expect(text).toContain("deletes the audio as soon as it has been transcribed or could not be");
+    expect(text).toContain("Deepgram, which turns a team member's short voice memo after a sales call into text");
+    // Brief links: off unless an Owner turns them on, one line added, guests not notified, nothing kept.
+    expect(text).toContain("Brief links are off unless an Owner turns them on");
+    expect(text).toContain("it tells Google not to notify the guests");
+    expect(text).toContain("keeps none of them; it keeps only whether the link was added");
+    expect(text).toContain("Vistrial never creates or cancels events and never contacts guests");
     expect(text).toContain("A connected calendar's access and saved counts are deleted as soon as the calendar is disconnected");
     expect(text).toContain("A call transcript you add is kept until someone in the workspace deletes it");
     // Not built yet, so not promised.

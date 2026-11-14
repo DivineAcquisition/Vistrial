@@ -424,10 +424,20 @@ tests, lint, both typechecks and the build, never deploying Convex:
     for their own brief gets no email; with no linked closer, nobody does (an automatic brief, 10d, will go to
     the person who set it up). Through Resend, like the other notices: `notifyByEmail` off means none, and the
     audit row holds the user id, never the address.
-    **Not built: the link on the calendar event.** It writes to the closer's Google Calendar, which needs a new
-    Google Calendar write scope (users re-consent, and the scope may need Google's verification) and a line in
-    the privacy policy (0.10 item 5: off by default, the Owner turns it on). That is its own pull request once
-    the owner confirms the scope and the policy line.
+    *10c-2, built:* the link on the calendar event (`convex/briefCalendar.ts`), as the owner confirmed (0.10
+    item 5: off by default, an Owner turns it on). The Calls tab shows the Owner "Brief link on the calendar
+    event" with what stands in the way: "Not set up yet" while Google sign-in is not configured on the
+    deployment, "Connect Google Calendar" when it is not connected, "Allow brief links" when it is connected
+    for counts only. Allowing it starts Google's sign-in again with one more permission,
+    `calendar.events.owned` (`integrations.startConnect` with `briefLinks`, Owner only; an ordinary connect
+    never asks for it). When a brief is saved for a booked call and the switch is on, `briefCalendar.addLink`
+    finds the event that starts at the call's time on the connected person's own calendar (with the lead as a
+    guest when their email is known) and adds one line with the brief's link to its description, with
+    `sendUpdates=none` so no guest is notified; it reads the event's time, guests and description once, in
+    passing, keeps none of them, and records only whether the link was added. It never creates, moves or
+    cancels an event. The privacy policy says so in section J (brief links, and the Limited Use sentence), and
+    section K and the service providers now name Deepgram for the voice memo (11a), which is the team member's
+    own voice and never the call. The policy date stays November 14, 2026, which is today.
     Next: 10d the automatic brief 3 hours before each booked call, with its monthly cap.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
     recordings; the Zoom and Meet note taker.

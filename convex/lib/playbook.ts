@@ -198,44 +198,45 @@ export function checkItem(input: ItemInput): string | null {
 
 type Counts = { kinds: Partial<Record<Kind, number>>; scriptStages: Partial<Record<Stage, number>>; transcripts: number };
 
-type Need = { id: string; what: string; min: number; count: (counts: Counts) => number };
+/** `what` is the plural; `one` the singular, when a minimum of one reads better with it. */
+type Need = { id: string; what: string; one?: string; min: number; count: (counts: Counts) => number };
 
 const kindCount = (kindName: Kind) => (counts: Counts) => counts.kinds[kindName] ?? 0;
 
-/** What each skill needs from the Playbook before it can do its best work. Order is the skills' order. */
+/** What each skill needs from the Playbook before it can do its best work. `name` is the work's in-app word, never the skill's name. */
 export const NEEDS: readonly { skill: string; name: string; needs: readonly Need[] }[] = [
   {
     skill: "deal-briefing",
-    name: "Deal Briefing",
+    name: "Pre-call brief",
     needs: [
-      { id: "package", what: "packages in Offer", min: 1, count: kindCount("package") },
+      { id: "package", what: "packages in Offer", one: "package in Offer", min: 1, count: kindCount("package") },
       { id: "question", what: "discovery questions in Prospect", min: 3, count: kindCount("question") },
     ],
   },
   {
     skill: "conversation-intelligence",
-    name: "Conversation Intelligence",
+    name: "Call review",
     needs: [{ id: "script", what: "script steps across the four call stages", min: 4, count: (counts) => STAGES.filter((row) => (counts.scriptStages[row] ?? 0) > 0).length }],
   },
   {
     skill: "follow-up-engine",
-    name: "Follow-up Engine",
+    name: "Follow-ups",
     needs: [
-      { id: "voice", what: "a voice and sign-off in Closing", min: 1, count: kindCount("voice") },
-      { id: "proof", what: "pieces of proof in Offer", min: 1, count: kindCount("proof") },
+      { id: "voice", what: "a voice and sign-off in Closing", one: "a voice and sign-off in Closing", min: 1, count: kindCount("voice") },
+      { id: "proof", what: "pieces of proof in Offer", one: "piece of proof in Offer", min: 1, count: kindCount("proof") },
     ],
   },
   {
     skill: "objection-playbook",
-    name: "Objection Playbook",
+    name: "Objection playbook",
     needs: [{ id: "calls", what: "call transcripts shared with Dealmaker", min: 5, count: (counts) => counts.transcripts }],
   },
   {
     skill: "proposal-architect",
-    name: "Proposal Architect",
+    name: "Proposal",
     needs: [
-      { id: "price", what: "prices proposals may use in Offer", min: 1, count: kindCount("price") },
-      { id: "winning", what: "past winning proposals in Closing", min: 1, count: kindCount("winningProposal") },
+      { id: "price", what: "prices proposals may use in Offer", one: "price proposals may use in Offer", min: 1, count: kindCount("price") },
+      { id: "winning", what: "past winning proposals in Closing", one: "past winning proposal in Closing", min: 1, count: kindCount("winningProposal") },
     ],
   },
 ];
@@ -253,7 +254,7 @@ export function needsFrom(items: Pick<Doc<"playbookItems">, "kind" | "stage">[],
     const needs = row.needs.map((need) => {
       const have = need.count(counts);
       const met = have >= need.min;
-      return { id: need.id, what: need.what, have, min: need.min, met, line: met ? `Has ${need.what}: ${have}.` : `Needs ${need.min} ${need.what}; you have ${have}.` };
+      return { id: need.id, what: need.what, have, min: need.min, met, line: met ? `Has ${need.what}: ${have}.` : `Needs ${need.min} ${need.min === 1 ? (need.one ?? need.what) : need.what}; you have ${have}.` };
     });
     return { skill: row.skill, name: row.name, needs, ready: needs.every((need) => need.met) };
   });

@@ -80,6 +80,7 @@ describe("the Playbook's rules", () => {
     const objections = needs.find((row) => row.skill === "objection-playbook")!;
     expect(objections.needs[0].line).toBe("Needs 5 call transcripts shared with Dealmaker; you have 2.");
     expect(JSON.stringify(needs)).not.toMatch(/score|%/i);
+    expect(needs.find((row) => row.skill === "proposal-architect")!.needs[1].line).toBe("Needs 1 past winning proposal in Closing; you have 0.");
     const script = needsFrom(["open", "discover", "pitch", "close"].map((stage) => ({ kind: "scriptStep" as const, stage: stage as "open" })), 0);
     expect(script.find((row) => row.skill === "conversation-intelligence")!.ready).toBe(true);
   });

@@ -111,11 +111,17 @@ export function checkInput(input: ActionInput, now: number): { ok: true; value: 
   }
 }
 
+/** A voice note's audio, as HighLevel takes it: links it fetches and attaches. Only https links. */
+function attachmentsOf(urls: string[] | undefined) {
+  const safe = (urls ?? []).filter((url) => /^https:\/\//.test(url)).slice(0, 1);
+  return safe.length ? { attachments: safe } : {};
+}
+
 /**
  * The one HighLevel request an approved action becomes. The only writes Vistrial ever sends: every path is
  * built here from checked ids, and the sender refuses anything that did not come from this function.
  */
-export function writeRequest(action: ActionInput & { pipelineId?: string }): { method: "PUT" | "POST" | "DELETE"; path: string; body: Record<string, unknown> } {
+export function writeRequest(action: ActionInput & { pipelineId?: string; attachments?: string[] }): { method: "PUT" | "POST" | "DELETE"; path: string; body: Record<string, unknown> } {
   const deal = action.dealId;
   const contact = action.contactId;
   switch (action.kind) {
@@ -134,10 +140,10 @@ export function writeRequest(action: ActionInput & { pipelineId?: string }): { m
       return { method: "POST", path: `/contacts/${contact}/notes`, body: { body: action.body } };
     case "send_sms":
       if (!isHlId(contact) || !action.body) throw new Error("bad text");
-      return { method: "POST", path: "/conversations/messages", body: { type: "SMS", contactId: contact, message: action.body } };
+      return { method: "POST", path: "/conversations/messages", body: { type: "SMS", contactId: contact, message: action.body, ...attachmentsOf(action.attachments) } };
     case "send_email":
       if (!isHlId(contact) || !action.title || !action.body) throw new Error("bad email");
-      return { method: "POST", path: "/conversations/messages", body: { type: "Email", contactId: contact, subject: action.title, message: action.body, html: emailHtml(action.body) } };
+      return { method: "POST", path: "/conversations/messages", body: { type: "Email", contactId: contact, subject: action.title, message: action.body, html: emailHtml(action.body), ...attachmentsOf(action.attachments) } };
     case "create_task":
       if (!isHlId(contact) || !action.title || typeof action.dueAt !== "number") throw new Error("bad task");
       return {

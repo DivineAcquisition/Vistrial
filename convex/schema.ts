@@ -1951,6 +1951,8 @@ export default defineSchema({
     /** The action this one reverses, and the one that reversed this. */
     undoOf: v.optional(v.id("crmActions")),
     undoneBy: v.optional(v.id("crmActions")),
+    /** A voice note: the audio attached to the text or email, which the approver listens to first. */
+    audioStorageId: v.optional(v.id("_storage")),
   })
     .index("by_connection", ["connectionId", "proposedAt"])
     .index("by_connection_state", ["connectionId", "state"]),
@@ -2688,9 +2690,47 @@ export default defineSchema({
     createdBy: v.string(),
     /** The last person who changed its words. A draft a person wrote or edited never goes by the Owner's switch. */
     editedBy: v.optional(v.string()),
+    /** Sent as a voice note: the body is what the cloned voice says, attached to the text or email as audio. */
+    voice: v.optional(v.boolean()),
+    /** The voice note's audio, made for exactly this body. Editing the words throws it away. */
+    audio: v.optional(
+      v.object({
+        status: v.union(v.literal("making"), v.literal("ready"), v.literal("failed")),
+        /** The words the audio was made from. */
+        text: v.string(),
+        storageId: v.optional(v.id("_storage")),
+        failCode: v.optional(v.string()),
+        at: v.number(),
+      }),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_workspace_status", ["workspaceId", "status", "updatedAt"]),
+
+  /**
+   * The cloned voice for voice notes (build step 14), one per organization or client. Made only from a
+   * recording of the speaker reading the consent statement aloud, confirmed by an Owner who types the
+   * speaker's name. The recording is the sample the voice is cloned from; removing the voice deletes both.
+   */
+  dealmakerVoices: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    /** Whose voice this is, as they said it in the recording. */
+    speakerName: v.string(),
+    /** The consent statement they read aloud, word for word as shown. */
+    statement: v.string(),
+    sampleStorageId: v.optional(v.id("_storage")),
+    sampleSeconds: v.number(),
+    /** The Owner who confirmed the recording, and when. */
+    confirmedBy: v.string(),
+    confirmedAt: v.number(),
+    status: v.union(v.literal("cloning"), v.literal("notSetUp"), v.literal("ready"), v.literal("failed"), v.literal("removed")),
+    /** ElevenLabs' id for the cloned voice. */
+    providerVoiceId: v.optional(v.string()),
+    failCode: v.optional(v.string()),
+    removedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  }).index("by_workspace_client", ["workspaceId", "clientId"]),
 
   /**
    * What is established about one deal's fit (need, budget, who decides, timing, fit), each with the kind of

@@ -107,6 +107,7 @@ import type * as lib_dealmaker_autonomy from "../lib/dealmaker/autonomy.js";
 import type * as lib_dealmaker_board from "../lib/dealmaker/board.js";
 import type * as lib_dealmaker_briefView from "../lib/dealmaker/briefView.js";
 import type * as lib_dealmaker_roles from "../lib/dealmaker/roles.js";
+import type * as lib_dealmaker_voice from "../lib/dealmaker/voice.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_estimate from "../lib/estimate.js";
 import type * as lib_evidence from "../lib/evidence.js";
@@ -292,6 +293,7 @@ import type * as staffAdmin from "../staffAdmin.js";
 import type * as studio from "../studio.js";
 import type * as transcripts from "../transcripts.js";
 import type * as usage from "../usage.js";
+import type * as voiceNotes from "../voiceNotes.js";
 import type * as workTabs from "../workTabs.js";
 import type * as workspace from "../workspace.js";
 
@@ -401,6 +403,7 @@ declare const fullApi: ApiFromModules<{
   "lib/dealmaker/board": typeof lib_dealmaker_board;
   "lib/dealmaker/briefView": typeof lib_dealmaker_briefView;
   "lib/dealmaker/roles": typeof lib_dealmaker_roles;
+  "lib/dealmaker/voice": typeof lib_dealmaker_voice;
   "lib/errors": typeof lib_errors;
   "lib/estimate": typeof lib_estimate;
   "lib/evidence": typeof lib_evidence;
@@ -586,6 +589,7 @@ declare const fullApi: ApiFromModules<{
   studio: typeof studio;
   transcripts: typeof transcripts;
   usage: typeof usage;
+  voiceNotes: typeof voiceNotes;
   workTabs: typeof workTabs;
   workspace: typeof workspace;
 }>;

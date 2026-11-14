@@ -1,6 +1,7 @@
 "use client";
 
 import { CommsView, type CommsData } from "@/components/work/comms-tab";
+import type { VoiceStatus } from "@/components/work/voice-setup";
 import { MESSAGE_KINDS, MESSAGE_KIND_LABEL } from "../../../../convex/lib/dealmaker/autonomy";
 
 import { StoryFrame } from "../work-tabs/story-frame";
@@ -23,6 +24,8 @@ function item(id: string, lane: Item["lane"], input: Partial<Item>): Item {
     body: "",
     why: "Written by a person.",
     byDealmaker: false,
+    voice: false,
+    audio: null,
     note: null,
     updatedAt: NOW,
     ...input,
@@ -31,6 +34,15 @@ function item(id: string, lane: Item["lane"], input: Partial<Item>): Item {
 
 /** A coaching agency's messages to its leads. Sample data. */
 const items: Item[] = [
+  item("7", "drafted", {
+    leadName: "Riley Park",
+    kind: "checkIn",
+    kindLabel: MESSAGE_KIND_LABEL.checkIn,
+    body: "Hi Riley, it's Nora. I know things get busy. Is now still a good time to talk about growing your bookings, or should I check back next month?",
+    why: "The deal has gone quiet; ask honestly whether more contact is welcome.",
+    voice: true,
+    audio: { status: "none", url: null, problem: null },
+  }),
   item("1", "drafted", {
     leadName: "Jordan Lee",
     kind: "answer",
@@ -79,11 +91,12 @@ const items: Item[] = [
   }),
 ];
 
-function data(messaging: boolean): CommsData {
+function data(messaging: boolean, voice: string): CommsData {
   return {
     connected: true,
     messaging,
-    limits: { sms: 640, email: 5000, title: 150 },
+    limits: { sms: 640, email: 5000, title: 150, voice: 600 },
+    voiceProblem: voice === "ready" ? null : voice === "off" ? "Voice notes are not set up yet." : "Record your voice first: an Owner records the consent statement in Comms.",
     leads: [
       {
         contactRef: "c-1",
@@ -123,12 +136,25 @@ function data(messaging: boolean): CommsData {
   };
 }
 
-export function CommsTabStory({ messaging, theme }: { messaging: boolean; theme: string }) {
+function voiceStatus(voice: string): VoiceStatus {
+  return {
+    setUp: voice !== "off",
+    canRecord: true,
+    business: "Northlight Growth",
+    passage: "Thanks for getting in touch. I wanted to send you a quick note in my own voice.",
+    limits: { sampleSecondsMin: 30, sampleSecondsMax: 180, script: 600 },
+    voice: voice === "ready" ? { speakerName: "Nora Quinn", status: "ready", confirmedAt: NOW, words: "Ready for voice notes." } : null,
+  } as VoiceStatus;
+}
+
+export function CommsTabStory({ messaging, voice, theme }: { messaging: boolean; voice: string; theme: string }) {
   return (
     <StoryFrame theme={theme} role="owner">
       <CommsView
-        data={data(messaging)}
+        data={data(messaging, voice)}
         maxCredits={12}
+        voice={voiceStatus(voice)}
+        voiceActions={{ record: async () => null, retry: noop, remove: noop }}
         editor
         actions={{
           create: noop,
@@ -139,6 +165,7 @@ export function CommsTabStory({ messaging, theme }: { messaging: boolean; theme:
             reason: "A person approves it.",
           }),
           draftFollowUps: async () => ({ runId: "story" }),
+          makeAudio: noop,
         }}
       />
     </StoryFrame>

@@ -22,6 +22,8 @@ import { SALES_CONVERSION } from "./catalog";
 import { FAILURE_WORDS, approveByStandingSwitch } from "./crmActions";
 import { isPaused } from "./dealmakerTeam";
 import { settingsOf } from "./playbookInterview";
+import { VOICE_LIMITS, VOICE_TEXT, voiceFailWords } from "./lib/dealmaker/voice";
+import { dropAudio, voiceProblem } from "./voiceNotes";
 
 type Ctx = QueryCtx & { workspaceId: Id<"workspaces">; clients: ClientScope };
 type Scope = { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> };
@@ -118,6 +120,14 @@ export const view = workspaceQuery({
           body: row.body,
           why: row.why,
           byDealmaker: row.createdBy === "agent",
+          voice: row.voice === true,
+          audio: row.voice
+            ? {
+                status: row.audio && row.audio.text === row.body ? row.audio.status : ("none" as const),
+                url: row.audio?.status === "ready" && row.audio.text === row.body && row.audio.storageId ? await ctx.storage.getUrl(row.audio.storageId) : null,
+                problem: row.audio?.status === "failed" ? voiceFailWords(row.audio.failCode) : null,
+              }
+            : null,
           note: lane === "failed" ? failureOf(action) : lane === "held" || lane === "drafted" ? (row.reason ?? null) : null,
           updatedAt: action?.doneAt ?? row.updatedAt,
         };
@@ -142,7 +152,9 @@ export const view = workspaceQuery({
     return {
       connected: connection !== null,
       messaging: connection?.messagingEnabled === true,
-      limits: { sms: COMMS_LIMITS.sms, email: COMMS_LIMITS.email, title: COMMS_LIMITS.title },
+      limits: { sms: COMMS_LIMITS.sms, email: COMMS_LIMITS.email, title: COMMS_LIMITS.title, voice: VOICE_LIMITS.script },
+      // Why a voice note cannot be made here, or null when the voice is ready.
+      voiceProblem: await voiceProblem(ctx, scope),
       leads,
       lanes: LANES.map((id) => ({ id, label: LANE_LABEL[id], items: items.filter((row) => row.lane === id).sort((a, b) => b.updatedAt - a.updatedAt) })),
       kinds: MESSAGE_KINDS.map((id) => ({ id, label: MESSAGE_KIND_LABEL[id] })),
@@ -151,9 +163,10 @@ export const view = workspaceQuery({
   },
 });
 
-function checkBody(input: { channel: "sms" | "email"; title?: string; body: string }) {
+function checkBody(input: { channel: "sms" | "email"; title?: string; body: string; voice?: boolean }) {
   const body = input.body.trim().slice(0, input.channel === "sms" ? COMMS_LIMITS.sms : COMMS_LIMITS.email);
   if (!body) throw userError(COMMS_TEXT.empty);
+  if (input.voice && body.length > VOICE_LIMITS.script) throw userError(VOICE_TEXT.tooLong);
   const title = input.channel === "email" ? (input.title ?? "").replace(/\s+/g, " ").trim().slice(0, COMMS_LIMITS.title) : undefined;
   if (input.channel === "email" && !title) throw userError(COMMS_TEXT.noSubject);
   return { body, ...(title ? { title } : {}) };
@@ -161,7 +174,17 @@ function checkBody(input: { channel: "sms" | "email"; title?: string; body: stri
 
 /** A person drafts a message to a lead. */
 export const createDraft = workspaceMutation({
-  args: { clientId: v.optional(v.id("clients")), contactRef: v.string(), dealRef: v.optional(v.string()), kind: kindValidator, channel, title: v.optional(v.string()), body: v.string(), why: v.optional(v.string()) },
+  args: {
+    clientId: v.optional(v.id("clients")),
+    contactRef: v.string(),
+    dealRef: v.optional(v.string()),
+    kind: kindValidator,
+    channel,
+    title: v.optional(v.string()),
+    body: v.string(),
+    why: v.optional(v.string()),
+    voice: v.optional(v.boolean()),
+  },
   handler: async (ctx, args) => {
     const forClient = await clientForNew(ctx, args.clientId);
     if (!(MESSAGE_KINDS as readonly string[]).includes(args.kind)) throw userError(COMMS_TEXT.badKind);
@@ -176,6 +199,7 @@ export const createDraft = workspaceMutation({
       ...checkBody(args),
       why: (args.why ?? "Written by a person.").replace(/\s+/g, " ").trim().slice(0, COMMS_LIMITS.why),
       trigger: "person",
+      ...(args.voice ? { voice: true } : {}),
       status: "draft",
       createdBy: ctx.identity.subject,
       createdAt: now,
@@ -196,10 +220,23 @@ async function editable(ctx: Ctx, id: Id<"dealmakerDrafts">) {
 
 /** Edits a draft or a held message. The person's words replace Dealmaker's. */
 export const updateDraft = workspaceMutation({
-  args: { draftId: v.id("dealmakerDrafts"), channel, title: v.optional(v.string()), body: v.string() },
+  args: { draftId: v.id("dealmakerDrafts"), channel, title: v.optional(v.string()), body: v.string(), voice: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
     const row = await editable(ctx, args.draftId);
-    await ctx.db.patch(row._id, { channel: args.channel, ...checkBody(args), ...(args.channel === "sms" ? { title: undefined } : {}), editedBy: ctx.identity.subject, updatedAt: Date.now() });
+    const voice = args.voice ?? row.voice === true;
+    const checked = checkBody({ ...args, voice });
+    // Audio is made for exact words: new words, or no longer a voice note, and it is thrown away.
+    const keepAudio = voice && row.audio?.text === checked.body;
+    if (!keepAudio) await dropAudio(ctx, row);
+    await ctx.db.patch(row._id, {
+      channel: args.channel,
+      ...checked,
+      ...(args.channel === "sms" ? { title: undefined } : {}),
+      voice: voice || undefined,
+      ...(keepAudio ? {} : { audio: undefined }),
+      editedBy: ctx.identity.subject,
+      updatedAt: Date.now(),
+    });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "dealmaker.draft_edited", subject: row._id });
     return null;
   },
@@ -209,7 +246,8 @@ export const discardDraft = workspaceMutation({
   args: { draftId: v.id("dealmakerDrafts") },
   handler: async (ctx, args) => {
     const row = await editable(ctx, args.draftId);
-    await ctx.db.patch(row._id, { status: "discarded", updatedAt: Date.now() });
+    await dropAudio(ctx, row);
+    await ctx.db.patch(row._id, { status: "discarded", audio: undefined, updatedAt: Date.now() });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "dealmaker.draft_discarded", subject: row._id });
     return null;
   },
@@ -249,6 +287,17 @@ export const submitDraft = workspaceMutation({
     const settings = await settingsOf(ctx, scope);
     const consentTags = settings?.consentTags ?? [];
     const now = Date.now();
+    if (row.voice) {
+      // A voice note goes only to leads under the consent tags (decision 3), so it needs them named.
+      const voiceAllowed = settings?.channels === undefined || settings.channels.includes("voice");
+      const problem = !voiceAllowed ? VOICE_TEXT.notAChannel : consentTags.length ? await voiceProblem(ctx, scope) : VOICE_TEXT.noConsentTags;
+      if (problem) {
+        await ctx.db.patch(row._id, { status: "held", reason: problem, updatedAt: now });
+        return { outcome: "held" as const, reason: problem };
+      }
+      // The person sends on what they heard: audio made for exactly these words.
+      if (row.audio?.status !== "ready" || row.audio.text !== row.body || !row.audio.storageId) throw userError(VOICE_TEXT.notMade);
+    }
     if (consentTags.length) {
       const tags = new Set((await tagsOf(ctx, scope, row.contactRef)).map((tag) => tag.toLowerCase()));
       if (!consentTags.some((tag) => tags.has(tag.toLowerCase()))) {
@@ -268,28 +317,34 @@ export const submitDraft = workspaceMutation({
       await ctx.db.patch(row._id, { status: "held", reason: decision.reason, updatedAt: now });
       return { outcome: "held" as const, reason: decision.reason };
     }
-    const outcome = await proposeCrmAction(ctx, { ...scope, agentSlug: SALES_CONVERSION }, {
-      kind: row.channel === "sms" ? "send_sms" : "send_email",
-      contactId: row.contactRef,
-      ...(row.dealRef ? { dealId: row.dealRef } : {}),
-      ...(row.title ? { title: row.title } : {}),
-      body: row.body,
-      why: row.why,
-    });
+    const outcome = await proposeCrmAction(
+      ctx,
+      { ...scope, agentSlug: SALES_CONVERSION },
+      {
+        kind: row.channel === "sms" ? "send_sms" : "send_email",
+        contactId: row.contactRef,
+        ...(row.dealRef ? { dealId: row.dealRef } : {}),
+        ...(row.title ? { title: row.title } : {}),
+        body: row.body,
+        why: row.why,
+      },
+    );
     if (!outcome.ok) {
       await ctx.db.patch(row._id, { status: "draft", reason: `${outcome.reason} ${outcome.doItYourself}`.trim(), updatedAt: now });
       return { outcome: "notProposed" as const, reason: outcome.reason, doItYourself: outcome.doItYourself };
     }
-    await ctx.db.patch(row._id, { status: "proposed", actionId: outcome.actionId as Id<"crmActions">, reason: decision.reason, updatedAt: now });
+    if (row.voice && row.audio?.storageId) await ctx.db.patch(outcome.actionId as Id<"crmActions">, { audioStorageId: row.audio.storageId });
+    await ctx.db.patch(row._id, { status: "proposed", actionId: outcome.actionId as Id<"crmActions">, reason: row.voice ? VOICE_TEXT.everyOne : decision.reason, updatedAt: now });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "dealmaker.draft_proposed", subject: row._id });
     // The Owner's switch for this low-stakes kind is their standing SEND, and only for a draft Dealmaker
     // wrote itself and nobody changed: a person's own words always wait for the typed SEND.
-    const dealmakersOwn = row.createdBy === "agent" && row.editedBy === undefined;
+    // A voice note never goes by the switch: a person approves every one (decision 3).
+    const dealmakersOwn = row.createdBy === "agent" && row.editedBy === undefined && !row.voice;
     if (decision.action === "send" && dealmakersOwn) {
       const approved = await approveByStandingSwitch(ctx, outcome.actionId as Id<"crmActions">, row.kind);
       if (approved.state === "approved") return { outcome: "sending" as const, reason: decision.reason };
     }
-    return { outcome: "proposed" as const, reason: decision.reason };
+    return { outcome: "proposed" as const, reason: row.voice ? VOICE_TEXT.everyOne : decision.reason };
   },
 });
 

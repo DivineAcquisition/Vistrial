@@ -5,10 +5,11 @@ import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { useState } from "react";
 
-import { BotIcon, CheckCircle2, Clock, Hand, Mail, MessageSquareText, PenLine, SendIcon, Sparkles, Trash2, User, XCircle, type LucideIcon } from "@/components/icons";
+import { BotIcon, CheckCircle2, Clock, Hand, Loader2, Mail, MessageSquareText, Mic, PenLine, SendIcon, Sparkles, Trash2, User, XCircle, type LucideIcon } from "@/components/icons";
 import { useClientScope } from "@/components/shell/shell-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CheckboxField } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
+import { VoiceSetup, type VoiceActions, type VoiceStatus } from "./voice-setup";
 import { SectionTitle, WorkHero } from "./work-shell";
 
 export type CommsData = FunctionReturnType<typeof api.comms.view>;
@@ -31,8 +33,10 @@ export type SubmitResult = {
 };
 
 export type CommsActions = {
-  create: (input: { contactRef: string; dealRef?: string; kind: string; channel: Channel; title?: string; body: string }) => Promise<unknown>;
-  update: (id: string, input: { channel: Channel; title?: string; body: string }) => Promise<unknown>;
+  create: (input: { contactRef: string; dealRef?: string; kind: string; channel: Channel; title?: string; body: string; voice?: boolean }) => Promise<unknown>;
+  update: (id: string, input: { channel: Channel; title?: string; body: string; voice?: boolean }) => Promise<unknown>;
+  /** Makes a voice note's audio for its exact words. */
+  makeAudio: (id: string) => Promise<unknown>;
   discard: (id: string) => Promise<unknown>;
   submit: (id: string) => Promise<SubmitResult>;
   /** Starts the Follow-up Engine once a person has seen the most it may use. */
@@ -81,8 +85,10 @@ function MessageFields({
   body,
   onTitle,
   onBody,
+  voice = false,
 }: {
   id: string;
+  voice?: boolean;
   limits: Limits;
   channel: Channel;
   title: string;
@@ -90,7 +96,7 @@ function MessageFields({
   onTitle: (value: string) => void;
   onBody: (value: string) => void;
 }) {
-  const limit = channel === "sms" ? limits.sms : limits.email;
+  const limit = voice ? limits.voice : channel === "sms" ? limits.sms : limits.email;
   return (
     <>
       {channel === "email" ? (
@@ -100,7 +106,7 @@ function MessageFields({
         </label>
       ) : null}
       <label className="grid gap-1 text-xs text-muted-foreground" htmlFor={`body-${id}`}>
-        Message
+        {voice ? "What the voice note says, about forty seconds at most" : "Message"}
         <Textarea id={`body-${id}`} rows={channel === "sms" ? 3 : 6} value={body} maxLength={limit} onChange={(event) => onBody(event.target.value)} />
         <span className={cn("justify-self-end tabular-nums", body.length > limit * 0.9 && "text-warning")}>
           {body.length} / {limit}
@@ -110,8 +116,41 @@ function MessageFields({
   );
 }
 
-function MessageCard({ item, lane, limits, editor, actions }: { item: Item; lane: LaneId; limits: Limits; editor: boolean; actions: CommsActions }) {
+/** A voice note's audio: the player once made, or why it is not. */
+function VoiceAudio({ item, open, voiceProblem, busy, onMake }: { item: Item; open: boolean; voiceProblem: string | null; busy: boolean; onMake: () => void }) {
+  const audio = item.audio;
+  if (!audio) return null;
+  return (
+    <div className="grid gap-1.5" data-voice-note>
+      {audio.url ? (
+        <audio controls preload="none" src={audio.url} className="w-full max-w-md">
+          <track kind="captions" />
+        </audio>
+      ) : null}
+      {audio.status === "making" ? (
+        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" role="status">
+          <Loader2 aria-hidden className="size-3.5 animate-spin" />
+          The voice note is being made.
+        </p>
+      ) : null}
+      {audio.problem ? <p className="text-xs text-foreground">{audio.problem}</p> : null}
+      {open && voiceProblem ? <p className="text-xs text-foreground">{voiceProblem}</p> : null}
+      {open && !voiceProblem && audio.status !== "making" ? (
+        <div>
+          <Button size="sm" variant="outline" disabled={busy} onClick={onMake}>
+            <Mic aria-hidden className="size-3.5" />
+            {audio.status === "ready" ? "Make it again" : "Make the voice note"}
+          </Button>
+        </div>
+      ) : null}
+      {open && audio.status !== "ready" && !voiceProblem ? <p className="text-xs text-muted-foreground">Make it and listen to it before you send it on.</p> : null}
+    </div>
+  );
+}
+
+function MessageCard({ item, lane, limits, voiceProblem, editor, actions }: { item: Item; lane: LaneId; limits: Limits; voiceProblem: string | null; editor: boolean; actions: CommsActions }) {
   const [editing, setEditing] = useState(false);
+  const [voice, setVoice] = useState(item.voice);
   const [channel, setChannel] = useState<Channel>(item.channel);
   const [title, setTitle] = useState(item.title ?? "");
   const [body, setBody] = useState(item.body);
@@ -138,6 +177,12 @@ function MessageCard({ item, lane, limits, editor, actions }: { item: Item; lane
           <ChannelIcon aria-hidden className="size-3" />
           {CHANNEL_LABEL[item.channel]}
         </Badge>
+        {item.voice ? (
+          <Badge variant="outline" size="sm">
+            <Mic aria-hidden className="size-3" />
+            Voice note
+          </Badge>
+        ) : null}
         <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
           {item.byDealmaker ? <BotIcon aria-hidden className="size-3.5" /> : <User aria-hidden className="size-3.5" />}
           {item.byDealmaker ? "Drafted by Dealmaker" : "Written by your team"}
@@ -155,7 +200,13 @@ function MessageCard({ item, lane, limits, editor, actions }: { item: Item; lane
               { value: "email", label: CHANNEL_LABEL.email },
             ]}
           />
-          <MessageFields id={item.id} limits={limits} channel={channel} title={title} body={body} onTitle={setTitle} onBody={setBody} />
+          <CheckboxField
+            label="Send as a voice note"
+            description="The words are spoken in your cloned voice and attached as audio."
+            checked={voice}
+            onCheckedChange={(next) => setVoice(next === true)}
+          />
+          <MessageFields id={item.id} voice={voice} limits={limits} channel={channel} title={title} body={body} onTitle={setTitle} onBody={setBody} />
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
@@ -166,6 +217,7 @@ function MessageCard({ item, lane, limits, editor, actions }: { item: Item; lane
                     channel,
                     ...(channel === "email" ? { title } : {}),
                     body,
+                    voice,
                   }),
                 );
                 if (done !== undefined) setEditing(false);
@@ -184,6 +236,7 @@ function MessageCard({ item, lane, limits, editor, actions }: { item: Item; lane
           <p className="text-sm whitespace-pre-wrap text-foreground">{item.body}</p>
         </div>
       )}
+      {editing ? null : <VoiceAudio item={item} open={open} voiceProblem={voiceProblem} busy={busy} onMake={() => void act(() => actions.makeAudio(item.id))} />}
       {item.note ? <p className="text-xs text-foreground">{item.note}</p> : null}
       {lane === "waiting" ? (
         <p className="text-xs text-muted-foreground">
@@ -232,6 +285,7 @@ function Compose({ data, actions }: { data: CommsData; actions: CommsActions }) 
   const [channel, setChannel] = useState<Channel>("sms");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [voice, setVoice] = useState(false);
   const [busy, setBusy] = useState(false);
   const lead = data.leads.find((row) => row.contactRef === contactRef) ?? null;
   const reachable = lead ? (channel === "sms" ? lead.sms : lead.email) : true;
@@ -291,7 +345,13 @@ function Compose({ data, actions }: { data: CommsData; actions: CommsActions }) 
           Your CRM has no {channel === "sms" ? "phone number" : "email address"} for {lead.name}.
         </p>
       ) : null}
-      <MessageFields id="new" limits={data.limits} channel={channel} title={title} body={body} onTitle={setTitle} onBody={setBody} />
+      <CheckboxField
+        label="Send as a voice note"
+        description={data.voiceProblem ?? "The words are spoken in your cloned voice and attached as audio. A person approves every voice note."}
+        checked={voice}
+        onCheckedChange={(next) => setVoice(next === true)}
+      />
+      <MessageFields id="new" voice={voice} limits={data.limits} channel={channel} title={title} body={body} onTitle={setTitle} onBody={setBody} />
       <div>
         <Button
           size="sm"
@@ -307,6 +367,7 @@ function Compose({ data, actions }: { data: CommsData; actions: CommsActions }) 
                 channel,
                 ...(channel === "email" ? { title } : {}),
                 body,
+                ...(voice ? { voice: true } : {}),
               }),
             );
             setBusy(false);
@@ -367,7 +428,22 @@ function DraftFollowUps({ maxCredits, actions }: { maxCredits: number; actions: 
   );
 }
 
-export function CommsView({ data, maxCredits, editor, actions }: { data: CommsData; maxCredits: number | null; editor: boolean; actions: CommsActions }) {
+export function CommsView({
+  data,
+  maxCredits,
+  voice,
+  editor,
+  actions,
+  voiceActions,
+}: {
+  data: CommsData;
+  maxCredits: number | null;
+  /** The cloned voice for voice notes, when it has loaded. */
+  voice: VoiceStatus | null;
+  editor: boolean;
+  actions: CommsActions;
+  voiceActions: VoiceActions;
+}) {
   const canEdit = editor && data.canEdit;
   const [lane, setLane] = useState<LaneId>("drafted");
   const shown = data.lanes.find((row) => row.id === lane) ?? data.lanes[0];
@@ -423,7 +499,7 @@ export function CommsView({ data, maxCredits, editor, actions }: { data: CommsDa
         {shown.items.length ? (
           <ul className="grid gap-2">
             {shown.items.map((item) => (
-              <MessageCard key={item.id} item={item} lane={shown.id} limits={data.limits} editor={canEdit} actions={actions} />
+              <MessageCard key={item.id} item={item} lane={shown.id} limits={data.limits} voiceProblem={data.voiceProblem} editor={canEdit} actions={actions} />
             ))}
           </ul>
         ) : (
@@ -434,6 +510,12 @@ export function CommsView({ data, maxCredits, editor, actions }: { data: CommsDa
         <Panel className="grid gap-3 p-4 sm:p-6">
           <SectionTitle icon={PenLine}>Write a message</SectionTitle>
           <Compose data={data} actions={actions} />
+        </Panel>
+      ) : null}
+      {voice ? (
+        <Panel className="grid gap-3 p-4 sm:p-6">
+          <SectionTitle icon={Mic}>Your voice</SectionTitle>
+          <VoiceSetup status={voice} actions={voiceActions} />
         </Panel>
       ) : null}
     </div>
@@ -450,6 +532,12 @@ export function CommsTab({ workspaceId, editor }: { workspaceId: Id<"workspaces"
   const submit = useMutation(api.comms.submitDraft);
   const quote = useQuery(api.dealFollowUps.quote, editor ? { workspaceId } : "skip");
   const draftFollowUps = useMutation(api.dealFollowUps.draft);
+  const makeAudio = useMutation(api.voiceNotes.makeAudio);
+  const voice = useQuery(api.voiceNotes.status, { workspaceId, clientId });
+  const uploadUrl = useMutation(api.voiceNotes.sampleUploadUrl);
+  const recordVoice = useMutation(api.voiceNotes.recordVoice);
+  const retryVoice = useMutation(api.voiceNotes.retryVoice);
+  const removeVoice = useMutation(api.voiceNotes.removeVoice);
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your messages…</p>;
   const actions: CommsActions = {
     create: (input) => create({ workspaceId, clientId, ...input }),
@@ -457,6 +545,19 @@ export function CommsTab({ workspaceId, editor }: { workspaceId: Id<"workspaces"
     discard: (id) => discard({ workspaceId, draftId: id as Id<"dealmakerDrafts"> }),
     submit: (id) => submit({ workspaceId, draftId: id as Id<"dealmakerDrafts"> }),
     draftFollowUps: (confirmedCredits) => draftFollowUps({ workspaceId, clientId, confirmedCredits }),
+    makeAudio: (id) => makeAudio({ workspaceId, draftId: id as Id<"dealmakerDrafts"> }),
   };
-  return <CommsView data={data} maxCredits={quote?.maxCredits ?? null} editor={editor} actions={actions} />;
+  const voiceActions: VoiceActions = {
+    record: async ({ speakerName, typedName, recording }) => {
+      const url = await uploadUrl({ workspaceId });
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": recording.blob.type || "audio/webm" }, body: recording.blob });
+      if (!response.ok) throw new Error("The recording could not be uploaded. Try again.");
+      const { storageId } = (await response.json()) as { storageId: Id<"_storage"> };
+      const result = await recordVoice({ workspaceId, clientId, speakerName, typedName, storageId, seconds: recording.seconds });
+      return result.ok ? null : result.reason;
+    },
+    retry: () => retryVoice({ workspaceId, clientId }),
+    remove: () => removeVoice({ workspaceId, clientId }),
+  };
+  return <CommsView data={data} maxCredits={quote?.maxCredits ?? null} voice={voice ?? null} editor={editor} actions={actions} voiceActions={voiceActions} />;
 }

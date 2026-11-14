@@ -41,6 +41,7 @@ const DIRECT: readonly TableNames[] = [
   "dealCommitments",
   "dealFacts",
   "dealmakerPauses",
+  "dealmakerVoices",
   "dealmakerSettings",
   "decisions",
   "intakes",

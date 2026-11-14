@@ -54,6 +54,9 @@ export const TOOLS = [
   "dbr.read",
   "dbr.check",
   "dbr.save",
+  "cr.read",
+  "cr.check",
+  "cr.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

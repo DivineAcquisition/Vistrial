@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 import { assetStatus } from "./lib/assetStatus";
 import { briefView } from "./lib/dealmaker/briefView";
+import { reviewView } from "./lib/dealmaker/reviewView";
 import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
 import { approvalKind, approvalStatus, briefingKind, expectedReturn, proposedBy, taskEvidence, taskStatus, taskTry, taskWork } from "./lib/taskShapes";
 import { folder as playbookFolder, itemSource, itemStatus, kind as playbookKind, lessonSource, lessonStatus, objectionTag, stage as playbookStage } from "./lib/playbook";
@@ -975,6 +976,8 @@ export default defineSchema({
       v.literal("pipelineReview"),
       /** One page on a lead before a booked call (Dealmaker, Deal Briefing). Internal: never leaves Vistrial. */
       v.literal("preCallBrief"),
+      /** What happened on one sales call (Dealmaker, Conversation Intelligence). Internal: never leaves Vistrial. */
+      v.literal("callReview"),
     ),
     title: v.string(),
     status: assetStatus,
@@ -2381,6 +2384,32 @@ export default defineSchema({
   })
     .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"])
     .index("by_workspace_contact", ["workspaceId", "contactRef", "createdAt"]),
+
+  /**
+   * A call review a person asked for (Dealmaker, Conversation Intelligence; docs/rebuild/dealmaker.md, 4.2). The run
+   * is started on this row's own project. Coaching notes are kept apart from the view: only the Owner reads them.
+   */
+  callReviews: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    projectId: v.id("researchProjects"),
+    transcriptId: v.optional(v.id("callTranscripts")),
+    callNoteId: v.optional(v.id("callNotes")),
+    contactRef: v.optional(v.string()),
+    dealRef: v.optional(v.string()),
+    leadName: v.string(),
+    status: v.union(v.literal("running"), v.literal("ready"), v.literal("failed")),
+    runId: v.optional(v.id("agentRuns")),
+    assetId: v.optional(v.id("assets")),
+    view: v.optional(reviewView),
+    coaching: v.optional(v.array(v.string())),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"])
+    .index("by_workspace_transcript", ["workspaceId", "transcriptId"]),
 
   dealBriefings: defineTable({
     workspaceId: v.id("workspaces"),

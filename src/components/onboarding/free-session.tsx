@@ -265,7 +265,7 @@ function SessionView({ data, actions, startError }: { data: FreeSessionData; act
             ) : null}
 
             {session && run && phase !== "report" && phase !== "starting" ? (
-              <LiveActivity steps={session.steps} sources={sources} status={run.status} startedAt={run.startedAt} finishedAt={run.finishedAt ?? null} costCents={run.costCents} free />
+              <LiveActivity steps={session.steps} sources={sources} status={run.status} startedAt={run.startedAt} finishedAt={run.finishedAt ?? null} />
             ) : null}
 
             {phase === "report" && session ? (

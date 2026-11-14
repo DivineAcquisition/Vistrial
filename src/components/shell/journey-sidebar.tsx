@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
+  BarChart3,
   Bell,
   BookOpen,
   ChevronRight,
@@ -74,8 +75,8 @@ function isActive(pathname: string, href: string, exact = false) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-const row =
-  "flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring";
+/** A sidebar row. Hover, focus and the current page are styled by `.nav-row` in globals.css, from `aria-current`. */
+const row = "nav-row flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground";
 
 const heading = "px-2 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase";
 
@@ -246,7 +247,7 @@ function AgentRow({
   ];
   return (
     <li className="grid gap-0.5">
-      <div className={cn("flex min-w-0 items-center rounded-lg", active && "bg-accent")}>
+      <div className="nav-group flex min-w-0 items-center rounded-lg">
         {expandable ? (
           <button
             type="button"
@@ -254,7 +255,7 @@ function AgentRow({
             aria-controls={groupId}
             aria-label={open ? `Close ${agent.name}` : `Open ${agent.name}`}
             onClick={() => onToggle(agent.slug)}
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="nav-toggle flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground"
           >
             <ChevronRight aria-hidden className={cn("size-3.5 transition-transform motion-reduce:transition-none", open && "rotate-90")} />
           </button>
@@ -273,7 +274,7 @@ function AgentRow({
               const tabActive = isActive(pathname, tab.href);
               return (
                 <li key={tab.tab}>
-                  <Link href={tab.href} onClick={onNavigate} aria-current={tabActive ? "page" : undefined} className={cn(row, "text-[13px]", tabActive && "bg-accent")}>
+                  <Link href={tab.href} onClick={onNavigate} aria-current={tabActive ? "page" : undefined} className={cn(row, "text-[13px]")}>
                     <span className="truncate">{tab.label}</span>
                     {tab.skillSlug ? <TabCount counts={skillCounts?.[tab.skillSlug]} /> : null}
                   </Link>
@@ -285,7 +286,7 @@ function AgentRow({
             {shared.map((item, index) => (
               <span key={item.label} className="flex items-center gap-1">
                 {index > 0 ? <span aria-hidden>·</span> : null}
-                <Link href={item.href} onClick={onNavigate} className="rounded outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                <Link href={item.href} onClick={onNavigate} className="nav-link">
                   {item.label}
                 </Link>
               </span>
@@ -392,7 +393,7 @@ export function JourneySidebarView({
           const label = item.key === "home" ? `${count} ${waitingLabel.toLowerCase()}` : item.key === "tasks" ? `${count} proposed` : `${count} new`;
           return (
             <li key={item.key}>
-              <Link href={item.href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(row, active && "bg-accent")}>
+              <Link href={item.href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={row}>
                 <Icon aria-hidden className={cn("size-4 shrink-0", item.key === "home" && waiting ? "text-warning" : "text-muted-foreground")} />
                 <span className="truncate">{item.label}</span>
                 <Count value={count} tone={item.key === "home" ? "warning" : "neutral"} label={label} />
@@ -432,7 +433,7 @@ export function JourneySidebarView({
           <p className={heading}>Library</p>
           <ul className="grid gap-0.5">
             <li>
-              <div className={cn("flex items-center gap-1 rounded-lg", isActive(pathname, "/app/chats") && "bg-accent")}>
+              <div className="nav-group flex items-center gap-1 rounded-lg">
                 <Link href="/app/chats" onClick={onNavigate} aria-current={isActive(pathname, "/app/chats") ? "page" : undefined} className={cn(row, "min-w-0 flex-1")}>
                   <MessagesSquare aria-hidden className="size-4 shrink-0 text-muted-foreground" />
                   <span className="truncate">Chats</span>
@@ -447,7 +448,7 @@ export function JourneySidebarView({
                     // The list opens at the foot of the sidebar: bring it into view.
                     requestAnimationFrame(() => document.getElementById("sidebar-chats")?.scrollIntoView({ block: "nearest" }));
                   }}
-                  className="mr-1 flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-overlay/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  className="nav-toggle mr-1 flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground"
                 >
                   <ChevronRight aria-hidden className={cn("size-3.5 transition-transform motion-reduce:transition-none", chatsOpen && "rotate-90")} />
                 </button>
@@ -462,7 +463,7 @@ export function JourneySidebarView({
               const active = isActive(pathname, item.href);
               return (
                 <li key={item.href}>
-                  <Link href={item.href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(row, active && "bg-accent")}>
+                  <Link href={item.href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={row}>
                     <item.icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
                     <span className="truncate">{item.label}</span>
                   </Link>
@@ -483,7 +484,7 @@ export function JourneySidebarView({
       </div>
 
       <div className="grid gap-3 border-t border-border px-3 py-3">
-        <Link href={knowledge?.next?.href ?? MEMORY_HREF} onClick={onNavigate} className="grid gap-1.5 rounded-lg px-2 py-1.5 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
+        <Link href={knowledge?.next?.href ?? MEMORY_HREF} onClick={onNavigate} className="nav-row grid gap-1.5 rounded-lg px-2 py-1.5">
           <Meter value={knowledge?.percent ?? 0} aria-label="What Vistrial knows" className="gap-1.5">
             <span className="flex items-center justify-between text-xs">
               <span className="text-foreground">Knowledge</span>
@@ -501,10 +502,13 @@ export function JourneySidebarView({
             <span className="truncate tabular-nums">{credits?.on && credits.balanceCents !== null ? creditCount(credits.balanceCents) : "Billing"}</span>
             {credits?.on ? <span className="text-[11px] text-muted-foreground">credits</span> : null}
           </Link>
-          <Link href="/app/settings" onClick={onNavigate} aria-label="Settings" className={cn(row, "size-8 justify-center px-0")}>
+          <Link href="/app/usage" onClick={onNavigate} aria-label="Usage: where credits went" aria-current={isActive(pathname, "/app/usage") ? "page" : undefined} className={cn(row, "nav-icon size-8 justify-center px-0")}>
+            <BarChart3 aria-hidden className="size-4 text-muted-foreground" />
+          </Link>
+          <Link href="/app/settings" onClick={onNavigate} aria-label="Settings" className={cn(row, "nav-icon size-8 justify-center px-0")}>
             <Settings aria-hidden className="size-4 text-muted-foreground" />
           </Link>
-          <Link href="/app/briefing" onClick={onNavigate} aria-label={`Briefing: ${overview?.nav.briefing ?? 0} new`} className={cn(row, "relative size-8 justify-center px-0")}>
+          <Link href="/app/briefing" onClick={onNavigate} aria-label={`Briefing: ${overview?.nav.briefing ?? 0} new`} className={cn(row, "nav-icon relative size-8 justify-center px-0")}>
             <Bell aria-hidden className="size-4 text-muted-foreground" />
             {overview?.nav.briefing ? (
               <span className="absolute -top-0.5 -right-0.5 min-w-4 rounded-full bg-warning px-1 text-center text-[10px] leading-4 font-medium text-background tabular-nums">

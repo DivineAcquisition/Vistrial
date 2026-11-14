@@ -1,11 +1,10 @@
 /**
- * The accounts onboarding's Connect step offers, and what state each is in. One list, so a new connection
- * (HighLevel, built separately) appears here by being registered as a provider, with no change to onboarding:
- * its card reads "Coming soon" until `convex/lib/integrations/providers.ts` has a provider keyed "highlevel"
- * that is set up on the deployment. Pure, so it is tested without a backend.
+ * The accounts onboarding's Connect step offers, and what state each is in. HighLevel (provider "highlevel")
+ * has its own card, the HighLevel connection's `HighLevelConnectSlot`, dropped into the Connect step; this
+ * list gives its state for the Confirm step's summary. Pure, so it is tested without a backend.
  */
 
-export type ConnectKind = "meta" | "oauth" | "upload" | "soon";
+export type ConnectKind = "meta" | "oauth" | "upload" | "crm" | "soon";
 export type ConnectState = "connected" | "available" | "notSetUp" | "comingSoon" | "needsReconnect";
 
 export type ConnectCard = {
@@ -26,6 +25,8 @@ export const HIGHLEVEL_KEY = "highlevel";
 type ProviderRow = { key: string; readiness: string; connection: { status: string; accountLabel: string } | null };
 export type ConnectInputs = {
   meta: { configured: boolean; connected: boolean; label: string | null } | null;
+  /** The HighLevel connection (crmConnections, provider "highlevel"): null when its status is not known yet. */
+  highLevel?: { configured: boolean; connected: boolean; label: string | null } | null;
   providers: ProviderRow[];
   uploads: number;
 };
@@ -35,7 +36,7 @@ const BASE: Omit<ConnectCard, "state" | "label">[] = [
   { key: "google_calendar", name: "Google Calendar", gives: "Booked calls each week and who did not show, as counts only.", kind: "oauth", group: "calendar" },
   { key: "calendly", name: "Calendly", gives: "Booked calls each week and cancellations, as counts only.", kind: "oauth", group: "calendar" },
   { key: "results", name: "Results file", gives: "Past ad or sales results from a spreadsheet you export.", kind: "upload", group: "results" },
-  { key: HIGHLEVEL_KEY, name: "HighLevel", gives: "Your pipeline: leads, stages and won deals.", kind: "oauth", group: "crm" },
+  { key: HIGHLEVEL_KEY, name: "HighLevel", gives: "Your pipeline: leads, stages and won deals. Anything it would change waits for your approval.", kind: "crm", group: "crm" },
   { key: "hubspot", name: "HubSpot", gives: "Your pipeline: leads, stages and won deals.", kind: "soon", group: "crm" },
   { key: "salesforce", name: "Salesforce", gives: "Your pipeline: leads, stages and won deals.", kind: "soon", group: "crm" },
 ];
@@ -55,6 +56,11 @@ export function connectCards(inputs: ConnectInputs): ConnectCard[] {
       const meta = inputs.meta;
       if (meta?.connected) return { ...card, state: "connected", label: meta.label };
       return { ...card, state: meta?.configured ? "available" : "notSetUp", label: null };
+    }
+    if (card.kind === "crm") {
+      const crm = inputs.highLevel;
+      if (crm?.connected) return { ...card, state: "connected", label: crm.label };
+      return { ...card, state: crm ? (crm.configured ? "available" : "notSetUp") : "comingSoon", label: null };
     }
     if (card.kind === "upload") return { ...card, state: inputs.uploads > 0 ? "connected" : "available", label: inputs.uploads > 0 ? `${inputs.uploads} file${inputs.uploads === 1 ? "" : "s"}` : null };
     return { ...card, ...oauthState(inputs.providers.find((row) => row.key === card.key)) };

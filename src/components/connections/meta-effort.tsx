@@ -50,7 +50,9 @@ export type Usage = {
 };
 export type Observation = { key: string; kind: string; title: string; detail: string; tone: "good" | "warning" | "neutral"; campaignIds: string[] };
 
-const STEP_WORDS: Record<string, { icon: LucideIcon; doing: string; done: string; unit: string }> = {
+export type StepWords = Record<string, { icon: LucideIcon; doing: string; done: string; unit: string }>;
+
+const STEP_WORDS: StepWords = {
   access: { icon: ShieldCheck, doing: "Checking access to the ad account", done: "Checked access to the ad account", unit: "account" },
   results: { icon: BarChart3, doing: "Reading results for every campaign", done: "Read results for every campaign", unit: "result rows" },
   campaigns: { icon: ListChecks, doing: "Reading the campaign list", done: "Read the campaign list", unit: "campaigns" },
@@ -104,8 +106,21 @@ function useNow(on: boolean) {
   return now;
 }
 
-/** The last read, step by step. While it runs, each step lights up as Convex pushes it. */
-export function SyncActivity({ runs }: { runs: SyncRun[] }) {
+/**
+ * The last read, step by step. While it runs, each step lights up as Convex pushes it. Meta's words by
+ * default; another connection passes its own steps and outcome words.
+ */
+export function SyncActivity({
+  runs,
+  stepWords = STEP_WORDS,
+  codeWords = CODE_WORDS,
+  emptyText = "Each read of your account shows here, step by step.",
+}: {
+  runs: SyncRun[];
+  stepWords?: StepWords;
+  codeWords?: Record<string, string>;
+  emptyText?: string;
+}) {
   const run = runs[0] ?? null;
   const live = run?.status === "running";
   const now = useNow(live);
@@ -115,7 +130,7 @@ export function SyncActivity({ runs }: { runs: SyncRun[] }) {
         <h3 className="flex items-center gap-2 font-heading text-base text-card-foreground">
           <VistrialMark size="xs" /> What Vistrial did
         </h3>
-        <p className="text-sm text-muted-foreground">Each read of your account shows here, step by step.</p>
+        <p className="text-sm text-muted-foreground">{emptyText}</p>
       </Panel>
     );
   }
@@ -146,7 +161,7 @@ export function SyncActivity({ runs }: { runs: SyncRun[] }) {
 
         <ol className="relative grid gap-3 before:absolute before:top-2 before:bottom-2 before:left-[13px] before:w-px before:bg-border" aria-label="Steps of the last read">
           {run.steps.map((step) => {
-            const words = STEP_WORDS[step.key] ?? { icon: Sparkles, doing: step.key, done: step.key, unit: "rows" };
+            const words = stepWords[step.key] ?? { icon: Sparkles, doing: step.key, done: step.key, unit: "rows" };
             const Icon = step.status === "done" ? CheckCircle2 : step.status === "failed" ? XCircle : step.status === "working" ? Loader : words.icon;
             return (
               <motion.li key={step.key} layout className="relative flex min-w-0 gap-3" initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}>
@@ -199,7 +214,7 @@ export function SyncActivity({ runs }: { runs: SyncRun[] }) {
                       <span className="text-muted-foreground">
                         {row.callsOk + row.callsFailed} calls{row.finishedAt ? ` · ${seconds(row.finishedAt - row.startedAt)}` : ""}
                       </span>
-                      <StatusBadge label={CODE_WORDS[row.code ?? (ok ? "ok" : "provider_error")] ?? "Failed"} tone={ok ? "good" : row.status === "running" ? "brand" : "warning"} className="[&_span]:normal-case" />
+                      <StatusBadge label={codeWords[row.code ?? (ok ? "ok" : "provider_error")] ?? "Failed"} tone={ok ? "good" : row.status === "running" ? "brand" : "warning"} className="[&_span]:normal-case" />
                     </span>
                   </li>
                 );

@@ -70,8 +70,9 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
     "Uploaded results files are deleted as soon as they are read. Only their totals are kept.",
     "A connected Meta ad account's token and saved results are deleted as soon as the account is disconnected.",
     "A connected calendar's access and saved counts are deleted as soon as the calendar is disconnected.",
+    "A connected HighLevel sub-account's access and everything read from it are deleted as soon as it is disconnected, or when the Vistrial app is uninstalled in HighLevel. While it stays connected, activity facts are kept for 90 days, leads for as long as they are linked to a kept deal or were added in the last 90 days, and closed deals for a year after their last change. A connection HighLevel stops accepting is deleted with its data 30 days later unless an Owner reconnects it.",
     "A call transcript you add is kept until someone in the workspace deletes it, or the workspace is deleted.",
-    "Vistrial does not currently delete workspace information on an automatic schedule. When a customer asks us to delete information, we verify the request and a person carries it out.",
+    "Vistrial does not currently delete workspace information on an automatic schedule, apart from the connected HighLevel information described above. When a customer asks us to delete information, we verify the request and a person carries it out.",
   ];
   if (trust.switches.backups) {
     retention.push(
@@ -172,7 +173,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "The business profile: what the business sells, where, to whom, its offers, and its competitors.",
             "Research assignments: the questions, markets, keywords, competitors, and links the team asks Strategist to look at.",
             "Files the team uploads, such as the business's own ad or sales results. A results file is read once and deleted; only totals by date and by campaign or channel are kept. Columns that name a person or how to reach them, such as names, email addresses, phone numbers and street addresses, are skipped without being read.",
-            "Results from accounts the team connects, such as Meta ad results and booked-call counts from a calendar, described in parts I and J below.",
+            "Results from accounts the team connects, such as Meta ad results, booked-call counts from a calendar, and sales pipeline and lead information from HighLevel, described in parts I, J and L below.",
             "Call transcripts the team uploads or pastes, described in part K below.",
             "Decisions about recommendations: which recommendations the team chose to try, when to check back, what the team says happened, and the business's own figures before and after.",
             "Lead lists the team imports, such as names, email addresses, phone numbers, and activity dates, and notes the team adds.",
@@ -231,6 +232,27 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "p",
           text: "The customer who recorded the call is responsible for having told everyone on it, and for having their agreement where the law requires it, before recording. An Owner, Admin or Member can delete a transcript at any time, which deletes its text. If you were on a call with a Vistrial customer and want its transcript removed, contact that business; Section 13 explains how we help.",
+        },
+        { kind: "h", text: "L. Connected HighLevel accounts" },
+        {
+          kind: "p",
+          text: "If a workspace Owner connects a HighLevel (also called LeadConnector) sub-account, for the organization or for one of its clients, Vistrial reads it with read-only access. It reads the sales pipelines and their stages; each deal's stage, status, value, source and dates, but not the deal's name, notes or custom fields; the business's leads; and what happened to them: calls, text messages, emails, chats and appointments. It does not change anything in HighLevel unless an Owner of the workspace allows it, as the next paragraphs describe.",
+        },
+        {
+          kind: "p",
+          text: "If an Owner allows it, Vistrial may also act in the connected sub-account: move a deal to another stage, mark a deal won, lost or abandoned, add or remove a tag on a lead, add a note to a lead, or create a task. An agent or a person on the team proposes each change, and nothing changes in HighLevel until an Owner or Admin approves that one change; marking a deal won, lost or abandoned needs an Owner. Each change is recorded with who proposed it, who approved it and when, and what HighLevel answered. An Owner can turn this off at any time, which cancels everything still waiting. Vistrial never deletes anything in HighLevel and does not message, call or email the business's leads. A change can start an automation the business set up in HighLevel, which may contact the lead; that automation is the business's own.",
+        },
+        {
+          kind: "p",
+          text: "This includes personal information about the business's own leads and customers. For each lead, Vistrial keeps only the name, email address, phone number, where the lead came from, up to ten tags, and when the lead was added. For activity it keeps facts only: the kind, when it happened, whether it was inbound or outbound, a call's length and outcome, an appointment's status, and a deal's move from one stage to another. It does not keep what a message said, email subjects, call recordings or transcripts, notes, attachments, addresses, or dates of birth.",
+        },
+        {
+          kind: "p",
+          text: "Vistrial keeps this information to show the workspace how its sales process is doing, so an agent can help the business convert more of its leads, and to propose the changes described above. A note or task Vistrial adds is kept in its record of that change while the account stays connected. It is stored for that workspace only. If the connection is for a client, only the people in the workspace who may see that client can see it. Vistrial handles this information on the business's behalf, as Section 13 describes; the business is responsible for having collected it lawfully.",
+        },
+        {
+          kind: "p",
+          text: "The access tokens HighLevel issues are kept on our servers and are never shown in the app. Disconnecting the sub-account in Connections deletes the tokens and everything read from it. Uninstalling the Vistrial app in HighLevel does the same, and also ends Vistrial's access in HighLevel.",
         },
       ],
     },
@@ -302,6 +324,10 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "p",
           text: "Platforms we read from. When Strategist researches a market, it sends search terms and links to Google (for YouTube) and Meta (for the Meta Ad Library), and requests public link previews from platforms such as TikTok and Instagram. It sends what is needed to find public content, not the contents of your workspace.",
+        },
+        {
+          kind: "p",
+          text: "Accounts you connect. When a workspace connects an account such as Meta ads, a calendar or HighLevel (LeadConnector), Vistrial sends that provider only the requests needed to read it. HighLevel is the customer's own provider, not a service provider of Vistrial; what Vistrial reads from it is stored with Convex, listed above.",
         },
         {
           kind: "p",
@@ -451,7 +477,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "A customer can import its own lead lists into Vistrial. If a business has your information in Vistrial, the business decides what to keep and how to use it. Vistrial handles that information on the business's behalf and does not contact you.",
+          text: "A customer can import its own lead lists into Vistrial, or connect its HighLevel account so Vistrial reads its leads and their activity, as part L of Section 5 describes. If a business has your information in Vistrial, the business decides what to keep and how to use it. Vistrial handles that information on the business's behalf and does not contact you.",
         },
         {
           kind: "p",

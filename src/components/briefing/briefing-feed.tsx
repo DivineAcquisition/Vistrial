@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { BellRing, Check, CheckCircle2, ExternalLink, FileSearch, Newspaper, ShieldCheck, TrendingUp, type LucideIcon } from "@/components/icons";
 import { useClientScope, useWorkspaceShell } from "@/components/shell/shell-context";
-import { Detail, Digest, LongText, ModelMark, StatusChip } from "@/components/readable";
+import { Detail, Digest, LongText, StatusChip } from "@/components/readable";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -199,7 +199,6 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
           <span>{when(post.at, now)}</span>
           {post.unread ? <span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 font-medium text-primary-foreground">New</span> : null}
           {waiting ? <StatusChip tone="partly" label={post.approval?.canDecide ? "Needs your decision" : "Waiting for a decision"} /> : null}
-          <ModelMark model={post.model} />
         </p>
         <h2 className="text-sm font-medium break-words text-card-foreground">{post.title}</h2>
         {post.digest ? (
@@ -231,7 +230,6 @@ function PostCard({ post, now, agentName, decide }: { post: Post; now: number; a
               {post.kind === "draft" ? "Read the full draft and its sources" : post.kind === "weeklyReport" ? "Open Tasks" : "Open"}
             </Link>
           ) : null}
-          {post.credits && !post.approval ? <span>Used {creditWords(post.credits)}</span> : null}
         </p>
       </div>
     </li>

@@ -8,7 +8,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import { CATALOG } from "./catalog";
+import { CATALOG, isAgentLive } from "./catalog";
 import { workLabel } from "./lib/workWords";
 import { internalMutation, type QueryCtx } from "./_generated/server";
 import { AUTO_REFILL, EXTRA_ORG, PLAN, accountFor, billingOn, billingOwner, planActive, priceFor } from "./lib/billing";
@@ -355,7 +355,7 @@ export const overview = workspaceQuery({
 async function limitsFor(ctx: Ctx) {
   const perSkill = [];
   for (const agent of CATALOG) {
-    if (agent.status !== "live") continue;
+    if (!isAgentLive(agent)) continue;
     for (const skill of agent.skills) {
       if (skill.status !== "available") continue;
       const caps = await loadCaps(ctx, ctx.workspaceId, agent.slug, skill.slug);

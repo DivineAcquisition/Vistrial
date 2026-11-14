@@ -10,7 +10,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { SALES_CONVERSION } from "./catalog";
+import { SALES_CONVERSION, isAgentLive } from "./catalog";
 import { createBrief } from "./dealBriefings";
 import { writeAudit } from "./lib/audit";
 import { priceFor } from "./lib/billing";
@@ -112,7 +112,7 @@ export async function dealmakerOn(ctx: Pick<QueryCtx, "db">, workspaceId: Id<"wo
     .query("agents")
     .withIndex("by_slug", (q) => q.eq("slug", SALES_CONVERSION))
     .unique();
-  if (!agent || agent.status !== "live") return false;
+  if (!agent || !isAgentLive(agent)) return false;
   const link = await ctx.db
     .query("workspaceAgents")
     .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentId", agent._id))

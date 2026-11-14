@@ -11,7 +11,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from "./lib/caps";
 import { addDaySpend, daySpend } from "./lib/capRows";
-import { currentAgentSlug } from "./catalog";
+import { currentAgentSlug, isAgentLive } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type Spend } from "./lib/modelRouter";
@@ -378,7 +378,7 @@ export async function startRunFor(
     .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
     .unique();
   if (!agent || agent.retired === true) notFound();
-  if (agent.status !== "live") throw userError(`${agent.name} is not available yet.`);
+  if (!isAgentLive(agent)) throw userError(`${agent.name} is not available yet.`);
   const link = await ctx.db
     .query("workspaceAgents")
     .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentId", agent._id))

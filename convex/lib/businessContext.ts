@@ -11,6 +11,7 @@ import { decisionsForContext, describeDecision } from "../decisions";
 import { describeUpload, saveUploadSourcesFor } from "../resultUploads";
 import { describeTranscript, saveTranscriptSourcesFor } from "../transcripts";
 import { saveFirstPartySources } from "../skills/marketIntelligence/firstParty";
+import { saveGoogleSourcesFor } from "./integrations/google/research";
 import { factsForRun } from "./facts";
 import { referencesKnown } from "./sharedReferences";
 
@@ -101,6 +102,12 @@ export async function readBusinessContext(
     // The business's own ad results, when its Meta connection is granted to this agent.
     const firstParty = forClient ? null : await saveFirstPartySources(ctx, run.workspaceId, project, run._id);
     if (firstParty) known.push({ key: "connection:meta", label: firstParty.label, value: firstParty.value, origin: "connection", status: "verified", recordedAt: firstParty.recordedAt });
+    // The business's own Google data (Analytics and the rest), when the connection is granted to this agent.
+    if (!forClient) {
+      for (const row of await saveGoogleSourcesFor(ctx, { workspaceId: run.workspaceId, project, runId: run._id, agentSlug: run.agentSlug })) {
+        known.push({ ...row, origin: "connection", status: "verified" });
+      }
+    }
     // Results files the business uploaded and granted to this agent: totals only.
     const uploads = await saveUploadSourcesFor(ctx, { workspaceId: run.workspaceId, projectId: project._id, runId: run._id, agentSlug: run.agentSlug });
     for (const { upload } of uploads) {

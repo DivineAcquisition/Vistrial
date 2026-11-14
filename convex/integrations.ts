@@ -212,7 +212,7 @@ export const saveConnection = internalMutation({
         ...fields,
         // A provider that sends no new renewal token on a reconnect keeps the one it gave before.
         refreshToken: args.refreshToken ?? (existing.accountId === args.accountId ? existing.refreshToken : undefined),
-        ...(existing.accountId === args.accountId ? {} : { lastSyncAt: undefined, lastSyncCode: undefined }),
+        ...(existing.accountId === args.accountId ? {} : { lastSyncAt: undefined, lastSyncCode: undefined, selected: undefined }),
       });
     } else {
       await ctx.db.insert("integrationConnections", fields);

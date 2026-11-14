@@ -32,6 +32,7 @@ import { FU_MUTATION_TOOLS } from "./skills/followUpEngine/tools";
 import { PBS_MUTATION_TOOLS } from "./skills/playbookStudy/tools";
 import { DBR_MUTATION_TOOLS } from "./skills/dealBriefing/tools";
 import { CR_MUTATION_TOOLS } from "./skills/callReview/tools";
+import { PA_MUTATION_TOOLS } from "./skills/proposalArchitect/tools";
 import { LP_MUTATION_TOOLS } from "./skills/landingTeardown/tools";
 import { LPB_MUTATION_TOOLS } from "./skills/landingPageBuild/tools";
 import { TREND_TOOLS } from "./skills/industryTrends/tools";
@@ -45,7 +46,7 @@ import { runChanged } from "./lib/briefing";
 const OPEN = new Set(["queued", "running", "waiting"]);
 
 /** Every skill's code-only tools, by slug. */
-const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS, ...LPB_MUTATION_TOOLS, ...PROPOSER_TOOLS, ...TREND_TOOLS, ...PF_MUTATION_TOOLS, ...PBS_MUTATION_TOOLS, ...DBR_MUTATION_TOOLS , ...FU_MUTATION_TOOLS, ...CR_MUTATION_TOOLS };
+const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS, ...LPB_MUTATION_TOOLS, ...PROPOSER_TOOLS, ...TREND_TOOLS, ...PF_MUTATION_TOOLS, ...PBS_MUTATION_TOOLS, ...DBR_MUTATION_TOOLS , ...FU_MUTATION_TOOLS, ...CR_MUTATION_TOOLS, ...PA_MUTATION_TOOLS };
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
 

@@ -10,10 +10,11 @@ import { SYSTEM as PIPELINE_SYSTEM } from "../pipelineForensics";
 import { SYSTEM as BRIEFING_SYSTEM } from "../dealBriefing";
 import { SYSTEM as REVIEW_SYSTEM } from "../callReview";
 import { SYSTEM as FOLLOW_UP_SYSTEM } from "../followUpEngine";
+import { SYSTEM as PROPOSAL_SYSTEM } from "../proposalArchitect";
 import { DOCTRINE_PROMPT, DOCTRINE_STEPS, THE_STANDARD } from "./doctrine";
 
 /** Each built Dealmaker skill's system instructions. A new skill adds its own here. */
-const SYSTEMS: Record<string, string> = { "pipeline-forensics": PIPELINE_SYSTEM, "deal-briefing": BRIEFING_SYSTEM, "conversation-intelligence": REVIEW_SYSTEM, "follow-up-engine": FOLLOW_UP_SYSTEM };
+const SYSTEMS: Record<string, string> = { "pipeline-forensics": PIPELINE_SYSTEM, "deal-briefing": BRIEFING_SYSTEM, "conversation-intelligence": REVIEW_SYSTEM, "follow-up-engine": FOLLOW_UP_SYSTEM, "proposal-architect": PROPOSAL_SYSTEM };
 
 describe("Dealmaker's doctrine", () => {
   it("names the five steps and the five questions of the standard, in order", () => {

@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { CHAT_ROUTES, isChatRoute, type ChatRoute } from "../../../convex/lib/chatRouting";
+import { agentWork } from "../../../convex/lib/workWords";
 
 export type ChatRow = FunctionReturnType<typeof api.agentChat.list>[number];
 export type ChatDetail = FunctionReturnType<typeof api.agentChat.get>;
@@ -32,10 +33,11 @@ export type ChatContext = { kind: "asset" | "offer" | "task" | "project"; id: st
 /** How an attached or open record is named beside its title. */
 export const CONTEXT_LABEL: Record<ChatContext["kind"], string> = { offer: "Offer attached:", asset: "Result attached:", task: "About this task:", project: "About this session:" };
 
-export const ROUTE_LOOK: Record<ChatRoute, { tab: string; skill: string; icon: LucideIcon; hint: string }> = {
-  "market-intelligence": { tab: "Research", skill: "Market Intelligence", icon: FileSearch, hint: "What do you want to find out about your market?" },
-  "offer-intelligence": { tab: "Offers", skill: "Offer Intelligence", icon: Store, hint: "What should we look at in your offer?" },
-  "growth-diagnostics": { tab: "Diagnostics", skill: "Growth Diagnostics", icon: Gauge, hint: "What is holding your growth back?" },
+/** Where a conversation's work goes. `work` is the agent and what it does ("Strategist · Research"), never a skill's name. */
+export const ROUTE_LOOK: Record<ChatRoute, { tab: string; work: string; icon: LucideIcon; hint: string }> = {
+  "market-intelligence": { tab: "Research", work: agentWork(null, "market-intelligence"), icon: FileSearch, hint: "What do you want to find out about your market?" },
+  "offer-intelligence": { tab: "Offers", work: agentWork(null, "offer-intelligence"), icon: Store, hint: "What should we look at in your offer?" },
+  "growth-diagnostics": { tab: "Diagnostics", work: agentWork(null, "growth-diagnostics"), icon: Gauge, hint: "What is holding your growth back?" },
 };
 
 const STARTERS = ["What do other lead-gen agencies charge home-service brands?", "Is our $2,500/mo lead generation retainer strong enough?", "Why did we stop adding retained clients this quarter?"];
@@ -180,7 +182,7 @@ export function NewChatView({
           <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{agentName} · Chat</p>
           <h1 className="font-heading text-lg text-card-foreground">What do you want to work on?</h1>
           <p className="text-sm text-muted-foreground">
-            Ask in your own words. It sends research to Market Intelligence, offer questions to Offer Intelligence and growth problems to Growth Diagnostics, asks what it needs, then shows the plan and budget. If it can&apos;t tell which you mean, it asks.
+            Ask in your own words. It researches your market, works on your offer or finds why growth stalls, whichever you need, asks what it needs, then shows the plan and budget. If it can&apos;t tell which you mean, it asks.
           </p>
         </div>
       </div>
@@ -263,10 +265,10 @@ export function ConversationFrame({ chat, base, children }: { chat: Pick<ChatDet
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {look ? (
             <span className="inline-flex items-center gap-1.5">
-              <look.icon aria-hidden className="size-3.5 text-primary" /> {look.skill} · results go to {look.tab}
+              <look.icon aria-hidden className="size-3.5 text-primary" /> {look.work} · results go to {look.tab}
             </span>
           ) : (
-            <span>Not routed yet: it is asking which skill you want.</span>
+            <span>Not routed yet: it is asking what you want it to do.</span>
           )}
           {chat.context ? <ContextChip context={chat.context} /> : null}
         </div>

@@ -30,6 +30,7 @@ import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
 import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
 import { useModelChoice } from "@/components/models/use-model-choice";
+import { agentWork } from "../../../convex/lib/workWords";
 
 export type CreativeStart = { kitId: string; sourceRefId: string | null; referenceId: string | null; offerCardId: string | null; dial: string; note: string };
 
@@ -611,7 +612,7 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
     <div className="grid min-w-0 grid-cols-1 gap-5">
       <WorkHero
         icon={Megaphone}
-        eyebrow="Creative"
+        eyebrow={agentWork(null, "creative-production")}
         title="Your own version of an ad that works"
         promise="Pick a brand and a reference ad or an offer. You get a brief, four copy variations to test, a script and captions, checked and waiting for your approval."
         working={tab.running.length > 0}

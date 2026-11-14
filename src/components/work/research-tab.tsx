@@ -15,6 +15,7 @@ import { ReportPdfButton } from "./report-pdf-button";
 import type { ResultRow, ReviewActions, TabData } from "./types";
 import { useReviewActions } from "./use-review";
 import { ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
+import { agentWork } from "../../../convex/lib/workWords";
 
 export type ResearchTabProps = {
   base: string;
@@ -36,7 +37,7 @@ export function ResearchTabView({ base, editor, tab, sessions, review, pdf }: Re
         <>
           <WorkHero
             icon={FileSearch}
-            eyebrow="Strategist · Market Intelligence"
+            eyebrow={agentWork(null, "market-intelligence")}
             title="Research"
             promise="Your reports library: every report with its sources, ready to approve, send back or export as a PDF."
             working={tab.running.length > 0}

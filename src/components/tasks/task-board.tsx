@@ -153,7 +153,7 @@ function Card({ card, column, board, actions, onEdit, onSkip }: { card: TaskCard
     <li className={cn("grid gap-2.5 rounded-xl border border-l-[3px] border-border bg-card p-3", STAGE_COLOR[column].edge)}>
       <div className="flex flex-wrap items-center gap-1.5">
         {card.agentSlug ? <AgentAvatar slug={card.agentSlug} size="xs" className="size-5" /> : null}
-        <span className={chip}>{card.type === "work" ? (card.skill ? `Agent work · ${card.skill}` : "Agent work") : "A change you make"}</span>
+        <span className={chip}>{card.type === "work" ? (card.skill ?? "Agent work") : "A change you make"}</span>
         {card.client ? <span className={cn(chip, "border-primary/30 text-primary")}>{card.client}</span> : null}
         {card.by === "person" ? <span className={chip}>From a teammate</span> : null}
       </div>
@@ -349,7 +349,7 @@ function ProposeDialog({ board, scopeLabel, onClose, actions }: { board: Board; 
             <select value={skill} onChange={(event) => setSkill(event.target.value)} className={selectClass}>
               {board.skills.map((row) => (
                 <option key={row.slug} value={row.slug}>
-                  {row.name}: {row.does}
+                  {row.name}: it {row.does}
                 </option>
               ))}
             </select>

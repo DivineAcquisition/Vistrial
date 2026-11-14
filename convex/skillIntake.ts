@@ -22,6 +22,7 @@ import { currentGoal, readGoal, MAX_GOAL } from "./goals";
 import { EMPTY_OFFER, cleanOffer, sameOffer, type OfferContent } from "./lib/offerCards";
 import { versionFields } from "./offers";
 import { startRunFor } from "./runs";
+import { workLabel } from "./lib/workWords";
 
 export const CHAT_SKILLS = ["offer-intelligence", "growth-diagnostics"] as const;
 export type ChatSkill = (typeof CHAT_SKILLS)[number];
@@ -57,7 +58,7 @@ export const CHECKLIST: Record<ChatSkill, Question[]> = {
 /** What each skill does once started, in plain words for the plan. */
 const PLAN_WORDS: Record<ChatSkill, { name: string; steps: string[]; reads: string }> = {
   "growth-diagnostics": {
-    name: "Growth Diagnostics",
+    name: workLabel("growth-diagnostics"),
     steps: [
       "Read your own results: Meta ads and the results files you uploaded",
       "Work out every figure in code, compared only with your own past",
@@ -67,7 +68,7 @@ const PLAN_WORDS: Record<ChatSkill, { name: string; steps: string[]; reads: stri
     reads: "Only your own connected data. It changes nothing in your accounts.",
   },
   "offer-intelligence": {
-    name: "Offer Intelligence",
+    name: workLabel("offer-intelligence"),
     steps: [
       "Read your approved market reports and what you told it about your offer",
       "Set your offer beside what competitors lead with, from that research",
@@ -281,7 +282,7 @@ export const create = workspaceMutation({
   args: { skillSlug: v.string(), text: v.string() },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
-    if (!isChatSkill(args.skillSlug)) throw userError("This skill does not have a chat yet.");
+    if (!isChatSkill(args.skillSlug)) throw userError("This work does not have a chat yet.");
     return beginSkill(ctx, { skill: args.skillSlug, text: args.text });
   },
 });

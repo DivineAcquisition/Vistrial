@@ -357,7 +357,7 @@ export async function startRunFor(
   const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
   if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
   const skill = skillFor(args.skillSlug);
-  if (!skill) throw userError("This skill is not built yet.");
+  if (!skill) throw userError("This work is not built yet.");
   if (skill.needsProject && !projectId) throw userError("Choose a research project first.");
   // The free session and work nobody started by hand run on the platform's route. Otherwise: the model picked
   // by hand, refused here if it cannot run this skill, else the one this person last chose for this kind of work.

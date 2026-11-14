@@ -35,7 +35,8 @@ const DIMENSION_WORDS: Record<Dimension, { tab: string; filter: string; all: str
   person: { tab: "Person", filter: "Started by", all: "Everyone" },
   organization: { tab: "Organization", filter: "Organization", all: "Every organization" },
 };
-const DIMENSION_ORDER: Dimension[] = ["skill", "agent", "client", "model", "person", "organization"];
+/** No "skill": an agent's work is shown condensed inside its own row, never as a breakdown or filter of its own. */
+const DIMENSION_ORDER: Dimension[] = ["agent", "client", "model", "person", "organization"];
 
 /** Each agent keeps one colour, whatever is filtered (globals.css `.usage-viz`). */
 const AGENT_SLOT: Record<string, number> = {
@@ -94,7 +95,7 @@ export function UsageView({
       ? "Your balance, and how credits are used. The breakdown of what was spent is for people who start work."
       : data.access === "own"
         ? "Where your credits went: every run, chat and image you started, what it used and which model ran it."
-        : "Where every credit went: by day, skill, agent, client, model and person, down to each run, chat and image.";
+        : "Where every credit went: by day, agent and the work it did, client, model and person, down to each run, chat and image.";
   return (
     <MotionConfig reducedMotion="user">
       <div className="usage-viz mx-auto grid w-full max-w-6xl min-w-0 gap-6">
@@ -481,6 +482,11 @@ function Breakdowns({ data, filters, onFilters }: { data: UsageOverview; filters
                       transition={{ duration: 0.7, delay: Math.min(index * 0.04, 0.4), ease: [0.22, 1, 0.36, 1] }}
                     />
                   </span>
+                  {current === "agent" && slice.parts && slice.parts.length > 0 ? (
+                    <span className="truncate text-[11px] text-muted-foreground tabular-nums" title={slice.parts.map((part) => `${part.label} ${creditCount(part.credits)}`).join(" · ")}>
+                      {slice.parts.map((part) => `${part.label} ${creditCount(part.credits)}`).join(" · ")}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="grid justify-items-end text-right">
                   <span className="text-sm font-medium text-card-foreground tabular-nums">{creditCount(slice.credits)}</span>

@@ -186,7 +186,7 @@ export function storyOfferChat(state: string): SkillChatData | null {
       msg(6, "you", "text", "Paid ads management, landing pages, weekly lead report, 20 booked calls in 60 days or we work free"),
       msg(7, "agent", "plan", "Here's the plan.", {
         data: {
-          name: "Offer Intelligence",
+          name: "Offer analysis",
           steps: ["Read your approved market reports and what you told it about your offer", "Set your offer beside what competitors lead with, from that research", "Suggest two or three changes to test, each with how to tell if it worked", "Check every claim against its sources, then save it for you to approve"],
           reads: "Only approved research and your own words. It does not change your offer.",
           capCents: 150,
@@ -331,9 +331,9 @@ const chatMsg = (n: number, role: "you" | "agent", kind: string, text: string, e
 /** An unclear first message: the chat asks which of the three skills the person wants. */
 export function storyUndecidedChat(): ChatDetail {
   const choices = [
-    { skill: "market-intelligence", chip: "Research my market", name: "Market Intelligence", does: "researches your market and competitors, with every source" },
-    { skill: "offer-intelligence", chip: "Work on my offer", name: "Offer Intelligence", does: "sets your offer beside competitors' and suggests changes to test" },
-    { skill: "growth-diagnostics", chip: "Find why I'm not growing", name: "Growth Diagnostics", does: "finds where growth stalls in your own data and writes a 90-day roadmap" },
+    { skill: "market-intelligence", chip: "Research my market", name: "Research", does: "researches your market and competitors, with every source" },
+    { skill: "offer-intelligence", chip: "Work on my offer", name: "Offer analysis", does: "sets your offer beside competitors' and suggests changes to test" },
+    { skill: "growth-diagnostics", chip: "Find why I'm not growing", name: "Growth diagnosis", does: "finds where growth stalls in your own data and writes a 90-day roadmap" },
   ];
   return {
     id: id("i1"),
@@ -358,7 +358,7 @@ export function storyFinishedChat(): { chat: ChatDetail; data: SkillChatData } {
     chatMsg(3, "you", "text", "10 more retained clients this quarter"),
     chatMsg(4, "agent", "plan", "Here's the plan. Nothing runs or spends until you press Start.", {
       data: {
-        name: "Growth Diagnostics",
+        name: "Growth diagnosis",
         steps: ["Read your own results: Meta ads and the results files you uploaded", "Work out every figure in code, compared only with your own past", "Find where growth stalls and write a 90-day roadmap: Fix, Build, Scale", "Check every number against your figures, then save it for you to approve"],
         reads: "Only your own connected data. It changes nothing in your accounts.",
         capCents: 100,

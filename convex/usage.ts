@@ -9,6 +9,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { CATALOG } from "./catalog";
+import { workLabel } from "./lib/workWords";
 import { internalMutation, type QueryCtx } from "./_generated/server";
 import { AUTO_REFILL, EXTRA_ORG, PLAN, accountFor, billingOn, billingOwner, planActive, priceFor } from "./lib/billing";
 import { workspaceQuery } from "./lib/builders";
@@ -200,7 +201,8 @@ async function namesFor(ctx: Ctx, rows: UsageRow[], organizations: Doc<"workspac
 }
 
 const CATALOG_AGENT_NAMES: Record<string, string> = Object.fromEntries(CATALOG.map((row) => [row.slug, row.name]));
-const CATALOG_SKILL_NAMES: Record<string, string> = Object.fromEntries(CATALOG.flatMap((row) => row.skills.map((skill) => [skill.slug, skill.name])));
+/** A skill is named by its work ("Research"), never by its own name: lib/workWords.ts. */
+const CATALOG_SKILL_NAMES: Record<string, string> = Object.fromEntries(CATALOG.flatMap((row) => row.skills.map((skill) => [skill.slug, workLabel(skill.slug)])));
 
 function pretty(slug: string) {
   const words = slug.replace(/[-_]+/g, " ").trim();
@@ -208,7 +210,7 @@ function pretty(slug: string) {
 }
 
 const NONE_WORDS: Record<Dimension, string> = {
-  skill: "Not part of a skill",
+  skill: "Other work",
   agent: "No agent",
   client: "Your own organization",
   model: "Tools and page reading",
@@ -231,7 +233,7 @@ const SOURCE_WORDS: Record<UsageRow["source"], string> = {
 };
 
 const TYPICAL_WORDS: Record<UsageRow["source"], string> = {
-  run: "Other runs",
+  run: "Other agent work",
   followup: "A follow-up answer",
   intake: "A chat",
   file: "Reading a file",
@@ -289,14 +291,23 @@ export const overview = workspaceQuery({
     const filtered = inPeriod.filter((row) => matches(row, filters));
     const names = await namesFor(ctx, read.rows, read.organizations);
 
+    // The work an agent did is shown only inside its row ("parts" below), never as a breakdown or filter of its own.
     const dimensions = DIMENSIONS.filter((dimension) => {
+      if (dimension === "skill") return false;
       if (dimension === "organization") return access === "account" && read.organizations.length > 1;
       if (dimension === "person") return access !== "own";
       return true;
     });
     const by = Object.fromEntries(
       dimensions.map((dimension) => [dimension, breakdown(filtered, dimension).map((slice) => ({ ...slice, label: labelFor(names, dimension, slice.key) }))]),
-    ) as Partial<Record<Dimension, (ReturnType<typeof breakdown>[number] & { label: string })[]>>;
+    ) as Partial<Record<Dimension, (ReturnType<typeof breakdown>[number] & { label: string; parts?: { key: string; label: string; credits: number }[] })[]>>;
+    // Each agent's row carries what it spent on each kind of its work, condensed: "Research 9,800 · Ads 1,200".
+    for (const slice of by.agent ?? []) {
+      slice.parts = breakdown(
+        filtered.filter((row) => (row.agentSlug ?? NONE) === slice.key),
+        "skill",
+      ).map((part) => ({ key: part.key, label: labelFor(names, "skill", part.key), credits: part.credits }));
+    }
     // What each filter can be set to: everything seen in the period with the other filters applied.
     const options = Object.fromEntries(
       dimensions.map((dimension) => [
@@ -312,7 +323,7 @@ export const overview = workspaceQuery({
     const typical = typicalUse(read.rows.filter((row) => matches(row, { ...(filters.client ? { client: filters.client } : {}) })))
       .map((row) => ({
         ...row,
-        label: row.key.startsWith("source:") ? TYPICAL_WORDS[row.source] : `${labelFor(names, "skill", row.key)} run`,
+        label: row.key.startsWith("source:") ? TYPICAL_WORDS[row.source] : labelFor(names, "skill", row.key),
         enough: row.count >= TYPICAL_MIN,
       }));
 
@@ -339,7 +350,7 @@ async function limitsFor(ctx: Ctx) {
     for (const skill of agent.skills) {
       if (skill.status !== "available") continue;
       const caps = await loadCaps(ctx, ctx.workspaceId, agent.slug, skill.slug);
-      perSkill.push({ skillSlug: skill.slug, agentSlug: agent.slug, label: skill.name, perRun: priceFor(caps.maxCostCentsPerRun), perDay: priceFor(caps.maxCostCentsPerDay) });
+      perSkill.push({ skillSlug: skill.slug, agentSlug: agent.slug, label: workLabel(skill.slug), perRun: priceFor(caps.maxCostCentsPerRun), perDay: priceFor(caps.maxCostCentsPerDay) });
     }
   }
   return {

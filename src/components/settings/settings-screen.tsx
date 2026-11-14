@@ -31,6 +31,7 @@ import { saveTheme, storedChoice, type ThemeChoice } from "@/lib/theme";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { MEMORY_HREF } from "@/lib/shell/journey";
+import { workLabel } from "../../../convex/lib/workWords";
 
 const AGENT = "growth-architect";
 
@@ -162,7 +163,8 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
             job: agent.job,
             status: agent.status,
             state: agent.state,
-            skills: (agent.skills ?? []).map((skill) => ({ slug: skill.slug, name: skill.name, status: skill.status })),
+            // Named by their work ("Research"), never by the skill's own name.
+            skills: (agent.skills ?? []).map((skill) => ({ slug: skill.slug, name: workLabel(skill.slug), status: skill.status })),
           })),
           controls: {
             paused: controls.paused,

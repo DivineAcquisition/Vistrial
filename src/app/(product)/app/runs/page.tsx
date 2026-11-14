@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { asRunStatus, asStopReason, type RunStatus } from "@/lib/runs/view";
-import { skillName } from "@/lib/runs/skill-name";
+import { skillName, workName } from "@/lib/runs/skill-name";
 import { api } from "../../../../../convex/_generated/api";
 import { StartSessionButton } from "@/components/sessions/start-session-button";
 
@@ -62,8 +62,8 @@ function Runs({ shell }: { shell: WorkspaceShell }) {
 
   const agent = shell.agents.find((row) => row.slug === agentSlug);
   const skillOptions = [
-    { value: "", label: "Any skill" },
-    ...(agent?.skills ?? []).map((skill) => ({ value: skill.slug, label: skill.name })),
+    { value: "", label: "Any work" },
+    ...(agent?.skills ?? []).map((skill) => ({ value: skill.slug, label: workName(skill.slug) })),
   ];
   const filtered = Boolean(status || agentSlug || skillSlug || who || sinceDays);
 
@@ -98,7 +98,7 @@ function Runs({ shell }: { shell: WorkspaceShell }) {
               }}
             />
             <Select
-              aria-label="Skill"
+              aria-label="Work"
               density="compact"
               value={skillSlug}
               options={skillOptions}

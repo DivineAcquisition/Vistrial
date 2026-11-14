@@ -245,7 +245,7 @@ export const send = workspaceMutation({
       return { intakeId: row._id, route };
     }
 
-    if (args.skill !== undefined && !isChatRoute(args.skill)) throw userError("That skill has no chat yet.");
+    if (args.skill !== undefined && !isChatRoute(args.skill)) throw userError("That work has no chat yet.");
     const context = args.context ? await readContext(ctx, args.context) : undefined;
     const forClient = await clientForNew(ctx, args.clientId);
     const started = await startConversation(ctx, { text, skill: args.skill as ChatRoute | undefined, context, choices, forClient });

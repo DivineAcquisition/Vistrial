@@ -76,7 +76,7 @@ export const setCaps = workspaceMutation({
     assertWithinCeiling(args);
     if (args.maxSteps < 1 || args.maxDurationMs < 1) throw userError("Caps must allow at least one step.");
     const scope = capScope(args.skillSlug);
-    if (args.skillSlug !== undefined && scope === undefined) throw userError("That skill uses the agent's caps.");
+    if (args.skillSlug !== undefined && scope === undefined) throw userError("That work uses the agent's caps.");
     const current = await capsRow(ctx, ctx.workspaceId, args.agentSlug, scope);
     const fields = {
       maxCostCentsPerRun: args.maxCostCentsPerRun,

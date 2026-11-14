@@ -177,7 +177,7 @@ describe("tasks on the board", () => {
     expect(cardsOf(board, "proposed")).toEqual([proposal.title]);
     const card = board.columns[0].cards[0];
     // The card shows the return as a range with its basis, the most credits the work can use, and who it is for.
-    expect(card).toMatchObject({ client: "Aster Coaching", by: "person", type: "work", skill: "Market Intelligence", creditCost: priceFor(SKILL_CAPS["market-intelligence"].maxCostCentsPerRun), expectedReturn: { text: "2 to 5 more booked calls a month", basis: "Inference", known: true } });
+    expect(card).toMatchObject({ client: "Aster Coaching", by: "person", type: "work", skill: "Strategist · Research", creditCost: priceFor(SKILL_CAPS["market-intelligence"].maxCostCentsPerRun), expectedReturn: { text: "2 to 5 more booked calls a month", basis: "Inference", known: true } });
     expect(board).toMatchObject({ canApprove: false, canWork: true });
     expect((await viewer.query(api.agentTasks.board, { workspaceId })).canWork).toBe(false);
 

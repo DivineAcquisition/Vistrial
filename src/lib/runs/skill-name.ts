@@ -1,8 +1,17 @@
 import type { WorkspaceShell } from "@/components/shell/shell-context";
 
-/** A skill's display name from the registry the shell already loaded. */
-export function skillName(shell: WorkspaceShell, agentSlug: string, skillSlug: string) {
+import { agentWork, workLabel } from "../../../convex/lib/workWords";
+
+/**
+ * What a run is called on screen: the agent and its work, "Strategist · Research". A skill is part of its
+ * agent and is never named in the app (convex/lib/workWords.ts).
+ */
+export function skillName(_shell: WorkspaceShell, agentSlug: string, skillSlug: string) {
   if (skillSlug === "test-echo") return "Test echo";
-  const agent = shell.agents.find((row) => row.slug === agentSlug);
-  return agent?.skills?.find((skill) => skill.slug === skillSlug)?.name ?? skillSlug;
+  return agentWork(agentSlug, skillSlug);
+}
+
+/** The work alone, for a filter whose agent is already chosen: "Research". */
+export function workName(skillSlug: string) {
+  return workLabel(skillSlug);
 }

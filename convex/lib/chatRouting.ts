@@ -4,6 +4,8 @@
  * which of the three the person wants.
  */
 
+import { workLabel } from "./workWords";
+
 export const CHAT_ROUTES = ["market-intelligence", "offer-intelligence", "growth-diagnostics"] as const;
 export type ChatRoute = (typeof CHAT_ROUTES)[number];
 
@@ -15,10 +17,11 @@ export function isChatRoute(value: unknown): value is ChatRoute {
 }
 
 /** The three choices the chat offers when it cannot tell, in the order it shows them. */
+/** `name` is the work's label from the catalog ("Research"), never the skill's own name. */
 export const ROUTE_CHOICES: { skill: ChatRoute; chip: string; name: string; does: string }[] = [
-  { skill: "market-intelligence", chip: "Research my market", name: "Market Intelligence", does: "researches your market and competitors, with every source" },
-  { skill: "offer-intelligence", chip: "Work on my offer", name: "Offer Intelligence", does: "sets your offer beside competitors' and suggests changes to test" },
-  { skill: "growth-diagnostics", chip: "Find why I'm not growing", name: "Growth Diagnostics", does: "finds where growth stalls in your own data and writes a 90-day roadmap" },
+  { skill: "market-intelligence", chip: "Research my market", name: workLabel("market-intelligence"), does: "researches your market and competitors, with every source" },
+  { skill: "offer-intelligence", chip: "Work on my offer", name: workLabel("offer-intelligence"), does: "sets your offer beside competitors' and suggests changes to test" },
+  { skill: "growth-diagnostics", chip: "Find why I'm not growing", name: workLabel("growth-diagnostics"), does: "finds where growth stalls in your own data and writes a 90-day roadmap" },
 ];
 
 export const ROUTE_QUESTION = "I can take this three ways. Which do you want?";
@@ -65,9 +68,9 @@ export function routeIntent(text: string): ChatRoute | null {
   return ranked[0];
 }
 
-/** A tapped choice names its skill exactly; a typed answer is read like a first message. */
+/** A tapped choice names its work exactly (or the skill, for someone who knows it); a typed answer is read like a first message. */
 export function routeChoice(text: string): ChatRoute | null {
   const flat = text.trim().toLowerCase();
-  const tapped = ROUTE_CHOICES.find((row) => row.chip.toLowerCase() === flat || row.name.toLowerCase() === flat);
+  const tapped = ROUTE_CHOICES.find((row) => row.chip.toLowerCase() === flat || row.name.toLowerCase() === flat || row.skill.replace(/-/g, " ") === flat);
   return tapped ? tapped.skill : routeIntent(text);
 }

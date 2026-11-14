@@ -123,7 +123,7 @@ export function ChatLibraryView({
                     <span className="text-sm break-words text-card-foreground">{row.title}</span>
                     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
                       {row.client ? <span className="rounded-md border border-primary/30 px-1.5 text-primary">{row.client}</span> : null}
-                      <span>{look ? `Strategist · ${look.skill}` : "Not handed to an agent yet"}</span>
+                      <span>{look ? look.work : "Not handed to an agent yet"}</span>
                       <span aria-hidden>·</span>
                       <span className={TONE[status.tone]}>{status.label}</span>
                       {row.page ? (

@@ -25,6 +25,7 @@ import { SectionTitle, WorkHero } from "./work-shell";
 import { useCredits } from "@/lib/credits";
 import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
 import { useModelChoice } from "@/components/models/use-model-choice";
+import { agentWork } from "../../../convex/lib/workWords";
 
 export type TeardownAsk = { industry: string; ownUrl: string; urls: string[]; find: boolean; note: string };
 
@@ -206,7 +207,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, m
     <div className="grid min-w-0 grid-cols-1 gap-5">
       <WorkHero
         icon={FileSearch}
-        eyebrow="Landing Page Teardown"
+        eyebrow={agentWork(null, "landing-page-teardown")}
         title="Pages"
         promise="Read landing pages in your industry section by section: which objections each one answers, in what order, what they share, and what yours lacks."
         working={tab.running.length > 0}

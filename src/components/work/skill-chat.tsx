@@ -96,7 +96,7 @@ export function SkillChatView({
                     <span className="flex items-center gap-1 text-card-foreground">
                       <Wallet aria-hidden className="size-3.5 text-primary" /> Up to {credits.cost(plan.capCents)} for this run
                     </span>
-                    <span>{credits.cost(plan.dayLeftCents)} left in today&apos;s budget for this skill</span>
+                    <span>{credits.cost(plan.dayLeftCents)} left in today&apos;s budget for this work</span>
                   </p>
                   {editor && ready && row.id === last?.id ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -143,7 +143,7 @@ export function SkillChatView({
                           >
                             <span className="text-sm font-medium text-card-foreground">{choice.chip}</span>
                             <span className="text-xs text-muted-foreground">
-                              {choice.name} {choice.does}.
+                              {choice.does.charAt(0).toUpperCase() + choice.does.slice(1)}.
                             </span>
                           </button>
                         ))}

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { UsageView, type UsageFilters, type UsageItems, type UsageOverview } from "@/components/usage/usage-view";
 import { DIMENSIONS, breakdown, daily, matches, periodDays, typicalUse, workItems, type Dimension, type UsageRow } from "../../../../convex/lib/usageReport";
 import { CATALOG } from "../../../../convex/catalog";
+import { workLabel } from "../../../../convex/lib/workWords";
 import { EXTRA_ORG, PLAN } from "../../../../convex/lib/billing";
 import { StoryTheme } from "../story-theme";
 
@@ -32,7 +33,8 @@ type Sample = {
 
 /** Agents and skills are named as the catalog names them, never by hand. */
 const AGENTS: Record<string, string> = Object.fromEntries(CATALOG.map((agent) => [agent.slug, agent.name]));
-const SKILLS: Record<string, string> = Object.fromEntries(CATALOG.flatMap((agent) => agent.skills.map((skill) => [skill.slug, skill.name])));
+/** Skills are named by their work, as the app names them: never by the skill's own name. */
+const SKILLS: Record<string, string> = Object.fromEntries(CATALOG.flatMap((agent) => agent.skills.map((skill) => [skill.slug, workLabel(skill.slug)])));
 const MODELS = { "claude-opus-5-5": "Claude Opus 5.5", "claude-sonnet-5-5": "Claude Sonnet 5.5", "claude-haiku-5-5": "Claude Haiku 5.5", "gemini-3-pro-image": "Gemini 3 Pro Image" };
 
 /** What each kind of work spends, roughly, in credits: a range the sample draws from. */
@@ -94,7 +96,7 @@ function sample(kind: "agency" | "coach"): Sample {
   return { organizations, clients, people, agents: AGENTS, skills: SKILLS, models: MODELS, rows };
 }
 
-const NONE_WORDS: Record<Dimension, string> = { skill: "Not part of a skill", agent: "No agent", client: "Your own organization", model: "Tools and page reading", person: "Not recorded", organization: "Unknown" };
+const NONE_WORDS: Record<Dimension, string> = { skill: "Other work", agent: "No agent", client: "Your own organization", model: "Tools and page reading", person: "Not recorded", organization: "Unknown" };
 
 function label(data: Sample, dimension: Dimension, key: string) {
   if (key === "none") return NONE_WORDS[dimension];
@@ -103,7 +105,7 @@ function label(data: Sample, dimension: Dimension, key: string) {
 }
 
 type Access = "account" | "organization" | "own" | "summary";
-const TYPICAL: Record<UsageRow["source"], string> = { run: "Other runs", followup: "A follow-up answer", intake: "A chat", file: "Reading a file", creative: "An image", page: "Reading pages" };
+const TYPICAL: Record<UsageRow["source"], string> = { run: "Other agent work", followup: "A follow-up answer", intake: "A chat", file: "Reading a file", creative: "An image", page: "Reading pages" };
 const SOURCE: Record<UsageRow["source"], string> = { run: "Run", followup: "Follow-up", intake: "Chat", file: "File read", creative: "Image", page: "Page reading" };
 
 function build(state: string, filters: UsageFilters, limit: number): { overview: UsageOverview; items: UsageItems } {
@@ -118,8 +120,17 @@ function build(state: string, filters: UsageFilters, limit: number): { overview:
   const inPeriod = usable.filter((row) => row.day >= days[0]);
   const wanted = Object.fromEntries(DIMENSIONS.filter((dimension) => filters[dimension]).map((dimension) => [dimension, filters[dimension]!]));
   const filtered = inPeriod.filter((row) => matches(row, wanted));
-  const dims = DIMENSIONS.filter((dimension) => (dimension === "organization" ? access === "account" && Object.keys(data.organizations).length > 1 : dimension === "person" ? access !== "own" : true));
-  const by = Object.fromEntries(dims.map((dimension) => [dimension, breakdown(filtered, dimension).map((slice) => ({ ...slice, label: label(data, dimension, slice.key) }))]));
+  const dims = DIMENSIONS.filter((dimension) => dimension !== "skill" && (dimension === "organization" ? access === "account" && Object.keys(data.organizations).length > 1 : dimension === "person" ? access !== "own" : true));
+  const by = Object.fromEntries(
+    dims.map((dimension) => [
+      dimension,
+      breakdown(filtered, dimension).map((slice) => ({
+        ...slice,
+        label: label(data, dimension, slice.key),
+        ...(dimension === "agent" ? { parts: breakdown(filtered.filter((row) => (row.agentSlug ?? "none") === slice.key), "skill").map((part) => ({ key: part.key, label: label(data, "skill", part.key), credits: part.credits })) } : {}),
+      })),
+    ]),
+  );
   const options = Object.fromEntries(dims.map((dimension) => [dimension, breakdown(inPeriod.filter((row) => matches(row, wanted, dimension)), dimension).map((slice) => ({ key: slice.key, label: label(data, dimension, slice.key) }))]));
   const stacked = daily(filtered, days);
   const total = filtered.reduce((sum, row) => sum + row.priceCents, 0);
@@ -142,11 +153,11 @@ function build(state: string, filters: UsageFilters, limit: number): { overview:
     },
     limits: {
       perSkill: [
-        { skillSlug: "market-intelligence", agentSlug: "growth-architect", label: "Market Intelligence", perRun: 900, perDay: 7_500 },
-        { skillSlug: "offer-intelligence", agentSlug: "growth-architect", label: "Offer Intelligence", perRun: 450, perDay: 3_000 },
-        { skillSlug: "growth-diagnostics", agentSlug: "growth-architect", label: "Growth Diagnostics", perRun: 300, perDay: 3_000 },
-        { skillSlug: "creative-production", agentSlug: "growth-architect", label: "Creative Production", perRun: 450, perDay: 4_500 },
-        { skillSlug: "landing-page-teardown", agentSlug: "growth-architect", label: "Landing Page Teardown", perRun: 900, perDay: 4_500 },
+        { skillSlug: "market-intelligence", agentSlug: "growth-architect", label: "Research", perRun: 900, perDay: 7_500 },
+        { skillSlug: "offer-intelligence", agentSlug: "growth-architect", label: "Offer analysis", perRun: 450, perDay: 3_000 },
+        { skillSlug: "growth-diagnostics", agentSlug: "growth-architect", label: "Growth diagnosis", perRun: 300, perDay: 3_000 },
+        { skillSlug: "creative-production", agentSlug: "growth-architect", label: "Ads", perRun: 450, perDay: 4_500 },
+        { skillSlug: "landing-page-teardown", agentSlug: "growth-architect", label: "Page breakdown", perRun: 900, perDay: 4_500 },
       ],
       spendApproval: coach ? null : 500,
       autoRefill: { threshold: 200, amount: 1000, maxPerMonth: 4 },
@@ -160,7 +171,7 @@ function build(state: string, filters: UsageFilters, limit: number): { overview:
           daily: { bars: stacked.bars, keys: stacked.keys.map((key) => ({ key, label: label(data, "agent", key) })) },
           by,
           options,
-          typical: typicalUse(usable).map((row) => ({ ...row, label: row.key.startsWith("source:") ? TYPICAL[row.source] : `${label(data, "skill", row.key)} run`, enough: row.count >= 3 })),
+          typical: typicalUse(usable).map((row) => ({ ...row, label: row.key.startsWith("source:") ? TYPICAL[row.source] : label(data, "skill", row.key), enough: row.count >= 3 })),
           truncated: false,
         }),
   } as unknown as UsageOverview;

@@ -6,6 +6,9 @@ import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
 import { approvalKind, approvalStatus, briefingKind, expectedReturn, proposedBy, taskEvidence, taskStatus, taskTry, taskWork } from "./lib/taskShapes";
 import { availability, basis, classification, embed, platform, projectStatus, sourceKind, sourceState } from "./lib/researchShapes";
 
+/** What a credit charge paid for: the `source` of a ledger row. */
+const ledgerSource = v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative"), v.literal("page"));
+
 const resultFigureFields = {
   spend: v.optional(v.number()),
   impressions: v.optional(v.number()),
@@ -366,6 +369,8 @@ export default defineSchema({
     planStatus: v.optional(v.string()),
     nextResetAt: v.optional(v.number()),
     autoRefill: v.optional(v.object({ enabled: v.boolean(), thresholdCents: v.number(), amountCents: v.number() })),
+    /** Credits bought in packs, as Autumn reports its top-up purchases. Missing until a refresh has seen them. */
+    packsCents: v.optional(v.number()),
     refreshedAt: v.number(),
   })
     .index("by_workspace", ["workspaceId"])
@@ -377,7 +382,7 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     /** The client the work was for, when it was for one: so the cost of serving a client can be measured. */
     clientId: v.optional(v.id("clients")),
-    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative"), v.literal("page")),
+    source: ledgerSource,
     ref: v.string(),
     costCents: v.number(),
     priceCents: v.number(),
@@ -386,9 +391,50 @@ export default defineSchema({
     /** Set once Autumn has the usage. Unsynced rows are retried. */
     syncedAt: v.optional(v.number()),
     syncError: v.optional(v.string()),
+    /**
+     * Who and what the charge was for, read from `ref` when it was written (lib/usage.ts). Rows from before
+     * 2026-11-13 lack these; the usage backfill reads them from `ref` instead. docs/rebuild/usage-page.md.
+     */
+    startedBy: v.optional(v.string()),
+    agentSlug: v.optional(v.string()),
+    skillSlug: v.optional(v.string()),
+    /** The model id that did this step. Missing for tool calls and page reading, and on older rows. */
+    model: v.optional(v.string()),
+    /** Already folded into `usageItems` when it was written. The backfill skips these. */
+    inUsage: v.optional(v.boolean()),
   })
     .index("by_workspace_at", ["workspaceId", "at"])
     .index("by_synced", ["syncedAt"]),
+
+  /**
+   * What the usage page reads: everything one piece of work (a run, a chat, an image...) spent on one UTC day
+   * on one model, in credits. Kept in step with the ledger by chargeUsage. Holds no cost and no markup, so
+   * nothing read from it can show what Vistrial pays. docs/rebuild/usage-page.md, section 3.2.
+   */
+  usageItems: defineTable({
+    workspaceId: v.id("workspaces"),
+    source: ledgerSource,
+    ref: v.string(),
+    /** "2026-11-13", UTC: the same day key as the caps (lib/caps.ts). */
+    day: v.string(),
+    /** The model id, or "" for tools and page reading, and for older charges whose model was not kept. */
+    model: v.string(),
+    priceCents: v.number(),
+    charges: v.number(),
+    firstAt: v.number(),
+    lastAt: v.number(),
+    startedBy: v.optional(v.string()),
+    agentSlug: v.optional(v.string()),
+    skillSlug: v.optional(v.string()),
+    clientId: v.optional(v.id("clients")),
+    /** What the work was, in a few words, for the list of work. */
+    title: v.optional(v.string()),
+    /** Written by the backfill from an older ledger row. */
+    backfilled: v.optional(v.boolean()),
+  })
+    .index("by_workspace_day", ["workspaceId", "day"])
+    .index("by_workspace_person_day", ["workspaceId", "startedBy", "day"])
+    .index("by_key", ["workspaceId", "source", "ref", "day", "model"]),
 
   /**
    * A new customer's way in: the wizard before paying (about you, the business, what you sell, your goal),
@@ -1628,6 +1674,228 @@ export default defineSchema({
     ok: v.number(),
     failed: v.number(),
   }).index("by_workspace_day", ["workspaceId", "day"]),
+
+  /**
+   * A read-only CRM connection: one HighLevel sub-account (location) for one client, or for the organization
+   * itself when `clientId` is missing. Tokens are server-only: no public function returns them.
+   * docs/rebuild/crm-highlevel.md.
+   */
+  crmConnections: defineTable({
+    workspaceId: v.id("workspaces"),
+    /** The client this is for. Missing means the organization itself. */
+    clientId: v.optional(v.id("clients")),
+    provider: v.literal("highlevel"),
+    status: v.union(v.literal("connected"), v.literal("needsReconnect")),
+    accessToken: v.string(),
+    refreshToken: v.string(),
+    tokenExpiresAt: v.number(),
+    /** Set while a token renewal is in flight: HighLevel's renewal tokens work once. */
+    refreshingSince: v.optional(v.number()),
+    scopes: v.array(v.string()),
+    /** The HighLevel location id, its name, and the agency it belongs to. */
+    accountId: v.string(),
+    accountName: v.string(),
+    companyId: v.optional(v.string()),
+    currency: v.string(),
+    timezone: v.optional(v.string()),
+    connectedBy: v.string(),
+    connectedAt: v.number(),
+    /** When HighLevel stopped accepting the connection. After 30 days it is removed with its data. */
+    needsReconnectSince: v.optional(v.number()),
+    lastSyncAt: v.optional(v.number()),
+    lastSyncCode: v.optional(v.string()),
+    callsOk: v.number(),
+    callsFailed: v.number(),
+    /** An Owner let Vistrial act in this sub-account, each action still approved by a person. Missing means off. */
+    actingEnabled: v.optional(v.boolean()),
+    actingChangedBy: v.optional(v.string()),
+    actingChangedAt: v.optional(v.number()),
+  })
+    .index("by_workspace_client", ["workspaceId", "clientId"])
+    .index("by_account", ["provider", "accountId"]),
+
+  /** One CRM sign-in attempt: bound to a workspace, a client and an Owner, used once, ten minutes. */
+  crmOauthStates: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    userId: v.string(),
+    provider: v.literal("highlevel"),
+    nonce: v.string(),
+    returnOrigin: v.optional(v.string()),
+    returnPath: v.optional(v.string()),
+    createdAt: v.number(),
+    usedAt: v.optional(v.number()),
+  }).index("by_nonce", ["nonce"]),
+
+  /** A CRM pipeline and its stages, replaced each read. */
+  crmPipelines: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    connectionId: v.id("crmConnections"),
+    externalId: v.string(),
+    name: v.string(),
+    stages: v.array(v.object({ id: v.string(), name: v.string(), position: v.number() })),
+    seenAt: v.number(),
+  }).index("by_connection", ["connectionId", "externalId"]),
+
+  /** A deal (HighLevel opportunity). Not its name, notes, tasks or custom fields. */
+  crmDeals: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    connectionId: v.id("crmConnections"),
+    externalId: v.string(),
+    pipelineId: v.string(),
+    stageId: v.string(),
+    status: v.union(v.literal("open"), v.literal("won"), v.literal("lost"), v.literal("abandoned")),
+    value: v.number(),
+    source: v.optional(v.string()),
+    contactId: v.optional(v.string()),
+    assignedTo: v.optional(v.string()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
+    lastStageChangeAt: v.optional(v.number()),
+    lastStatusChangeAt: v.optional(v.number()),
+    seenAt: v.number(),
+  }).index("by_connection", ["connectionId", "externalId"]),
+
+  /** A lead: name, email, phone, source, up to ten tags, when added. Personal data of the customer's leads. */
+  crmContacts: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    connectionId: v.id("crmConnections"),
+    externalId: v.string(),
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    source: v.optional(v.string()),
+    tags: v.array(v.string()),
+    addedAt: v.optional(v.number()),
+    lastActivityAt: v.optional(v.number()),
+    seenAt: v.number(),
+  }).index("by_connection", ["connectionId", "externalId"]),
+
+  /** Something that happened to a lead. Facts only: never a message body, subject, recording or transcript. */
+  crmActivities: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    connectionId: v.id("crmConnections"),
+    externalId: v.string(),
+    kind: v.union(
+      v.literal("call"),
+      v.literal("sms"),
+      v.literal("email"),
+      v.literal("chat"),
+      v.literal("social"),
+      v.literal("appointment"),
+      v.literal("stage_change"),
+      v.literal("status_change"),
+    ),
+    direction: v.optional(v.union(v.literal("inbound"), v.literal("outbound"))),
+    at: v.number(),
+    contactId: v.optional(v.string()),
+    dealId: v.optional(v.string()),
+    status: v.optional(v.string()),
+    seconds: v.optional(v.number()),
+    fromStage: v.optional(v.string()),
+    toStage: v.optional(v.string()),
+  })
+    .index("by_connection", ["connectionId", "externalId"])
+    .index("by_connection_at", ["connectionId", "at"]),
+
+  /** What the last read added up to: pipeline counts, won revenue, lead sources, activity. Computed in code. */
+  crmSummaries: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    connectionId: v.id("crmConnections"),
+    syncedAt: v.number(),
+    /** The `Summary` shape from convex/lib/highLevel.ts. */
+    summary: v.any(),
+  }).index("by_connection", ["connectionId"]),
+
+  /** One read of a CRM connection, step by step, so the Owner can see what Vistrial did. */
+  crmSyncRuns: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    connectionId: v.id("crmConnections"),
+    trigger: v.union(v.literal("manual"), v.literal("schedule"), v.literal("connect")),
+    startedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    status: v.union(v.literal("running"), v.literal("done"), v.literal("failed")),
+    code: v.optional(v.string()),
+    steps: v.array(
+      v.object({
+        key: v.string(),
+        status: v.union(v.literal("waiting"), v.literal("working"), v.literal("done"), v.literal("failed")),
+        calls: v.number(),
+        rows: v.optional(v.number()),
+        ms: v.optional(v.number()),
+      }),
+    ),
+    callsOk: v.number(),
+    callsFailed: v.number(),
+  }).index("by_connection", ["connectionId", "startedAt"]),
+
+  /**
+   * One change Vistrial may make in a connected CRM: proposed by an agent or a person, approved by an Owner or
+   * Admin (an Owner with a typed word when restricted), carried out once, and kept as the record of who
+   * decided. docs/rebuild/crm-highlevel.md, section 2A.
+   */
+  crmActions: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    connectionId: v.id("crmConnections"),
+    kind: v.union(v.literal("move_stage"), v.literal("set_status"), v.literal("add_tag"), v.literal("remove_tag"), v.literal("add_note"), v.literal("create_task")),
+    dealId: v.optional(v.string()),
+    contactId: v.optional(v.string()),
+    pipelineId: v.optional(v.string()),
+    stageId: v.optional(v.string()),
+    status: v.optional(v.string()),
+    tag: v.optional(v.string()),
+    title: v.optional(v.string()),
+    body: v.optional(v.string()),
+    dueAt: v.optional(v.number()),
+    /** What was there before, so the action can be undone. */
+    before: v.optional(v.object({ pipelineId: v.optional(v.string()), stageId: v.optional(v.string()), status: v.optional(v.string()) })),
+    /** Owner only, with a typed word: "value" changes a deal's outcome. */
+    restricted: v.optional(v.union(v.literal("value"), v.literal("message"))),
+    summary: v.string(),
+    why: v.string(),
+    /** A person's user id, or "agent". */
+    proposedBy: v.string(),
+    agentSlug: v.optional(v.string()),
+    state: v.union(
+      v.literal("proposed"),
+      v.literal("approved"),
+      v.literal("running"),
+      v.literal("done"),
+      v.literal("failed"),
+      v.literal("declined"),
+      v.literal("expired"),
+      v.literal("cancelled"),
+    ),
+    proposedAt: v.number(),
+    decidedBy: v.optional(v.string()),
+    decidedAt: v.optional(v.number()),
+    doneAt: v.optional(v.number()),
+    /** HighLevel's answer as a short code. Never its words. */
+    resultCode: v.optional(v.string()),
+    /** The id HighLevel gave what was made (a note, a task). */
+    externalId: v.optional(v.string()),
+    /** The action this one reverses, and the one that reversed this. */
+    undoOf: v.optional(v.id("crmActions")),
+    undoneBy: v.optional(v.id("crmActions")),
+  })
+    .index("by_connection", ["connectionId", "proposedAt"])
+    .index("by_connection_state", ["connectionId", "state"]),
+
+  /** CRM API calls per connection per UTC day. */
+  crmCallDays: defineTable({
+    workspaceId: v.id("workspaces"),
+    connectionId: v.id("crmConnections"),
+    day: v.string(),
+    ok: v.number(),
+    failed: v.number(),
+  }).index("by_connection_day", ["connectionId", "day"]),
 
   /**
    * A research intake: the conversation before a session. Slots are filled from business memory, then

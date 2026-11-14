@@ -63,8 +63,8 @@ export function Step2Frame({ theme, role = "owner", path, state = "busy", childr
       <ShellProvider value={shell}>
         <ChatPanelProvider initial={{ open: Boolean(right) }}>
         <StoryTheme theme={theme} />
-        <div className="flex min-h-dvh min-w-0 overflow-x-hidden bg-background text-foreground">
-          <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-border md:flex md:flex-col">
+        <div className="flex min-h-dvh min-w-0 overflow-x-clip bg-background text-foreground">
+          <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 self-start overflow-y-auto overscroll-contain border-r border-border md:flex md:flex-col">
             <JourneySidebarView
               agents={STORY_AGENTS}
               data={{ overview: storyOverview(role === "viewer" ? "rep" : state), credits: { on: true, balanceCents: 11840 } }}

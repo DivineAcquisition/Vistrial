@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 
 import { MarketingShell } from "@/components/marketing/chrome";
@@ -10,10 +12,11 @@ import { loadTrustPublic } from "@/lib/trust/public";
 import { marketingDisplayTitle, marketingLead, marketingPageGutter, marketingSectionTitle, marketingShell } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Security",
   description: "What Vistrial reads, who can see it, what needs your approval, and what we never do.",
-};
+  path: "/security",
+});
 
 export default async function SecurityPage() {
   const trust = await loadTrustPublic();

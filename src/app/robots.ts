@@ -1,33 +1,18 @@
 import type { MetadataRoute } from "next";
 
 import { siteOrigin } from "@/lib/marketing/hosts";
+import { robotsDisallow } from "@/lib/seo";
 import { loadTrustPublic } from "@/lib/trust/public";
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const origin = siteOrigin();
   const trust = await loadTrustPublic();
-  const disallow = [
-    "/app",
-    "/portal",
-    "/stellar",
-    "/api/",
-    "/auth/",
-    "/accept-invite",
-    "/login",
-    "/request",
-    "/thanks",
-    "/contact",
-    // Drafts stay out of search until they are live.
-    ...(trust.termsLive ? [] : ["/terms"]),
-    "/security/review",
-    trust.privacyLive ? "/privacy/requests" : "/privacy",
-  ];
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow,
+        disallow: robotsDisallow(trust),
       },
     ],
     sitemap: `${origin}/sitemap.xml`,

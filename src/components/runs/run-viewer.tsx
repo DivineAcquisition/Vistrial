@@ -1,9 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { LinkIcon, WifiOffIcon } from "@/components/icons";
 
-import { CostBar } from "@/components/runs/cost-bar";
 import { ArtifactList, MadeAssets, RunStatusBadge, SourcesPanel } from "@/components/runs/run-parts";
 import { StepList } from "@/components/runs/step-list";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import { Panel } from "@/components/ui/panel";
 import { formatDuration, isOpen, stepAnnouncement, summaryLine, type RunAssetView, type RunView } from "@/lib/runs/view";
 import { Banner } from "@/components/ui/banner";
 import { useCredits } from "@/lib/credits";
-import { ModelMark } from "@/components/models/model-mark";
 
 export type RunViewerProps = {
   run: RunView;
@@ -58,9 +57,8 @@ export function RunViewer({
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-heading text-2xl text-foreground break-words">{skillName}</h1>
           <RunStatusBadge status={run.status} />
-          <ModelMark model={run.model} className="text-sm" />
         </div>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-xs text-muted-foreground">Started by</dt>
             <dd className="text-card-foreground">{run.startedByName ?? "Someone who left"}</dd>
@@ -76,12 +74,6 @@ export function RunViewer({
           <div>
             <dt className="text-xs text-muted-foreground">{open ? "Running for" : "Took"}</dt>
             <dd className="text-card-foreground tabular-nums">{formatDuration(elapsed)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Cost</dt>
-            <dd className="text-card-foreground">
-              {credits.cost(run.cost.spentCents)}
-            </dd>
           </div>
         </dl>
         <div className="flex flex-wrap gap-2">
@@ -127,10 +119,12 @@ export function RunViewer({
       </Panel>
 
       <Panel className="grid gap-4 p-4 sm:p-6">
-        <h2 className="font-heading text-base text-card-foreground">Cost and limits</h2>
-        <CostBar cost={run.cost} />
-        <p className="text-xs text-muted-foreground">
-          At most {run.maxSteps} steps and {formatDuration(run.maxDurationMs)} per run.
+        <h2 className="font-heading text-base text-card-foreground">Limits</h2>
+        <p className="text-sm text-muted-foreground">
+          A run stops at {credits.cost(run.cost.runCapCents)}, at most {run.maxSteps} steps and {formatDuration(run.maxDurationMs)}.{" "}
+          <Link href="/app/usage" className="text-primary underline-offset-2 hover:underline">
+            See what it used in Usage
+          </Link>
         </p>
       </Panel>
 

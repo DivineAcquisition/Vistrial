@@ -201,6 +201,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
             data={{
               canManage: owner,
               files: 2,
+              crm: { configured: true, connected: 2, reconnect: 0, names: ["Harbor Dental Group", "Aster Coaching"] },
               meta: { status: "connected", account: "Northlight Growth", user: "Malik Sannie", usedBy: ["Strategist"] },
             }}
           />

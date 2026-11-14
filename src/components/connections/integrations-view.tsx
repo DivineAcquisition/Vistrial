@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarIcon, Search, Store, type LucideIcon } from "@/components/icons";
+import { Store, type LucideIcon } from "@/components/icons";
 import { useState } from "react";
 
 import { PlatformLogo } from "@/components/marketing/platform-logo";
@@ -46,8 +46,10 @@ const LOGO: Record<string, string> = {
   google_calendar: "google-calendar",
   fathom: "fathom",
   fireflies: "fireflies",
+  calendly: "calendly",
+  search_console: "google-search-console",
 };
-const ICON: Record<string, LucideIcon> = { search_console: Search, business_profile: Store, calendly: CalendarIcon };
+const ICON: Record<string, LucideIcon> = { business_profile: Store };
 
 /** What came back from a provider's sign-in, in plain words. */
 export const OUTCOME_WORDS: Record<string, { tone: "good" | "warning"; words: (name: string) => string }> = {
@@ -62,8 +64,8 @@ export const OUTCOME_WORDS: Record<string, { tone: "good" | "warning"; words: (n
 function Mark({ provider }: { provider: IntegrationView }) {
   const Icon = ICON[provider.key];
   return (
-    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
-      {LOGO[provider.key] ? <PlatformLogo id={LOGO[provider.key]} size={18} decorative /> : Icon ? <Icon aria-hidden className="size-4 text-muted-foreground" /> : null}
+    <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border border-border", LOGO[provider.key] ? "bg-white" : "bg-background")}>
+      {LOGO[provider.key] ? <PlatformLogo id={LOGO[provider.key]} size={22} decorative /> : Icon ? <Icon aria-hidden className="size-4 text-muted-foreground" /> : null}
     </span>
   );
 }

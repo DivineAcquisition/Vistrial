@@ -23,8 +23,8 @@ import {
   Wallet,
   Zap,
 } from "@/components/icons";
-import { MetaLogo } from "@/components/connections/meta-logo";
-import { ToolMark } from "@/components/connectors/tool-mark";
+import { ConnectionLogo } from "@/components/connections/connection-logo";
+import { PlatformLogo } from "@/components/marketing/platform-logo";
 import {
   CardLink,
   ReadOnlyNote,
@@ -763,7 +763,7 @@ export function DataSection({ role, data }: { role: Role; data: DataData }) {
     <div className="grid gap-4">
       <SectionTitle
         title="Data"
-        description="The accounts and files agents may read. Everything is read-only: nothing is posted, published or spent."
+        description="The accounts and files agents may read. Nothing is posted, published or spent, and a change in HighLevel waits for a person to approve it."
       />
       <ReadOnlyNote role={role} />
       <StatusCard
@@ -778,13 +778,13 @@ export function DataSection({ role, data }: { role: Role; data: DataData }) {
         }
         affects="Agents use it only when you grant them. Read-only."
         footer={<CardLink href="/app/connections/meta">{meta.status === "none" ? "Connect" : "Manage"}</CardLink>}
-      >
-        <MetaLogo className="h-4 w-fit opacity-80" />
-      </StatusCard>
+        media={<ConnectionLogo id="meta" size={36} className="rounded-xl" />}
+      />
       {data.crm ? <CrmCard crm={data.crm} /> : null}
       <StatusCard
         icon={FileSpreadsheet}
         title="Results files"
+        media={<ConnectionLogo id="results" size={36} className="rounded-xl" />}
         status={data.files > 0 ? "In use" : "No files"}
         tone={data.files > 0 ? "good" : "neutral"}
         sentence={
@@ -800,7 +800,18 @@ export function DataSection({ role, data }: { role: Role; data: DataData }) {
         sentence="More connections: Google, your calendar and your call notes. Each one shows Not set up yet until Vistrial has finished setting it up."
         affects="An Owner connects and disconnects. Read-only."
         footer={<CardLink href="/app/connections/integrations">Open</CardLink>}
-      />
+      >
+        <div className="flex flex-wrap items-center gap-2" aria-hidden>
+          {["google_calendar", "calendly", "fathom", "fireflies"].map((id) => (
+            <ConnectionLogo key={id} id={id} size={28} />
+          ))}
+          {["google-ads", "google-analytics", "google-search-console"].map((id) => (
+            <span key={id} className="inline-flex size-7 items-center justify-center rounded-lg border border-border bg-white shadow-xs">
+              <PlatformLogo id={id} size={17} decorative />
+            </span>
+          ))}
+        </div>
+      </StatusCard>
       <StatusCard
         icon={ShieldCheck}
         title="Browser access"
@@ -830,11 +841,10 @@ function CrmCard({ crm }: { crm: NonNullable<DataData["crm"]> }) {
           ? "HighLevel: not connected. Connect a sub-account for your organization or each client so Vistrial can read pipelines, won deals, lead sources and lead activity."
           : `HighLevel: ${total} ${total === 1 ? "sub-account" : "sub-accounts"} connected (${where})${crm.reconnect > 0 ? `, ${crm.reconnect} needing a reconnect` : ""}.`
       }
-      affects="An Owner connects and disconnects. Read-only: nothing in HighLevel is changed and no lead is contacted."
+      affects="An Owner connects and disconnects. Vistrial reads first; it changes HighLevel only when an Owner allows it and a person approves each change. Messaging leads has its own Owner switch."
       footer={<CardLink href="/app/connections/highlevel">{total === 0 ? "Connect" : "Manage"}</CardLink>}
-    >
-      <ToolMark id="gohighlevel" size={20} className="opacity-90" />
-    </StatusCard>
+      media={<ConnectionLogo id="highlevel" size={36} className="rounded-xl" />}
+    />
   );
 }
 

@@ -64,6 +64,8 @@ describe("agent pages", () => {
   it("public words name no model, no credits and no score", () => {
     for (const page of AGENT_PAGES) {
       expect(words(page)).not.toMatch(/\b(Claude|GPT|Gemini|Opus|Sonnet|credits?|lead score)\b/i);
+      // The app's roles are Owner, Admin, Member and Viewer (convex/lib/roles.ts).
+      expect(words(page)).not.toMatch(/\bManager\b/);
     }
   });
 });

@@ -93,12 +93,12 @@ describe("the first package", () => {
     delete process.env.AUTUMN_SECRET_KEY;
   });
 
-  it("starts when onboarding is confirmed: research free, under its share, and nothing to tear down without a website", async () => {
+  it("starts when onboarding is confirmed: research free under its share, and with no website a landing page waits for the offer ideas", async () => {
     const t = makeTester();
     process.env.AUTUMN_SECRET_KEY = "am_sk_test";
     const { me, workspaceId, pkg } = await onboarded(t, "pkg-1");
     expect((await me.query(api.onboarding.mine, {})).stage).toBe("package");
-    expect(pkg).toMatchObject({ status: "running", limitCents: PACKAGE_LIMIT_CENTS, research: { state: "running", attempts: 1 }, teardown: { state: "skipped", reason: "no_pages" }, offers: { state: "waiting" } });
+    expect(pkg).toMatchObject({ status: "running", limitCents: PACKAGE_LIMIT_CENTS, research: { state: "running", attempts: 1 }, teardown: { state: "waiting" }, offers: { state: "waiting" }, pagePart: "landingPage" });
     const run = await t.run((ctx) => ctx.db.get(pkg.research.runId!));
     expect(run).toMatchObject({ free: true, packageId: pkg._id, capCentsOverride: 700, skillSlug: "market-intelligence", mode: "thorough", status: "queued" });
     const project = await t.run((ctx) => ctx.db.get(pkg.research.projectId!));
@@ -134,8 +134,11 @@ describe("the first package", () => {
     await finishRun(t, offersRun!._id, { kind: "offerAnalysis", costCents: 90, body: analysis });
     await t.mutation(internal.firstPackage.advance, { packageId: pkg._id });
     now = (await t.run((ctx) => ctx.db.get(pkg._id)))!;
-    expect(now).toMatchObject({ status: "done", offers: { state: "done", spentCents: 90 } });
+    expect(now).toMatchObject({ status: "running", offers: { state: "done", spentCents: 90 }, teardown: { state: "running", attempts: 1 } });
     expect(now.emailedAt).toBeGreaterThan(0);
+    // With no website, the landing page is built after the offer ideas, selling the one to win customers.
+    const pageRun = await t.run((ctx) => ctx.db.get(now.teardown.runId!));
+    expect(pageRun).toMatchObject({ skillSlug: "landing-page-build", inputRef: `first-package:${pkg._id}`, capCentsOverride: 500, packageId: pkg._id });
 
     // The offer ideas may use their 300-cent share, though the skill's usual run cap is 150.
     expect((await t.run((ctx) => capsOfRun(ctx, offersRun!))).maxCostCentsPerRun).toBe(300);
@@ -150,13 +153,18 @@ describe("the first package", () => {
     });
     const email = await t.query(internal.emailReminders.packageToAnnounce, { packageId: pkg._id });
     expect(email?.recipients.map((row) => row.userId).sort()).toEqual(["admin-1", "pkg-2"]);
-    expect(email).toMatchObject({ answer: REPORT.summary, researchNeedsReview: false, teardown: "none", reportAssetId: researchAsset });
+    expect(email).toMatchObject({ answer: REPORT.summary, researchNeedsReview: false, teardown: "running", pagePart: "landingPage", reportAssetId: researchAsset });
     expect(email?.findings[0]).toEqual({ text: "Four of six competitors lead with a monthly retainer.", basis: "observed" });
     expect(email?.ideas.map((row) => [row.focus, row.title])).toEqual([
       ["acquisition", "Booked-call guarantee"],
       ["retention", "Quarterly growth review"],
     ]);
 
+    expect((await t.run((ctx) => ctx.db.query("briefingItems").collect())).filter((row) => row.title === "Your first package is ready")).toHaveLength(0);
+    const pageAsset = await finishRun(t, pageRun!._id, { kind: "landingPage", costCents: 120 });
+    await t.mutation(internal.firstPackage.advance, { packageId: pkg._id });
+    expect(await t.run((ctx) => ctx.db.get(pkg._id))).toMatchObject({ status: "done", teardown: { state: "done", assetId: pageAsset } });
+    expect((await t.run((ctx) => ctx.db.get(pageAsset!)))?.status).toBe("approved");
     const posts = await t.run((ctx) => ctx.db.query("briefingItems").collect());
     expect(posts.filter((row) => row.title === "Your first package is ready")).toHaveLength(1);
     // A further look changes nothing: the email and the post are not repeated.
@@ -167,8 +175,9 @@ describe("the first package", () => {
     expect(shown?.parts.map((row) => [row.key, row.state])).toEqual([
       ["research", "done"],
       ["offers", "done"],
-      ["teardown", "skipped"],
+      ["teardown", "done"],
     ]);
+    expect(shown?.parts[2].title).toBe("Landing page");
   });
 
   it("leaves research that failed its checks for review, writes no offer ideas on it, and still emails", async () => {
@@ -177,7 +186,7 @@ describe("the first package", () => {
     const assetId = await finishRun(t, pkg.research.runId!, { kind: "marketReport", status: "needsReview", costCents: 250, body: REPORT });
     await t.mutation(internal.firstPackage.advance, { packageId: pkg._id });
     const now = (await t.run((ctx) => ctx.db.get(pkg._id)))!;
-    expect(now).toMatchObject({ status: "done", research: { state: "needsReview" }, offers: { state: "skipped", reason: "no_research" } });
+    expect(now).toMatchObject({ status: "running", research: { state: "needsReview" }, offers: { state: "skipped", reason: "no_research" }, teardown: { state: "running" } });
     expect((await t.run((ctx) => ctx.db.get(assetId!)))?.status).toBe("needsReview");
     expect(now.emailedAt).toBeGreaterThan(0);
     expect(await t.query(internal.emailReminders.packageToAnnounce, { packageId: pkg._id })).toMatchObject({ researchNeedsReview: true, ideas: [] });
@@ -194,7 +203,7 @@ describe("the first package", () => {
     await finishRun(t, now.research.runId!, { costCents: 100 });
     await t.mutation(internal.firstPackage.advance, { packageId: pkg._id });
     const after = (await t.run((ctx) => ctx.db.get(pkg._id)))!;
-    expect(after).toMatchObject({ status: "done", research: { state: "failed", spentCents: 220 }, offers: { state: "skipped" } });
+    expect(after).toMatchObject({ research: { state: "failed", spentCents: 220 }, offers: { state: "skipped" }, teardown: { state: "running" } });
     expect(capFor(after, "research")).toBe(480);
   });
 

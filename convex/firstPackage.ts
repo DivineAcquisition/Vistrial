@@ -3,7 +3,8 @@
  *   (a) market research on the business's market (Market Intelligence), grounded in what onboarding captured;
  *   (b) two offer ideas, one to win customers and one to keep them (Offer Intelligence, first-package mode),
  *       built on the approved research and the business's own offers;
- *   (c) a teardown of up to five of the business's own pages (Landing Page Teardown, own-site mode).
+ *   (c) a teardown of up to five of the business's own pages (Landing Page Teardown, own-site mode), or, for a
+ *       business with no website, a landing page built for it (Landing Page Build), after the offer ideas.
  * Research and teardown start together; the offer ideas follow the approved research. Each part arrives
  * approved when its own checks pass, and as "needs your review" when they do not. The Owner is emailed when
  * the research and offer ideas are done. docs/rebuild/onboarding-and-first-package.md, part 3.
@@ -76,7 +77,11 @@ export async function startPackage(ctx: MutationCtx, args: { workspaceId: Id<"wo
   const workspace = await ctx.db.get(args.workspaceId);
   const accountId = workspace?.accountId;
   const now = Date.now();
-  const base = { workspaceId: args.workspaceId, ...(accountId ? { accountId } : {}), ownerId: args.ownerId, limitCents: PACKAGE_LIMIT_CENTS, research: waiting(), offers: waiting(), teardown: waiting(), createdAt: now };
+  // No website read (none given, or none could be read): the page part builds a landing page instead.
+  const row = await onboardingOf(ctx, args.workspaceId);
+  const capture = row?.captureId ? await ctx.db.get(row.captureId) : null;
+  const pagePart = capture && capture.pages.some((page) => page.read) ? ("teardown" as const) : ("landingPage" as const);
+  const base = { workspaceId: args.workspaceId, pagePart, ...(accountId ? { accountId } : {}), ownerId: args.ownerId, limitCents: PACKAGE_LIMIT_CENTS, research: waiting(), offers: waiting(), teardown: waiting(), createdAt: now };
   if (accountId) {
     const mine = await ctx.db
       .query("firstPackages")
@@ -166,7 +171,13 @@ async function startPart(ctx: MutationCtx, pkg: Doc<"firstPackages">, key: PartK
     return { ...prior, state: "running", runId, attempts: prior.attempts + 1, reason: undefined };
   }
 
-  // The teardown: the pages chosen on Confirm, the home page first. None chosen (or no website): skipped.
+  // No website: a landing page built for the business, selling the offer idea to win customers.
+  if (pkg.pagePart === "landingPage") {
+    const runId = await startRunFor(ctx, { ...common, skillSlug: "landing-page-build", inputRef: `${FIRST_PACKAGE_REF}${pkg._id}` });
+    return { ...prior, state: "running", runId, attempts: prior.attempts + 1, reason: undefined };
+  }
+
+  // The teardown: the pages chosen on Confirm, the home page first. None chosen: skipped.
   const row = await onboardingOf(ctx, pkg.workspaceId);
   const capture = row?.captureId ? await ctx.db.get(row.captureId) : null;
   const chosen = (row?.teardownPages ?? []).map((id) => capture?.pages.find((page) => page.id === id && page.read)).filter((page): page is NonNullable<typeof page> => Boolean(page));
@@ -207,7 +218,8 @@ async function startPart(ctx: MutationCtx, pkg: Doc<"firstPackages">, key: PartK
 async function launch(ctx: MutationCtx, packageId: Id<"firstPackages">) {
   const pkg = (await ctx.db.get(packageId))!;
   const research = await startPart(ctx, pkg, "research");
-  const teardown = await startPart(ctx, { ...pkg, research }, "teardown");
+  // A landing page sells the offer idea, so it waits for the ideas; a teardown starts now.
+  const teardown = pkg.pagePart === "landingPage" ? pkg.teardown : await startPart(ctx, { ...pkg, research }, "teardown");
   await ctx.db.patch(packageId, { status: "running", research, teardown });
   await ctx.scheduler.runAfter(ADVANCE_MS, internal.firstPackage.advance, { packageId });
 }
@@ -260,7 +272,9 @@ export const advance = internalMutation({
     let offers = await check(ctx, { ...pkg, research, teardown }, "offers");
     // The offer ideas follow the approved research. Research that did not arrive approved means none.
     if (offers.state === "waiting" && settled(research)) offers = await startPart(ctx, { ...pkg, research, teardown }, "offers");
-    await ctx.db.patch(pkg._id, { research, teardown, offers });
+    let page = teardown;
+    if (page.state === "waiting" && pkg.pagePart === "landingPage" && settled(offers)) page = await startPart(ctx, { ...pkg, research, offers, teardown }, "teardown");
+    await ctx.db.patch(pkg._id, { research, teardown: page, offers });
     pkg = (await ctx.db.get(pkg._id))!;
 
     if (!pkg.emailedAt && settled(pkg.research) && settled(pkg.offers)) {
@@ -274,7 +288,7 @@ export const advance = internalMutation({
         kind: "finished",
         agentSlug: GROWTH_ARCHITECT,
         title: "Your first package is ready",
-        body: "A market report, two offer ideas and a page breakdown of your own pages, from Strategist. On Vistrial: it used none of your credits.",
+        body: pkg.pagePart === "landingPage" ? "A market report, two offer ideas and your first landing page, from Strategist. On Vistrial: it used none of your credits." : "A market report, two offer ideas and a page breakdown of your own pages, from Strategist. On Vistrial: it used none of your credits.",
         ref: { table: "firstPackages", id: pkg._id },
         key: `first-package:${pkg._id}`,
       });
@@ -316,9 +330,11 @@ const PART_WORDS: Record<PartKey, { title: string; gives: string }> = {
   offers: { title: "Offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
   teardown: { title: "Page breakdown", gives: "Up to five of your own pages against the landing page framework, with what to change." },
 };
+const LANDING_PAGE_WORDS = { title: "Landing page", gives: "A full page to the landing page framework, selling your offer idea, built from the research and what you told us. On the Pages tab." };
 
 export const REASON_WORDS: Record<string, string> = {
-  no_pages: "No pages of your own were read, so there was nothing to tear down.",
+  no_pages: "No pages of your own were chosen, so there was nothing to tear down.",
+  no_offer: "Nothing on record says what the business sells, so no landing page was written.",
   no_research: "The research did not arrive approved, so the offer ideas were not written. Review the research, then ask Strategist for offer ideas.",
   cap: "It reached the free package's limit before finishing.",
   failed: "It stopped without a report.",
@@ -353,7 +369,7 @@ export const mine = workspaceQuery({
       const progress = part.state === "running" ? await phaseOf(ctx, part.runId) : null;
       parts.push({
         key,
-        ...PART_WORDS[key],
+        ...(key === "teardown" && pkg.pagePart === "landingPage" ? LANDING_PAGE_WORDS : PART_WORDS[key]),
         state: part.state,
         attempts: part.attempts,
         phase: progress?.phase ?? null,
@@ -363,7 +379,7 @@ export const mine = workspaceQuery({
         reason: part.reason ? (REASON_WORDS[part.reason] ?? null) : null,
       });
     }
-    return { id: pkg._id, status: pkg.status, reason: pkg.reason ? (REASON_WORDS[pkg.reason] ?? null) : null, parts, emailed: Boolean(pkg.emailedAt), dismissed: Boolean(pkg.dismissedAt), createdAt: pkg.createdAt, finishedAt: pkg.finishedAt ?? null };
+    return { id: pkg._id, pagePart: pkg.pagePart ?? "teardown", status: pkg.status, reason: pkg.reason ? (REASON_WORDS[pkg.reason] ?? null) : null, parts, emailed: Boolean(pkg.emailedAt), dismissed: Boolean(pkg.dismissedAt), createdAt: pkg.createdAt, finishedAt: pkg.finishedAt ?? null };
   },
 });
 

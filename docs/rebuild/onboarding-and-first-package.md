@@ -460,6 +460,15 @@ still switches it off (open question 3).
    when checks pass, Home and Briefing, the email, tests, dev stories (`src/app/dev/first-package`),
    screenshots.
 
+5. **No website: the first landing page.** A new skill, Landing Page Build: everything on record about the
+   business (confirmed profile and facts, social profiles given on Confirm, stated offers, the approved
+   research's claims, a connected Meta account's totals, the offer idea to win customers) becomes one page in
+   the framework's eleven sections, every claim citing the item it rests on. The framework's rules are code
+   checks (required sections, pains matched one for one, FAQ topics, verb-first buttons, no figure nothing on
+   record states, no "proven" claims, a short client part); Results is dropped when nothing on record is
+   proof. It is the package's page part when no website was read, runs after the offer ideas, and shows on
+   Strategist's Pages tab. New asset kind `landingPage`; `firstPackages.pagePart`.
+
 Sample data in stories and tests: a marketing agency and a business coach (made-up names and sites).
 
 **What the tests cannot show:** no test calls a real model or a real website. Model answers are scripted,

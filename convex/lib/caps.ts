@@ -47,6 +47,13 @@ export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
     maxSteps: 40,
     maxDurationMs: 1_200_000,
   },
+  /** One long write of a whole landing page over what is on record, plus one revision in reserve. No web research. */
+  "landing-page-build": {
+    maxCostCentsPerRun: 200,
+    maxCostCentsPerDay: 1000,
+    maxSteps: 12,
+    maxDurationMs: 900_000,
+  },
   /** One short model call over the organization's own records, to choose among open report items. No web research. */
   "task-proposer": {
     maxCostCentsPerRun: 30,

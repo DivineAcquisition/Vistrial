@@ -10,8 +10,9 @@ context; the Dealmaker agent (sales conversion) uses it next.
 **Reading** needs no approval and is described in sections 1 to 7. **Acting** is section 2A: an agent (or a
 person) *proposes* a change; nothing changes in HighLevel until an Owner or Admin approves that one change;
 anything that touches money or messages a lead is a separate Owner approval with a typed word; every action
-is recorded with who approved it; and an Owner can switch acting off entirely. Acting is **off by default**
-for every connection, and messaging leads has its own switch, also off.
+is recorded with who approved it; and an Owner can switch acting off for one connection or for the whole
+organization. Acting is **off by default** for every connection, and messaging leads has its own switch, also
+off, checked against a fresh read of the lead (opt-out, local time) at the moment each message is sent.
 
 This page is the plan, written from HighLevel's official documentation before any code. Sources are at the
 end; where the documentation is silent or unclear, it says so under **Unproven until a real app exists**.
@@ -54,16 +55,17 @@ Acting (section 2A), only for the actions built first:
 |---|---|---|
 | Move a deal to another stage; mark it won, lost or abandoned, or reopen it | `PUT /opportunities/{id}`, `PUT /opportunities/{id}/status` | `opportunities.write` |
 | Add or remove a tag; add a note; create a task on a lead | `POST`/`DELETE /contacts/{id}/tags`, `POST /contacts/{id}/notes`, `POST /contacts/{id}/tasks` | `contacts.write` |
+| Text or email a lead (behind the messaging switch) | `POST /conversations/messages`, after a fresh `GET /contacts/{id}` (`contacts.readonly`) | `conversations/message.write` |
 
-**Requested, in total (9):**
-`locations.readonly opportunities.readonly contacts.readonly conversations.readonly conversations/message.readonly calendars.readonly calendars/events.readonly opportunities.write contacts.write`
+**Requested, in total (10):**
+`locations.readonly opportunities.readonly contacts.readonly conversations.readonly conversations/message.readonly calendars.readonly calendars/events.readonly opportunities.write contacts.write conversations/message.write`
 
 HighLevel's scopes are coarse: `contacts.write` also allows creating, updating and deleting contacts, and
 `opportunities.write` deleting deals. Vistrial's code calls only the endpoints in the table above: every
 write goes through one function with an allow-list of method and path, and a test checks nothing else is
-sent. Scopes for the later actions (`calendars/events.write`, `conversations/message.write`) are **not**
-requested until those actions are built, and adding them means every connected sub-account must approve
-again.
+sent. `calendars/events.write` (appointments) is **not** requested until appointments are built; adding a
+scope later means every connected sub-account must approve again, which is why messaging is built (and off)
+now rather than later.
 
 Considered and **not** requested: `users.readonly` (team names; deals keep the HighLevel user id only),
 `payments/orders.readonly` and `invoices.readonly` (won deals' value is the revenue figure Dealmaker needs;
@@ -81,6 +83,8 @@ Designed the way Vistrial already handles changes in someone's account (`docs/re
 
 1. **Off until an Owner turns it on**, per connection: *Let Vistrial act in this HighLevel sub-account*.
    Turning it off declines everything waiting at once; nothing approved earlier but not yet carried out runs.
+   An Owner can also stop **every** CRM action across the organization with one switch (*Allow CRM actions
+   anywhere in this organization*), whatever each connection allows.
 2. **Propose, then approve.** An agent (or a Member) proposes one action with a reason. It waits in the
    organization's one approvals queue (the Briefing, the Tasks board and the HighLevel page all show it).
    Nothing is sent to HighLevel until an **Owner or Admin approves that one action**. The next one asks again.
@@ -91,7 +95,8 @@ Designed the way Vistrial already handles changes in someone's account (`docs/re
    workflows or billing; acting in a sub-account other than the connected one; acting on a lead or deal
    Vistrial has not read from that sub-account (an agent cannot invent an id).
 5. **Silence approves nothing.** A proposal not decided within 24 hours expires.
-6. **Once, and recorded.** An approved action is carried out once. Each one keeps: what, on which lead or
+6. **Once, and recorded; a failure is reported, never retried.** A failed action posts an alert to the
+   Briefing saying what failed and why. An approved action is carried out once. Each one keeps: what, on which lead or
    deal, the agent's reason, who proposed it, who approved or declined it and when, what HighLevel answered
    (a short code, never its words), and what it was before (so it can be undone). The approval is also in
    the audit log. The record is kept while the connection exists.
@@ -117,14 +122,29 @@ Designed the way Vistrial already handles changes in someone's account (`docs/re
 | 8 | Create a deal (opportunity) | `opportunities.write` | No (deleting is never done) | Owner or Admin | Later |
 | 9 | Create or update a lead's details | `contacts.write` | Update: yes, old fields recorded. Create: no | Owner or Admin | Later |
 | 10 | Book, reschedule or cancel an appointment | `calendars/events.write` | Book: cancel it (which notifies the lead). Reschedule: move back | Book with `toNotify: false`: Owner or Admin. Reschedule or cancel tells the lead: **Owner, `SEND`** | Later, after messaging checks exist |
-| 11 | Send an SMS, email or other message to a lead | `conversations/message.write` | **No.** A sent message cannot be unsent | **Owner, `SEND`, each message**, behind the messaging switch | Later, last |
+| 11 | Send an SMS or email to a lead | `conversations/message.write` | **No.** A sent message cannot be unsent | **Owner, `SEND`, each message**, behind the messaging switch | **First** (off by default) |
 | — | Delete a contact, deal, note, task or appointment | `contacts.write`, `opportunities.write`, `calendars/events.write` | No | **Never built** | Never |
 
-### Messaging leads (designed, not built)
+### Messaging leads (built, off by default)
 
-Messaging stays behind its **own switch, off by default, Owner only**, separate from the acting switch, and
-`conversations/message.write` is not requested until it is built. Before any message is sent, every check
-below must pass at that moment, in code; a failure blocks the message and says which check failed:
+Messaging is behind its **own switch, off by default, Owner only**, separate from the acting switch. Turning
+it on needs acting on, and the Owner ticking a confirmation that the business has its leads' consent to be
+texted and emailed; who confirmed and when is kept and written into every message's record. **The customer is
+responsible for consent**: Vistrial cannot see consent records. Each message needs the **Owner's typed
+`SEND`**. Just before sending, Vistrial reads the lead **fresh** from HighLevel (`GET /contacts/{id}`), and the
+send is refused, recorded and reported in the Briefing if any of these fail:
+
+| Check | Built |
+|---|---|
+| Do Not Disturb (`dnd`) or DND on the channel (`dndSettings.SMS` / `.Email`, anything but `inactive`) | Yes: refused as `opted_out` |
+| The lead has a phone number (text) or email address (email) | Yes: `no_address` |
+| **Quiet hours**: nothing between **8 pm and 8 am** in the lead's own time zone (the contact's, else the sub-account's) | Yes: `quiet_hours`; no known zone is refused as `no_timezone` |
+| At most one message from Vistrial to the same lead in 24 hours | Yes: `too_soon` |
+| The record: DND state, time zone, local hour, consent basis and result, kept on the action | Yes |
+
+Laws these address: the **TCPA** (consent for automated texts, the 8 am to 9 pm calling window, which the
+8 pm end is stricter than; some states such as Florida and Oklahoma end at 8 pm) and **CAN-SPAM** for email
+(the business's HighLevel email adds the unsubscribe link and postal address). Further design, not built:
 
 - **Consent.** US texting law (TCPA) needs prior express consent for informational texts and prior express
   *written* consent for marketing texts sent with automated tools. Vistrial cannot see consent records, so:
@@ -147,9 +167,11 @@ below must pass at that moment, in code; a failure blocks the message and says w
 
 ### What is built first
 
-Actions 1 to 6, the acting switch, the approval flow (through the shared approvals queue, with the typed
-word for 6), the action record with Undo for 1, 2, 3 and 6, the automations warning, and the write
-allow-list. The scopes requested grow by exactly `opportunities.write` and `contacts.write`. No agent
+Actions 1 to 6 and 11 (texts and emails, behind the messaging switch), the per-connection and organization
+switches, the approval flow (through the shared approvals queue and the Briefing, with the typed word for 6
+and 11), the action record with Undo for 1, 2, 3 and 6, the pre-send checks, Briefing alerts on failure, the
+automations warning, and the write allow-list. The scopes requested grow by exactly `opportunities.write`,
+`contacts.write` and `conversations/message.write`. No agent
 proposes actions yet; Dealmaker will, through an internal `propose` function. Owners, Admins and Members can
 propose from the HighLevel page, and the page shows what is waiting and what was done.
 
@@ -276,7 +298,8 @@ customer's processor, and that Vistrial may act in the connected CRM only when a
    Sub-account**. **Who can install: Both Agency & Sub-account** (an agency admin can still install on a
    sub-account). Distribution: not white-label only.
 3. **Advanced settings → Auth**:
-   - **Scopes**: exactly the nine in section 2 (seven read, `opportunities.write`, `contacts.write`).
+   - **Scopes**: exactly the ten in section 2 (seven read, `opportunities.write`, `contacts.write`,
+     `conversations/message.write`).
    - **Redirect URLs**: `https://<dev>.convex.site/crm/hl/callback` and
      `https://<prod>.convex.site/crm/hl/callback` (the same Convex hosts Meta uses:
      `calm-spider-678` for dev, `confident-meerkat-429` for production). No "highlevel" in the URL.
@@ -285,12 +308,14 @@ customer's processor, and that Vistrial may act in the connected CRM only when a
    `UNINSTALL` (and `INSTALL`, which Vistrial only acknowledges).
 5. **Listing** (only for Public): description: *"Vistrial reads your pipelines, deals, leads and their
    activity to help you sell. It changes something in your CRM (moving a deal, tagging a lead, adding a note
-   or task, marking a deal won or lost) only when a person on your team approves that change. It never
-   deletes anything and does not message your leads."* The nine permissions in plain words, privacy policy URL `https://vistrial.io/privacy` (after the privacy PR merges), terms URL,
+   or task, marking a deal won or lost) only when a person on your team approves that change. If you turn
+   messaging on, it can text or email a lead only after an Owner approves that one message, and never to a
+   lead who opted out or at night in their time. It never deletes anything."* The ten permissions in plain words, privacy policy URL `https://vistrial.io/privacy` (after the privacy PR merges), terms URL,
    support email, logo, screenshots, a short video of connecting and disconnecting.
 6. **Test**: install on your own test sub-account from the install link; connect from Vistrial on a test
    client; confirm the card fills; turn acting on, approve one stage move and one tag, check them in
-   HighLevel, undo both; disconnect; uninstall in HighLevel and confirm the webhook arrives.
+   HighLevel, undo both; turn messaging on and text your own test contact in daytime, then with DND on
+   (it must be refused); disconnect; uninstall in HighLevel and confirm the webhook arrives.
 7. **Submit for review** (Public): HighLevel reviews the listing, scopes and a working install. Answer
    reviewer questions on why each scope is needed (section 2's table is the answer).
 
@@ -327,7 +352,8 @@ Who can do what: an **Owner** connects and disconnects, and alone sees *What Vis
 step by step, and calls per day). **Owners and Admins** press *Read again*. Any member who may see the
 client sees the card's numbers; a Member not assigned to that client sees nothing of it. For acting: an
 **Owner** turns it on or off; Owners, Admins and Members **propose**; **Owners and Admins approve**, except a
-deal's outcome, which only an **Owner** approves by typing `VALUE`; a Viewer reads.
+deal's outcome and every message, which only an **Owner** approves by typing `VALUE` or `SEND`; only an
+Owner turns messaging on or stops every action for the organization; a Viewer reads.
 
 The onboarding slot:
 
@@ -364,6 +390,10 @@ It follows Convex live, so it switches to the connected numbers on its own after
 - Every write: the request bodies are taken from HighLevel's OpenAPI spec (`UpdateOpportunityDto`,
   `UpdateStatusDto`, `TagsDTO`, `NotesDTO`, `CreateTaskParams`) and have not been sent to a real sub-account.
 - Which HighLevel workflows a write triggers depends on each business's own setup and cannot be read.
+- The message body: HighLevel's spec lists `type`, `subType`, `contactId` and `status` as required for
+  `POST /conversations/messages`; Vistrial sends `type`, `contactId`, `message` (and `subject`, `html` for
+  email), as HighLevel's own examples do. The DND field shapes (`dnd`, `dndSettings.<channel>.status`) are
+  from HighLevel's contact schema.
 
 ## Sources
 

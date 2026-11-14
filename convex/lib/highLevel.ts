@@ -19,10 +19,11 @@ export const HL_READ_SCOPES = [
 ] as const;
 
 /**
- * What the actions built so far need (convex/lib/crmActions.ts): moving and closing deals, and tags, notes
- * and tasks on leads. Messaging and appointments are not built, so their write scopes are not asked for.
+ * What the actions built so far need (convex/lib/crmActions.ts): moving and closing deals; tags, notes and
+ * tasks on leads; and texting or emailing a lead, behind its own switch. Appointments are not built, so
+ * `calendars/events.write` is not asked for.
  */
-export const HL_WRITE_SCOPES = ["opportunities.write", "contacts.write"] as const;
+export const HL_WRITE_SCOPES = ["opportunities.write", "contacts.write", "conversations/message.write"] as const;
 
 export const HL_SCOPES = [...HL_READ_SCOPES, ...HL_WRITE_SCOPES] as const;
 

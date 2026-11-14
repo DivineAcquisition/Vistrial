@@ -11,7 +11,7 @@ import type { OfferComparison, OfferVersion } from "./types";
 
 export type { OfferContent };
 
-const ORIGIN_WORDS: Record<OfferVersion["origin"], string> = { person: "You edited", chat: "From your chat", analysis: "From an offer analysis" };
+const ORIGIN_WORDS: Record<OfferVersion["origin"], string> = { person: "You edited", chat: "From your chat", analysis: "From an offer analysis", site: "From your website" };
 
 function Missing({ text = "Not stated" }: { text?: string }) {
   return <span className="text-muted-foreground italic">{text}</span>;

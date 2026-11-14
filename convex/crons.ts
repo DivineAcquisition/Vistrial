@@ -70,4 +70,7 @@ crons.interval("weekly plan", { hours: 6 }, internal.planner.weekly, {});
  */
 crons.interval("monthly industry trends", { hours: 6 }, internal.planner.monthly, {});
 
+/** First packages that waited for the day's free budget: started as the budget allows. Hourly. */
+crons.interval("start waiting first packages", { hours: 1 }, internal.firstPackage.startWaiting, {});
+
 export default crons;

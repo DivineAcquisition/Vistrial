@@ -1,5 +1,6 @@
 "use client";
 
+import { FirstPackage } from "@/components/home/first-package";
 import { AgentAvatar } from "@/components/live/agent-avatar";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -156,7 +157,10 @@ export function HomeView({
   recordOutcome,
   onPickClient,
   picked,
+  top,
 }: {
+  /** Shown above everything: the first package, while it is new. */
+  top?: React.ReactNode;
   chat: React.ReactNode;
   data: Dashboard | undefined;
   agentName: (slug: string) => string;
@@ -168,6 +172,7 @@ export function HomeView({
 }) {
   return (
     <div className="mx-auto grid w-full max-w-5xl min-w-0 grid-cols-[minmax(0,1fr)] gap-8">
+      {top}
       {/* The chat box is the page's centre: it sits in the middle of the first screen, never against the top edge. */}
       <section aria-labelledby="home-heading" className="mx-auto grid w-full max-w-3xl content-center gap-5 py-10 sm:min-h-[46svh] sm:py-16">
         <h1 id="home-heading" className="text-center font-heading text-2xl text-balance text-foreground sm:text-3xl">
@@ -294,6 +299,7 @@ export function Home() {
   if (!shell || !workspaceId) return null;
   return (
     <HomeView
+      top={<FirstPackage workspaceId={workspaceId} />}
       chat={<StartChat size="hero" placeholder="Ask in your own words: who are we losing to, which offer to lead with, why enquiries dropped…" />}
       data={data}
       agentName={(slug) => shell.agents.find((row) => row.slug === slug)?.name ?? "An agent"}

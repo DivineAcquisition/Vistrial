@@ -159,8 +159,12 @@ export function workItems(rows: UsageRow[]): WorkItem[] {
     if (row.model && !item.models.includes(row.model)) item.models.push(row.model);
     item.title ??= row.title;
   }
-  // Newest first; work charged in the same millisecond goes larger first, so the order never depends on the read.
-  return [...items.values()].sort((a, b) => b.lastAt - a.lastAt || b.credits - a.credits || a.ref.localeCompare(b.ref));
+  // Newest first. Charges can land in the same millisecond, so ties fall back to the later start, then to a
+  // fixed key, and the list never changes order between two reads of the same rows.
+  const keyOf = (item: WorkItem) => `${item.workspaceId}:${item.source}:${item.ref}`;
+  return [...items.values()].sort(
+    (a, b) => b.lastAt - a.lastAt || b.firstAt - a.firstAt || (keyOf(a) < keyOf(b) ? -1 : keyOf(a) > keyOf(b) ? 1 : 0),
+  );
 }
 
 /** The value below which `share` of the sorted numbers fall, read between neighbours. */

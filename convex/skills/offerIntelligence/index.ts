@@ -3,6 +3,7 @@ import type { SkillContext, SkillModule, SkillStep } from "../types";
 import { latest, latestDone, recordOf } from "../marketIntelligence/records";
 import { CHANNEL_METRICS, CHANNEL_TEMPERATURE, CHANNEL_WORDS, CHANNELS, EVIDENCE_PLATFORMS } from "./channels";
 import { CHECK_NAMES } from "./checks";
+import { firstPackageRules } from "./firstPackage";
 import { PLAYBOOK, credit } from "./playbook";
 import { NO_CONTEXT_WORDS, OFFER_SCHEMA, PHASE, QUESTIONS, SKILL_SLUG, type ChecksRecord, type OfferContext } from "./shapes";
 
@@ -130,7 +131,7 @@ export const offerIntelligence: SkillModule = {
         workKind: "write",
         system: SYSTEM,
         outputSchema: OFFER_SCHEMA,
-        input: [...RULES, "", businessContext(context), "", channelBrief(context), "", playbookBrief(), "", evidence(context)].join("\n"),
+        input: [...RULES, ...(context.firstPackage ? ["", ...firstPackageRules(context.firstPackage.offers)] : []), "", businessContext(context), "", channelBrief(context), "", playbookBrief(), "", evidence(context)].join("\n"),
       };
     }
 
@@ -154,6 +155,7 @@ export const offerIntelligence: SkillModule = {
           "Use only the approved research and the business's own results below. Do not add a competitor offer or a change without support in them.",
           "",
           ...RULES,
+          ...(context.firstPackage ? ["", ...firstPackageRules(context.firstPackage.offers)] : []),
           "",
           wrapUntrusted(`Draft: ${draft}`),
           "",

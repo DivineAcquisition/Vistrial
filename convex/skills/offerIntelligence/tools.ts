@@ -1,3 +1,4 @@
+import { isFirstPackageRef } from "./firstPackage";
 import { internal } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
@@ -62,6 +63,25 @@ async function analysisOf(ctx: MutationCtx, run: Doc<"agentRuns">, steps: Step[]
 
 async function checksOf(ctx: MutationCtx, run: Doc<"agentRuns">, step: Step | null): Promise<ChecksRecord | null> {
   return step ? ((await recordOf(ctx.db, run, step._id, "checks")) as ChecksRecord | null) : null;
+}
+
+/** The organization's own offer cards, current versions: what the business states it sells, and at what price. */
+async function statedOffers(ctx: MutationCtx, run: Doc<"agentRuns">) {
+  const cards = await ctx.db
+    .query("offerCards")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", run.workspaceId))
+    .order("desc")
+    .take(50);
+  const out: { id: string; name: string; price: string }[] = [];
+  for (const card of cards) {
+    if (card.archived || (card.clientId ?? null) !== (run.clientId ?? null)) continue;
+    const version = await ctx.db
+      .query("offerCardVersions")
+      .withIndex("by_workspace_card", (q) => q.eq("workspaceId", run.workspaceId).eq("cardId", card._id).eq("version", card.currentVersion))
+      .unique();
+    if (version) out.push({ id: card._id, name: version.name, price: version.price });
+  }
+  return out.slice(0, 8);
 }
 
 /**
@@ -133,7 +153,10 @@ const contextRead: MutationTool = async (ctx, run) => {
   if (gaps.includes("offerDetails")) assumptions.push("What the business sells is not on record, so the current offer reads \"Not enough data\".");
   else if (!profile?.priceNotes.trim() && !offerDetails) assumptions.push("No price is on record, so the price reads \"Not stated\".");
 
+  // The first package's mode: the offers the business states, and no question that would wait on a person.
+  const firstPackage = isFirstPackageRef(run.inputRef) ? { offers: await statedOffers(ctx, run) } : undefined;
   const context: OfferContext = {
+    ...(firstPackage ? { firstPackage } : {}),
     reports,
     researchSources,
     ownSources,
@@ -154,12 +177,12 @@ const contextRead: MutationTool = async (ctx, run) => {
     channels,
     decisions: business.decisions.map((row) => ({ id: row._id, text: describeDecision(row), tried: Boolean(row.outcome) })),
     offerDetails,
-    gaps,
+    gaps: firstPackage ? [] : gaps,
     known: business.known,
-    missing: [...gaps.map((key) => ({ key, blocking: true })), ...business.missing],
+    missing: [...gaps.map((key) => ({ key, blocking: !firstPackage })), ...business.missing],
     assumptions,
   };
-  return { resultCode: gaps.length ? "missing_context" : "ok", resultId: String(reports.length), artifact: record("context", context) };
+  return { resultCode: gaps.length && !firstPackage ? "missing_context" : "ok", resultId: String(reports.length), artifact: record("context", context) };
 };
 
 /** Validate: the completion checks, in code. */

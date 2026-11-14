@@ -17,6 +17,7 @@ import { PLATFORM_LABEL, shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { BRAND_HREF } from "@/lib/shell/journey";
 import { BRAND_KIND_WORDS } from "../../../convex/lib/brandKits";
 import { ATTEST_WORDS, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, readReferenceLink } from "../../../convex/lib/referenceShapes";
 
@@ -196,8 +197,8 @@ function StartForm({ base, options, references, referenceActions, initialSource,
       <Panel as="section" className="grid justify-items-start gap-3 p-4 sm:p-6">
         <h2 className="font-heading text-base text-card-foreground">Add a brand first</h2>
         <p className="text-sm text-muted-foreground">Every creative is made for one brand and takes its voice and rules from the brand kit. Add your own brand, then come back.</p>
-        <Link href={`${base}/work/brands`} className="text-sm text-primary underline-offset-4 hover:underline">
-          Go to Brands
+        <Link href={BRAND_HREF} className="text-sm text-primary underline-offset-4 hover:underline">
+          Go to Settings › Brand
         </Link>
       </Panel>
     );
@@ -224,7 +225,7 @@ function StartForm({ base, options, references, referenceActions, initialSource,
         {kit && kit.gaps.length > 0 ? (
           <p className="text-xs text-muted-foreground">
             This brand kit is still missing {kit.gaps.join(", ")}. The copy will lean on defaults for those.{" "}
-            <Link href={`${base}/work/brands`} className="text-primary underline-offset-4 hover:underline">
+            <Link href={BRAND_HREF} className="text-primary underline-offset-4 hover:underline">
               Finish the kit
             </Link>
           </p>

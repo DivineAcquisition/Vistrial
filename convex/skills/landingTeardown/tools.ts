@@ -13,7 +13,7 @@ import { runChecks } from "./checks";
 import { orderOf, pageFacts, patternTable, sanitise } from "./compute";
 import { SECTION_BY_KEY } from "./framework";
 import { renderTeardown } from "./render";
-import { HONEST_LIMIT, PHASE, analysePhase, parseJson, readAnalysis, readIndustry, type ChecksRecord, type ContextRecord, type IndustryRead, type PagesRecord, type TeardownPage, type TeardownRecord, type UnreadPage } from "./shapes";
+import { HONEST_LIMIT, PHASE, analysePhase, parseJson, readAnalysis, readIndustry, type ChecksRecord, type ContextRecord, type IndustryRead, type PagesRecord, type TeardownPage, type TeardownRecord, type UnreadPage, isOwnPage } from "./shapes";
 
 type Step = Doc<"runSteps">;
 type Db = QueryCtx["db"] | SkillContext["db"];
@@ -81,6 +81,7 @@ const context: MutationTool = async (ctx, run) => {
     urls: request.urls,
     ownUrl: request.ownUrl ?? null,
     find: request.find,
+    ...(request.mode === "ownSite" ? { ownSite: true } : {}),
     profile: profile ? { offer: profile.offer, audience: profile.audience } : null,
     figures: figures.map((row) => ({ label: row.label, period: row.dateStart && row.dateStop ? `${row.dateStart} to ${row.dateStop}` : "", spend: row.spend ?? null, conversions: row.conversions ?? null, revenue: row.revenue ?? null })),
     // Only changes to a page that were tried and have an outcome: what this business has itself measured.
@@ -110,7 +111,7 @@ const apply: MutationTool = async (ctx, run, steps) => {
   const unread: UnreadPage[] = [];
   const found = new Set(request.foundUrls ?? []);
   for (const row of await jobPages(ctx.db, request)) {
-    const own = Boolean(request.ownUrl) && row.url === request.ownUrl;
+    const own = isOwnPage(request, row.url);
     const snapshot = snapshotOf(row);
     if (!snapshot) {
       const reasonCode = row.reasonCode && row.reasonCode !== "ok" ? row.reasonCode : "empty";
@@ -162,7 +163,7 @@ const apply: MutationTool = async (ctx, run, steps) => {
       droppedLines: cleaned?.droppedLines ?? 0,
     });
   }
-  const value: PagesRecord = { industry: request.industry, pages, unread, table: patternTable(pages), ownId: pages.find((page) => page.own)?.id ?? null };
+  const value: PagesRecord = { industry: request.industry, pages, unread, table: patternTable(pages), ownId: pages.find((page) => page.own)?.id ?? null, ...(request.mode === "ownSite" ? { ownSite: true } : {}) };
   return { resultCode: pages.some((page) => page.analysis) ? "ok" : "no_pages", resultId: String(pages.length), artifact: record("pages", value) };
 };
 

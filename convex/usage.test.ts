@@ -63,6 +63,8 @@ describe("usage", () => {
     const elsewhere = await run(t, coaching, "nora");
     for (const [workspaceId, ref, cost] of [[growth, mine, 10], [growth, noras, 20], [coaching, elsewhere, 40]] as const) {
       await t.run((ctx) => chargeUsage(ctx, { workspaceId, costCents: cost, source: "run", ref, model: "claude-opus-5-5" }));
+      // "Newest first" needs the charges at different times; two in the same millisecond have no order.
+      await new Promise((resolve) => setTimeout(resolve, 2));
     }
     const read = (who: typeof owner) => who.query(api.usage.overview, { workspaceId: growth, period: "30d" });
 

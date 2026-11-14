@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 
+import { HighLevelConnectSlot } from "@/components/connections/highlevel";
 import { UploadForm } from "@/components/connections/results-files";
 import { OnboardingSetup, type SetupStage } from "@/components/onboarding/setup";
 import type { CaptureData } from "@/components/settings/brand-section";
@@ -21,6 +22,7 @@ export function OnboardingFlow() {
   const onConnect = data?.stage === "connect" && workspaceId;
   const meta = useQuery(api.metaAds.status, onConnect ? { workspaceId } : "skip");
   const providers = useQuery(api.integrations.list, onConnect || data?.stage === "confirm" ? (workspaceId ? { workspaceId } : "skip") : "skip");
+  const highLevel = useQuery(api.highLevel.status, workspaceId && (data?.stage === "connect" || data?.stage === "confirm") ? { workspaceId } : "skip");
   const uploads = useQuery(api.resultUploads.list, workspaceId && (data?.stage === "connect" || data?.stage === "confirm") ? { workspaceId } : "skip");
   const submitWebsite = useMutation(api.onboarding.submitWebsite);
   const skipWebsite = useMutation(api.onboarding.skipWebsite);
@@ -37,7 +39,9 @@ export function OnboardingFlow() {
     meta: meta ? { configured: meta.configured, connected: meta.connection?.status === "connected", label: meta.connection?.adAccountName ?? meta.connection?.metaUserName ?? null } : null,
     providers: providers?.providers ?? [],
     uploads: uploads?.length ?? 0,
+    highLevel: highLevel ? { configured: highLevel.configured, connected: highLevel.connection?.status === "connected", label: highLevel.connection?.accountName ?? null } : null,
   });
+  const returned = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("highlevel");
   const origin = typeof window === "undefined" ? undefined : window.location.origin;
 
   return (
@@ -47,6 +51,7 @@ export function OnboardingFlow() {
       data={{ stage, person: data.person, business: data.business, goal: data.goal, goals: data.goals, hasWorkspace: Boolean(workspaceId) }}
       capture={(capture ?? null) as CaptureData | null}
       connect={cards}
+      crm={workspaceId ? <HighLevelConnectSlot workspaceId={workspaceId} returnPath={RETURN_PATH} returned={returned} /> : null}
       upload={
         uploading && workspaceId ? (
           <div className="grid gap-2 rounded-xl border border-border bg-card p-4">

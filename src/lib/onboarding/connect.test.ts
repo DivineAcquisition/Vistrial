@@ -34,9 +34,11 @@ describe("the accounts onboarding offers", () => {
     expect(by.results).toEqual(["connected", "2 files"]);
   });
 
-  it("lights up HighLevel as soon as a provider keyed highlevel is registered and set up, with no change here", () => {
-    expect(connectCards({ ...none, providers: [{ key: HIGHLEVEL_KEY, readiness: "not_set_up", connection: null }] }).find((row) => row.key === HIGHLEVEL_KEY)?.state).toBe("notSetUp");
-    expect(connectCards({ ...none, providers: [{ key: HIGHLEVEL_KEY, readiness: "ready", connection: null }] }).find((row) => row.key === HIGHLEVEL_KEY)?.state).toBe("available");
+  it("takes HighLevel's state from the HighLevel connection itself", () => {
+    const state = (highLevel: Parameters<typeof connectCards>[0]["highLevel"]) => connectCards({ ...none, highLevel }).find((row) => row.key === HIGHLEVEL_KEY);
+    expect(state({ configured: false, connected: false, label: null })?.state).toBe("notSetUp");
+    expect(state({ configured: true, connected: false, label: null })?.state).toBe("available");
+    expect(state({ configured: true, connected: true, label: "Brightline Media" })).toMatchObject({ state: "connected", label: "Brightline Media" });
     // HubSpot and Salesforce stay "Coming soon" whatever is registered.
     expect(connectCards({ ...none, providers: [{ key: "hubspot", readiness: "ready", connection: null }] }).find((row) => row.key === "hubspot")?.state).toBe("comingSoon");
   });

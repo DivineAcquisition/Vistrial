@@ -2482,10 +2482,29 @@ export default defineSchema({
     createdBy: v.string(),
     createdAt: v.number(),
     finishedAt: v.optional(v.number()),
+    /** The lead's page: a long random token in its link, made when a person first shares the approved proposal. */
+    token: v.optional(v.string()),
+    sharedAt: v.optional(v.number()),
+    sharedBy: v.optional(v.string()),
+    /** The email to the lead with the link, waiting in Comms for a person. */
+    draftId: v.optional(v.id("dealmakerDrafts")),
+    /** Opens of the lead's page, counted when the page is shown in a browser. */
+    views: v.optional(v.number()),
+    firstViewedAt: v.optional(v.number()),
+    lastViewedAt: v.optional(v.number()),
+    /** "Accept" on the lead's page, with the name they typed. Not a signature; won still waits for the Owner. */
+    acceptedAt: v.optional(v.number()),
+    acceptedName: v.optional(v.string()),
+    /** What accepting did in the CRM: marking the deal won proposed for the Owner, or the step to do by hand. */
+    wonStep: v.optional(v.object({ state: v.union(v.literal("proposed"), v.literal("doItYourself")), detail: v.string() })),
+    /** The follow-up drafted when the page was not opened within three days. */
+    nudgeDraftId: v.optional(v.id("dealmakerDrafts")),
+    nudgedAt: v.optional(v.number()),
   })
     .index("by_project", ["projectId"])
     .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"])
-    .index("by_workspace_review", ["workspaceId", "reviewId"]),
+    .index("by_workspace_review", ["workspaceId", "reviewId"])
+    .index("by_token", ["token"]),
 
   dealBriefings: defineTable({
     workspaceId: v.id("workspaces"),

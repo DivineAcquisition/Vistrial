@@ -180,7 +180,7 @@ function review(owner: boolean): ReviewData {
 }
 
 /** A proposal from the review above, as the Calls tab shows it. Sample data. */
-function proposal(approved: boolean): ProposalData {
+function proposal(approved: boolean, shared = false): ProposalData {
   const offer = (itemId: string, title: string, body: string) => ({ itemId, title, body });
   return {
     id: "p1",
@@ -190,6 +190,11 @@ function proposal(approved: boolean): ProposalData {
     approved,
     canRequest: true,
     createdAt: Date.UTC(2026, 10, 13, 18),
+    hasLead: true,
+    payment: "notSetUp",
+    share: shared
+      ? { url: "https://app.vistrial.io/p/3f9c2a7be41d08c65f1e9b2d7a4c03e8f56b1d92ac7e4f08", sharedAt: Date.UTC(2026, 10, 13, 19), drafted: true, views: 3, firstViewedAt: Date.UTC(2026, 10, 14, 9), acceptedAt: Date.UTC(2026, 10, 14, 10), acceptedName: "Marcus Hale", wonStep: { state: "proposed", detail: "Marking the deal won waits for the Owner." }, nudged: false }
+      : null,
     view: {
       title: "The Growth retainer for Hale Dental",
       intro: "Thanks for the call, Marcus. You want to double the consults you book before spring, and your co-founder will want to see the plan first. Here is how the Growth retainer would work for you.",
@@ -228,7 +233,7 @@ export function CallsTabStory({ state, theme }: { state: string; theme: string }
       ) : (
         <CallsView
           data={calls(state)}
-          actions={{ request: noop, saveNote: noop, requestReview: noop, setLinks: noop, allowLinks: noop }}
+          actions={{ request: noop, saveNote: noop, requestReview: noop, setLinks: noop, allowLinks: noop, shareProposal: noop }}
           notes={state === "viewer" ? { ...notes, canWrite: false } : notes}
           reviews={state === "viewer" ? { ...reviews, canRequest: false } : reviews}
           links={state === "viewer" ? null : { state: state === "nocrm" ? "notSetUp" : state === "linksOn" ? "on" : "needsPermission", words: state === "linksOn" ? "On. Each brief's link is added to its call's event in Google Calendar." : "Google Calendar is connected for counts only. Allow brief links to let Vistrial add the link to events.", canChange: true } as never}
@@ -236,7 +241,7 @@ export function CallsTabStory({ state, theme }: { state: string; theme: string }
           onOpen={setOpen}
           openReview={state === "review" || state === "reviewMember" || state === "reviewProposal" ? review(state !== "reviewMember") : null}
           reviewProposal={state === "reviewMember" ? null : reviewProposal(state)}
-          openProposal={state === "proposal" || state === "proposalApproved" ? proposal(state === "proposalApproved") : null}
+          openProposal={state === "proposal" || state === "proposalApproved" || state === "proposalShared" ? proposal(state !== "proposal", state === "proposalShared") : null}
         />
       )}
     </StoryFrame>

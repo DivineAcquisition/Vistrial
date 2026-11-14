@@ -239,6 +239,10 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
+          text: "Proposal pages. When a business shares a proposal it approved in Vistrial, the person it is for receives a link to a page that shows it. Vistrial records when that page is opened in a browser and how many times, and, if the person presses Accept, the name they type and when. It records no IP address and no device details. Accepting is not a signature. Only the business that sent the proposal sees these.",
+        },
+        {
+          kind: "p",
           text: "The customer who recorded the call is responsible for having told everyone on it, and for having their agreement where the law requires it, before recording. An Owner, Admin or Member can delete a transcript at any time, which deletes its text. If you were on a call with a Vistrial customer and want its transcript removed, contact that business; Section 13 explains how we help.",
         },
         { kind: "h", text: "L. Connected HighLevel accounts" },

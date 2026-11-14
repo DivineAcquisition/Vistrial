@@ -99,6 +99,8 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Deepgram, which turns a team member's short voice memo after a sales call into text");
     // Brief links: off unless an Owner turns them on, one line added, guests not notified, nothing kept.
     expect(text).toContain("Brief links are off unless an Owner turns them on");
+    // Proposal pages: opens and a typed name on Accept, no IP or device details, not a signature.
+    expect(text).toContain("It records no IP address and no device details. Accepting is not a signature.");
     expect(text).toContain("it tells Google not to notify the guests");
     expect(text).toContain("keeps none of them; it keeps only whether the link was added");
     expect(text).toContain("Vistrial never creates or cancels events and never contacts guests");

@@ -602,6 +602,19 @@ tests, lint, both typechecks and the build, never deploying Convex:
     "Waiting for your review", then "Approved". Nothing is sent here. Next, 16b: the page the lead opens (it
     records the view), the PDF, "Accept" before any e-signature, the Stripe link ("Not set up yet" without a key),
     sending through Comms, and the hand-off to Follow-up Engine when it is not opened.
+    *16b, built:* the lead's page (`convex/proposalPage.ts`, `src/app/p/[token]/`,
+    `src/components/proposal/`). Once a person approved a proposal, "Share with <lead>" makes its page's link (a
+    48-character random token) and files the email to the lead in Comms as a `price` draft, so a person approves
+    it (a hard stop); without a CRM contact the link is shown to copy. The page lives at `/p/<token>`, outside the
+    app's sign-in, and talks to Convex only from Vistrial's web server with `PUBLIC_FORM_SECRET`. It shows the
+    proposal in the business's name (no quotes, labels or team notes), counts opens from the browser, makes the
+    PDF in the browser (`@react-pdf/renderer`), and has "Accept" with a typed name, which is not a signature;
+    accepting proposes marking the deal won, which waits for the Owner, or hands it back as a step when acting
+    is off. Payment: "Not set up yet" until `STRIPE_SECRET_KEY` is set; making a Stripe link from a proposal is a
+    later step that needs the Owner's approval for money. The hand-off when it is not opened: every six hours
+    (`proposalPage.nudges`), a proposal shared three days ago and never opened gets one follow-up email drafted
+    in code (`followUp`, trigger `proposalNotOpened`), waiting in Comms like any follow-up. The privacy policy's
+    section K says what the page records.
 17. **Calendar tab.**
     *17, built:* `convex/dealCalendar.ts` (`week`), `convex/lib/dealmaker/calendar.ts`, the tab at
     `work/calendar` and the story `/dev/calendar-tab`. One week of booked calls from the CRM's appointments

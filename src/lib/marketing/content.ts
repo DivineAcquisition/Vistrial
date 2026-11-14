@@ -382,7 +382,7 @@ export const AGENTS_SECTION = {
       id: "attract",
       name: "Attract",
       agents: [
-        { number: "01", name: "Strategist", job: "Research, offers, diagnosis, creative, and landing pages.", live: true },
+        { number: "01", name: "Strategist", job: "Research, offers, diagnosis, creative, and landing pages.", live: true, page: "/agents/strategist" },
         { number: "02", name: "Marketer", job: "Approved launches, testing, and reporting.", live: false },
       ],
     },

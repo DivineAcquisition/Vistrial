@@ -642,6 +642,12 @@ export function WorkforceMap() {
                       {agent.name}
                     </p>
                     <p className="text-sm leading-relaxed text-muted-foreground">{agent.job}</p>
+                    {"page" in agent && agent.page ? (
+                      <Link href={agent.page} className="inline-flex items-center gap-1 text-xs font-medium text-brand-300 hover:text-brand-200">
+                        How {agent.name} works
+                        <ArrowRight className="size-3" aria-hidden />
+                      </Link>
+                    ) : null}
                     <AgentStatusLine />
                   </SpotlightCard>
                 </li>

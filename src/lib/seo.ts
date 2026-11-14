@@ -21,6 +21,7 @@ type PublicPage = {
 export const PUBLIC_PAGES: readonly PublicPage[] = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/security", changeFrequency: "monthly", priority: 0.6 },
+  { path: "/agents/strategist", changeFrequency: "monthly", priority: 0.8 },
   { path: "/agents/dealmaker", changeFrequency: "monthly", priority: 0.7 },
   { path: "/security/subprocessors", changeFrequency: "monthly", priority: 0.4 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3, gate: "privacy" },

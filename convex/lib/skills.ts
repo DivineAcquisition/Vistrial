@@ -14,11 +14,12 @@ import { followUpEngine } from "../skills/followUpEngine";
 import { playbookStudy } from "../skills/playbookStudy";
 import { dealBriefing } from "../skills/dealBriefing";
 import { callReview } from "../skills/callReview";
+import { objectionPlaybook } from "../skills/objectionPlaybook";
 import type { SkillModule } from "../skills/types";
 import { devSkillsEnabled, type ToolSlug } from "./registry";
 
 /** Every runnable skill. A skill in the catalog but not here is "coming soon" and cannot start. */
-const SKILLS: readonly SkillModule[] = [testEcho, testResearch, testSources, marketIntelligence, offerIntelligence, growthDiagnostics, creativeProduction, landingTeardown, landingPageBuild, taskProposer, industryTrends, pipelineForensics, playbookStudy, dealBriefing, followUpEngine, callReview];
+const SKILLS: readonly SkillModule[] = [testEcho, testResearch, testSources, marketIntelligence, offerIntelligence, growthDiagnostics, creativeProduction, landingTeardown, landingPageBuild, taskProposer, industryTrends, pipelineForensics, playbookStudy, dealBriefing, followUpEngine, callReview, objectionPlaybook];
 
 /** The skill module for a slug, or null when it is not built, or is dev-only and dev skills are off. */
 export function skillFor(slug: string, allowDev = devSkillsEnabled()): SkillModule | null {

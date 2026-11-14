@@ -21,7 +21,7 @@ export const CHECK_NAMES = [
 export const PERSONAL = /\b(\d+\s*years? old|in (his|her|their) (20s|30s|40s|50s|60s)|married|divorced|single (mom|mum|dad|parent)|wife|husband|kids|children|pregnan\w*|income|salary|net worth|religio\w*|church|disabilit\w*|illness|diagnos\w*)\b/i;
 
 /** Manufactured urgency or scarcity: the doctrine forbids it (IV). */
-const PRESSURE = /\b(act (now|fast)|limited[- ]time|only \d+ (spots?|places?|seats?) left|before it'?s gone|last chance|price (goes|will go) up|expires? (today|tonight|soon)|fomo|create (some )?urgency|push (them|him|her) to (sign|decide|close))\b/i;
+export const PRESSURE = /\b(act (now|fast)|limited[- ]time|only \d+ (spots?|places?|seats?) left|before it'?s gone|last chance|price (goes|will go) up|expires? (today|tonight|soon)|fomo|create (some )?urgency|push (them|him|her) to (sign|decide|close))\b/i;
 
 /** Money as written in a brief: $1,500, 1500 USD, £300, €2k. */
 const MONEY = /(?:[$£€]\s?\d[\d,]*(?:\.\d+)?\s?[kK]?|\b\d[\d,]*(?:\.\d+)?\s?[kK]?\s?(?:USD|EUR|GBP|CAD|AUD|dollars|pounds|euros)\b)/g;

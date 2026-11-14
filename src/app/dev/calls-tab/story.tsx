@@ -163,7 +163,7 @@ function review(owner: boolean): ReviewData {
         { text: "Tried an agency before", quote: "the last agency burned us", kind: "Buyer's words", answered: false, answerQuote: "" },
       ],
       commitments: [
-        { owner: "We", what: "Send the proposal and the clinic case study", due: Date.UTC(2026, 10, 20), quote: "I'll send the proposal and the case study by Friday", kind: "Buyer's words" },
+        { owner: "We", what: "Send the proposal and the clinic case study", due: Date.UTC(2026, 10, 20), quote: "I'll send the proposal and the case study by Friday", kind: "Rep's words, Milo" },
         { owner: "Marcus Hale", what: "Talk to the co-founder", quote: "I'll talk to Sam on Monday", kind: "Buyer's words" },
       ],
       coverage: [

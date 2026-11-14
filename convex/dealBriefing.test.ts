@@ -148,6 +148,9 @@ describe("pre-call brief checks (code)", () => {
       ["timing", false, null],
       ["fit", false, null],
     ]);
+    // A quote from our side of the call is the rep's words, never the buyer's.
+    const ours = readinessOf({ ...brief, readiness: [{ field: "timing", finding: "Friday", quote: "I'll send the case study on Friday.", sourceId: "c1" }] }, record);
+    expect(ours.find((row) => row.field === "timing")).toMatchObject({ established: true, kind: "rep", words: "Rep's words, Closer" });
     // A finding whose quote is not in its source establishes nothing.
     const made = readinessOf({ ...brief, readiness: [{ field: "timing", finding: "This quarter", quote: "we want to start this quarter", sourceId: "c1" }] }, record);
     expect(made.find((row) => row.field === "timing")?.established).toBe(false);

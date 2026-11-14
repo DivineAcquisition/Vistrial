@@ -433,7 +433,7 @@ export type Counter = { ok: number; failed: number; lastCode: string | null };
  * One call to HighLevel. GET, or POST only for `/contacts/search`, which is a search that changes nothing.
  * Paced to stay under HighLevel's burst limit; every call is counted.
  */
-async function hlRequest(token: string, path: string, counter: Counter, search?: Record<string, unknown>) {
+export async function hlRequest(token: string, path: string, counter: Counter, search?: Record<string, unknown>) {
   if (search !== undefined && path !== "/contacts/search") throw new Error("Only the contact search is sent as a POST.");
   let response: Response;
   try {

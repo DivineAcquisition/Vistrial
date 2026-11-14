@@ -505,6 +505,8 @@ export default defineSchema({
     weeklyPlan: v.optional(v.boolean()),
     /** Posts about changes in the organization's industry, read from the web. Missing means off. They use credits. */
     trendPosts: v.optional(v.boolean()),
+    /** An Owner stopped every CRM action across the organization, whatever each connection allows. Missing means not stopped. */
+    crmActingOff: v.optional(v.boolean()),
   }).index("by_workspace", ["workspaceId"]),
 
   /** One member's own choices: theme and which in-app notices they want. Missing fields mean the default. */
@@ -1657,6 +1659,13 @@ export default defineSchema({
     actingEnabled: v.optional(v.boolean()),
     actingChangedBy: v.optional(v.string()),
     actingChangedAt: v.optional(v.number()),
+    /**
+     * Messaging leads, separate from acting and off by default. Turning it on records which Owner confirmed,
+     * and when, that the business has the leads' consent to be texted and emailed.
+     */
+    messagingEnabled: v.optional(v.boolean()),
+    consentAttestedBy: v.optional(v.string()),
+    consentAttestedAt: v.optional(v.number()),
   })
     .index("by_workspace_client", ["workspaceId", "clientId"])
     .index("by_account", ["provider", "accountId"]),
@@ -1791,7 +1800,16 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     clientId: v.optional(v.id("clients")),
     connectionId: v.id("crmConnections"),
-    kind: v.union(v.literal("move_stage"), v.literal("set_status"), v.literal("add_tag"), v.literal("remove_tag"), v.literal("add_note"), v.literal("create_task")),
+    kind: v.union(
+      v.literal("move_stage"),
+      v.literal("set_status"),
+      v.literal("add_tag"),
+      v.literal("remove_tag"),
+      v.literal("add_note"),
+      v.literal("create_task"),
+      v.literal("send_sms"),
+      v.literal("send_email"),
+    ),
     dealId: v.optional(v.string()),
     contactId: v.optional(v.string()),
     pipelineId: v.optional(v.string()),
@@ -1828,6 +1846,20 @@ export default defineSchema({
     resultCode: v.optional(v.string()),
     /** The id HighLevel gave what was made (a note, a task). */
     externalId: v.optional(v.string()),
+    /**
+     * For a message: what the checks found just before sending (or refusing), and the consent basis on
+     * record. Kept as the record that the lead's opt-out and local time were checked.
+     */
+    checks: v.optional(
+      v.object({
+        at: v.number(),
+        dnd: v.boolean(),
+        timezone: v.optional(v.string()),
+        localHour: v.optional(v.number()),
+        consent: v.string(),
+        result: v.string(),
+      }),
+    ),
     /** The action this one reverses, and the one that reversed this. */
     undoOf: v.optional(v.id("crmActions")),
     undoneBy: v.optional(v.id("crmActions")),

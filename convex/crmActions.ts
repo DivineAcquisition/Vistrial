@@ -64,6 +64,7 @@ export const FAILURE_WORDS: Record<string, string> = {
   too_soon: "Vistrial already messaged this lead in the last day.",
   paused: "This lead is paused after they asked us to stop, so nothing was sent.",
   no_consent_tag: "This lead has none of your consent tags, so nothing was sent.",
+  audio_missing: "The voice note's audio is gone, so nothing was sent.",
   token_rejected: "HighLevel no longer accepts the connection.",
   permission_missing: "HighLevel refused: the app lacks permission for this.",
   rate_limited: "HighLevel asked Vistrial to slow down.",
@@ -619,7 +620,18 @@ export const execute = internalAction({
         return { code: check.code };
       }
     }
+    // A voice note: a fresh link to its audio, which HighLevel fetches and attaches to the text or email.
+    let attachments: string[] | undefined;
+    if (action.audioStorageId && isMessage(action.kind)) {
+      const url = await ctx.storage.getUrl(action.audioStorageId);
+      if (!url) {
+        await ctx.runMutation(internal.crmActions.finish, { actionId: action._id, ok: false, code: "audio_missing" });
+        return { code: "audio_missing" };
+      }
+      attachments = [url];
+    }
     const request = writeRequest({
+      attachments,
       kind: action.kind,
       dealId: action.dealId,
       contactId: action.contactId,
@@ -684,13 +696,15 @@ export const list = workspaceQuery({
       organizationOff,
       messaging: { enabled: connection.messagingEnabled === true, consentAt: connection.consentAttestedAt ?? null },
       can,
-      actions: rows.map((row) => ({
+      actions: await Promise.all(rows.map(async (row) => ({
         id: row._id,
         kind: row.kind,
         summary: row.summary,
         why: row.why,
         lead: (row.contactId ? nameOf.get(row.contactId) : row.dealId ? dealLead.get(row.dealId) : undefined) ?? null,
         body: row.body ?? null,
+        // A voice note: the approver listens to exactly what will be sent.
+        audioUrl: row.audioStorageId ? await ctx.storage.getUrl(row.audioStorageId) : null,
         state: row.state,
         restricted: confirmOf(row),
         mayTriggerAutomation: mayTriggerAutomation(row.kind),
@@ -702,7 +716,7 @@ export const list = workspaceQuery({
         checks: row.checks ?? null,
         canUndo: row.state === "done" && !row.undoneBy && reverseOf(row, row.before) !== null,
         undone: Boolean(row.undoneBy),
-      })),
+      }))),
       deals: deals
         .filter((deal) => deal.status === "open")
         .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))

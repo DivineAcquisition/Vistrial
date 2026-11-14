@@ -479,6 +479,17 @@ tests, lint, both typechecks and the build, never deploying Convex:
     "Draft follow-ups" starts the Follow-up Engine after the most it may use is shown and confirmed.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
     attachment only.
+    *14, built:* `convex/voiceNotes.ts`, `convex/lib/dealmaker/voice.ts`, the "Your voice" panel and voice
+    notes in Comms. An Owner records the speaker reading the consent statement aloud (with the business's
+    name) and a short passage, 30 seconds to 3 minutes, then types the speaker's name to confirm; ElevenLabs
+    (`ELEVENLABS_API_KEY`) clones the voice from that recording under a generic name. Without the key every
+    screen says "Voice notes are not set up yet" and no recording is kept. Deleting the voice deletes the
+    recording here and the clone at ElevenLabs. A draft marked as a voice note gets its audio made on request
+    for exactly its words (new words throw the audio away), and a person listens before sending it on.
+    Every voice note waits for the typed SEND, never the Owner's switch; it is held unless consent tags are
+    named and voice is an allowed channel; and it goes as an audio attachment to the text or email
+    (HighLevel `attachments`, a fresh link at send time), never a voicemail drop. The approver hears it in
+    Connections before approving.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.
 16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
 17. **Calendar tab.**

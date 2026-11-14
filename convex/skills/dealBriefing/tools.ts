@@ -21,7 +21,9 @@ import { runChecks } from "./checks";
 import { computeBrief, when, type BriefInput } from "./compute";
 import { KIND_WORDS, kindOf, readinessOf, renderBrief, renderCodeOnly, viewOf } from "./render";
 import type { BriefView } from "../../lib/dealmaker/briefView";
-import { BRIEF_LIMITS, FIT_WORDS, NOT_ENOUGH_DATA, PHASE, readBrief, type Brief, type BriefRecord, type ChecksRecord } from "./shapes";
+import { BRIEF_LIMITS, FIT_WORDS, NOT_ENOUGH_DATA, PHASE, readBrief, readResearch, siteFor, type Brief, type BriefRecord, type ChecksRecord, type SiteLine } from "./shapes";
+import { PERSONAL } from "./checks";
+import { internal } from "../../_generated/api";
 
 type Step = Doc<"runSteps">;
 type MutationTool = (ctx: MutationCtx, run: Doc<"agentRuns">, steps: Step[]) => Promise<ToolOutcome>;
@@ -98,12 +100,14 @@ const read: MutationTool = async (ctx, run) => {
     transcripts: [],
     handoff: briefing.handoff ? { text: briefing.handoff, by: briefing.writtenBy ?? "a teammate" } : null,
     about: briefing.about ? { text: briefing.about, by: briefing.writtenBy ?? "a teammate" } : null,
+    site: siteFor(briefing.website, null),
     playbook: (await playbookForSkill(ctx, scope)).items.map((row) => ({ id: row._id, folder: row.folder, kind: row.kind, title: row.title, body: row.body, basis: row.basis })),
     now,
   };
   if (crm && briefing.contactRef) {
     input.contact = await crm.contact(briefing.contactRef);
     if (input.contact) {
+      input.site = siteFor(briefing.website, input.contact.email);
       const contactRef = input.contact.ref;
       input.deal = await dealFor(crm, contactRef, briefing.dealRef);
       if (input.deal) {
@@ -210,17 +214,97 @@ async function writeVersion(ctx: MutationCtx, run: Doc<"agentRuns">, assetId: Id
  * Vistrial, so it waits for no approval (answer 12.3): a brief that passed is a draft, one that did not is
  * Needs Review. With nothing to write over, code's own brief is saved and no model was called.
  */
+/**
+ * The public read, checked in code: a line is kept only when it cites a page the fetch actually returned, on
+ * the lead's own site, and says nothing about a person. Each kept page is saved as an Observed web source.
+ */
+async function publicRead(ctx: MutationCtx, run: Doc<"agentRuns">, steps: Step[], value: BriefRecord): Promise<Claim[]> {
+  if (!value.site) return [];
+  const step = latestDone(steps, PHASE.research);
+  if (!step) {
+    const skipped = latest(steps, PHASE.research);
+    value.missing.push(skipped?.resultCode === "over_budget" ? "The lead's website was not read: the brief's budget could not cover it." : "The lead's website could not be read.");
+    return [];
+  }
+  const project = await projectOf(ctx.db, run);
+  const saved = (await recordOf(ctx.db, run, step._id, "sources")) as { sources?: { url?: unknown; title?: unknown }[] } | null;
+  const fetched = new Map<string, { url: string; title: string | null }>();
+  for (const row of saved?.sources ?? []) {
+    if (typeof row.url !== "string") continue;
+    const key = canonicalUrl(row.url);
+    if (key) fetched.set(key, { url: row.url, title: typeof row.title === "string" ? row.title : null });
+  }
+  const onSite = (url: string) => {
+    try {
+      const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+      return host === value.site!.domain || host.endsWith(`.${value.site!.domain}`);
+    } catch {
+      return false;
+    }
+  };
+  const kept: SiteLine[] = readResearch(await recordOf(ctx.db, run, step._id, "model"))
+    .filter((row) => onSite(row.url) && fetched.has(canonicalUrl(row.url) ?? "") && !PERSONAL.test(row.text))
+    .slice(0, BRIEF_LIMITS.siteLines);
+  if (!kept.length || !project) {
+    value.missing.push("Nothing on the lead's website could be read and cited, so the brief has no public read.");
+    return [];
+  }
+  value.publicRead = { domain: value.site.domain, from: value.site.from, lines: kept };
+  const claims: Claim[] = [];
+  const refs = new Map<string, Id<"sourceRefs">>();
+  for (const [i, row] of kept.entries()) {
+    const key = canonicalUrl(row.url)!;
+    if (!refs.has(key)) {
+      const page = fetched.get(key)!;
+      const existing = await ctx.db
+        .query("sourceRefs")
+        .withIndex("by_workspace_project_canonical", (q) => q.eq("workspaceId", run.workspaceId).eq("projectId", project._id).eq("canonicalUrl", key))
+        .first();
+      refs.set(
+        key,
+        existing?._id ??
+          (await ctx.db.insert("sourceRefs", {
+            workspaceId: run.workspaceId,
+            projectId: project._id,
+            runId: run._id,
+            origin: "found",
+            platform: "web",
+            kind: "page",
+            url: page.url,
+            canonicalUrl: key,
+            title: (page.title ?? value.site.domain).slice(0, 200),
+            publisher: value.site.domain,
+            observedAt: Date.now(),
+            availability: "available",
+            limitation: "The lead's own website: what the business says about itself, not checked elsewhere.",
+          })),
+      );
+    }
+    claims.push({ claimKey: `public-${i + 1}`, statement: `On ${value.site.domain}: ${row.text}`, basis: "observed", sourceRefIds: [refs.get(key)!] });
+  }
+  return claims;
+}
+
+/** Tells the closer their brief is ready, when the closer is not the person who asked for it. */
+async function announce(ctx: MutationCtx, briefingId: Id<"dealBriefings">) {
+  await ctx.scheduler.runAfter(0, internal.briefEmail.sendBriefReady, { briefingId });
+}
+
 const save: MutationTool = async (ctx, run, steps) => {
   const value = await briefOf(ctx.db, run, steps);
   const briefing = await briefingOf(ctx.db, run);
   if (!value || !briefing) return { failCode: "no_briefing" };
+  const siteClaims = await publicRead(ctx, run, steps, value);
   const title = `Pre-call brief: ${value.leadName}${value.call ? `, ${when(value.call.startsAt, value.crm?.timezone ?? null)}` : ""}`;
   const base = { workspaceId: run.workspaceId, ...(run.clientId ? { clientId: run.clientId } : {}), kind: "preCallBrief" as const, title: title.slice(0, 200), createdByRun: run._id, createdAt: Date.now() };
-  const done = async (assetId: Id<"assets">, view: BriefView) => ctx.db.patch(briefing._id, { status: "ready", assetId, view, finishedAt: Date.now() });
+  const done = async (assetId: Id<"assets">, view: BriefView) => {
+    await ctx.db.patch(briefing._id, { status: "ready", assetId, view, finishedAt: Date.now() });
+    await announce(ctx, briefing._id);
+  };
 
   if (!value.needsModel) {
     const assetId = await ctx.db.insert("assets", { ...base, status: "draft", currentVersion: 1 });
-    const dropped = await writeVersion(ctx, run, assetId, 1, renderCodeOnly(value), briefClaims(null, value));
+    const dropped = await writeVersion(ctx, run, assetId, 1, renderCodeOnly(value), [...briefClaims(null, value), ...siteClaims]);
     await done(assetId, viewOf(null, value, true));
     return { resultId: assetId, resultCode: "code_only", artifact: record("saved", { brief: null, dropped }) };
   }
@@ -239,7 +323,7 @@ const save: MutationTool = async (ctx, run, steps) => {
   if (!first) {
     // The model could not write within the budget: the closer still gets what code knows.
     const assetId = await ctx.db.insert("assets", { ...base, status: "needsReview", currentVersion: 1 });
-    const dropped = await writeVersion(ctx, run, assetId, 1, `${renderCodeOnly(value)}\n\n_The rest of the brief could not be written within its budget._`, briefClaims(null, value));
+    const dropped = await writeVersion(ctx, run, assetId, 1, `${renderCodeOnly(value)}\n\n_The rest of the brief could not be written within its budget._`, [...briefClaims(null, value), ...siteClaims]);
     await done(assetId, { ...viewOf(null, value, false), missing: [...value.missing, "The rest of the brief could not be written within its budget."] });
     return { resultId: assetId, resultCode: "needs_review", artifact: record("saved", { brief: null, dropped }) };
   }
@@ -250,8 +334,8 @@ const save: MutationTool = async (ctx, run, steps) => {
   if (!firstChecks.passed && second) notes.push("A revision follows as version 2.");
 
   const assetId = await ctx.db.insert("assets", { ...base, status: passed ? "draft" : "needsReview", currentVersion: second ? 2 : 1 });
-  const droppedFirst = await writeVersion(ctx, run, assetId, 1, renderBrief(first, value, firstChecks, notes), briefClaims(first, value));
-  const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, renderBrief(second, value, finalChecks, []), briefClaims(second, value)) : [];
+  const droppedFirst = await writeVersion(ctx, run, assetId, 1, renderBrief(first, value, firstChecks, notes), [...briefClaims(first, value), ...siteClaims]);
+  const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, renderBrief(second, value, finalChecks, []), [...briefClaims(second, value), ...siteClaims]) : [];
   await done(assetId, viewOf(final, value, passed));
   return {
     resultId: assetId,

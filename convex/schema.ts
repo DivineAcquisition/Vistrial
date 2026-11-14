@@ -2358,6 +2358,8 @@ export default defineSchema({
     leadName: v.string(),
     /** What a person typed about the lead when there is no CRM. */
     about: v.optional(v.string()),
+    /** The lead's business website, when a person gave one; read in public for the brief. */
+    website: v.optional(v.string()),
     /** The setter's hand-off: a rep's account, never shown as fact. */
     handoff: v.optional(v.string()),
     /** The name of the person who typed `about` or `handoff`, shown beside it. */

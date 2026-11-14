@@ -79,6 +79,14 @@ function brief(state: string): BriefData {
             { text: "Wants to see results from a similar business", where: "From the Playbook's starter set, not yet heard on your calls", label: "Untested hypothesis" },
           ],
       openingQuestion: first ? "" : "What has changed since we last spoke?",
+      publicRead: {
+        domain: "jordanco.com",
+        from: "email",
+        lines: [
+          { text: "Jordan & Co. runs paid ads and booking funnels for dental clinics.", url: "https://jordanco.com/about" },
+          { text: "It sells a monthly retainer and a one-off funnel build.", url: "https://jordanco.com/services" },
+        ],
+      },
       missing: first ? ["No earlier call with this lead is linked and shared with Dealmaker, so nothing is quoted from one.", "The Playbook's Offer folder is empty, so the brief names no package."] : [],
     },
   } as unknown as BriefData;

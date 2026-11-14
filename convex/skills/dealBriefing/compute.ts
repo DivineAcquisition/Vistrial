@@ -30,6 +30,8 @@ export type BriefInput = {
   handoff: { text: string; by: string } | null;
   about: { text: string; by: string } | null;
   playbook: { id: string; folder: string; kind: string; title: string; body: string; basis: string }[];
+  /** The lead's business site, as a person gave it, else the domain of a work email. */
+  site: { url: string; domain: string; from: "given" | "email" } | null;
   now: number;
 };
 
@@ -130,6 +132,7 @@ export function computeBrief(input: BriefInput): BriefRecord {
   else if (!input.contact) missing.push(`${NOT_ENOUGH_DATA}: Vistrial has not read this lead from your CRM, so there is no history.`);
   if (!input.transcripts.length) missing.push("No earlier call with this lead is linked and shared with Dealmaker, so nothing is quoted from one.");
   if (!offer) missing.push("The Playbook's Offer folder is empty, so the brief names no package.");
+  if (!input.site) missing.push("No website for the lead's business is known (none was given and their email is not a work address), so the brief has no public read.");
 
   const firstCall = !sources.some((row) => row.type === "call" || row.type === "handoff");
   return {
@@ -144,6 +147,7 @@ export function computeBrief(input: BriefInput): BriefRecord {
     firstCall,
     needsModel: sources.length > 0 || offer,
     missing,
+    site: input.site,
     refs: {},
   };
 }

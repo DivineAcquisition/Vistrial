@@ -59,6 +59,11 @@ function frame(record: BriefRecord) {
   lines.push("## Who", "", ...(who.length ? who : [`- ${record.leadName}. Nothing else is recorded.`]), "");
   const soFar = factLines(record, "soFar");
   if (soFar.length) lines.push("## So far", "", ...soFar, "");
+  if (record.publicRead?.lines.length) {
+    lines.push("## Their business, in public", "", `_From ${record.publicRead.domain}${record.publicRead.from === "email" ? ", the domain of their work email" : ""}. Observed on their own site: what the business says about itself._`, "");
+    for (const row of record.publicRead.lines) lines.push(`- ${row.text} ([source](${row.url}))`);
+    lines.push("");
+  }
   return lines;
 }
 
@@ -171,6 +176,7 @@ export function viewOf(brief: Brief | null, record: BriefRecord, checksPassed: b
         : { text: row.objection, where: item?.basis === "hypothesis" ? "From the Playbook's starter set, not yet heard on your calls" : "From your Playbook", label: "Untested hypothesis" as const };
     }),
     openingQuestion: brief?.openingQuestion ?? "",
+    ...(record.publicRead?.lines.length ? { publicRead: record.publicRead } : {}),
     missing: record.missing,
   };
 }

@@ -410,9 +410,25 @@ tests, lint, both typechecks and the build, never deploying Convex:
     enough data), points to cover as Inference (or Untested hypothesis when they rest on the Playbook alone),
     the lead's own objections as Your data and Playbook ones as Untested hypothesis. Viewers read; they cannot
     ask for a brief.
-    Next: 10c the public read of the lead's business,
-    the email to the closer and the calendar-event link (off by default, 0.10 item 5); 10d the automatic brief 3
-    hours before each booked call, with its monthly cap.
+    *10c, built:* the public read and the email to the closer. **Public read**: the lead's own business site,
+    the one a person gives with the request, else the domain of a work email (never a free mail provider's;
+    `siteFor`). After the brief is written and checked, one more model step (`dbResearch`, `summarize` work,
+    Claude's web fetch limited to that domain, at most 2 pages of 3,000 tokens) says in up to four lines what
+    the site states about the business. It runs after the brief so it never crowds the brief out of its budget,
+    and its words never reach the brief's own writing (page text is untrusted). Code keeps a line only when it
+    cites a page the fetch actually returned, on that domain, and says nothing about a person; each kept page
+    is an **Observed** web source, and the brief shows "Their business, in public" with its source links. With
+    no site, or nothing citable, the brief says so. **Email**: when a brief is saved, `briefEmail.sendBriefReady`
+    emails the closer (the member linked to the deal's owner in the CRM, through the team settings), naming the
+    lead and the call only, with a link that opens the brief on the Calls tab (`?brief=`). A closer who asked
+    for their own brief gets no email; with no linked closer, nobody does (an automatic brief, 10d, will go to
+    the person who set it up). Through Resend, like the other notices: `notifyByEmail` off means none, and the
+    audit row holds the user id, never the address.
+    **Not built: the link on the calendar event.** It writes to the closer's Google Calendar, which needs a new
+    Google Calendar write scope (users re-consent, and the scope may need Google's verification) and a line in
+    the privacy policy (0.10 item 5: off by default, the Owner turns it on). That is its own pull request once
+    the owner confirms the scope and the policy line.
+    Next: 10d the automatic brief 3 hours before each booked call, with its monthly cap.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
     recordings; the Zoom and Meet note taker.
 12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the

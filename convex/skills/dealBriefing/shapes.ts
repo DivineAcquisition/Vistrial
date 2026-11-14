@@ -17,6 +17,8 @@ export const PHASE = {
   check: "dbCheck",
   revise: "dbRevise",
   recheck: "dbRecheck",
+  /** The public read of the lead's business, after the brief is written, so it never crowds the brief out. */
+  research: "dbResearch",
   save: "save",
 } as const;
 
@@ -42,7 +44,30 @@ export const BRIEF_LIMITS = {
   disagreements: 3,
   /** How far back and ahead a booked call is looked for. */
   appointmentDays: 30,
+  /** The public read: pages fetched from the lead's own site, tokens kept from each, and lines kept. */
+  sitePages: 2,
+  siteTokens: 3000,
+  siteLines: 4,
 } as const;
+
+/** Email providers: an address there says nothing about the lead's business, so no site is read from it. */
+export const FREE_MAIL = new Set(["gmail.com", "googlemail.com", "yahoo.com", "ymail.com", "outlook.com", "hotmail.com", "live.com", "msn.com", "icloud.com", "me.com", "mac.com", "aol.com", "proton.me", "protonmail.com", "gmx.com", "gmx.net", "yandex.com", "mail.com", "zoho.com", "fastmail.com", "hey.com", "comcast.net", "att.net", "verizon.net"]);
+
+/** The lead's own business site: the one a person gave, or the domain of a work email. Never guessed otherwise. */
+export function siteFor(given: string | null | undefined, email: string | null | undefined): { url: string; domain: string; from: "given" | "email" } | null {
+  if (given) {
+    try {
+      const url = new URL(given);
+      const domain = url.hostname.toLowerCase().replace(/^www\./, "");
+      if ((url.protocol === "https:" || url.protocol === "http:") && domain.includes(".")) return { url: `https://${domain}${url.pathname === "/" ? "" : url.pathname}`, domain, from: "given" };
+    } catch {
+      // Not a link: fall through to the email.
+    }
+  }
+  const domain = (email ?? "").split("@")[1]?.trim().toLowerCase().replace(/^www\./, "");
+  if (!domain || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain) || FREE_MAIL.has(domain)) return null;
+  return { url: `https://${domain}`, domain, from: "email" };
+}
 
 /** The five fit fields readiness is read against (0.8): need, budget, who decides, timing, fit. */
 export const FIT_FIELDS = QUALIFICATION_FIELDS;
@@ -110,6 +135,10 @@ export type BriefRecord = {
   needsModel: boolean;
   /** What the brief could not read, worded for the closer. */
   missing: string[];
+  /** The lead's own business site to read in public, when one is known. */
+  site: { url: string; domain: string; from: "given" | "email" } | null;
+  /** Set by save: what the lead's own site says, each line from a page that was fetched. */
+  publicRead?: { domain: string; from: "given" | "email"; lines: SiteLine[] };
   /** The sources saved on the project, by what they are: "crm", or a source's id ("c1", "h1", "n1"). */
   refs: Record<string, string>;
 };
@@ -213,4 +242,22 @@ export function readBrief(value: unknown): Brief | null {
     disagreements: rows(row.disagreements, BRIEF_LIMITS.disagreements).map((item) => ({ what: text(item.what, 400), refs: list(item.refs) })),
     openingQuestion: text(row.openingQuestion, 300),
   };
+}
+
+export const RESEARCH_SCHEMA = {
+  type: "object",
+  properties: {
+    lines: { type: "array", items: { type: "object", properties: { text: str, url: str }, required: ["text", "url"], additionalProperties: false } },
+  },
+  required: ["lines"],
+  additionalProperties: false,
+};
+
+export type SiteLine = { text: string; url: string };
+
+/** The public read, read defensively. */
+export function readResearch(value: unknown): SiteLine[] {
+  return rows(obj(value).lines, BRIEF_LIMITS.siteLines * 2)
+    .map((item) => ({ text: text(item.text, 300), url: text(item.url, 500) }))
+    .filter((item) => item.text && item.url);
 }

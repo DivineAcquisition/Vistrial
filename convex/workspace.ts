@@ -157,6 +157,7 @@ export const setAgentState = adminMutation({
         state: args.state,
         updatedAt: Date.now(),
         updatedBy: ctx.identity.subject,
+        ...(args.state === "on" ? { firstOnAt: Date.now() } : {}),
       });
       await writeAudit(ctx, {
         workspaceId: ctx.workspaceId,
@@ -171,6 +172,7 @@ export const setAgentState = adminMutation({
       state: args.state,
       updatedAt: Date.now(),
       updatedBy: ctx.identity.subject,
+      ...(args.state === "on" && link.firstOnAt === undefined ? { firstOnAt: Date.now() } : {}),
     });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,

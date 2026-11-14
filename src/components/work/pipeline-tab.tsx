@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
+import { ProofPanel, type ProofData } from "./proof-panel";
 import { SectionTitle, WorkHero } from "./work-shell";
 
 export type BoardData = Extract<FunctionReturnType<typeof api.pipelineBoard.board>, { connected: true }>;
@@ -153,7 +154,7 @@ function TeamPanel({ team, actions }: { team: TeamData; actions: PipelineActions
 }
 
 /** The Pipeline with its data handed in, so a story can show it without a server. */
-export function PipelineView({ board, team, editor, actions }: { board: BoardData; team: TeamData | null; editor: boolean; actions: PipelineActions }) {
+export function PipelineView({ board, team, proof = null, editor, actions }: { board: BoardData; team: TeamData | null; proof?: ProofData | null; editor: boolean; actions: PipelineActions }) {
   const [view, setView] = useState<"board" | "moves">("board");
   const canEdit = editor && board.canEdit;
   return (
@@ -253,6 +254,7 @@ export function PipelineView({ board, team, editor, actions }: { board: BoardDat
           </ul>
         </Panel>
       ) : null}
+      {proof ? <ProofPanel proof={proof} /> : null}
       {team ? <TeamPanel team={team} actions={actions} /> : null}
     </div>
   );
@@ -263,6 +265,7 @@ export function PipelineTab({ workspaceId, editor }: { workspaceId: Id<"workspac
   const { clientId } = useClientScope();
   const board = useQuery(api.pipelineBoard.board, { workspaceId, clientId });
   const team = useQuery(api.dealmakerTeam.team, { workspaceId, clientId });
+  const proof = useQuery(api.dealmakerProof.summary, { workspaceId, clientId });
   const completeCommitment = useMutation(api.pipelineBoard.completeCommitment);
   const setRole = useMutation(api.dealmakerTeam.setRole);
   const setAutonomy = useMutation(api.dealmakerTeam.setAutonomy);
@@ -280,5 +283,5 @@ export function PipelineTab({ workspaceId, editor }: { workspaceId: Id<"workspac
     setRole: (memberId, salesRole, crmUserRef) => setRole({ workspaceId, clientId, memberId: memberId as Id<"members">, salesRole, crmUserRef }),
     setAutonomy: (kind, automatic) => setAutonomy({ workspaceId, clientId, kind, automatic }),
   };
-  return <PipelineView board={board} team={team ?? null} editor={editor} actions={actions} />;
+  return <PipelineView board={board} team={team ?? null} proof={proof?.connected ? proof : null} editor={editor} actions={actions} />;
 }

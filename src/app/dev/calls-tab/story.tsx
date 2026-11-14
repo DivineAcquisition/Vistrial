@@ -163,7 +163,7 @@ function review(owner: boolean): ReviewData {
         { text: "Tried an agency before", quote: "the last agency burned us", kind: "Buyer's words", answered: false, answerQuote: "" },
       ],
       commitments: [
-        { owner: "We", what: "Send the proposal and the clinic case study", due: Date.UTC(2026, 10, 20), quote: "I'll send the proposal and the case study by Friday", kind: "Buyer's words" },
+        { owner: "We", what: "Send the proposal and the clinic case study", due: Date.UTC(2026, 10, 20), quote: "I'll send the proposal and the case study by Friday", kind: "Rep's words, Milo" },
         { owner: "Marcus Hale", what: "Talk to the co-founder", quote: "I'll talk to Sam on Monday", kind: "Buyer's words" },
       ],
       coverage: [
@@ -187,9 +187,10 @@ export function CallsTabStory({ state, theme }: { state: string; theme: string }
       ) : (
         <CallsView
           data={calls(state)}
-          actions={{ request: noop, saveNote: noop, requestReview: noop }}
+          actions={{ request: noop, saveNote: noop, requestReview: noop, setLinks: noop, allowLinks: noop }}
           notes={state === "viewer" ? { ...notes, canWrite: false } : notes}
           reviews={state === "viewer" ? { ...reviews, canRequest: false } : reviews}
+          links={state === "viewer" ? null : { state: state === "nocrm" ? "notSetUp" : state === "linksOn" ? "on" : "needsPermission", words: state === "linksOn" ? "On. Each brief's link is added to its call's event in Google Calendar." : "Google Calendar is connected for counts only. Allow brief links to let Vistrial add the link to events.", canChange: true } as never}
           open={open ? brief(state) : null}
           onOpen={setOpen}
           openReview={state === "review" || state === "reviewMember" ? review(state === "review") : null}

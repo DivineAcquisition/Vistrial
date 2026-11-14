@@ -26,6 +26,7 @@ import {
   providerList,
   readiness,
   scopesFor,
+  CALENDAR_LINK_SCOPE,
   type ProviderKey,
 } from "./lib/integrations/providers";
 import { safeReturnOrigin, safeReturnPath } from "./lib/metaGraph";
@@ -117,9 +118,17 @@ export const list = workspaceQuery({
 
 /** Starts a provider's sign-in for this workspace. Owner only. Returns the address to open. */
 export const startConnect = adminMutation({
-  args: { provider: v.string(), returnOrigin: v.optional(v.string()), returnPath: v.optional(v.string()) },
+  args: {
+    provider: v.string(),
+    returnOrigin: v.optional(v.string()),
+    returnPath: v.optional(v.string()),
+    /** Google Calendar only, and only an Owner: also ask to add Dealmaker's brief links to events. */
+    briefLinks: v.optional(v.boolean()),
+  },
   handler: async (ctx, args): Promise<{ url: string }> => {
     const row = provider(args.provider);
+    if (args.briefLinks && (row.key !== "google_calendar" || ctx.role !== "owner")) throw userError("Only an Owner can allow brief links on Google Calendar.");
+    const extraScopes = args.briefLinks ? [CALENDAR_LINK_SCOPE] : [];
     const state = readiness(row);
     if (state === "not_set_up") throw userError(`${row.name} is not set up on Vistrial yet.`);
     if (state === "not_built" || !row.oauth) throw userError(`${row.name} cannot be connected yet.`);
@@ -134,6 +143,7 @@ export const startConnect = adminMutation({
       codeVerifier: verifier,
       returnOrigin: safeReturnOrigin(args.returnOrigin) ?? undefined,
       returnPath: safeReturnPath(args.returnPath) ?? undefined,
+      ...(extraScopes.length ? { extraScopes } : {}),
       createdAt: Date.now(),
     });
     return {
@@ -141,7 +151,7 @@ export const startConnect = adminMutation({
         authorizeUrl: app.authorizeUrl,
         clientId: process.env[app.idEnv]!,
         redirectUri: callbackUrl(row.oauth.app),
-        scopes: scopesFor(row),
+        scopes: [...scopesFor(row), ...extraScopes],
         scopeSeparator: app.scopeSeparator,
         state: nonce,
         challenge: verifier ? await codeChallenge(verifier) : undefined,

@@ -1,6 +1,9 @@
 "use client";
 
+import type { ObjectionData } from "@/components/work/objection-playbook";
 import { PlaybookView, type PlaybookData } from "@/components/work/playbook-tab";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import { STARTER_OBJECTIONS, objectionPlaybook, type HeardCall } from "../../../../convex/lib/dealmaker/objections";
 import { FOLDERS, FOLDER_LABEL, KIND_LABEL, SOURCE_LABEL, STAGE_LABEL, needsFrom, type Folder, type Kind, type SourceType, type Stage } from "../../../../convex/lib/playbook";
 
 import { StoryFrame } from "../work-tabs/story-frame";
@@ -75,6 +78,37 @@ function data(state: string): PlaybookData {
   } as unknown as PlaybookData;
 }
 
+const DAY = 86_400_000;
+const AT = Date.UTC(2026, 10, 14);
+const MONEY = "i9" as Id<"playbookItems">;
+const TRUST = "i10" as Id<"playbookItems">;
+
+/** Calls on the story's sample agency, read by the same code the server uses. Sample data. */
+function heard(state: string): HeardCall[] {
+  const money = (quote: string | null, answerQuote: string | null) => ({ title: "Over budget", itemId: MONEY, quote, answered: Boolean(answerQuote), answerQuote });
+  const all: HeardCall[] = [
+    { id: "r1", from: "review", at: AT - 1 * DAY, leadName: "Harbor Dental", dealRef: "d1", rep: "Nora", outcome: "won", objections: [money("honestly that is more than we set aside for marketing", "one extra patient a month covers the fee"), { title: "Wants to see reports first", itemId: null, quote: "can I see what the monthly report looks like before we commit", answered: true, answerQuote: "I'll send last month's Harbor report" }] },
+    { id: "r2", from: "review", at: AT - 3 * DAY, leadName: "Aster Coaching", dealRef: "d2", rep: "Milo", outcome: "lost", objections: [money("it's more than we budgeted", null)] },
+    { id: "n3", from: "notes", at: AT - 4 * DAY, leadName: "Bright Path Tutors", dealRef: "d3", rep: "Milo", outcome: "open", objections: [{ title: "Our last agency never showed results", itemId: TRUST, quote: null, answered: false, answerQuote: null }] },
+    { id: "r4", from: "review", at: AT - 6 * DAY, leadName: "Cedar Physio", dealRef: "d4", rep: "Nora", outcome: "won", objections: [money("we were hoping for something closer to two thousand", "the three-month minimum is what gets the 30 booked calls")] },
+    { id: "r5", from: "review", at: AT - 9 * DAY, leadName: "Lumen Studio", dealRef: "d5", rep: "Milo", outcome: "open", objections: [money(null, "one extra patient a month covers the fee")] },
+  ];
+  return state === "few" ? all.slice(0, 2) : state === "empty" ? [] : all;
+}
+
+function objections(state: string): ObjectionData {
+  const items =
+    state === "empty"
+      ? []
+      : [
+          { id: MONEY, title: "“It's more than we budgeted.”", tag: "money" as const, starter: false },
+          { id: TRUST, title: "“Our last agency never showed results.”", tag: "trust" as const, starter: true },
+          { id: "i20" as Id<"playbookItems">, title: STARTER_OBJECTIONS[2].title, tag: STARTER_OBJECTIONS[2].tag, starter: true },
+        ];
+  const owner = state !== "viewer";
+  return { ...objectionPlaybook({ items, calls: heard(state), showLeads: owner, showReps: owner }), starterMissing: state === "empty" ? STARTER_OBJECTIONS.length : 6, canEdit: owner, isOwner: owner };
+}
+
 export function PlaybookTabStory({ state, folder, theme }: { state: string; folder: string; theme: string }) {
   const editor = state !== "viewer";
   const open = (FOLDERS as readonly string[]).includes(folder) ? (folder as Folder) : "offer";
@@ -112,6 +146,7 @@ export function PlaybookTabStory({ state, folder, theme }: { state: string; fold
               }
         }
         editor={editor}
+        objections={{ data: objections(state), actions: { addStarter: noop, addHeard: noop } }}
         initialFolder={open}
         actions={{ addItem: noop, updateItem: noop, archiveItem: noop, addLesson: noop, decideLesson: noop, editLesson: noop, removeLesson: noop, study: noop }}
       />

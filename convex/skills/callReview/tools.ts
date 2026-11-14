@@ -22,7 +22,7 @@ import type { ToolOutcome } from "../marketIntelligence/tools";
 import type { SkillContext } from "../types";
 import { runChecks } from "./checks";
 import { computeReview, type ReviewInput } from "./compute";
-import { renderReview, settled, viewOf } from "./render";
+import { renderReview, settled, viewOf, whoSaid } from "./render";
 import { FIT_WORDS, NOT_ENOUGH_DATA, PHASE, readReview, type ChecksRecord, type Review, type ReviewRecord } from "./shapes";
 
 type Step = Doc<"runSteps">;
@@ -158,8 +158,11 @@ async function file(ctx: MutationCtx, run: Doc<"agentRuns">, review: Review, val
   if (value.deal) {
     for (const fit of parts.fit) {
       if (!fit.said || !("sourceId" in fit)) continue;
-      const source = sources.get(fit.sourceId as string);
-      await ctx.db.insert("dealFacts", { ...scope, dealRef: value.deal.ref, field: fit.field, value: fit.finding.slice(0, 300), kind: source?.type === "call" ? "buyer" : "rep", ...(source?.type === "notes" && source.by ? { author: source.by } : {}), sourceRef, recordedBy: "agent", recordedAt: now });
+      // The buyer's words only when the lead said it; our side's words or the closer's notes are a rep's account,
+      // with who; a line with no named speaker is not filed at all.
+      const who = whoSaid(sources.get(fit.sourceId as string), fit.quote, value.leadName);
+      if (who.kind === "unknown") continue;
+      await ctx.db.insert("dealFacts", { ...scope, dealRef: value.deal.ref, field: fit.field, value: fit.finding.slice(0, 300), kind: who.kind === "buyer" ? "buyer" : "rep", ...(who.kind !== "buyer" && who.speaker ? { author: who.speaker } : {}), sourceRef, recordedBy: "agent", recordedAt: now });
     }
     for (const item of parts.commitments) {
       const owner = item.owner === "lead" ? "lead" : requester?._id;

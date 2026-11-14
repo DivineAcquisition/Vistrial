@@ -75,7 +75,7 @@ export function computeReview(input: ReviewInput): ReviewRecord {
     .filter((row) => Object.hasOwn(PLAYBOOK_ORDER, row.kind))
     .sort((a, b) => PLAYBOOK_ORDER[a.kind] - PLAYBOOK_ORDER[b.kind] || STAGE_ORDER.indexOf(a.stage ?? "") - STAGE_ORDER.indexOf(b.stage ?? ""))
     .slice(0, REVIEW_LIMITS.playbookItems)
-    .map((row, i) => ({ id: `p${i + 1}`, folder: row.folder, kind: row.kind, stage: row.stage, title: row.title, body: row.body.slice(0, 500), basis: row.basis }));
+    .map((row, i) => ({ id: `p${i + 1}`, itemId: row.id, folder: row.folder, kind: row.kind, stage: row.stage, title: row.title, body: row.body.slice(0, 500), basis: row.basis }));
   if (!playbook.some((row) => row.kind === "scriptStep")) missing.push("The Playbook has no script steps, so script coverage is not shown.");
   const talk = input.transcript ? talkOf(input.transcript.text) : null;
   if (input.transcript && !talk) missing.push(`${"Not enough data"}: the transcript does not name its speakers, so talk time is not worked out.`);

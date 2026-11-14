@@ -13,7 +13,8 @@ export const reviewView = v.object({
   checksPassed: v.boolean(),
   talk: v.optional(v.array(v.object({ name: v.string(), words: v.number(), share: v.number(), questions: v.number() }))),
   fit: v.array(v.object({ field: v.string(), label: v.string(), said: v.boolean(), finding: v.string(), quote: v.string(), kind: v.optional(v.string()) })),
-  objections: v.array(v.object({ text: v.string(), quote: v.string(), kind: v.string(), answered: v.boolean(), answerQuote: v.string() })),
+  /** `itemId`: the Playbook objection it is, when the review matched one (counted by the Objection Playbook). */
+  objections: v.array(v.object({ text: v.string(), quote: v.string(), kind: v.string(), answered: v.boolean(), answerQuote: v.string(), itemId: v.optional(v.id("playbookItems")) })),
   commitments: v.array(v.object({ owner: v.string(), what: v.string(), due: v.optional(v.number()), quote: v.string(), kind: v.string() })),
   /** The Playbook's script steps, each covered (with the quote) or not seen on the call. */
   coverage: v.array(v.object({ title: v.string(), covered: v.boolean(), quote: v.string() })),

@@ -36,7 +36,7 @@ const RULES = [
   "Write the call review as JSON.",
   "outcome: one sentence on how the call ended. nextStep: the next step agreed, or \"\" when none was.",
   `fit: for each of ${FIT_FIELDS.map((field) => `${field} (${FIT_WORDS[field]})`).join(", ")} that a source shows, what it shows (finding), the exact words (quote) and the source id. Leave a field out when it was not raised.`,
-  `objections: up to ${REVIEW_LIMITS.objections}, each with the buyer's exact words (quote, sourceId), whether it was answered on the call, and the exact words of the answer from the transcript (answerQuote, "" when not answered).`,
+  `objections: up to ${REVIEW_LIMITS.objections}, each with the buyer's exact words (quote, sourceId), the id of the Playbook objection it is (itemId, "" when none fits), whether it was answered on the call, and the exact words of the answer from the transcript (answerQuote, "" when not answered).`,
   `commitments: what each side said they would do: owner (us or lead), what, due (YYYY-MM-DD, or "" when no date was said), the exact quote and sourceId.`,
   "coverage: for each Playbook script step covered on the call, its id and the exact words from the transcript that cover it. Leave out the steps not seen.",
   'stage: the ref of the stage the deal should now be in, and why in one sentence; stageRef "" when it should stay.',

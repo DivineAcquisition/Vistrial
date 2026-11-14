@@ -68,7 +68,7 @@ function goodReview(): Review {
       { field: "budget", finding: "Around $3,000 a month", quote: "Our budget is around $3,000 a month.", sourceId: "t1" },
       { field: "decider", finding: "A business partner signs off", quote: "I have to check with my business partner", sourceId: "t1" },
     ],
-    objections: [{ objection: "Price feels high", quote: "it feels expensive for where we are", sourceId: "t1", answered: true, answerQuote: "Most of the cost is the follow-up we run for you" }],
+    objections: [{ objection: "Price feels high", itemId: "", quote: "it feels expensive for where we are", sourceId: "t1", answered: true, answerQuote: "Most of the cost is the follow-up we run for you" }],
     commitments: [
       { owner: "us", what: "Send the proposal and the clinic case study", due: "2026-11-20", quote: "I'll send the proposal and the clinic case study by Friday.", sourceId: "t1" },
       { owner: "lead", what: "Talk to the partner", due: "", quote: "I'll talk to Sam on Monday.", sourceId: "t1" },
@@ -319,5 +319,33 @@ describe("a call review, run end to end", () => {
     await expect(s.owner.mutation(api.callReviews.request, { workspaceId: s.workspaceId, confirmedCredits: maxCredits })).rejects.toThrow(/Pick a call/);
     const hidden = await s.t.run(async (ctx) => (await ctx.db.query("callTranscripts").collect()).find((row) => row.title === "Strategist only")!._id);
     await expect(s.owner.mutation(api.callReviews.request, { workspaceId: s.workspaceId, confirmedCredits: maxCredits, transcriptId: hidden })).rejects.toThrow(/not shared with Dealmaker/);
+  });
+});
+
+describe("a review names the Playbook objection it heard", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel;
+  });
+
+  it("keeps the item's own id for an objection the review was shown, and drops an id that is not one", async () => {
+    // Script steps come first (p1, p2), then the objection (p3), then the package (p4).
+    const inputs = script(() => ({ ...goodReview(), objections: [{ ...goodReview().objections[0], itemId: "p3" }, { objection: "Partner decides", itemId: "p4", quote: "I have to check with my business partner", sourceId: "t1", answered: false, answerQuote: "" }] }));
+    const s = await setup();
+    const itemId = await s.t.run((ctx) => ctx.db.insert("playbookItems", { workspaceId: s.workspaceId, folder: "objections", kind: "objection", tag: "money", title: "It costs more than I expected", body: "", source: { type: "starter" }, basis: "hypothesis", status: "active", createdBy: "dana", createdAt: 1, updatedAt: 1 }));
+    const out = await runReview(s, { transcriptId: s.transcriptId });
+    expect(out.status).toBe("completed");
+    expect(inputs[0]).toContain('"id":"p3","kind":"objection"');
+    expect(inputs[0]).not.toContain(itemId);
+    const shown = await s.owner.query(api.callReviews.review, { workspaceId: s.workspaceId, reviewId: out.reviewId });
+    expect(shown.view?.objections.map((row) => row.itemId ?? null)).toEqual([itemId, null]);
+    // The Objection Playbook counts it from the review, with the buyer's words.
+    const playbook = await s.owner.query(api.objectionPlaybook.view, { workspaceId: s.workspaceId });
+    expect(playbook.rows[0]).toMatchObject({ itemId, heard: 1, heardWords: "Heard on 1 call", quotes: [{ quote: "it feels expensive for where we are", leadName: "Jordan Lee" }] });
+    expect(playbook.unmatched).toEqual([expect.objectContaining({ title: "Partner decides", heard: 1, quote: "I have to check with my business partner" })]);
   });
 });

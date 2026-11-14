@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
+import { EndOfDayPanel, type EndOfDayData } from "./end-of-day";
 import { SectionTitle, WorkHero } from "./work-shell";
 
 export type CalendarData = FunctionReturnType<typeof api.dealCalendar.week>;
@@ -129,7 +130,20 @@ function AutoBriefsPanel({ auto, onSet }: { auto: AutoBriefs; onSet: (on: boolea
 }
 
 /** The Calendar with its data handed in, so a story can show it without a server. */
-export function CalendarView({ data, onWeek, auto = null, onAuto }: { data: CalendarData; onWeek: (week: number) => void; auto?: AutoBriefs | null; onAuto?: (on: boolean, confirmedCredits?: number) => Promise<unknown> }) {
+export function CalendarView({
+  data,
+  onWeek,
+  auto = null,
+  onAuto,
+  today = null,
+}: {
+  data: CalendarData;
+  onWeek: (week: number) => void;
+  auto?: AutoBriefs | null;
+  onAuto?: (on: boolean, confirmedCredits?: number) => Promise<unknown>;
+  /** The end-of-day report: today so far. */
+  today?: EndOfDayData | null;
+}) {
   const hero = (
     <WorkHero
       icon={CalendarIcon}
@@ -176,6 +190,7 @@ export function CalendarView({ data, onWeek, auto = null, onAuto }: { data: Cale
         {figures.basis}
         {figures.notMarked ? ` ${figures.notMarked} past call${figures.notMarked === 1 ? " is" : "s are"} not marked either way, so not counted.` : ""}
       </p>
+      {today?.connected && today.appointments && data.week === 0 ? <EndOfDayPanel report={today} /> : null}
       {auto && onAuto ? <AutoBriefsPanel auto={auto} onSet={onAuto} /> : null}
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <Panel className="grid min-w-0 content-start gap-3 p-4 sm:p-6">
@@ -244,6 +259,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) 
   const data = useQuery(api.dealCalendar.week, { workspaceId, clientId, week });
   const auto = useQuery(api.autoBriefs.status, { workspaceId, clientId });
   const setAuto = useMutation(api.autoBriefs.setAuto);
+  const today = useQuery(api.endOfDay.today, { workspaceId, clientId });
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your calendar…</p>;
-  return <CalendarView data={data} onWeek={setWeek} auto={auto ?? null} onAuto={(on, confirmedCredits) => setAuto({ workspaceId, clientId, on, confirmedCredits })} />;
+  return <CalendarView data={data} onWeek={setWeek} auto={auto ?? null} onAuto={(on, confirmedCredits) => setAuto({ workspaceId, clientId, on, confirmedCredits })} today={today ?? null} />;
 }

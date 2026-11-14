@@ -517,6 +517,16 @@ tests, lint, both typechecks and the build, never deploying Convex:
     business's own calls with a talk track only once a person approved it (labelled "Untested hypothesis"). Built in code each time; nothing
     listens to the call and nothing runs a model. Ticks are kept per call in `callChecklists` (client-scoped);
     only ids on the list are kept, and a closer opens only calls on their own deals. `/dev/call-checklist`.
+    *12d, built:* end-of-day reports (`convex/endOfDay.ts`, `convex/lib/dealmaker/endOfDay.ts`,
+    `src/components/work/end-of-day.tsx`). The Calendar tab shows "Today so far" for the current week: today's
+    booked calls by outcome in the CRM's time zone (held, no-show, not marked, later; a call never marked is
+    not counted as a no-show), what was done (briefs, notes, reviews, messages sent), what is still open (calls
+    to mark, held calls without notes or review, messages waiting in Comms, promises due, tomorrow's calls
+    without a brief), and a row per rep for an Owner or Admin only, as counts and never a score. A closer sees
+    their own deals' calls. An hourly cron posts the day's report once to the Briefing after 18:00 in the CRM's
+    time zone (key `dealmaker-endofday:<connection>:<day>`), only while Dealmaker is on and when there were
+    calls today or tomorrow, with counts only and no person's name. Counted in code; no model.
+    `/dev/calendar-tab?view=endOfDay`.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
     over; SMS and email through the merged messaging path; Instagram and Facebook DMs.
     *13a, built (server):* `convex/comms.ts`. A `dealmakerDrafts` row per message, edited freely until it is

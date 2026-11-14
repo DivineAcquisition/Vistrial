@@ -45,6 +45,7 @@ const DIRECT: readonly TableNames[] = [
   "personalNotes",
   "researchProjects",
   "resultUploads",
+  "siteCaptures",
   "teardownRequests",
 ];
 
@@ -65,7 +66,7 @@ const VIA: Partial<Record<TableNames, readonly [field: string, parent: TableName
   sessionChats: [["projectId", "researchProjects"]],
   sessionFiles: [["projectId", "researchProjects"], ["intakeId", "intakes"]],
   collectionItems: [["sourceRefId", "sourceRefs"]],
-  pageReadJobs: [["runId", "agentRuns"]],
+  pageReadJobs: [["runId", "agentRuns"], ["captureId", "siteCaptures"]],
   pageReads: [["jobId", "pageReadJobs"]],
 };
 

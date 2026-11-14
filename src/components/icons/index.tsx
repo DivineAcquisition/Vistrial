@@ -120,6 +120,8 @@ import {
   User as PhUser,
   UserMinus as PhUserMinus,
   Users as PhUsers,
+  Palette as PhPalette,
+  Quotes as PhQuotes,
   Wallet as PhWallet,
   Warning as PhWarning,
   WarningCircle as PhWarningCircle,
@@ -158,6 +160,8 @@ export const BookOpen = wrap(PhBookOpen, "BookOpen", true);
 export const BookOpenCheck = wrap(PhBookOpenText, "BookOpenCheck", true);
 export const BotIcon = wrap(PhRobot, "BotIcon", true);
 export const Brain = wrap(PhBrain, "Brain", true);
+export const Palette = wrap(PhPalette, "Palette", true);
+export const Quote = wrap(PhQuotes, "Quote", false);
 export const BriefcaseBusiness = wrap(PhBriefcase, "BriefcaseBusiness", true);
 export const Building2 = wrap(PhBuildings, "Building2", true);
 export const Cable = wrap(PhPlug, "Cable", true);

@@ -1,6 +1,6 @@
 "use client";
 
-import { isAdmin } from "@/lib/roles";
+import { canWork, isAdmin } from "@/lib/roles";
 import { useClerk } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -10,6 +10,7 @@ import { AccountSecurity } from "@/components/account/security";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { SettingsLayout } from "@/components/settings/settings-layout";
 import { ApprovalSettings } from "@/components/settings/approval-settings";
+import { BrandSection } from "@/components/settings/brand-section";
 import { MemorySection } from "@/components/settings/memory-section";
 import { parseSection, type SettingsSection } from "@/components/settings/settings-parts";
 import {
@@ -223,6 +224,8 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
   if (section === "billing") body = <BillingSection />;
 
   if (section === "memory") body = <MemorySection />;
+
+  if (section === "brand") body = <BrandSection workspaceId={workspaceId} editor={canWork(shell.role)} />;
 
   if (section === "you" && me) {
     const data: YouData = {

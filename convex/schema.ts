@@ -1266,7 +1266,9 @@ export default defineSchema({
     guaranteeType: v.optional(v.union(v.literal("none"), v.literal("results"), v.literal("moneyBack"), v.literal("satisfaction"), v.literal("custom"))),
     cta: v.optional(v.string()),
     channel: v.optional(v.string()),
-    origin: v.union(v.literal("person"), v.literal("chat"), v.literal("analysis")),
+    /** "site": the offer as the business's own website states it, from a site capture. */
+    origin: v.union(v.literal("person"), v.literal("chat"), v.literal("analysis"), v.literal("site")),
+    captureId: v.optional(v.id("siteCaptures")),
     /** The offer analysis this version came from, when it came from one. */
     assetId: v.optional(v.id("assets")),
     note: v.optional(v.string()),
@@ -1322,9 +1324,60 @@ export default defineSchema({
     styleRefs: v.optional(v.array(v.object({ storageId: v.id("_storage"), name: v.string() }))),
     styleRefsOwned: v.optional(v.boolean()),
     note: v.optional(v.string()),
+    /** "site" when the version was written from a site capture. Missing means a person wrote it. */
+    origin: v.optional(v.union(v.literal("person"), v.literal("site"))),
+    captureId: v.optional(v.id("siteCaptures")),
     createdBy: v.string(),
     createdAt: v.number(),
   }).index("by_workspace_kit", ["workspaceId", "kitId", "version"]),
+
+  /**
+   * One reading of a business's website (the organization's own, or a Client's): the pages found and read,
+   * and what they say about the brand, the offers and the business, each with where it was found. Nothing
+   * captured is used until a person applies it (Settings › Brand, or onboarding's Confirm step).
+   * docs/rebuild/onboarding-and-first-package.md, part 1.
+   */
+  siteCaptures: defineTable({
+    workspaceId: v.id("workspaces"),
+    /** The client whose site this is. Missing means the organization's own. */
+    clientId: v.optional(v.id("clients")),
+    /** The site's home page, as read. */
+    url: v.string(),
+    status: v.union(v.literal("reading"), v.literal("understanding"), v.literal("done"), v.literal("partial"), v.literal("failed")),
+    /** Where it is: home, pages, brand, words, done. The screens show progress from it. */
+    step: v.string(),
+    homeJobId: v.optional(v.id("pageReadJobs")),
+    pagesJobId: v.optional(v.id("pageReadJobs")),
+    /** Every page read or found, with what it is for. */
+    pages: v.array(
+      v.object({
+        id: v.string(),
+        url: v.string(),
+        kind: v.string(),
+        title: v.string(),
+        read: v.boolean(),
+        reason: v.optional(v.string()),
+        readId: v.optional(v.id("pageReads")),
+      }),
+    ),
+    /** What was found, as lib/siteCapture/fields.ts CaptureResult (JSON). Set when it is done. */
+    result: v.optional(v.string()),
+    /** The logo file found on the site. Used only once a person confirms the business may use it. */
+    logoStorageId: v.optional(v.id("_storage")),
+    /** Why it ended early, as a page reader reason code. */
+    reasonCode: v.optional(v.string()),
+    /** Items the model gave that the pages do not say. Dropped; kept as a count. */
+    dropped: v.number(),
+    /** What it cost us, in cents. */
+    costCents: v.number(),
+    /** On Vistrial (the organization's first capture): nothing is charged. Otherwise charged once, when it ends. */
+    free: v.boolean(),
+    startedBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    appliedAt: v.optional(v.number()),
+    appliedBy: v.optional(v.string()),
+  }).index("by_workspace_client", ["workspaceId", "clientId", "createdAt"]),
 
   /**
    * A reference ad a person added themselves: a public YouTube link, or a video or image file they uploaded.
@@ -1970,6 +2023,8 @@ export default defineSchema({
     costCents: v.number(),
     /** Set when an agent run asked for these pages: the run carries the cost, so the job charges nothing itself. */
     runId: v.optional(v.id("agentRuns")),
+    /** Set when a site capture asked for these pages: the capture carries the cost, so the job charges nothing itself. */
+    captureId: v.optional(v.id("siteCaptures")),
     startedBy: v.string(),
     createdAt: v.number(),
     finishedAt: v.optional(v.number()),

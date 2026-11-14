@@ -8,6 +8,7 @@ import {
   BotIcon,
   Brain,
   Building2,
+  Palette,
   Plug,
   User,
   Users,
@@ -23,11 +24,12 @@ import { cn } from "@/lib/utils";
 
 export type { Role };
 
-export const SECTIONS = ["business", "people", "agents", "memory", "data", "billing", "you"] as const;
+export const SECTIONS = ["business", "brand", "people", "agents", "memory", "data", "billing", "you"] as const;
 export type SettingsSection = (typeof SECTIONS)[number];
 
 export const SECTION_META: Record<SettingsSection, { label: string; hint: string; icon: LucideIcon }> = {
   business: { label: "Business", hint: "Name, country and profile", icon: Building2 },
+  brand: { label: "Brand", hint: "Your brand and each client's, read from their websites", icon: Palette },
   people: { label: "People", hint: "Members, invites and support access", icon: Users },
   agents: { label: "Agents", hint: "Which agents run, caps and defaults", icon: BotIcon },
   memory: { label: "Memory", hint: "What Vistrial knows about the business", icon: Brain },
@@ -36,9 +38,9 @@ export const SECTION_META: Record<SettingsSection, { label: string; hint: string
   you: { label: "You", hint: "Theme, notices and sign-in", icon: User },
 };
 
-/** Owners and Admins see every group. Members and Viewers see their own section, and Memory, which everyone reads. */
+/** Owners and Admins see every group. Members and Viewers see their own section, Brand and Memory, which everyone reads. */
 export function sectionsFor(role: Role): SettingsSection[] {
-  return isAdmin(role) ? [...SECTIONS] : ["you", "memory"];
+  return isAdmin(role) ? [...SECTIONS] : ["you", "brand", "memory"];
 }
 
 export function parseSection(value: string | null | undefined, role: Role): SettingsSection {

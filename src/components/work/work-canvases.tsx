@@ -102,7 +102,7 @@ export function OffersCanvas({ card, analysis, decisions, tryActions, editor }: 
                 v{row.version} · {shortDate(row.createdAt)}
                 {isCurrent ? " · current" : ""}
               </span>
-              <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">{row.note ?? (row.origin === "chat" ? "From your chat" : row.origin === "analysis" ? "From an offer analysis" : row.price || "You edited")}</span>
+              <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">{row.note ?? (row.origin === "chat" ? "From your chat" : row.origin === "analysis" ? "From an offer analysis" : row.origin === "site" ? "From your website" : row.price || "You edited")}</span>
             </BoardCard>
           );
         }

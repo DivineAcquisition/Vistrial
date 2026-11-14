@@ -73,12 +73,13 @@ async function heldCents(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
       .withIndex("by_workspace_status", (q) => q.eq("workspaceId", workspaceId).eq("status", status))
       .take(50);
     // A job an agent run asked for is paid by the run, under the run's own cap.
-    held += rows.reduce((sum, row) => sum + (row.runId ? 0 : row.holdCents), 0);
+    held += rows.reduce((sum, row) => sum + (row.runId || row.captureId ? 0 : row.holdCents), 0);
   }
   return held;
 }
 
-async function readToday(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
+/** Pages this workspace has read in the last day. */
+export async function readToday(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
   const rows = await ctx.db
     .query("pageReads")
     .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId).gt("createdAt", Date.now() - DAY_MS))
@@ -134,7 +135,7 @@ function assertReadable(rows: ReturnType<typeof checkUrls>) {
 }
 
 /** Creates a job and its pages. Shared with agent runs, which pass their `runId`. The caller schedules the reading. */
-export async function createJob(ctx: MutationCtx, args: { workspaceId: Id<"workspaces">; userId: string; urls: string[]; runId?: Id<"agentRuns"> }) {
+export async function createJob(ctx: MutationCtx, args: { workspaceId: Id<"workspaces">; userId: string; urls: string[]; runId?: Id<"agentRuns">; captureId?: Id<"siteCaptures"> }) {
   const rows = checkUrls(args.urls);
   assertReadable(rows);
   if ((await readToday(ctx, args.workspaceId)) + rows.length > READ_LIMITS.pagesPerDay) throw userError(`Up to ${READ_LIMITS.pagesPerDay} pages a day. Try again tomorrow.`, "limit");
@@ -149,6 +150,7 @@ export async function createJob(ctx: MutationCtx, args: { workspaceId: Id<"works
     holdCents,
     costCents: 0,
     ...(args.runId ? { runId: args.runId } : {}),
+    ...(args.captureId ? { captureId: args.captureId } : {}),
     startedBy: args.userId,
     createdAt: now,
   });
@@ -214,7 +216,8 @@ async function finish(ctx: MutationCtx, job: Doc<"pageReadJobs">, status: "done"
   // Fractions of a cent add up across pages; rounding to a thousandth keeps the ledger free of float noise.
   costCents = Math.round(costCents * 1000) / 1000;
   await ctx.db.patch(job._id, { status, costCents, holdCents: 0, finishedAt: Date.now() });
-  if (!job.runId) await chargeUsage(ctx, { workspaceId: job.workspaceId, costCents, source: "page", ref: job._id });
+  // A run or a site capture that asked for the pages carries their cost itself.
+  if (!job.runId && !job.captureId) await chargeUsage(ctx, { workspaceId: job.workspaceId, costCents, source: "page", ref: job._id });
   await writeAudit(ctx, { workspaceId: job.workspaceId, actorType: "system", actorId: "page-reader", action: "pages.finished", subject: job._id, count: pages.filter((row) => row.status === "read" || row.status === "partial").length });
   return costCents;
 }
@@ -252,7 +255,7 @@ export const job = workspaceQuery({
       createdAt: row.createdAt,
       finishedAt: row.finishedAt ?? null,
       /** What was charged, in cents of credit, once the job ended. */
-      chargedCents: row.status === "done" || row.status === "stopped" ? (row.runId ? 0 : priceFor(row.costCents)) : null,
+      chargedCents: row.status === "done" || row.status === "stopped" ? (row.runId || row.captureId ? 0 : priceFor(row.costCents)) : null,
       holdCents: row.holdCents,
       pages: pages.map(pageView),
     };
@@ -291,7 +294,7 @@ export const recent = workspaceQuery({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .order("desc")
       .take(20);
-    return rows.map((row) => ({ id: row._id, status: row.status, pages: row.pages, driver: row.driver, createdAt: row.createdAt, fromRun: Boolean(row.runId) }));
+    return rows.map((row) => ({ id: row._id, status: row.status, pages: row.pages, driver: row.driver, createdAt: row.createdAt, fromRun: Boolean(row.runId || row.captureId) }));
   },
 });
 

@@ -487,6 +487,14 @@ Cap 100 cents (300 credits). Sending it is the person's, or the messaging switch
    picker of the client's CRM contacts when adding, or suggested from a CRM appointment on the call's date
    and confirmed by the person. Vistrial never links a call to a lead on its own.
 
+**Built in step 4.** `callTranscripts` has two optional fields, `crmContactRef` and `crmDealRef`.
+`transcripts.leadChoices` suggests the leads with a booked call within 36 hours of the call's date and finds
+others by name or email, names only; `transcripts.linkLead` links (or unlinks) after checking, through the
+CRM read view, that the lead is one Vistrial read and the deal is that lead's. Skills read calls through
+`transcriptsFor` (granted to the agent, same client, optionally one lead's). Granting already worked for any
+agent (`setAgentAccess`); the Connections screen lists live agents only, so Dealmaker's switch appears at
+go-live, when new transcripts start out granted to it.
+
 Later, when Fathom and Fireflies move from "designed" to built, transcripts arrive by themselves and the
 appointment match is offered the same way.
 

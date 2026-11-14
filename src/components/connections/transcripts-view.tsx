@@ -2,7 +2,7 @@
 
 import { AgentAvatar } from "@/components/live/agent-avatar";
 import { FileText, ShieldCheck, Trash2 } from "@/components/icons";
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -19,6 +19,8 @@ export type TranscriptRow = {
   createdAt: number;
   agents: string[];
   opening: string;
+  /** The CRM lead a person linked the call to. `name` is null when the CRM no longer has the lead. */
+  lead?: { contactRef: string; dealRef: string | null; name: string | null } | null;
 };
 
 export type NewTranscript = { title: string; tool: string; callDate?: string; text: string; consentConfirmed: boolean };
@@ -162,6 +164,7 @@ export function TranscriptsView({
   onAdd,
   onRemove,
   onGrant,
+  renderLead,
 }: {
   transcripts: TranscriptRow[];
   agents: { slug: string; name: string }[];
@@ -171,6 +174,8 @@ export function TranscriptsView({
   onAdd: (input: NewTranscript) => Promise<string | null>;
   onRemove: (id: string) => Promise<void>;
   onGrant: (id: string, agentSlug: string, granted: boolean) => void;
+  /** The control that links a call to a CRM lead. Left out where no lead can be linked (a story, a Viewer). */
+  renderLead?: (row: TranscriptRow) => ReactNode;
 }) {
   return (
     <div className="grid gap-3" id="transcripts">
@@ -218,6 +223,15 @@ export function TranscriptsView({
                 ) : null}
               </span>
             </header>
+            {row.lead || renderLead ? (
+              <div className="grid gap-2 border-t border-border pt-3 text-sm">
+                <p className="text-foreground">
+                  <span className="text-muted-foreground">Lead: </span>
+                  {row.lead ? (row.lead.name ?? "A lead your CRM no longer has") : "Not linked"}
+                </p>
+                {renderLead ? renderLead(row) : null}
+              </div>
+            ) : null}
             {agents.length > 0 ? (
               <ul className="grid gap-2 border-t border-border pt-3" aria-label="Agents that may use this transcript">
                 {agents.map((agent) => (

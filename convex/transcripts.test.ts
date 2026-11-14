@@ -6,7 +6,7 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { cleanTranscript } from "./lib/transcriptText";
 import schema from "./schema";
-import { saveTranscriptSourcesFor } from "./transcripts";
+import { saveTranscriptSourcesFor, transcriptsFor } from "./transcripts";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 const identity = (subject: string) => ({ subject, issuer: "https://clerk.test", tokenIdentifier: `x|${subject}`, name: subject, email: `${subject}@example.com` });
@@ -184,5 +184,85 @@ describe("call transcripts", () => {
     await expect(member.mutation(api.transcripts.setAgentAccess, { workspaceId, transcriptId: id, agentSlug: "growth-architect", granted: false })).rejects.toThrow();
     await owner.mutation(api.transcripts.setAgentAccess, { workspaceId, transcriptId: id, agentSlug: "growth-architect", granted: false });
     expect((await save(workspaceId, "growth-architect")).used).toBe(0);
+  });
+});
+
+describe("linking a call to a CRM lead", () => {
+  const CALL_DAY = Date.parse("2026-11-03T15:00:00Z");
+
+  async function withCrm() {
+    const s = await setUp();
+    await s.t.run(async (ctx) => {
+      const connectionId = await ctx.db.insert("crmConnections", {
+        workspaceId: s.workspaceId,
+        provider: "highlevel",
+        status: "connected",
+        accessToken: "token",
+        refreshToken: "refresh",
+        tokenExpiresAt: CALL_DAY + 86_400_000,
+        scopes: [],
+        accountId: "loc1",
+        accountName: "Harbor sub-account",
+        currency: "USD",
+        connectedBy: "user_owner",
+        connectedAt: 0,
+        callsOk: 0,
+        callsFailed: 0,
+      });
+      const base = { workspaceId: s.workspaceId, connectionId, seenAt: 0 };
+      await ctx.db.insert("crmContacts", { ...base, externalId: "con1", name: "Priya Shah", email: "priya@example.com", source: "Facebook ads", tags: [] });
+      await ctx.db.insert("crmContacts", { ...base, externalId: "con2", name: "Sam Ray", tags: [] });
+      await ctx.db.insert("crmDeals", { ...base, externalId: "opp1", pipelineId: "p1", stageId: "s1", status: "open", value: 2400, contactId: "con1" });
+      await ctx.db.insert("crmDeals", { ...base, externalId: "opp2", pipelineId: "p1", stageId: "s1", status: "open", value: 900, contactId: "con2" });
+      await ctx.db.insert("crmActivities", { workspaceId: s.workspaceId, connectionId, externalId: "ev1", kind: "appointment", at: CALL_DAY, contactId: "con1", status: "showed" });
+    });
+    return s;
+  }
+
+  it("suggests the lead booked on the call's date, finds others by name, and links only when a person chooses", async () => {
+    const { t, workspaceId, member } = await withCrm();
+    const id = await member.mutation(api.transcripts.add, input(workspaceId));
+    const choices = await member.query(api.transcripts.leadChoices, { workspaceId, transcriptId: id });
+    expect(choices.crm).toBe("HighLevel");
+    expect(choices.suggested).toEqual([{ contactRef: "con1", dealRef: "opp1", name: "Priya Shah", source: "Facebook ads" }]);
+    expect(choices.matches).toEqual([]);
+    expect((await member.query(api.transcripts.leadChoices, { workspaceId, transcriptId: id, q: "sam" })).matches.map((row) => row.name)).toEqual(["Sam Ray"]);
+    // A suggestion links nothing.
+    expect((await member.query(api.transcripts.list, { workspaceId })).transcripts[0].lead).toBeNull();
+
+    await member.mutation(api.transcripts.linkLead, { workspaceId, transcriptId: id, contactRef: "con1", dealRef: "opp1" });
+    expect((await member.query(api.transcripts.list, { workspaceId })).transcripts[0].lead).toEqual({ contactRef: "con1", dealRef: "opp1", name: "Priya Shah" });
+    const forPriya = await t.run((ctx) => transcriptsFor(ctx, { workspaceId, agentSlug: "growth-architect", contactRef: "con1" }));
+    expect(forPriya.map((row) => row._id)).toEqual([id]);
+
+    await member.mutation(api.transcripts.linkLead, { workspaceId, transcriptId: id, contactRef: null });
+    expect((await member.query(api.transcripts.list, { workspaceId })).transcripts[0].lead).toBeNull();
+  });
+
+  it("refuses a lead the CRM never had, another lead's deal, a Viewer, and a workspace with no CRM", async () => {
+    const { workspaceId, member, viewer } = await withCrm();
+    const id = await member.mutation(api.transcripts.add, input(workspaceId));
+    await expect(member.mutation(api.transcripts.linkLead, { workspaceId, transcriptId: id, contactRef: "made-up" })).rejects.toThrow(/has not read that lead/);
+    await expect(member.mutation(api.transcripts.linkLead, { workspaceId, transcriptId: id, contactRef: "con1", dealRef: "opp2" })).rejects.toThrow(/not this lead's/);
+    await expect(viewer.mutation(api.transcripts.linkLead, { workspaceId, transcriptId: id, contactRef: "con1" })).rejects.toThrow();
+    await expect(viewer.query(api.transcripts.leadChoices, { workspaceId, transcriptId: id })).rejects.toThrow();
+
+    const bare = await setUp();
+    const other = await bare.owner.mutation(api.transcripts.add, input(bare.workspaceId));
+    expect(await bare.owner.query(api.transcripts.leadChoices, { workspaceId: bare.workspaceId, transcriptId: other })).toEqual({ crm: null, suggested: [], matches: [] });
+    await expect(bare.owner.mutation(api.transcripts.linkLead, { workspaceId: bare.workspaceId, transcriptId: other, contactRef: "con1" })).rejects.toThrow(/Connect a CRM/);
+  });
+
+  it("gives an agent only the calls granted to it, for the same client", async () => {
+    const { t, workspaceId, owner } = await withCrm();
+    const id = await owner.mutation(api.transcripts.add, input(workspaceId));
+    const read = (agentSlug: string) => t.run((ctx) => transcriptsFor(ctx, { workspaceId, agentSlug }));
+    expect((await read("growth-architect")).map((row) => row._id)).toEqual([id]);
+    expect(await read("sales-conversion")).toEqual([]);
+    await owner.mutation(api.transcripts.setAgentAccess, { workspaceId, transcriptId: id, agentSlug: "sales-conversion", granted: true });
+    expect((await read("sales-conversion")).map((row) => row._id)).toEqual([id]);
+    // A call for the organization is never read into a client's work.
+    const clientId = await t.run((ctx) => ctx.db.insert("clients", { workspaceId, type: "business", name: "Aster", normalizedName: "aster", status: "active", createdBy: "user_owner", createdAt: 0, updatedAt: 0 }));
+    expect(await t.run((ctx) => transcriptsFor(ctx, { workspaceId, clientId, agentSlug: "sales-conversion" }))).toEqual([]);
   });
 });

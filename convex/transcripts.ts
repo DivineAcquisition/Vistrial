@@ -15,6 +15,7 @@ import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
 import { adminMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notFound, userError } from "./lib/errors";
+import { crmFor, type CrmView } from "./lib/crm/read";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { cleanTranscript, TRANSCRIPT_REFUSAL_WORDS } from "./lib/transcriptText";
 
@@ -110,9 +111,11 @@ export type TranscriptView = {
   agents: string[];
   /** The opening of the call, to recognise it by. */
   opening: string;
+  /** The CRM lead the call is linked to, by a person. `name` is null when the CRM no longer has the lead. */
+  lead: { contactRef: string; dealRef: string | null; name: string | null } | null;
 };
 
-function view(row: Doc<"callTranscripts">): TranscriptView {
+function view(row: Doc<"callTranscripts">, leadName: string | null = null): TranscriptView {
   return {
     id: row._id,
     title: row.title,
@@ -123,7 +126,16 @@ function view(row: Doc<"callTranscripts">): TranscriptView {
     clientId: row.clientId ?? null,
     agents: transcriptAgents(row),
     opening: clip(row.text, 200),
+    lead: row.crmContactRef ? { contactRef: row.crmContactRef, dealRef: row.crmDealRef ?? null, name: leadName } : null,
   };
+}
+
+/** The linked lead's name, read from the CRM connected for the transcript's client. */
+async function leadNameOf(ctx: Pick<QueryCtx, "db">, row: Doc<"callTranscripts">, views: Map<string, CrmView | null>) {
+  if (!row.crmContactRef) return null;
+  const key = row.clientId ?? "org";
+  if (!views.has(key)) views.set(key, await crmFor(ctx, { workspaceId: row.workspaceId, clientId: row.clientId }));
+  return (await views.get(key)?.contact(row.crmContactRef))?.name ?? null;
 }
 
 /** The workspace's transcripts, newest first, without their full text. */
@@ -136,7 +148,10 @@ export const list = workspaceQuery({
       .order("desc")
       .take(LIST_LIMIT);
     const rows = ctx.clients.filter(all);
-    return { canEdit: canWork(ctx.member.role), canGrant: isAdmin(ctx.member.role), transcripts: rows.map(view) };
+    const views = new Map<string, CrmView | null>();
+    const transcripts: TranscriptView[] = [];
+    for (const row of rows) transcripts.push(view(row, await leadNameOf(ctx, row, views)));
+    return { canEdit: canWork(ctx.member.role), canGrant: isAdmin(ctx.member.role), transcripts };
   },
 });
 
@@ -146,7 +161,7 @@ export const read = workspaceQuery({
   handler: async (ctx, args) => {
     requireEditor(ctx.member.role);
     const row = await own(ctx, ctx.workspaceId, args.transcriptId);
-    return { ...view(row), text: row.text };
+    return { ...view(row, await leadNameOf(ctx, row, new Map())), text: row.text };
   },
 });
 
@@ -186,6 +201,98 @@ export const setAgentAccess = adminMutation({
     return null;
   },
 });
+
+const LEAD_MATCHES = 10;
+const SUGGEST_WINDOW_MS = 36 * 3_600_000;
+
+/**
+ * Leads a call could be linked to, from the CRM connected for the transcript's client: the leads with a
+ * booked call on the call's date first (a suggestion only; nothing is linked until a person chooses), then
+ * leads whose name or email matches `q`. Names only. Owners, Admins and Members.
+ */
+export const leadChoices = workspaceQuery({
+  args: { transcriptId: v.id("callTranscripts"), q: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    requireEditor(ctx.member.role);
+    const row = await own(ctx, ctx.workspaceId, args.transcriptId);
+    const crm = await crmFor(ctx, { workspaceId: ctx.workspaceId, clientId: row.clientId });
+    if (!crm) return { crm: null, suggested: [], matches: [] };
+    const openDeals = await crm.deals({ open: true });
+    const dealOf = (contactRef: string) => openDeals.find((deal) => deal.contactRef === contactRef)?.ref ?? null;
+    type Choice = { contactRef: string; dealRef: string | null; name: string; source: string | null };
+    const suggested: Choice[] = [];
+    if (row.callDate) {
+      const middle = Date.parse(`${row.callDate}T12:00:00Z`);
+      const booked = await crm.appointments({ from: middle - SUGGEST_WINDOW_MS, to: middle + SUGGEST_WINDOW_MS });
+      for (const appointment of booked) {
+        if (!appointment.contactRef || suggested.some((choice) => choice.contactRef === appointment.contactRef)) continue;
+        const contact = await crm.contact(appointment.contactRef);
+        if (contact) suggested.push({ contactRef: contact.ref, dealRef: appointment.dealRef ?? dealOf(contact.ref), name: contact.name ?? "A lead with no name", source: contact.source });
+      }
+    }
+    const q = clip(args.q ?? "", 80).toLowerCase();
+    const matches: Choice[] = [];
+    if (q.length >= 2) {
+      for (const contact of await crm.contacts()) {
+        if (matches.length >= LEAD_MATCHES) break;
+        if (!`${contact.name ?? ""} ${contact.email ?? ""}`.toLowerCase().includes(q)) continue;
+        matches.push({ contactRef: contact.ref, dealRef: dealOf(contact.ref), name: contact.name ?? "A lead with no name", source: contact.source });
+      }
+    }
+    return { crm: crm.connection.label, suggested: suggested.slice(0, LEAD_MATCHES), matches };
+  },
+});
+
+/**
+ * Links a call to the lead it was with, or unlinks it (`contactRef` null). The lead must be one Vistrial
+ * read from the CRM connected for the transcript's client, and a deal, when given, must be that lead's.
+ * Owners, Admins and Members.
+ */
+export const linkLead = workspaceMutation({
+  args: { transcriptId: v.id("callTranscripts"), contactRef: v.union(v.string(), v.null()), dealRef: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    requireEditor(ctx.member.role);
+    const row = await own(ctx, ctx.workspaceId, args.transcriptId);
+    if (args.contactRef === null) {
+      await ctx.db.patch(row._id, { crmContactRef: undefined, crmDealRef: undefined });
+      await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "transcript.lead_unlinked", subject: row._id });
+      return null;
+    }
+    const crm = await crmFor(ctx, { workspaceId: ctx.workspaceId, clientId: row.clientId });
+    if (!crm) throw userError("Connect a CRM for this client first, then link the call to a lead.");
+    const contact = await crm.contact(args.contactRef);
+    if (!contact) throw userError("Vistrial has not read that lead from your CRM. Read it again, then try.");
+    if (args.dealRef !== undefined) {
+      const deal = await crm.deal(args.dealRef);
+      if (!deal || deal.contactRef !== contact.ref) throw userError("That deal is not this lead's.");
+    }
+    await ctx.db.patch(row._id, { crmContactRef: contact.ref, crmDealRef: args.dealRef });
+    // The audit row holds the transcript's id only, never the lead.
+    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "transcript.lead_linked", subject: row._id });
+    return null;
+  },
+});
+
+/**
+ * The transcripts an agent may read for an organization or one client, newest first, with their text.
+ * `contactRef` keeps only the calls linked to that lead. A call with one client is never returned for
+ * another client, or for the organization itself.
+ */
+export async function transcriptsFor(
+  ctx: Pick<QueryCtx, "db">,
+  args: { workspaceId: Id<"workspaces">; clientId?: Id<"clients">; agentSlug: string; contactRef?: string; limit?: number },
+) {
+  const rows = await ctx.db
+    .query("callTranscripts")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+    .order("desc")
+    .take(MAX_PER_WORKSPACE);
+  return rows
+    .filter((row) => row.clientId === args.clientId)
+    .filter((row) => transcriptAgents(row).includes(args.agentSlug))
+    .filter((row) => args.contactRef === undefined || row.crmContactRef === args.contactRef)
+    .slice(0, args.limit ?? LIST_LIMIT);
+}
 
 /** One line a reader can check against the page. */
 export function describeTranscript(row: Pick<Doc<"callTranscripts">, "title" | "tool" | "callDate" | "words">) {

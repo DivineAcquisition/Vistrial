@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
 import type { ScriptedModel } from "./lib/toolRouter";
-import { FOLLOW_UP_TEXT } from "./followUps";
+import { FOLLOW_UP_TEXT } from "./dealFollowUps";
 import { checkWritten } from "./skills/followUpEngine/tools";
 import type { ScanRecord } from "./skills/followUpEngine/shapes";
 import schema from "./schema";
@@ -77,8 +77,8 @@ async function setup(options: { crm?: boolean } = {}) {
 type Setup = Awaited<ReturnType<typeof setup>>;
 
 async function run(s: Setup) {
-  const { maxCredits } = await s.owner.query(api.followUps.quote, { workspaceId: s.workspaceId });
-  const { runId } = await s.owner.mutation(api.followUps.draft, { workspaceId: s.workspaceId, confirmedCredits: maxCredits });
+  const { maxCredits } = await s.owner.query(api.dealFollowUps.quote, { workspaceId: s.workspaceId });
+  const { runId } = await s.owner.mutation(api.dealFollowUps.draft, { workspaceId: s.workspaceId, confirmedCredits: maxCredits });
   let status = "queued";
   for (let i = 0; i < 30 && (status === "queued" || status === "running"); i += 1) {
     vi.advanceTimersByTime(1);
@@ -169,7 +169,7 @@ describe("a round of follow-ups, run end to end", () => {
     expect(inputs).toHaveLength(0);
 
     const bare = await setup({ crm: false });
-    const { maxCredits } = await bare.owner.query(api.followUps.quote, { workspaceId: bare.workspaceId });
-    await expect(bare.owner.mutation(api.followUps.draft, { workspaceId: bare.workspaceId, confirmedCredits: maxCredits })).rejects.toThrow(FOLLOW_UP_TEXT.noCrm);
+    const { maxCredits } = await bare.owner.query(api.dealFollowUps.quote, { workspaceId: bare.workspaceId });
+    await expect(bare.owner.mutation(api.dealFollowUps.draft, { workspaceId: bare.workspaceId, confirmedCredits: maxCredits })).rejects.toThrow(FOLLOW_UP_TEXT.noCrm);
   });
 });

@@ -431,7 +431,7 @@ tests, lint, both typechecks and the build, never deploying Convex:
     opted out, quiet hours, one message a day, Dealmaker pauses, and consent tags (now also checked in
     `claim`). Everything else still needs the typed SEND.
     *13b, built (server):* the Follow-up Engine (`convex/skills/followUpEngine`, started by
-    `followUps.draft`). Code reads the same board the Pipeline tab shows (`pipelineBoard.boardInputFor`)
+    `dealFollowUps.draft`). Code reads the same board the Pipeline tab shows (`pipelineBoard.boardInputFor`)
     and takes each deal's next move as its trigger: the lead wrote last (answer), something promised is due
     (deliver what was promised), a missed call (offer a new time), a quiet deal (ask honestly whether more
     contact is welcome), or a new lead (first message). The trigger sets the message kind, never the model.

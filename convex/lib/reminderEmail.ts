@@ -191,3 +191,19 @@ export function preCallBriefEmail(input: { workspaceName: string; leadName: stri
   });
   return { subject: `Pre-call brief ready: ${lead}${input.when ? `, ${fewWords(input.when, 40)}` : ""}`, ...body };
 }
+
+/**
+ * A planned agent went live, to each person who asked to be told ("Notify me when it's live"). It says what the
+ * agent does from the catalog's own words and how to turn it on; nothing about the workspace's data.
+ */
+export function agentLiveEmail(input: { agentName: string; job: string; workspaceName: string; agentSlug: string; appUrl: string }): ReminderEmail {
+  const agent = fewWords(input.agentName, 40);
+  const workspace = fewWords(input.workspaceName, 80);
+  const body = layout({
+    lines: [`${agent} is live on Vistrial.`, fewWords(input.job, 200) + ".", `An Owner or Admin of ${workspace} turns it on from its page. Nothing runs until then.`],
+    button: { label: `Open ${agent}`, url: `${appBase(input.appUrl)}/app/agents/${encodeURIComponent(input.agentSlug)}` },
+    why: `You got this because you asked to be told when ${agent} is live, in ${workspace} on Vistrial.`,
+    settingsUrl: settingsUrl(input.appUrl),
+  });
+  return { subject: `${agent} is live on Vistrial`, ...body };
+}

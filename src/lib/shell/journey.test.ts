@@ -20,6 +20,20 @@ describe("journey tabs", () => {
     expect(journeyTabOf(null)).toBeNull();
   });
 
+  it("gives Dealmaker its own six tabs only once it is live", () => {
+    const dealmaker = agents.find((row) => row.slug === "sales-conversion")!;
+    expect(dealmaker.status).toBe("planned");
+    expect(agentTabs(dealmaker)).toEqual([]);
+    expect(agentTabs({ ...dealmaker, status: "live" }).map((row) => [row.label, row.href])).toEqual([
+      ["Chat", "/app/agents/sales-conversion/work/chat"],
+      ["Calendar", "/app/agents/sales-conversion/work/calendar"],
+      ["Pipeline", "/app/agents/sales-conversion/work/pipeline"],
+      ["Calls", "/app/agents/sales-conversion/work/calls"],
+      ["Comms", "/app/agents/sales-conversion/work/comms"],
+      ["Playbook", "/app/agents/sales-conversion/work/playbook"],
+    ]);
+  });
+
   it("gives a live agent one work tab per live skill, named for the outcome", () => {
     const growth = agents.find((row) => row.slug === "growth-architect")!;
     expect(workTabsFor(growth).map((row) => [row.label, row.href])).toEqual([

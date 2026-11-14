@@ -19,6 +19,7 @@ import type * as adapters_web from "../adapters/web.js";
 import type * as adapters_youtube from "../adapters/youtube.js";
 import type * as agentChat from "../agentChat.js";
 import type * as agentFolder from "../agentFolder.js";
+import type * as agentLaunch from "../agentLaunch.js";
 import type * as agentTasks from "../agentTasks.js";
 import type * as agentWaitlist from "../agentWaitlist.js";
 import type * as agentsMigration from "../agentsMigration.js";
@@ -319,6 +320,7 @@ declare const fullApi: ApiFromModules<{
   "adapters/youtube": typeof adapters_youtube;
   agentChat: typeof agentChat;
   agentFolder: typeof agentFolder;
+  agentLaunch: typeof agentLaunch;
   agentTasks: typeof agentTasks;
   agentWaitlist: typeof agentWaitlist;
   agentsMigration: typeof agentsMigration;

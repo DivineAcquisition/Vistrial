@@ -182,6 +182,8 @@ type ReadCtx = QueryCtx & { workspaceId: Id<"workspaces">; clients: ClientScope;
 
 /** How far ahead the Calls tab lists booked calls, and how many briefs it lists. */
 export const CALLS_AHEAD_DAYS = 7;
+/** Calls of the last two days stay listed, so the closer can add their notes after the call. */
+export const CALLS_BACK_DAYS = 2;
 const RECENT_BRIEFS = 20;
 
 async function readScope(ctx: ReadCtx, clientId: Id<"clients"> | undefined) {
@@ -242,7 +244,7 @@ export const calls = workspaceQuery({
     if (!crm) return { ...base, connected: false as const, scopeWhy: home.why, upcoming: [], recent };
 
     const now = Date.now();
-    const [appointments, deals, pipelines] = await Promise.all([crm.appointments({ from: now - 2 * 3_600_000, to: now + CALLS_AHEAD_DAYS * 86_400_000 }), crm.deals({ open: true }), crm.pipelines()]);
+    const [appointments, deals, pipelines] = await Promise.all([crm.appointments({ from: now - CALLS_BACK_DAYS * 86_400_000, to: now + CALLS_AHEAD_DAYS * 86_400_000 }), crm.deals({ open: true }), crm.pipelines()]);
     const stageName = new Map(pipelines.flatMap((pipeline) => pipeline.stages.map((stage) => [`${pipeline.ref}:${stage.ref}`, stage.name] as const)));
     const dealOf = new Map<string, (typeof deals)[number]>();
     for (const deal of deals) if (deal.contactRef && (!dealOf.has(deal.contactRef) || (deal.updatedAt ?? 0) > (dealOf.get(deal.contactRef)!.updatedAt ?? 0))) dealOf.set(deal.contactRef, deal);
@@ -251,6 +253,15 @@ export const calls = workspaceQuery({
       if (home.kind === "none" || !contactRef) return false;
       return dealOf.get(contactRef)?.ownerRef === home.crmUserRef;
     };
+    const noted = new Set(
+      (
+        await ctx.db
+          .query("callNotes")
+          .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", scope.clientId))
+          .order("desc")
+          .take(200)
+      ).flatMap((row) => (row.appointmentRef ? [row.appointmentRef] : [])),
+    );
     const upcoming = [];
     for (const call of appointments) {
       if (call.status === "cancelled" || !call.contactRef || !mine(call.contactRef)) continue;
@@ -269,6 +280,9 @@ export const calls = workspaceQuery({
         source: contact.source,
         stage: deal ? (stageName.get(`${deal.pipelineRef}:${deal.stageRef}`) ?? null) : null,
         brief: brief ? briefRow(brief, await stateOf(ctx, brief), timezone) : null,
+        /** The call has started: the closer may add their notes. */
+        past: call.startsAt <= now,
+        noted: noted.has(call.ref),
       });
       if (upcoming.length >= 50) break;
     }

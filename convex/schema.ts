@@ -2346,6 +2346,42 @@ export default defineSchema({
    * started on this row's own project and finds the row by it. The lead is named by the CRM's own refs; what a person typed (the setter's
    * hand-off, or what they know about a lead when no CRM is connected) is kept here as their account.
    */
+  /**
+   * The closer's notes after a call (Dealmaker, Calls tab; docs/rebuild/dealmaker.md, 0.8): the outcome, the next
+   * step, the fit fields and the objections heard, all the closer's own account, and a short voice memo of their
+   * own, which Deepgram transcribes. The audio is deleted once transcribed; only the words are kept.
+   */
+  callNotes: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    contactRef: v.optional(v.string()),
+    dealRef: v.optional(v.string()),
+    appointmentRef: v.optional(v.string()),
+    leadName: v.string(),
+    outcome: v.union(v.literal("nextCall"), v.literal("proposal"), v.literal("thinking"), v.literal("yes"), v.literal("no"), v.literal("notFit"), v.literal("noShow")),
+    nextStep: v.optional(v.string()),
+    nextStepDue: v.optional(v.number()),
+    fit: v.array(v.object({ field: v.union(v.literal("need"), v.literal("budget"), v.literal("decider"), v.literal("timing"), v.literal("fit")), value: v.string() })),
+    /** Objections heard on the call, by the Playbook's own words, with the item when it is one. */
+    objections: v.array(v.object({ title: v.string(), itemId: v.optional(v.id("playbookItems")) })),
+    memo: v.optional(
+      v.object({
+        status: v.union(v.literal("transcribing"), v.literal("done"), v.literal("failed")),
+        storageId: v.optional(v.id("_storage")),
+        seconds: v.number(),
+        transcript: v.optional(v.string()),
+        /** Why it could not be transcribed, as a code. */
+        failCode: v.optional(v.string()),
+      }),
+    ),
+    /** The closer, by name: every field here is their account. */
+    writtenBy: v.string(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"])
+    .index("by_workspace_contact", ["workspaceId", "contactRef", "createdAt"]),
+
   dealBriefings: defineTable({
     workspaceId: v.id("workspaces"),
     clientId: v.optional(v.id("clients")),

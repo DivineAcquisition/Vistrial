@@ -251,15 +251,21 @@ export const propose = workspaceMutation({
   },
 });
 
-/** The door an agent uses (Dealmaker, next). The agent proposes; a person decides. */
+/**
+ * An agent proposes one change; a person decides. Skills reach this through `lib/crm/act.ts`, which checks
+ * first that the connected CRM can do the action at all.
+ */
+export async function proposeAgentAction(ctx: Ctx, args: { workspaceId: Id<"workspaces">; clientId?: Id<"clients">; agentSlug: string; why: string } & ActionInput) {
+  const { workspaceId, clientId, agentSlug, why, ...input } = args;
+  const connection = await connectionOf(ctx, workspaceId, clientId);
+  if (!connection) throw userError("HighLevel is not connected here.");
+  return proposeAction(ctx, connection, input, why, "agent", { agentSlug });
+}
+
+/** The door an agent uses from an action. The agent proposes; a person decides. */
 export const proposeForAgent = internalMutation({
   args: { workspaceId: v.id("workspaces"), clientId: v.optional(v.id("clients")), agentSlug: v.string(), ...inputArgs },
-  handler: async (ctx, args) => {
-    const { workspaceId, clientId, agentSlug, why, ...input } = args;
-    const connection = await connectionOf(ctx, workspaceId, clientId);
-    if (!connection) throw userError("HighLevel is not connected here.");
-    return proposeAction(ctx, connection, input, why, "agent", { agentSlug });
-  },
+  handler: async (ctx, args) => proposeAgentAction(ctx, args),
 });
 
 type Decider = Ctx & MemberAccess;

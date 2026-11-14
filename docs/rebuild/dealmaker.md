@@ -363,6 +363,15 @@ tests, lint, both typechecks and the build, never deploying Convex:
    only a person lifts it. The screens come with the Pipeline tab (step 9).
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.
+   *9a, built (server):* `convex/lib/dealmaker/board.ts` and `convex/pipelineBoard.ts`. On every read, in code:
+   health (active, cooling, quiet, won, lost) against the quiet-days setting; temperature (hot, warm, cold)
+   from replies and shows only; who has the ball (the lead, us, approval); readiness as the five fit fields
+   established (with the evidence kind: recorded event, buyer's words, rep's account, measured result) or
+   unresolved; open commitments; one next move per deal (answer, deliver what was promised, rebook a
+   no-show, ask honestly whether contact is welcome, or the first reply, which waits for a person); source
+   quality and a forecast range only from at least 5 of the business's own closed deals, else "Not enough
+   data"; per rep for Owners and Admins only. The board is filtered to each person's home. New tables
+   `dealFacts` and `dealCommitments` (people write now; call reviews add theirs later).
 10. **Calls tab, before**: Deal Briefing with research, readiness, the setter's hand-off, offer fit and opening line; email and the
     calendar-event link.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel

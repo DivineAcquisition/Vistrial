@@ -99,7 +99,7 @@ export function ApprovalCard({ workspaceId, assetId, status, canDecide }: { work
           <p className="text-sm text-muted-foreground">
             {status === "needsReview"
               ? "This draft did not pass every check, so it cannot be approved as it is. Edit it on the report page, or reject it with a reason."
-              : "Approving marks this version of the report as approved. Nothing is published, sent or spent. Later skills can then build on it."}
+              : "Approving marks this version of the report as approved. Nothing is published, sent or spent. Strategist's later work can then build on it."}
           </p>
           {canDecide ? (
             rejecting ? (

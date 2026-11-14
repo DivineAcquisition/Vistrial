@@ -159,7 +159,8 @@ export function workItems(rows: UsageRow[]): WorkItem[] {
     if (row.model && !item.models.includes(row.model)) item.models.push(row.model);
     item.title ??= row.title;
   }
-  return [...items.values()].sort((a, b) => b.lastAt - a.lastAt);
+  // Newest first; work charged in the same millisecond goes larger first, so the order never depends on the read.
+  return [...items.values()].sort((a, b) => b.lastAt - a.lastAt || b.credits - a.credits || a.ref.localeCompare(b.ref));
 }
 
 /** The value below which `share` of the sorted numbers fall, read between neighbours. */

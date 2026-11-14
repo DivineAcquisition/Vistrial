@@ -20,6 +20,7 @@ import { askApproval } from "./lib/briefing";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { loadCaps } from "./lib/capRows";
 import { CHAT_ROUTES, ROUTE_CHOICES, isChatRoute, type ChatRoute } from "./lib/chatRouting";
+import { agentWork } from "./lib/workWords";
 import { clientForNew } from "./lib/clients";
 import { priceFor } from "./lib/credits";
 import { notAllowed, notFound, userError } from "./lib/errors";
@@ -102,7 +103,7 @@ export async function insertProposal(ctx: MutationCtx & { workspaceId: Id<"works
   if (input.work) {
     const ask = clip(input.work.ask, MAX_ASK);
     if (!ask) throw userError("Say what the agent should work on.");
-    if (input.work.skillSlug !== undefined && !isChatRoute(input.work.skillSlug)) throw userError("That skill cannot be started from a task yet.");
+    if (input.work.skillSlug !== undefined && !isChatRoute(input.work.skillSlug)) throw userError("That work cannot be started from a task yet.");
     work = { ask, ...(input.work.skillSlug ? { skillSlug: input.work.skillSlug } : {}) };
     // With no skill named the chat decides, so the card shows the most any of them can use.
     const skills = input.work.skillSlug ? [input.work.skillSlug] : [...CHAT_ROUTES];
@@ -189,8 +190,6 @@ export async function declineTask(ctx: Decider, task: Doc<"agentTasks">, reason?
   await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "task.skipped", subject: task._id });
 }
 
-const SKILL_NAME: Record<string, string> = Object.fromEntries(ROUTE_CHOICES.map((row) => [row.skill, row.name]));
-
 async function evidenceView(ctx: Member, evidence: TaskEvidence[]) {
   const out: { kind: TaskEvidence["kind"]; label: string; href: string | null; external: boolean }[] = [];
   for (const item of evidence) {
@@ -254,7 +253,8 @@ async function card(ctx: Member & { role: string }, task: Doc<"agentTasks">, now
     /** "work": an agent does it. "change": the organization makes the change itself and checks back. */
     type: task.work ? ("work" as const) : ("change" as const),
     ask: task.work?.ask ?? null,
-    skill: task.work?.skillSlug ? (SKILL_NAME[task.work.skillSlug] ?? null) : null,
+    /** The agent and its work, "Strategist · Research": a skill is never named in the app. */
+    skill: task.work?.skillSlug ? agentWork(task.agentSlug ?? null, task.work.skillSlug) : null,
     skillSlug: task.work?.skillSlug ?? null,
     workTab: task.work?.skillSlug && isChatRoute(task.work.skillSlug) ? SKILL_TAB[task.work.skillSlug] : null,
     checkInDays: task.try?.checkInDays ?? null,

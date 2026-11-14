@@ -22,7 +22,7 @@ function Projects({ shell }: { shell: WorkspaceShell }) {
       <PageHeader
         eyebrow="Strategist"
         title="Research"
-        description="Market Intelligence studies your market before it recommends anything, and shows the sources behind every claim."
+        description="Strategist studies your market before it recommends anything, and shows the sources behind every claim."
         actions={canStart ? <Button render={<Link href="/app/research/new" />}>New assignment</Button> : undefined}
       />
       <Panel className="grid gap-3 p-4 sm:p-6">

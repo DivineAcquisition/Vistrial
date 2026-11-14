@@ -31,6 +31,7 @@ import { OffersCanvas } from "./work-canvases";
 import { RefineInChat, ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
 import { ModelSwitch, type ModelSwitchProps } from "@/components/models/model-switch";
 import { useModelChoice } from "@/components/models/use-model-choice";
+import { agentWork } from "../../../convex/lib/workWords";
 
 export type OffersTabProps = {
   base: string;
@@ -376,7 +377,7 @@ export function OffersTabView(props: OffersTabProps) {
   const hero = (
     <WorkHero
       icon={Store}
-      eyebrow="Strategist · Offer Intelligence"
+      eyebrow={agentWork(null, "offer-intelligence")}
       title="Offers"
       promise="Build your offer step by step, keep every version, and set it beside what competitors lead with."
       working={tab.running.length > 0}

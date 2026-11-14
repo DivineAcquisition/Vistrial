@@ -228,7 +228,7 @@ function Conversation({ chat, base, canSend, onSend }: { chat: ChatDetail; base:
           <p className="flex items-center gap-1.5 text-card-foreground">
             <look.icon aria-hidden className="size-3.5 shrink-0 text-primary" />
             <span>
-              Handed to Strategist · {look.skill}
+              Handed to {look.work}
             </span>
           </p>
         ) : (

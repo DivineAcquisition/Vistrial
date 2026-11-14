@@ -145,6 +145,7 @@ import type * as lib_transcriptText from "../lib/transcriptText.js";
 import type * as lib_usage from "../lib/usage.js";
 import type * as lib_usageReport from "../lib/usageReport.js";
 import type * as lib_workTabs from "../lib/workTabs.js";
+import type * as lib_workWords from "../lib/workWords.js";
 import type * as lib_zip from "../lib/zip.js";
 import type * as merges from "../merges.js";
 import type * as metaAds from "../metaAds.js";
@@ -371,6 +372,7 @@ declare const fullApi: ApiFromModules<{
   "lib/usage": typeof lib_usage;
   "lib/usageReport": typeof lib_usageReport;
   "lib/workTabs": typeof lib_workTabs;
+  "lib/workWords": typeof lib_workWords;
   "lib/zip": typeof lib_zip;
   merges: typeof merges;
   metaAds: typeof metaAds;

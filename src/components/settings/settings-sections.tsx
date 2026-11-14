@@ -717,7 +717,7 @@ export function AgentsSection({
             }
           >
             {agent.skills.length > 0 ? (
-              <ul className="flex flex-wrap gap-1.5" aria-label={`${agent.name} skills`}>
+              <ul className="flex flex-wrap gap-1.5" aria-label={`What ${agent.name} does`}>
                 {agent.skills.map((skill) => (
                   <li
                     key={skill.slug}

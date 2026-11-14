@@ -24,7 +24,15 @@ export type AgentStatus = "live" | "planned";
 
 export type AgentSkill = {
   slug: string;
+  /**
+   * The skill's own name. Shown only on the public site and future agent pages: inside the app a skill is
+   * part of its agent and is never named. Screens there use `work` and `output` (lib/workWords.ts).
+   */
   name: string;
+  /** What the agent is doing, in a word or two, for labels inside the app: "Research", "Offer analysis". */
+  work: string;
+  /** What it hands back, with its article, for sentences: "a market report", "an ad set". */
+  output: string;
   job: string;
   promise: string;
   handsBack: string;
@@ -60,8 +68,23 @@ const PLANNED_PROMISE = "It does not run yet.";
 /** Skills that are built and may run for customers. Everything else in the catalog is coming soon. */
 const AVAILABLE_SKILLS = new Set(["market-intelligence", "offer-intelligence", "growth-diagnostics", "creative-production", "landing-page-teardown"]);
 
+/**
+ * How the app words each skill's work, without naming the skill: a label and what it hands back. Every
+ * agent's skills need a row here, Dealmaker's and the later agents' too; the catalog test checks it.
+ */
+const WORK_WORDS: Record<string, { work: string; output: string }> = {
+  "market-intelligence": { work: "Research", output: "a market report" },
+  "offer-intelligence": { work: "Offer analysis", output: "an offer analysis" },
+  "campaign-strategy": { work: "Campaign plan", output: "a campaign strategy" },
+  "creative-production": { work: "Ads", output: "an ad set" },
+  "funnel-architect": { work: "Funnel plan", output: "a funnel plan" },
+  "growth-diagnostics": { work: "Growth diagnosis", output: "a growth diagnosis" },
+  "landing-page-teardown": { work: "Page breakdown", output: "a page breakdown" },
+};
+
 function skill(slug: string, name: string, handsBack: string, promise: string, sort: number): AgentSkill {
-  return { slug, name, job: handsBack, handsBack, promise, status: AVAILABLE_SKILLS.has(slug) ? "available" : "comingSoon", sort };
+  const words = WORK_WORDS[slug] ?? { work: "Work", output: "a result" };
+  return { slug, name, ...words, job: handsBack, handsBack, promise, status: AVAILABLE_SKILLS.has(slug) ? "available" : "comingSoon", sort };
 }
 
 export const CATALOG: CatalogAgent[] = [

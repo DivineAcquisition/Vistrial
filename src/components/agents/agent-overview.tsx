@@ -13,6 +13,7 @@ import { shortDate } from "@/lib/research/words";
 import type { RailSkill } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 import { SKILL_TAB, type WorkTab } from "../../../convex/lib/workTabs";
+import { workLabel } from "../../../convex/lib/workWords";
 
 const TAB_LOOK: Record<WorkTab, { label: string; icon: LucideIcon }> = {
   research: { label: "Research", icon: FileSearch },
@@ -188,8 +189,8 @@ export function AgentOverviewView({
       </div>
 
       {skills.length > 0 ? (
-        <section className="grid gap-3" aria-label="Skills">
-          <SectionTitle icon={Sparkles}>Skills</SectionTitle>
+        <section className="grid gap-3" aria-label="What it does">
+          <SectionTitle icon={Sparkles}>What it does</SectionTitle>
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {skills.map((skill) => {
               const tab = skill.status === "available" ? SKILL_TAB[skill.slug] : undefined;
@@ -197,7 +198,7 @@ export function AgentOverviewView({
               return (
                 <li key={skill.slug} className="grid content-start gap-2 rounded-xl border border-border bg-card p-4">
                   <span className="flex items-start justify-between gap-2">
-                    <span className="font-medium text-card-foreground">{skill.name}</span>
+                    <span className="font-medium text-card-foreground">{workLabel(skill.slug)}</span>
                     <StatusBadge label={skill.status === "available" ? "Available" : "Coming soon"} tone={skill.status === "available" ? "good" : "neutral"} className="[&_span]:normal-case" />
                   </span>
                   <span className="text-sm text-muted-foreground">{skill.handsBack}</span>

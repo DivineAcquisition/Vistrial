@@ -250,7 +250,7 @@ export const RESULT_CODE_WORDS: Record<string, string> = {
   passed: "Every check passed.",
   checks_failed: "Some checks did not pass.",
   needs_review: "Saved as a draft that needs review.",
-  undeclared_question: "The skill tried to ask a question it is not allowed to ask.",
+  undeclared_question: "The agent tried to ask a question it is not allowed to ask.",
   max_tokens: "The answer ran out of room.",
   invalid_output: "The answer was not in the required form.",
 };

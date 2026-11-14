@@ -24,6 +24,7 @@ import { saveTheme, type ThemeChoice } from "@/lib/theme";
 import { CATALOG } from "@/lib/shell/rail";
 import { ApprovalSettingsView, type ApprovalSettingsData } from "@/components/settings/approval-settings";
 import { MemoryView, type MemoryFact } from "@/components/settings/memory-section";
+import { workLabel } from "../../../../convex/lib/workWords";
 
 /** What an agency's memory holds: facts with where each came from and whether a person confirmed it. */
 const MEMORY: MemoryFact[] = [
@@ -103,7 +104,7 @@ function agents(canEdit: boolean): AgentsData {
       job: agent.job,
       status: agent.status === "live" ? "live" : "planned",
       state: agent.status === "live" ? "on" : "off",
-      skills: agent.skills.map((skill) => ({ slug: skill.slug, name: skill.name, status: skill.status })),
+      skills: agent.skills.map((skill) => ({ slug: skill.slug, name: workLabel(skill.slug), status: skill.status })),
     })),
     controls: {
       paused: false,

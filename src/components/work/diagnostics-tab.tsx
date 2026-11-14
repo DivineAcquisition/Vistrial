@@ -25,6 +25,7 @@ import { RoadmapCanvas } from "./work-canvases";
 import type { ConnectedData, DiagnosisView, GoalView, ItemDecision, ReviewActions, TabData } from "./types";
 import { useReviewActions } from "./use-review";
 import { RefineInChat, ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, refineLink, suggestionHref } from "./work-shell";
+import { agentWork } from "../../../convex/lib/workWords";
 
 const PHASES: { key: "fix" | "build" | "scale"; name: string; weeks: string; icon: LucideIcon; blurb: string }[] = [
   { key: "fix", name: "Fix", weeks: "Weeks 1–4", icon: WrenchIcon, blurb: "Stop the leak where growth stalls." },
@@ -381,7 +382,7 @@ export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnos
       <GoalCard key={goal?.text ?? "none"} goal={goal} editor={editor} onSave={onSaveGoal} />
       <WorkHero
         icon={Gauge}
-        eyebrow="Strategist · Growth Diagnostics"
+        eyebrow={agentWork(null, "growth-diagnostics")}
         title="Diagnostics"
         promise="Finds where growth stalls in your own data and turns it into a 90-day plan: Fix, Build, Scale."
         working={tab.running.length > 0}

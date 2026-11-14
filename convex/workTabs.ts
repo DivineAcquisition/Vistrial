@@ -91,7 +91,7 @@ function projectIdOf(ctx: QueryCtx, run: Doc<"agentRuns"> | null) {
 export const tab = workspaceQuery({
   args: { skillSlug: v.string() },
   handler: async (ctx, args) => {
-    if (!isTabSkill(args.skillSlug)) throw userError("This skill has no workspace.");
+    if (!isTabSkill(args.skillSlug)) throw userError("This work has no workspace.");
     const skill: TabSkill = args.skillSlug;
 
     const running = [];

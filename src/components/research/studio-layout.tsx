@@ -16,6 +16,7 @@ import type { Tone } from "@/components/ui/tone";
 import { PLATFORM_LABEL } from "@/lib/research/words";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useCredits } from "@/lib/credits";
+import { agentWork } from "../../../convex/lib/workWords";
 
 type Section = "context" | "research" | "findings" | "assets" | "review";
 
@@ -77,7 +78,7 @@ export function StudioLayout({
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-6">
       <PageHeader
-        eyebrow="Strategist · Market Intelligence"
+        eyebrow={agentWork(null, "market-intelligence")}
         title={studio.project.title}
         status={meta?.label}
         statusTone={meta?.tone}
@@ -212,7 +213,7 @@ export function StudioLayout({
                 <p className="text-sm text-muted-foreground">The report appears here when it is written.</p>
               )}
               <p className="text-sm text-muted-foreground">
-                Campaigns, copy, scripts and creative briefs come from Creative Production, a separate skill that starts from the approved report, with its own budget shown before it runs.
+                Campaigns, copy, scripts and creative briefs are made separately, from the approved report, with their own budget shown before they start.
               </p>
             </Panel>
           ) : null}

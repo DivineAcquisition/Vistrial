@@ -2556,6 +2556,41 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_workspace_client", ["workspaceId", "clientId"]),
 
+  /**
+   * What is established about one deal's fit (need, budget, who decides, timing, fit), each with the kind of
+   * evidence it rests on (doctrine II). Written by a person now, and by call reviews later. Newest per field wins;
+   * older rows stay as history.
+   */
+  dealFacts: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    dealRef: v.string(),
+    field: v.union(v.literal("need"), v.literal("budget"), v.literal("decider"), v.literal("timing"), v.literal("fit")),
+    value: v.string(),
+    kind: v.union(v.literal("recorded"), v.literal("buyer"), v.literal("rep"), v.literal("measured")),
+    /** Who gave a rep's account, by name; a call review's id for a buyer's words. */
+    author: v.optional(v.string()),
+    sourceRef: v.optional(v.string()),
+    recordedBy: v.string(),
+    recordedAt: v.number(),
+  }).index("by_workspace_deal", ["workspaceId", "dealRef", "recordedAt"]),
+
+  /** A promise to a buyer or a hand-off inside the team: an owner, what done means, and a due date where it has one. */
+  dealCommitments: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    dealRef: v.string(),
+    text: v.string(),
+    /** A member's id, or "lead" when the buyer owns it. */
+    owner: v.string(),
+    due: v.optional(v.number()),
+    doneAt: v.optional(v.number()),
+    doneBy: v.optional(v.string()),
+    sourceRef: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_workspace_deal", ["workspaceId", "dealRef", "createdAt"]),
+
   /** A lead Dealmaker must not contact: paused after a negative reply, until a person lifts it (0.2). */
   dealmakerPauses: defineTable({
     workspaceId: v.id("workspaces"),

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { NoteTakers } from "./note-takers";
 
 import { OpenChecklist } from "./call-checklist";
 import { CallNotesForm, RecentNotes, type NotesActions, type NotesData } from "./call-notes";
@@ -684,5 +685,10 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
       return saveNote({ workspaceId, clientId, ...input, objections: objections.map((row) => ({ title: row.title, ...(row.itemId ? { itemId: row.itemId as Id<"playbookItems"> } : {}) })), ...(stored ? { memo: stored } : {}) });
     },
   };
-  return <CallsView data={data} actions={actions} notes={notes ?? null} reviews={reviews ?? null} links={links ?? null} onOpen={setOpen} onOpenReview={setOpenReview} onOpenChecklist={setOpenChecklist} />;
+  return (
+    <div className="grid min-w-0 gap-5">
+      <CallsView data={data} actions={actions} notes={notes ?? null} reviews={reviews ?? null} links={links ?? null} onOpen={setOpen} onOpenReview={setOpenReview} onOpenChecklist={setOpenChecklist} />
+      <NoteTakers workspaceId={workspaceId} />
+    </div>
+  );
 }

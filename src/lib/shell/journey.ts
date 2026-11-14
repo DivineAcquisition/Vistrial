@@ -52,15 +52,31 @@ const WORK_TAB_LABEL: Record<WorkTab, string> = { research: "Research", offers: 
  * A live agent's work tabs, one per live skill that has a workspace, named for the outcome: Research
  * (Market Intelligence), Offers (Offer Intelligence), Diagnostics (Growth Diagnostics). No coming-soon tabs.
  */
-export function workTabsFor(agent: RailAgent) {
+export function workTabsFor(agent: RailAgent): { tab: AgentTab["tab"]; skillSlug: string | null; label: string; href: string }[] {
   if (agent.status !== "live") return [];
+  // Dealmaker's tabs are its own (docs/rebuild/dealmaker.md, 0.5), shown once it is live.
+  if (agent.slug === DEALMAKER) return DEALMAKER_TABS.filter((row) => row.tab !== "chat").map((row) => ({ tab: row.tab, skillSlug: null, label: row.label, href: `/app/agents/${agent.slug}/work/${row.tab}` }));
   return liveSkills(agent).flatMap((skill) => {
     const tab = SKILL_TAB[skill.slug];
     return tab ? [{ tab, skillSlug: skill.slug, label: WORK_TAB_LABEL[tab], href: `/app/agents/${agent.slug}/work/${tab}` }] : [];
   });
 }
 
-export type AgentTab = { tab: "chat" | "creative" | "pages" | WorkTab; skillSlug: string | null; label: string; href: string };
+/** Dealmaker, whose tabs are its own rather than one per skill. */
+export const DEALMAKER = "sales-conversion";
+
+/** Dealmaker's six tabs, in order: Chat first, then Calendar, Pipeline, Calls, Comms and Playbook. */
+export const DEALMAKER_TABS = [
+  { tab: "chat", label: "Chat" },
+  { tab: "calendar", label: "Calendar" },
+  { tab: "pipeline", label: "Pipeline" },
+  { tab: "calls", label: "Calls" },
+  { tab: "comms", label: "Comms" },
+  { tab: "playbook", label: "Playbook" },
+] as const;
+type DealmakerTab = (typeof DEALMAKER_TABS)[number]["tab"];
+
+export type AgentTab = { tab: "chat" | "creative" | "pages" | WorkTab | DealmakerTab; skillSlug: string | null; label: string; href: string };
 
 /** Where business memory lives: in Settings, for the whole organization, not under one agent. */
 export const MEMORY_HREF = "/app/settings?section=memory";
@@ -90,6 +106,7 @@ const PAGES_SKILL = "landing-page-teardown";
 export function agentTabs(agent: RailAgent): AgentTab[] {
   const work = workTabsFor(agent);
   if (work.length === 0) return [];
+  if (agent.slug === DEALMAKER) return [{ tab: "chat", skillSlug: null, label: "Chat", href: chatHref(agent.slug) }, ...work];
   // Creative Production has its own workspace: it starts from a form, not from the chat, so it is not a work tab above.
   const creative: AgentTab[] = liveSkills(agent).some((skill) => skill.slug === CREATIVE_SKILL)
     ? [{ tab: "creative", skillSlug: CREATIVE_SKILL, label: "Creative", href: `/app/agents/${agent.slug}/work/creative` }]

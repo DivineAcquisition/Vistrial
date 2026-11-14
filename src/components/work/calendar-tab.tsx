@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { useClientScope } from "@/components/shell/shell-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
+import { showError } from "@/lib/errors/show-error";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -17,6 +18,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { SectionTitle, WorkHero } from "./work-shell";
 
 export type CalendarData = FunctionReturnType<typeof api.dealCalendar.week>;
+export type AutoBriefs = FunctionReturnType<typeof api.autoBriefs.status>;
 type Week = Extract<CalendarData, { appointments: true }>;
 type Call = Week["days"][number]["calls"][number];
 
@@ -75,8 +77,59 @@ function Figure({ label, value, note }: { label: string; value: string | number;
   );
 }
 
+/** Automatic briefs: the switch, with the monthly cap shown before it is turned on and this month's use. */
+function AutoBriefsPanel({ auto, onSet }: { auto: AutoBriefs; onSet: (on: boolean, confirmedCredits?: number) => Promise<unknown> }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const set = async (on: boolean) => {
+    setBusy(true);
+    try {
+      await onSet(on, on ? auto.cap.credits : undefined);
+      setConfirming(false);
+    } catch (error) {
+      showError(error);
+    }
+    setBusy(false);
+  };
+  const capWords = `at most ${auto.cap.briefs} briefs and ${auto.cap.credits} credits a month`;
+  return (
+    <Panel className="grid gap-2 p-4 sm:p-6" data-auto-briefs={auto.on ? "on" : "off"}>
+      <SectionTitle icon={FileText}>Automatic briefs: {auto.on ? "on" : "off"}</SectionTitle>
+      <p className="text-sm text-muted-foreground">
+        {auto.on
+          ? `A brief is made about ${auto.hoursBefore} hours before each booked call, ${capWords}. This month: ${auto.used.briefs} briefs, ${auto.used.credits} credits.`
+          : `When on, a brief is made about ${auto.hoursBefore} hours before each booked call, ${capWords}. Briefs can always be asked for in Calls.`}
+      </p>
+      {auto.canSet ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {auto.on ? (
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => void set(false)}>
+              Turn off
+            </Button>
+          ) : confirming ? (
+            <>
+              <Button size="sm" disabled={busy} onClick={() => void set(true)}>
+                Turn on, {capWords}
+              </Button>
+              <Button size="sm" variant="ghost" disabled={busy} onClick={() => setConfirming(false)}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setConfirming(true)}>
+              Turn on…
+            </Button>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">An Owner or Admin turns this on or off.</p>
+      )}
+    </Panel>
+  );
+}
+
 /** The Calendar with its data handed in, so a story can show it without a server. */
-export function CalendarView({ data, onWeek }: { data: CalendarData; onWeek: (week: number) => void }) {
+export function CalendarView({ data, onWeek, auto = null, onAuto }: { data: CalendarData; onWeek: (week: number) => void; auto?: AutoBriefs | null; onAuto?: (on: boolean, confirmedCredits?: number) => Promise<unknown> }) {
   const hero = (
     <WorkHero
       icon={CalendarIcon}
@@ -123,6 +176,7 @@ export function CalendarView({ data, onWeek }: { data: CalendarData; onWeek: (we
         {figures.basis}
         {figures.notMarked ? ` ${figures.notMarked} past call${figures.notMarked === 1 ? " is" : "s are"} not marked either way, so not counted.` : ""}
       </p>
+      {auto && onAuto ? <AutoBriefsPanel auto={auto} onSet={onAuto} /> : null}
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <Panel className="grid min-w-0 content-start gap-3 p-4 sm:p-6">
           <SectionTitle
@@ -188,6 +242,8 @@ export function CalendarTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) 
   const { clientId } = useClientScope();
   const [week, setWeek] = useState(0);
   const data = useQuery(api.dealCalendar.week, { workspaceId, clientId, week });
+  const auto = useQuery(api.autoBriefs.status, { workspaceId, clientId });
+  const setAuto = useMutation(api.autoBriefs.setAuto);
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your calendar…</p>;
-  return <CalendarView data={data} onWeek={setWeek} />;
+  return <CalendarView data={data} onWeek={setWeek} auto={auto ?? null} onAuto={(on, confirmedCredits) => setAuto({ workspaceId, clientId, on, confirmedCredits })} />;
 }

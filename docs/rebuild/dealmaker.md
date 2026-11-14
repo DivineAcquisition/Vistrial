@@ -438,7 +438,15 @@ tests, lint, both typechecks and the build, never deploying Convex:
     cancels an event. The privacy policy says so in section J (brief links, and the Limited Use sentence), and
     section K and the service providers now name Deepgram for the voice memo (11a), which is the team member's
     own voice and never the call. The policy date stays November 14, 2026, which is today.
-    Next: 10d the automatic brief 3 hours before each booked call, with its monthly cap.
+    *10d, built (automatic briefs):* `convex/autoBriefs.ts`, the switch on the Calendar tab. Off by default;
+    an Owner or Admin turns it on only after confirming the cap shown beside it (at most 200 briefs and 600
+    credits a calendar month, UTC). A cron every 15 minutes makes a brief for each booked CRM call starting
+    within 3 hours that has none, as the person who turned it on (`dealBriefings.createBrief`, shared with a
+    person's request; trigger `auto`, an unattended run on the platform's route), counting each new brief at
+    the most it may use against the monthly credits. It stops if that person is no longer an active Owner or
+    Admin, if Dealmaker is off, or at the cap. The brief's email goes as before (to the linked closer, else to
+    the person who turned it on). Once a day the Briefing lists the briefs made automatically the day before,
+    in one post.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
     recordings; the Zoom and Meet note taker.
     *11a, built:* the closer's notes after a call (`convex/callNotes.ts`, `src/components/work/call-notes.tsx`).
@@ -453,8 +461,19 @@ tests, lint, both typechecks and the build, never deploying Convex:
     the CRM or contacts the lead. **The memo** is the closer's own voice, never the call (the form says so):
     uploaded to Convex storage, transcribed by Deepgram (`nova-3`, `DEEPGRAM_API_KEY`), and the audio deleted
     whatever happens; without the key the notes are kept and the memo says "not set up yet". Conversation
-    Intelligence (step 12) reads the notes and the memo as the closer's account. Next: 11b the business's own
-    note taker and HighLevel recordings; the Zoom and Meet note taker waits for a vendor (0.10 item 1).
+    Intelligence (step 12) reads the notes and the memo as the closer's account.
+    *11b, built (note takers and recordings):* `convex/noteTakers.ts`, `convex/lib/noteTakers.ts`, the "Note
+    takers and recordings" panel on the Calls tab. **Fireflies** connects with the customer's own API key
+    (Fireflies has no sign-in app for other products; integrations-setup.md section 8), checked against
+    Fireflies and kept on the server in `integrationConnections` like a token, never shown again; the panel
+    says the key is not read-only. Recent calls are read live; a person confirms the call was recorded
+    lawfully and brings one in, which goes through `transcripts.add` (its checks, limits and client), then
+    is shared with Dealmaker with `sourceRef` so it is never imported twice. **HighLevel call recordings**
+    of half a minute or more in the last two weeks are listed; with consent, the recording is fetched from
+    HighLevel and sent straight to Deepgram (`DEEPGRAM_API_KEY`, speakers marked), and only the words are
+    added, linked to the lead; the audio is never stored. **Fathom** waits: its sign-in address and token
+    host must be confirmed with Fathom first (integrations-setup.md section 7), and until then a Fathom
+    transcript is copied into Transcripts. The Zoom and Meet note taker waits for a vendor (0.10 item 1).
 12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the
     readiness inputs, commitments, owner-only coaching, the live checklist, and the end-of-day reports.
     *12a, built:* Conversation Intelligence on request, server side (`convex/skills/callReview/`, `cr.read`,
@@ -615,6 +634,50 @@ tests, lint, both typechecks and the build, never deploying Convex:
     its writer's own (`dealmakerChats`).
 19. **Go live** (catalog, landing page, waitlist email), then HubSpot, Salesforce, rep training, WhatsApp,
     Slack and Discord notifications.
+    *19, prepared (nothing flipped):* Usage names Dealmaker's work "Dealmaker · Pipeline review" and so on
+    wherever lists mix agents (`usage.usageSkillLabel`; inside Dealmaker's own row it stays "Pipeline review").
+    The sidebar and `WorkGate` know Dealmaker's six tabs (`DEALMAKER_TABS` in `src/lib/shell/journey.ts`), shown
+    only once it is live. The waitlist email (`agentLaunch.announceLive`, through the Resend path of
+    `emailReminders`) refuses an agent that is not live and tells each person who asked once. Going live is
+    the owner's call; the checklist is below.
+
+#### Launch checklist (the owner decides when)
+
+Before:
+1. **All six skills built and merged.** Objection Playbook (15) and Proposal Architect (16) are lane B's;
+   the catalog says Dealmaker goes live with all six. Every Dealmaker pull request merged, with its dev test
+   done by the coordinator.
+2. **Production settings** (in Convex, never in chat or the repository): `RESEND_API_KEY` (notices and the
+   waitlist email), `DEEPGRAM_API_KEY` (voice memos and call recordings), the Gemini key (YouTube in the
+   Playbook), the HighLevel app keys with the message scopes. `ELEVENLABS_API_KEY` only if voice notes are
+   offered at launch; without it the screens say "Voice notes are not set up yet". Fathom stays off until its
+   sign-in is confirmed with Fathom (integrations-setup.md, section 7).
+3. **Words.** Dealmaker's `job` in `convex/catalog.ts` is future tense ("Will help…"); change it to the
+   present before launch, because the waitlist email quotes it. The landing page (`src/lib/marketing/agent-pages.ts`)
+   moves from "join the waitlist" to "get started".
+4. **Smoke test on production with a test sub-account**, as an Owner and as a Member: connect HighLevel; the
+   Playbook interview; Pipeline (board, moves, proof panel); Calendar (week, automatic briefs left off); a brief
+   on request; Draft follow-ups (drafts only); Comms: send one message to a test lead with SEND and check the
+   send-time checks; a voice note if the key is set; a call review; Chat (a question, then a plan and Start).
+   Usage shows "Dealmaker · …"; the Briefing shows the scorecard the Monday after.
+
+Flip (one pull request, reviewed, then deployed by the coordinator):
+5. In `convex/catalog.ts`: `sales-conversion` `status: "live"`, and the six skill slugs into
+   `AVAILABLE_SKILLS`. Nothing else changes: the tabs, chat, caps (`SKILL_CAPS`, all six present) and crons
+   (weekly scorecard; automatic briefs, which stay off until an Owner or Admin turns them on) are already in.
+
+After:
+6. **Tell the waitlist once**: `npx convex run agentLaunch:announceLive '{"agentSlug":"sales-conversion"}'`
+   on production. It refuses a planned agent, skips people who left or turned emails off, and records each
+   send, so a second run sends nothing new.
+7. **Watch the first week**: Usage per skill against the caps, the scorecard posts, failed sends in Comms
+   (their reasons are in words), and the first automatic briefs where an Owner turned them on.
+8. **To undo**: set `status` back to `"planned"`. The tabs and chat hide (they show only for a live agent),
+   nothing is deleted, and turning it back on brings everything back.
+
+Still open after launch (0.10): the calendar-event link for briefs (a Google write scope), DMs through
+HighLevel (prove on a test sub-account first), the Zoom and Meet note taker (a vendor), and a signature
+provider for proposals.
 
 ### 0.10 Open before the steps that need them
 

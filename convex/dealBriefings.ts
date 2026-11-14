@@ -10,7 +10,7 @@
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { SALES_CONVERSION } from "./catalog";
 import { writeAudit } from "./lib/audit";
 import { priceFor } from "./lib/billing";
@@ -66,6 +66,108 @@ function note(text: string | undefined) {
 }
 
 /**
+ * Makes one brief and starts its run: the project it saves to, the brief row, then the run. Shared by a
+ * person's request and the automatic brief before a booked call (10d). The caller has checked the budget.
+ */
+export async function createBrief(
+  ctx: MutationCtx,
+  input: {
+    scope: { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> };
+    userId: string;
+    role: string;
+    writer: string;
+    trigger: "request" | "auto";
+    contactRef?: string;
+    dealRef?: string;
+    appointmentRef?: string;
+    leadName?: string;
+    about?: string;
+    handoff?: string;
+    website?: URL | null;
+  },
+) {
+  const scope = input.scope;
+  const { about, handoff, website } = input;
+  const now = Date.now();
+
+  const crm = await crmFor(ctx, scope);
+  let leadName: string;
+  let startsAt: number | undefined;
+  if (crm) {
+    if (!input.contactRef) throw userError(BRIEF_TEXT.pickLead);
+    const contact = await crm.contact(input.contactRef);
+    if (!contact) throw userError(BRIEF_TEXT.notRead);
+    if (input.dealRef !== undefined) {
+      const deal = await crm.deal(input.dealRef);
+      if (!deal || deal.contactRef !== contact.ref) throw userError(BRIEF_TEXT.notTheirs);
+    }
+    if (input.appointmentRef !== undefined) {
+      const span = BRIEF_LIMITS.appointmentDays * DAY;
+      const call = (await crm.appointments({ from: now - span, to: now + span })).find((row) => row.ref === input.appointmentRef);
+      if (!call || call.contactRef !== contact.ref) throw userError(BRIEF_TEXT.noCall);
+      startsAt = call.startsAt;
+      const open = await ctx.db
+        .query("dealBriefings")
+        .withIndex("by_workspace_appointment", (q) => q.eq("workspaceId", scope.workspaceId).eq("appointmentRef", input.appointmentRef))
+        .collect();
+      if (open.some((row) => row.status === "running" && row.clientId === scope.clientId)) throw userError(BRIEF_TEXT.running);
+    }
+    leadName = (contact.name ?? contact.email ?? "This lead").slice(0, BRIEF_LIMITS.leadName);
+  } else {
+    const name = (input.leadName ?? "").replace(/\s+/g, " ").trim().slice(0, BRIEF_LIMITS.leadName);
+    if (!name || !about) throw userError(BRIEF_TEXT.noCrmNeedsWho);
+    leadName = name;
+  }
+
+  const projectId = await ctx.db.insert("researchProjects", {
+    workspaceId: scope.workspaceId,
+    ...(scope.clientId ? { clientId: scope.clientId } : {}),
+    title: `Pre-call brief: ${leadName}`.slice(0, 80),
+    objective: "Prepare the closer for one booked sales call.",
+    market: "",
+    geography: "",
+    competitors: [],
+    platforms: ["customerData"],
+    suppliedUrls: [],
+    status: "draft",
+    createdBy: input.userId,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const briefingId = await ctx.db.insert("dealBriefings", {
+    workspaceId: scope.workspaceId,
+    ...(scope.clientId ? { clientId: scope.clientId } : {}),
+    projectId,
+    ...(crm && input.contactRef ? { contactRef: input.contactRef } : {}),
+    ...(crm && input.dealRef ? { dealRef: input.dealRef } : {}),
+    ...(crm && input.appointmentRef ? { appointmentRef: input.appointmentRef } : {}),
+    ...(startsAt !== undefined ? { startsAt } : {}),
+    leadName,
+    ...(about && !crm ? { about } : {}),
+    ...(handoff ? { handoff } : {}),
+    ...(website ? { website: website.toString() } : {}),
+    ...(handoff || (about && !crm) ? { writtenBy: input.writer } : {}),
+    trigger: input.trigger,
+    status: "running",
+    createdBy: input.userId,
+    createdAt: now,
+  });
+  const runId = await startRunFor(ctx, {
+    workspaceId: scope.workspaceId,
+    userId: input.userId,
+    role: input.role,
+    agentSlug: SALES_CONVERSION,
+    skillSlug: SKILL_SLUG,
+    projectId,
+    ...(input.trigger === "auto" ? { unattended: true } : {}),
+  });
+  await ctx.db.patch(briefingId, { runId });
+  // The audit row names the brief only, never the lead.
+  await writeAudit(ctx, { workspaceId: scope.workspaceId, actorType: input.trigger === "auto" ? "system" : "user", actorId: input.userId, action: input.trigger === "auto" ? "dealBriefing.autoStarted" : "dealBriefing.requested", subject: briefingId });
+  return { briefingId, runId };
+}
+
+/**
  * Asks Dealmaker for a brief. With a CRM: the lead must be one Vistrial read, the deal theirs, the booked call
  * theirs. Without one: a name and what the person knows. A brief already being written for the same call is
  * not started twice.
@@ -95,82 +197,20 @@ export const request = workspaceMutation({
     const website = args.website?.trim() ? parsePublicUrl(args.website.trim()) : null;
     if (args.website?.trim() && !website) throw userError(BRIEF_TEXT.badSite);
     const about = note(args.about);
-    const now = Date.now();
-
-    const crm = await crmFor(ctx, scope);
-    let leadName: string;
-    let startsAt: number | undefined;
-    if (crm) {
-      if (!args.contactRef) throw userError(BRIEF_TEXT.pickLead);
-      const contact = await crm.contact(args.contactRef);
-      if (!contact) throw userError(BRIEF_TEXT.notRead);
-      if (args.dealRef !== undefined) {
-        const deal = await crm.deal(args.dealRef);
-        if (!deal || deal.contactRef !== contact.ref) throw userError(BRIEF_TEXT.notTheirs);
-      }
-      if (args.appointmentRef !== undefined) {
-        const span = BRIEF_LIMITS.appointmentDays * DAY;
-        const call = (await crm.appointments({ from: now - span, to: now + span })).find((row) => row.ref === args.appointmentRef);
-        if (!call || call.contactRef !== contact.ref) throw userError(BRIEF_TEXT.noCall);
-        startsAt = call.startsAt;
-        const open = await ctx.db
-          .query("dealBriefings")
-          .withIndex("by_workspace_appointment", (q) => q.eq("workspaceId", ctx.workspaceId).eq("appointmentRef", args.appointmentRef))
-          .collect();
-        if (open.some((row) => row.status === "running" && row.clientId === forClient.clientId)) throw userError(BRIEF_TEXT.running);
-      }
-      leadName = (contact.name ?? contact.email ?? "This lead").slice(0, BRIEF_LIMITS.leadName);
-    } else {
-      const name = (args.leadName ?? "").replace(/\s+/g, " ").trim().slice(0, BRIEF_LIMITS.leadName);
-      if (!name || !about) throw userError(BRIEF_TEXT.noCrmNeedsWho);
-      leadName = name;
-    }
-
-    const projectId = await ctx.db.insert("researchProjects", {
-      workspaceId: ctx.workspaceId,
-      ...forClient,
-      title: `Pre-call brief: ${leadName}`.slice(0, 80),
-      objective: "Prepare the closer for one booked sales call.",
-      market: "",
-      geography: "",
-      competitors: [],
-      platforms: ["customerData"],
-      suppliedUrls: [],
-      status: "draft",
-      createdBy: ctx.identity.subject,
-      createdAt: now,
-      updatedAt: now,
-    });
-    const briefingId = await ctx.db.insert("dealBriefings", {
-      workspaceId: ctx.workspaceId,
-      ...forClient,
-      projectId,
-      ...(crm && args.contactRef ? { contactRef: args.contactRef } : {}),
-      ...(crm && args.dealRef ? { dealRef: args.dealRef } : {}),
-      ...(crm && args.appointmentRef ? { appointmentRef: args.appointmentRef } : {}),
-      ...(startsAt !== undefined ? { startsAt } : {}),
-      leadName,
-      ...(about && !crm ? { about } : {}),
-      ...(handoff ? { handoff } : {}),
-      ...(website ? { website: website.toString() } : {}),
-      ...(handoff || (about && !crm) ? { writtenBy: ctx.member.displayName } : {}),
-      trigger: "request",
-      status: "running",
-      createdBy: ctx.identity.subject,
-      createdAt: now,
-    });
-    const runId = await startRunFor(ctx, {
-      workspaceId: ctx.workspaceId,
+    return await createBrief(ctx, {
+      scope,
       userId: ctx.identity.subject,
       role: ctx.member.role,
-      agentSlug: SALES_CONVERSION,
-      skillSlug: SKILL_SLUG,
-      projectId,
+      writer: ctx.member.displayName,
+      trigger: "request",
+      contactRef: args.contactRef,
+      dealRef: args.dealRef,
+      appointmentRef: args.appointmentRef,
+      leadName: args.leadName,
+      about,
+      handoff,
+      website,
     });
-    await ctx.db.patch(briefingId, { runId });
-    // The audit row names the brief only, never the lead.
-    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "dealBriefing.requested", subject: briefingId });
-    return { briefingId, runId };
   },
 });
 

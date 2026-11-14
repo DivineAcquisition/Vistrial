@@ -79,4 +79,7 @@ crons.interval("Dealmaker weekly scorecard", { hours: 6 }, internal.dealmakerPro
 /** The Objection Playbook's weekly talk tracks, where an Owner turned them on: one run per Playbook per week. */
 crons.interval("Dealmaker weekly objection playbook", { hours: 6 }, internal.objectionPlaybook.weekly, {});
 
+/** Dealmaker's automatic pre-call briefs, where an Owner or Admin turned them on: about 3 hours before each call. */
+crons.interval("Dealmaker automatic briefs", { minutes: 15 }, internal.autoBriefs.sweep, {});
+
 export default crons;

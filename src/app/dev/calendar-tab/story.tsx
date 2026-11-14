@@ -73,7 +73,7 @@ export function CalendarTabStory({ view, theme }: { view: string; theme: string 
   const [week, setWeek] = useState(0);
   return (
     <StoryFrame theme={theme} role="owner">
-      <CalendarView data={data(view, week)} onWeek={setWeek} />
+      <CalendarView data={data(view, week)} onWeek={setWeek} auto={{ on: view === "auto", canSet: true, hoursBefore: 3, cap: { briefs: 200, credits: 600 }, used: { briefs: view === "auto" ? 14 : 0, credits: view === "auto" ? 212 : 0 } }} onAuto={async () => undefined} />
     </StoryFrame>
   );
 }

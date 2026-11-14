@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import type { api } from "../../../convex/_generated/api";
 
+import { ProposalPanel, type ProposalActions, type ProposalForReview } from "./proposal-view";
 import { SectionTitle } from "./work-shell";
 
 export type ReviewData = FunctionReturnType<typeof api.callReviews.review>;
@@ -31,7 +32,7 @@ const STATE: Record<ReviewData["state"], { words: string; badge: "success" | "wa
 };
 
 /** One call review, built from its saved view. Every line keeps the label code gave it. */
-export function ReviewView({ review, onClose }: { review: ReviewData; onClose?: () => void }) {
+export function ReviewView({ review, onClose, proposal }: { review: ReviewData; onClose?: () => void; proposal?: { data: ProposalForReview; actions: ProposalActions } | null }) {
   const view = review.view;
   const look = STATE[review.state];
   const head = (
@@ -76,6 +77,7 @@ export function ReviewView({ review, onClose }: { review: ReviewData; onClose?: 
           This review did not pass every check, so nothing was filed from it: no readiness, commitments, recap or CRM update. Check it first.
         </p>
       ) : null}
+      {proposal && view.checksPassed ? <ProposalPanel data={proposal.data} actions={proposal.actions} /> : null}
 
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="At a glance">
         {[

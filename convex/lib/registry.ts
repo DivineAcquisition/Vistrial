@@ -60,6 +60,9 @@ export const TOOLS = [
   "obp.read",
   "obp.check",
   "obp.save",
+  "pa.read",
+  "pa.check",
+  "pa.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

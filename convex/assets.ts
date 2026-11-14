@@ -60,6 +60,7 @@ export const list = workspaceQuery({
         v.literal("preCallBrief"),
         v.literal("callReview"),
         v.literal("objectionPlaybook"),
+        v.literal("proposal"),
       ),
     ),
   },

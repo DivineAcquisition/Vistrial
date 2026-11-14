@@ -18,6 +18,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 import { CallNotesForm, RecentNotes, type NotesActions, type NotesData } from "./call-notes";
+import { ProposalView, type ProposalActions, type ProposalData, type ProposalForReview } from "./proposal-view";
 import { ReviewView, type ReviewData, type ReviewsData } from "./review-view";
 import { SectionTitle, WorkHero } from "./work-shell";
 
@@ -506,6 +507,9 @@ export function CallsView({
   onOpen,
   openReview,
   onOpenReview = () => undefined,
+  reviewProposal,
+  openProposal,
+  onOpenProposal = () => undefined,
 }: {
   data: CallsData;
   actions: CallsActions;
@@ -516,9 +520,14 @@ export function CallsView({
   onOpen: (id: string | null) => void;
   openReview?: ReviewData | null;
   onOpenReview?: (id: string | null) => void;
+  /** The proposal panel on the open review. */
+  reviewProposal?: { data: ProposalForReview; actions: ProposalActions } | null;
+  openProposal?: ProposalData | null;
+  onOpenProposal?: (id: string | null) => void;
 }) {
   if (open) return <BriefView brief={open} onClose={() => onOpen(null)} />;
-  if (openReview) return <ReviewView review={openReview} onClose={() => onOpenReview(null)} />;
+  if (openProposal) return <ProposalView proposal={openProposal} onClose={() => onOpenProposal(null)} />;
+  if (openReview) return <ReviewView review={openReview} onClose={() => onOpenReview(null)} proposal={reviewProposal ?? null} />;
   const others = data.recent.filter((row) => !data.upcoming.some((call) => call.brief?.id === row.id));
   return (
     <div className="grid min-w-0 gap-5">
@@ -603,10 +612,25 @@ function OpenBrief({ workspaceId, briefingId, onClose }: { workspaceId: Id<"work
   return <BriefView brief={brief} onClose={onClose} />;
 }
 
-function OpenReview({ workspaceId, reviewId, onClose }: { workspaceId: Id<"workspaces">; reviewId: string; onClose: () => void }) {
+function OpenReview({ workspaceId, reviewId, onClose, onOpenProposal }: { workspaceId: Id<"workspaces">; reviewId: string; onClose: () => void; onOpenProposal: (id: string) => void }) {
   const review = useQuery(api.callReviews.review, { workspaceId, reviewId: reviewId as Id<"callReviews"> });
+  const proposal = useQuery(api.proposals.forReview, { workspaceId, reviewId: reviewId as Id<"callReviews"> });
+  const request = useMutation(api.proposals.request);
   if (review === undefined) return <p className="text-sm text-muted-foreground">Opening the review…</p>;
-  return <ReviewView review={review} onClose={onClose} />;
+  const actions: ProposalActions = {
+    request: async (confirmedCredits) => {
+      const { proposalId } = await request({ workspaceId, reviewId: reviewId as Id<"callReviews">, confirmedCredits });
+      onOpenProposal(proposalId);
+    },
+    open: onOpenProposal,
+  };
+  return <ReviewView review={review} onClose={onClose} proposal={proposal ? { data: proposal, actions } : null} />;
+}
+
+function OpenProposal({ workspaceId, proposalId, onClose }: { workspaceId: Id<"workspaces">; proposalId: string; onClose: () => void }) {
+  const proposal = useQuery(api.proposals.proposal, { workspaceId, proposalId: proposalId as Id<"proposals"> });
+  if (proposal === undefined) return <p className="text-sm text-muted-foreground">Opening the proposal…</p>;
+  return <ProposalView proposal={proposal} onClose={onClose} />;
 }
 
 /** Dealmaker's Calls tab, before the call, for the organization or the client the picker names. */
@@ -625,8 +649,10 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   const linked = useSearchParams().get("brief");
   const [open, setOpen] = useState<string | null>(linked);
   const [openReview, setOpenReview] = useState<string | null>(null);
+  const [openProposal, setOpenProposal] = useState<string | null>(null);
   if (open) return <OpenBrief workspaceId={workspaceId} briefingId={open} onClose={() => setOpen(null)} />;
-  if (openReview) return <OpenReview workspaceId={workspaceId} reviewId={openReview} onClose={() => setOpenReview(null)} />;
+  if (openProposal) return <OpenProposal workspaceId={workspaceId} proposalId={openProposal} onClose={() => setOpenProposal(null)} />;
+  if (openReview) return <OpenReview workspaceId={workspaceId} reviewId={openReview} onClose={() => setOpenReview(null)} onOpenProposal={setOpenProposal} />;
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your booked calls…</p>;
   const actions: CallsActions = {
     request: (input) => request({ workspaceId, clientId, ...input }),

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 import { assetStatus } from "./lib/assetStatus";
 import { briefView } from "./lib/dealmaker/briefView";
+import { proposalView } from "./lib/dealmaker/proposalView";
 import { reviewView } from "./lib/dealmaker/reviewView";
 import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
 import { approvalKind, approvalStatus, briefingKind, expectedReturn, proposedBy, taskEvidence, taskStatus, taskTry, taskWork } from "./lib/taskShapes";
@@ -982,6 +983,8 @@ export default defineSchema({
       v.literal("callReview"),
       /** Talk tracks for the objections heard on the business's calls (Dealmaker, Objection Playbook). Waits for review. */
       v.literal("objectionPlaybook"),
+      /** A proposal for one lead after a call (Dealmaker, Proposal Architect). Goes to a lead: waits for review. */
+      v.literal("proposal"),
     ),
     title: v.string(),
     status: assetStatus,
@@ -2456,6 +2459,31 @@ export default defineSchema({
   })
     .index("by_project", ["projectId"])
     .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"]),
+
+  /**
+   * A proposal for one lead, written from one passing call review and the Offer folder (Dealmaker, Proposal
+   * Architect; docs/rebuild/dealmaker.md, 0.8 and 4.5). The run reads `inputRef` = this row's own project. It goes
+   * to a lead, so its asset waits for a person's review; sending it is a separate, approved step.
+   */
+  proposals: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    projectId: v.id("researchProjects"),
+    reviewId: v.id("callReviews"),
+    contactRef: v.optional(v.string()),
+    dealRef: v.optional(v.string()),
+    leadName: v.string(),
+    status: v.union(v.literal("running"), v.literal("ready"), v.literal("failed")),
+    runId: v.optional(v.id("agentRuns")),
+    assetId: v.optional(v.id("assets")),
+    view: v.optional(proposalView),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"])
+    .index("by_workspace_review", ["workspaceId", "reviewId"]),
 
   dealBriefings: defineTable({
     workspaceId: v.id("workspaces"),

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CallNotesForm, type NotesData } from "@/components/work/call-notes";
 import { CallsView, type BriefData, type CallsData } from "@/components/work/calls-tab";
 import type { ReviewData, ReviewsData } from "@/components/work/review-view";
+import type { ProposalData, ProposalForReview } from "@/components/work/proposal-view";
 
 import { StoryFrame } from "../work-tabs/story-frame";
 
@@ -178,6 +179,46 @@ function review(owner: boolean): ReviewData {
   } as unknown as ReviewData;
 }
 
+/** A proposal from the review above, as the Calls tab shows it. Sample data. */
+function proposal(approved: boolean): ProposalData {
+  const offer = (itemId: string, title: string, body: string) => ({ itemId, title, body });
+  return {
+    id: "p1",
+    reviewId: "r1",
+    leadName: "Marcus Hale",
+    state: "ready",
+    approved,
+    canRequest: true,
+    createdAt: Date.UTC(2026, 10, 13, 18),
+    view: {
+      title: "The Growth retainer for Hale Dental",
+      intro: "Thanks for the call, Marcus. You want to double the consults you book before spring, and your co-founder will want to see the plan first. Here is how the Growth retainer would work for you.",
+      needs: [
+        { need: "Twice the booked consultations by spring", quote: "we need to double the consults we book before spring", kind: "Buyer's words" },
+        { need: "A plan your co-founder can read first", quote: "my co-founder has to see it first", kind: "Buyer's words" },
+      ],
+      package: offer("i1", "Growth retainer", "Twelve weeks. Weekly strategy call, ads managed, follow-up run for you, monthly report."),
+      deliverables: ["Weekly strategy call", "ads managed", "follow-up run for you", "monthly report"],
+      price: offer("i2", "Growth retainer: $3,000 a month", "Three-month minimum. No setup fee."),
+      proof: [offer("i3", "Harbor Dental: 41 booked consultations in 60 days", "")],
+      nextSteps: ["Share this with Sam before Monday", "Reply with any questions, or book a short call to go through it together"],
+      closing: "We look forward to hearing what you and Sam think.",
+      checksPassed: true,
+      missing: [],
+    },
+  } as unknown as ProposalData;
+}
+
+const reviewProposal = (state: string): { data: ProposalForReview; actions: { request: typeof noop; open: () => void } } => ({
+  data: {
+    latest: state === "reviewProposal" ? { ...proposal(false), canRequest: true } : null,
+    canRequest: true,
+    blocked: null,
+    maxCredits: 300,
+  } as unknown as ProposalForReview,
+  actions: { request: noop, open: () => undefined },
+});
+
 export function CallsTabStory({ state, theme }: { state: string; theme: string }) {
   const [open, setOpen] = useState<string | null>(state === "brief" || state === "first" ? "b1" : null);
   return (
@@ -193,7 +234,9 @@ export function CallsTabStory({ state, theme }: { state: string; theme: string }
           links={state === "viewer" ? null : { state: state === "nocrm" ? "notSetUp" : state === "linksOn" ? "on" : "needsPermission", words: state === "linksOn" ? "On. Each brief's link is added to its call's event in Google Calendar." : "Google Calendar is connected for counts only. Allow brief links to let Vistrial add the link to events.", canChange: true } as never}
           open={open ? brief(state) : null}
           onOpen={setOpen}
-          openReview={state === "review" || state === "reviewMember" ? review(state === "review") : null}
+          openReview={state === "review" || state === "reviewMember" || state === "reviewProposal" ? review(state !== "reviewMember") : null}
+          reviewProposal={state === "reviewMember" ? null : reviewProposal(state)}
+          openProposal={state === "proposal" || state === "proposalApproved" ? proposal(state === "proposalApproved") : null}
         />
       )}
     </StoryFrame>

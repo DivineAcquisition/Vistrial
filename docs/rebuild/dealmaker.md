@@ -562,6 +562,19 @@ tests, lint, both typechecks and the build, never deploying Convex:
     pre-call brief now reads objections most heard first, with "heard on N of your calls", and an approved talk
     track only. Grouping is done per call by the call review (15a), so there is no separate grouping step.
 16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
+    *16a, built:* the proposal itself (`convex/skills/proposalArchitect/`, `convex/proposals.ts`, asset
+    `proposal`, `src/components/work/proposal-view.tsx`). On a call review that passed its checks, "Write a
+    proposal" (budget shown, cap 100 cents) needs a package and a price in the Offer folder. The run reads the
+    review's quotes with who said each, the Offer folder, up to two past winning proposals (tone and order only),
+    the voice and the approved lessons. The model picks the package, the price item, a guarantee and proof by id
+    and writes the rest; code copies the offer items' own words in, so a price is never written by the model.
+    Code checks: every need on a quote from the review, the package and price from the Offer folder, no other
+    amount of money anywhere, each deliverable in the package's own words, no promised result, every figure from
+    an offer item named, no pressure, nothing personal, short, with a next step. One revision from the reserve.
+    The proposal goes to a lead, so it waits in the approvals queue (`publish`); the Calls tab shows it as
+    "Waiting for your review", then "Approved". Nothing is sent here. Next, 16b: the page the lead opens (it
+    records the view), the PDF, "Accept" before any e-signature, the Stripe link ("Not set up yet" without a key),
+    sending through Comms, and the hand-off to Follow-up Engine when it is not opened.
 17. **Calendar tab.**
     *17, built:* `convex/dealCalendar.ts` (`week`), `convex/lib/dealmaker/calendar.ts`, the tab at
     `work/calendar` and the story `/dev/calendar-tab`. One week of booked calls from the CRM's appointments

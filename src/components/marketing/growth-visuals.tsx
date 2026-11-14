@@ -1,6 +1,7 @@
 "use client";
 
 import { AgentAvatar } from "@/components/live/agent-avatar";
+import Link from "next/link";
 import { useRef, type ReactNode } from "react";
 import {
   ArrowRight,
@@ -655,6 +656,12 @@ export function WorkforceMap() {
                     {agent.name}
                   </p>
                   <p className="text-xs leading-relaxed text-muted-foreground">{agent.job}</p>
+                  {"page" in agent && agent.page ? (
+                    <Link href={agent.page} className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-300 hover:text-brand-200">
+                      How {agent.name} will work
+                      <ArrowRight className="size-3" aria-hidden />
+                    </Link>
+                  ) : null}
                 </li>
               ),
             )}

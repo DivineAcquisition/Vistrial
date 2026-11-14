@@ -97,6 +97,7 @@ describe("the board query", () => {
     const all = await owner.query(api.pipelineBoard.board, { workspaceId });
     if (!all.connected) throw new Error("expected a board");
     expect(all.stages[0].cards).toHaveLength(2);
-    expect(all.perRep?.map((row) => row.ownerRef).sort()).toEqual(["crm-ada", "crm-milo"]);
+    // The linked member by name; the unlinked CRM user numbered, never its id.
+    expect(all.perRep?.map((row) => row.name).sort()).toEqual(["CRM user 1", "milo"]);
   });
 });

@@ -126,7 +126,7 @@ function TeamPanel({ team, actions }: { team: TeamData; actions: PipelineActions
                 disabled={!team.canSetTeam || !member.salesRole}
                 value={member.crmUserRef ?? ""}
                 onChange={(event) => void run(() => actions.setRole(member.id, member.salesRole, event.target.value || undefined))}
-                options={[{ value: "", label: "Not linked to a CRM user" }, ...team.crmUsers.map((user) => ({ value: user.ref, label: `${user.ref} (${user.deals} deals)` }))]}
+                options={[{ value: "", label: "Not linked to a CRM user" }, ...team.crmUsers.map((user) => ({ value: user.ref, label: `${user.label} (${user.deals} deals)` }))]}
               />
             </li>
           ))}
@@ -230,7 +230,7 @@ export function PipelineView({ board, team, editor, actions }: { board: BoardDat
               <li key={row.source} className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-1.5">
                 <span className="text-foreground">{row.source}</span>
                 <span className="text-xs text-muted-foreground">
-                  {row.deals} deals · {row.won} won · {row.lost} lost · win rate {row.winRate}
+                  {row.deals} deals · {row.won} won · {row.lost} lost · win rate: {row.winRate === "Not enough data" ? "not enough data" : row.winRate}
                 </span>
               </li>
             ))}
@@ -244,7 +244,7 @@ export function PipelineView({ board, team, editor, actions }: { board: BoardDat
           <ul className="grid gap-1.5 text-sm">
             {board.perRep.map((row) => (
               <li key={row.ownerRef} className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-1.5">
-                <span className="text-foreground">{row.ownerRef === "unassigned" ? "Not assigned" : row.ownerRef}</span>
+                <span className="text-foreground">{row.name}</span>
                 <span className="text-xs text-muted-foreground">
                   {row.deals} deals · {row.active} active · {row.cooling} cooling · {row.quiet} quiet · {row.won} won · {row.lost} lost
                 </span>

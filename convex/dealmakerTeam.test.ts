@@ -90,7 +90,8 @@ describe("team and autonomy functions", () => {
   it("lists the CRM users seen on deals, links a member, and filters their home to their deals", async () => {
     const { owner, member, workspaceId, idOf } = await setup();
     const team = await owner.query(api.dealmakerTeam.team, { workspaceId });
-    expect(team.crmUsers).toEqual([{ ref: "crm-milo", deals: 2 }, { ref: "crm-ada", deals: 1 }]);
+    // No member is linked yet, so the CRM's ids are never shown: they are numbered.
+    expect(team.crmUsers).toEqual([{ ref: "crm-milo", deals: 2, label: "CRM user 1" }, { ref: "crm-ada", deals: 1, label: "CRM user 2" }]);
     expect(team.kinds.filter((row) => row.canBeAutomatic).map((row) => row.id)).toEqual(["reminder", "confirmation", "deliverPromised"]);
 
     expect((await member.query(api.dealmakerTeam.myHome, { workspaceId })).why).toBe(SCOPE_WORDS.noRole);

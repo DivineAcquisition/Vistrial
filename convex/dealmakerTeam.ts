@@ -15,7 +15,7 @@ import { clientForNew, clientHere, type ClientScope } from "./lib/clients";
 import { crmFor } from "./lib/crm/read";
 import { notAllowed, notFound, userError } from "./lib/errors";
 import { LOW_STAKES, MESSAGE_KINDS, MESSAGE_KIND_LABEL, STOP_WORDS, canBeAutonomous, type MessageKind } from "./lib/dealmaker/autonomy";
-import { SALES_ROLES, SALES_ROLE_LABEL, dealScope, inScope, type TeamRow } from "./lib/dealmaker/roles";
+import { SALES_ROLES, SALES_ROLE_LABEL, crmUserNames, dealScope, inScope, type TeamRow } from "./lib/dealmaker/roles";
 import { isOwner } from "./lib/roles";
 import { settingsOf } from "./playbookInterview";
 
@@ -72,7 +72,11 @@ export const team = workspaceQuery({
       members: members
         .filter((row) => row.active)
         .map((row) => ({ id: row._id, name: row.displayName || row.email || "A member", appRole: row.role, salesRole: rows.get(row._id)?.salesRole ?? null, crmUserRef: rows.get(row._id)?.crmUserRef ?? null })),
-      crmUsers: [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([ref, deals]) => ({ ref, deals })),
+      crmUsers: (() => {
+        const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+        const names = crmUserNames(sorted.map(([ref]) => ref), settings?.team ?? [], (memberId) => members.find((member) => member._id === memberId)?.displayName ?? null);
+        return sorted.map(([ref, deals]) => ({ ref, deals, label: names.get(ref)! }));
+      })(),
       roles: SALES_ROLES.map((id) => ({ id, ...SALES_ROLE_LABEL[id] })),
       kinds: MESSAGE_KINDS.map((id) => ({ id, label: MESSAGE_KIND_LABEL[id], canBeAutomatic: canBeAutonomous(id), automatic: autonomous.has(id) })),
       paused: paused.map((row) => ({ id: row._id, contactRef: row.contactRef, reason: row.reason, pausedAt: row.pausedAt })),

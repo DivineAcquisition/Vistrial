@@ -15,7 +15,7 @@ import { clientForNew, clientHere, type ClientScope } from "./lib/clients";
 import { crmFor } from "./lib/crm/read";
 import { notFound, userError } from "./lib/errors";
 import { BALL_LABEL, DAY, FIT_FIELDS, FIT_LABEL, HEALTH_LABEL, TEMPERATURE_BASIS, TEMPERATURE_LABEL, buildBoard, type Commitment, type Fact } from "./lib/dealmaker/board";
-import { dealScope, inScope, type TeamRow } from "./lib/dealmaker/roles";
+import { crmUserNames, dealScope, inScope, type TeamRow } from "./lib/dealmaker/roles";
 import { DEFAULT_QUIET_DAYS } from "./lib/interview";
 import { settingsOf } from "./playbookInterview";
 
@@ -86,6 +86,17 @@ export const board = workspaceQuery({
       commitments: commitments.filter(mine).map((r): Commitment => ({ id: r._id, dealRef: r.dealRef, text: r.text, owner: r.owner, due: r.due ?? null, done: r.doneAt !== undefined })),
     });
     const seesAll = ctx.role === "owner" || ctx.role === "admin";
+    const members = seesAll
+      ? await ctx.db
+          .query("members")
+          .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+          .take(500)
+      : [];
+    const names = crmUserNames(
+      result.perRep.map((row) => row.ownerRef).filter((ref) => ref !== "unassigned"),
+      settings?.team ?? [],
+      (memberId) => members.find((member) => member._id === memberId)?.displayName ?? null,
+    );
     return {
       connected: true as const,
       crm: { label: crm.connection.label, accountName: crm.connection.accountName, currency: crm.connection.currency, lastReadAt: crm.connection.lastReadAt },
@@ -95,7 +106,7 @@ export const board = workspaceQuery({
       words: { health: HEALTH_LABEL, temperature: TEMPERATURE_LABEL, temperatureBasis: TEMPERATURE_BASIS, ball: BALL_LABEL, fit: FIT_LABEL },
       ...result,
       // Every rep's figures are for the people who coach them (doctrine V).
-      perRep: seesAll ? result.perRep : null,
+      perRep: seesAll ? result.perRep.map((row) => ({ ...row, name: row.ownerRef === "unassigned" ? "Not assigned" : (names.get(row.ownerRef) ?? "A CRM user") })) : null,
       canEdit: ctx.role !== "viewer",
     };
   },

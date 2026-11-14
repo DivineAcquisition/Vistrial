@@ -52,7 +52,7 @@ function board(view: string): BoardData {
     quietDays: 14,
     words: { health: HEALTH_LABEL, temperature: TEMPERATURE_LABEL, temperatureBasis: TEMPERATURE_BASIS, ball: BALL_LABEL, fit: FIT_LABEL },
     ...built,
-    perRep: view === "owner" ? built.perRep : null,
+    perRep: view === "owner" ? built.perRep.map((row) => ({ ...row, name: row.ownerRef === "crm-milo" ? "Milo" : row.ownerRef === "crm-ada" ? "Ada" : "Not assigned" })) : null,
     canEdit: true,
   } as unknown as BoardData;
 }
@@ -64,7 +64,7 @@ const team: TeamData = {
     { id: "m1", name: "Milo", appRole: "member", salesRole: "closer", crmUserRef: "crm-milo" },
     { id: "m2", name: "Ada", appRole: "admin", salesRole: "setter", crmUserRef: "crm-ada" },
   ],
-  crmUsers: [{ ref: "crm-milo", deals: 6 }, { ref: "crm-ada", deals: 3 }],
+  crmUsers: [{ ref: "crm-milo", deals: 6, label: "Milo" }, { ref: "crm-ada", deals: 3, label: "Ada" }],
   roles: SALES_ROLES.map((id) => ({ id, ...SALES_ROLE_LABEL[id] })),
   kinds: MESSAGE_KINDS.map((id) => ({ id, label: MESSAGE_KIND_LABEL[id], canBeAutomatic: LOW_STAKES.includes(id), automatic: id === "reminder" })),
   paused: [],

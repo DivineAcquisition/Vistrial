@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { assetStatus } from "./lib/assetStatus";
 import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
 import { approvalKind, approvalStatus, briefingKind, expectedReturn, proposedBy, taskEvidence, taskStatus, taskTry, taskWork } from "./lib/taskShapes";
+import { folder as playbookFolder, itemSource, itemStatus, kind as playbookKind, lessonSource, lessonStatus, objectionTag, stage as playbookStage } from "./lib/playbook";
 import { availability, basis, classification, embed, platform, projectStatus, sourceKind, sourceState } from "./lib/researchShapes";
 
 /** What a credit charge paid for: the `source` of a ledger row. */
@@ -2474,6 +2475,50 @@ export default defineSchema({
     homeFigures: v.optional(v.array(homeFigure)),
     homePreviousFigures: v.optional(v.array(homeFigure)),
   }).index("by_workspace_user", ["workspaceId", "userId"]),
+
+  /**
+   * One item in Dealmaker's Playbook (docs/rebuild/dealmaker.md, 0.7): one per organization (no `clientId`)
+   * and one per client. Its evidence label comes from its source, set in code (lib/playbook.ts). Archived,
+   * never deleted, so what a draft used can still be shown.
+   */
+  playbookItems: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    folder: playbookFolder,
+    kind: playbookKind,
+    /** Only on a script step: the call stage it belongs to. */
+    stage: v.optional(playbookStage),
+    /** Only on an objection. */
+    tag: v.optional(objectionTag),
+    title: v.string(),
+    body: v.string(),
+    source: itemSource,
+    basis,
+    status: itemStatus,
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedBy: v.optional(v.string()),
+    updatedAt: v.number(),
+    archivedBy: v.optional(v.string()),
+    archivedAt: v.optional(v.number()),
+  }).index("by_workspace_client", ["workspaceId", "clientId", "folder"]),
+
+  /** "What I've learned about how you sell": proposed until a person approves it; only approved ones guide drafts. */
+  playbookLessons: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    text: v.string(),
+    source: lessonSource,
+    /** The draft or approval the lesson came from, when it came from one. */
+    sourceRef: v.optional(v.string()),
+    status: lessonStatus,
+    /** A user id, or "agent" for Dealmaker. */
+    proposedBy: v.string(),
+    proposedAt: v.number(),
+    decidedBy: v.optional(v.string()),
+    decidedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  }).index("by_workspace_client", ["workspaceId", "clientId", "proposedAt"]),
 
   platformControls: defineTable({
     key: v.literal("platform"),

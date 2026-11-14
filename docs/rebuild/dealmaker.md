@@ -325,6 +325,15 @@ tests, lint, both typechecks and the build, never deploying Convex:
 
 7. **Playbook, the fuel**: the four folders, uploads, transcripts, YouTube links, the guided interview
    (reading the CRM and website first), what it still needs, and the "learned" list.
+   *7a, built:* the Playbook's data and functions (`convex/lib/playbook.ts`, `convex/playbook.ts`). The four
+   folders with their kinds (script steps carry their call stage, objections their tag); one Playbook per
+   organization and per client; each item's source and its evidence label set in code from that source
+   (a reader may only lower it; a person's edit makes it "Your data"); items archived, never deleted; the
+   learned list (proposed until a person approves; a person's own lesson is approved as written; only
+   approved lessons reach a skill, through `playbookForSkill`); and what each skill still needs, as counts
+   against a minimum. Owners, Admins and Members edit; Viewers read; a client a member may not see is not
+   found. Next: 7b the Playbook tab, 7c reading uploads, transcripts, YouTube links and the website, 7d the
+   guided interview.
 8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.

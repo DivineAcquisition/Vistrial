@@ -43,6 +43,8 @@ const DIRECT: readonly TableNames[] = [
   "metaConnections",
   "offerCards",
   "personalNotes",
+  "playbookItems",
+  "playbookLessons",
   "researchProjects",
   "resultUploads",
   "siteCaptures",

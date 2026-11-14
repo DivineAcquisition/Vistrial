@@ -54,6 +54,8 @@ export type CatalogAgent = {
 };
 
 export const GROWTH_ARCHITECT = "growth-architect";
+/** Dealmaker. */
+export const SALES_CONVERSION = "sales-conversion";
 
 /** Old agent slugs and the agent that took each one over. The catalog sync renames these rows in place. */
 export const RENAMED_AGENTS: Record<string, string> = { sales: GROWTH_ARCHITECT };
@@ -128,7 +130,7 @@ export const CATALOG: CatalogAgent[] = [
     skills: [],
   },
   {
-    slug: "sales-conversion",
+    slug: SALES_CONVERSION,
     number: 3,
     name: "Dealmaker",
     department: "sales",

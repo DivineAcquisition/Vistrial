@@ -69,11 +69,34 @@ function data(view: string, week: number): CalendarData {
   };
 }
 
+/** Today so far, as an Owner sees it. Sample data. */
+const today = {
+  connected: true as const,
+  appointments: true as const,
+  scopeWhy: "You see every deal.",
+  day: "Sat, Nov 14",
+  figures: { calls: 5, held: 3, noShow: 1, cancelled: 0, notMarked: 0, later: 1 },
+  done: { briefs: 4, notes: 2, reviews: 1, sent: 6 },
+  open: ["Add notes for 1 held call.", "1 held call with notes has no review yet.", "2 messages wait in Comms.", "1 call tomorrow has no brief yet."],
+  tomorrow: { calls: 3, withoutBrief: 1 },
+  headline: "5 booked calls today: 3 held, 1 no-show, 1 later. 3 calls tomorrow.",
+  reps: [
+    { name: "Ada Okafor", held: 2, noShow: 0, notMarked: 0, noted: 1 },
+    { name: "Milo Grant", held: 1, noShow: 1, notMarked: 0, noted: 1 },
+  ],
+};
+
 export function CalendarTabStory({ view, theme }: { view: string; theme: string }) {
   const [week, setWeek] = useState(0);
   return (
     <StoryFrame theme={theme} role="owner">
-      <CalendarView data={data(view, week)} onWeek={setWeek} auto={{ on: view === "auto", canSet: true, hoursBefore: 3, cap: { briefs: 200, credits: 600 }, used: { briefs: view === "auto" ? 14 : 0, credits: view === "auto" ? 212 : 0 } }} onAuto={async () => undefined} />
+      <CalendarView
+        data={data(view, week)}
+        onWeek={setWeek}
+        auto={{ on: view === "auto", canSet: true, hoursBefore: 3, cap: { briefs: 200, credits: 600 }, used: { briefs: view === "auto" ? 14 : 0, credits: view === "auto" ? 212 : 0 } }}
+        onAuto={async () => undefined}
+        today={view === "endOfDay" ? today : null}
+      />
     </StoryFrame>
   );
 }

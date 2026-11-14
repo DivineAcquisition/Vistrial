@@ -509,6 +509,16 @@ tests, lint, both typechecks and the build, never deploying Convex:
     answered" chip, commitments with dates, the script steps covered or not seen, the CRM updates waiting for
     approval or handed back as a step, the recap with where it waits in Comms, and coaching for the Owner only.
     A review that failed its checks says nothing was filed from it. `/dev/calls-tab?state=review|reviewMember`.
+    *12d, built:* end-of-day reports (`convex/endOfDay.ts`, `convex/lib/dealmaker/endOfDay.ts`,
+    `src/components/work/end-of-day.tsx`). The Calendar tab shows "Today so far" for the current week: today's
+    booked calls by outcome in the CRM's time zone (held, no-show, not marked, later; a call never marked is
+    not counted as a no-show), what was done (briefs, notes, reviews, messages sent), what is still open (calls
+    to mark, held calls without notes or review, messages waiting in Comms, promises due, tomorrow's calls
+    without a brief), and a row per rep for an Owner or Admin only, as counts and never a score. A closer sees
+    their own deals' calls. An hourly cron posts the day's report once to the Briefing after 18:00 in the CRM's
+    time zone (key `dealmaker-endofday:<connection>:<day>`), only while Dealmaker is on and when there were
+    calls today or tomorrow, with counts only and no person's name. Counted in code; no model.
+    `/dev/calendar-tab?view=endOfDay`.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
     over; SMS and email through the merged messaging path; Instagram and Facebook DMs.
     *13a, built (server):* `convex/comms.ts`. A `dealmakerDrafts` row per message, edited freely until it is

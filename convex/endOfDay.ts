@@ -7,7 +7,7 @@
 
 import { v } from "convex/values";
 
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import { internalMutation, type QueryCtx } from "./_generated/server";
 import { dealmakerOn } from "./autoBriefs";
 import { SALES_CONVERSION } from "./catalog";
@@ -27,13 +27,21 @@ type Scope = { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> };
 const LEAD_MARGIN = 3_600_000;
 
 async function readRows(ctx: Pick<QueryCtx, "db">, scope: Scope, since: number) {
-  const byClient = <T extends "callNotes" | "callReviews" | "dealBriefings">(table: T) =>
+  const [notes, reviews, briefs] = await Promise.all([
     ctx.db
-      .query(table)
+      .query("callNotes")
       .withIndex("by_workspace_client", (q) => q.eq("workspaceId", scope.workspaceId).eq("clientId", scope.clientId).gte("createdAt", since))
-      .take(1000);
-  const [notes, reviews, briefs] = await Promise.all([byClient("callNotes"), byClient("callReviews"), byClient("dealBriefings")]);
-  return { notes: notes as Doc<"callNotes">[], reviews: reviews as Doc<"callReviews">[], briefs: briefs as Doc<"dealBriefings">[] };
+      .take(1000),
+    ctx.db
+      .query("callReviews")
+      .withIndex("by_workspace_client", (q) => q.eq("workspaceId", scope.workspaceId).eq("clientId", scope.clientId).gte("createdAt", since))
+      .take(1000),
+    ctx.db
+      .query("dealBriefings")
+      .withIndex("by_workspace_client", (q) => q.eq("workspaceId", scope.workspaceId).eq("clientId", scope.clientId).gte("createdAt", since))
+      .take(1000),
+  ]);
+  return { notes, reviews, briefs };
 }
 
 /** The day's report for one organization or client, as the home given shows it. */

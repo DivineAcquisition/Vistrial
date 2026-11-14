@@ -30,15 +30,7 @@ export type EndOfDay = {
 
 const plural = (count: number, one: string, many = `${one}s`) => `${count} ${count === 1 ? one : many}`;
 
-export function endOfDay(input: {
-  now: number;
-  today: DayCall[];
-  tomorrow: DayCall[];
-  briefsMade: number;
-  messagesSent: number;
-  draftsWaiting: number;
-  commitmentsDue: number;
-}): EndOfDay {
+export function endOfDay(input: { now: number; today: DayCall[]; tomorrow: DayCall[]; briefsMade: number; messagesSent: number; draftsWaiting: number; commitmentsDue: number }): EndOfDay {
   const live = input.today.filter((row) => row.status !== "cancelled");
   const past = live.filter((row) => row.startsAt <= input.now);
   const held = past.filter((row) => row.status === "showed");

@@ -509,6 +509,14 @@ tests, lint, both typechecks and the build, never deploying Convex:
     answered" chip, commitments with dates, the script steps covered or not seen, the CRM updates waiting for
     approval or handed back as a step, the recap with where it waits in Comms, and coaching for the Owner only.
     A review that failed its checks says nothing was filed from it. `/dev/calls-tab?state=review|reviewMember`.
+    *12c, built:* the live checklist (`convex/callChecklist.ts`, `convex/lib/dealmaker/checklist.ts`,
+    `src/components/work/call-checklist.tsx`). An upcoming call in the Calls tab offers "Open the checklist":
+    the Playbook's script steps grouped by stage in call order (steps with no stage last), then this lead's
+    points from a ready brief (the opening question, what to cover, fit fields not yet established, likely
+    objections, commitments to follow through on; at most 10), then the three objections heard most on the
+    business's own calls with a talk track only once a person approved it (labelled "Untested hypothesis"). Built in code each time; nothing
+    listens to the call and nothing runs a model. Ticks are kept per call in `callChecklists` (client-scoped);
+    only ids on the list are kept, and a closer opens only calls on their own deals. `/dev/call-checklist`.
     *12d, built:* end-of-day reports (`convex/endOfDay.ts`, `convex/lib/dealmaker/endOfDay.ts`,
     `src/components/work/end-of-day.tsx`). The Calendar tab shows "Today so far" for the current week: today's
     booked calls by outcome in the CRM's time zone (held, no-show, not marked, later; a call never marked is
@@ -604,6 +612,19 @@ tests, lint, both typechecks and the build, never deploying Convex:
     "Waiting for your review", then "Approved". Nothing is sent here. Next, 16b: the page the lead opens (it
     records the view), the PDF, "Accept" before any e-signature, the Stripe link ("Not set up yet" without a key),
     sending through Comms, and the hand-off to Follow-up Engine when it is not opened.
+    *16b, built:* the lead's page (`convex/proposalPage.ts`, `src/app/p/[token]/`,
+    `src/components/proposal/`). Once a person approved a proposal, "Share with <lead>" makes its page's link (a
+    48-character random token) and files the email to the lead in Comms as a `price` draft, so a person approves
+    it (a hard stop); without a CRM contact the link is shown to copy. The page lives at `/p/<token>`, outside the
+    app's sign-in, and talks to Convex only from Vistrial's web server with `PUBLIC_FORM_SECRET`. It shows the
+    proposal in the business's name (no quotes, labels or team notes), counts opens from the browser, makes the
+    PDF in the browser (`@react-pdf/renderer`), and has "Accept" with a typed name, which is not a signature;
+    accepting proposes marking the deal won, which waits for the Owner, or hands it back as a step when acting
+    is off. Payment: "Not set up yet" until `STRIPE_SECRET_KEY` is set; making a Stripe link from a proposal is a
+    later step that needs the Owner's approval for money. The hand-off when it is not opened: every six hours
+    (`proposalPage.nudges`), a proposal shared three days ago and never opened gets one follow-up email drafted
+    in code (`followUp`, trigger `proposalNotOpened`), waiting in Comms like any follow-up. The privacy policy's
+    section K says what the page records.
 17. **Calendar tab.**
     *17, built:* `convex/dealCalendar.ts` (`week`), `convex/lib/dealmaker/calendar.ts`, the tab at
     `work/calendar` and the story `/dev/calendar-tab`. One week of booked calls from the CRM's appointments

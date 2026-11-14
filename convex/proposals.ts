@@ -17,6 +17,7 @@ import { notFound, userError } from "./lib/errors";
 import { capsFor, previewChoice, skillNeeds } from "./lib/modelChoice";
 import { itemsOf } from "./lib/playbook";
 import { requireWork } from "./lib/roles";
+import { pageUrl, paymentReadiness } from "./proposalPage";
 import { startRunFor } from "./runs";
 import { PROPOSAL_LIMITS, SKILL_SLUG } from "./skills/proposalArchitect/shapes";
 
@@ -55,8 +56,23 @@ async function shown(ctx: Pick<QueryCtx, "db">, row: Doc<"proposals">, canReques
     leadName: row.leadName,
     state: await stateOf(ctx, row),
     view: row.view ?? null,
-    /** A person approved it in the approvals queue: it may now be sent. */
+    /** A person approved it in the approvals queue: it may now be shared. */
     approved: asset?.status === "approved",
+    share: row.token
+      ? {
+          url: pageUrl(row.token),
+          sharedAt: row.sharedAt ?? null,
+          drafted: Boolean(row.draftId),
+          views: row.views ?? 0,
+          firstViewedAt: row.firstViewedAt ?? null,
+          acceptedAt: row.acceptedAt ?? null,
+          acceptedName: row.acceptedName ?? null,
+          wonStep: row.wonStep ?? null,
+          nudged: Boolean(row.nudgedAt),
+        }
+      : null,
+    payment: paymentReadiness(),
+    hasLead: Boolean(row.contactRef),
     canRequest,
     createdAt: row.createdAt,
   };

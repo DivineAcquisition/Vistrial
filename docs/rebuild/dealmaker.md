@@ -229,8 +229,9 @@ automations warning.
 It hands the step back as a Vistrial task for a person ("Move Jordan's deal to Proposal sent in your CRM"),
 labelled "Do this in your CRM". That is the honest degrade for every CRM and for acting being off.
 
-**Messaging** is the messaging switch being built in #301 / #302 (Owner only, off by default, consent tags,
-fresh opt-out check, quiet hours, one per lead per day, `SEND` typed per message). Dealmaker only ever
+**Messaging** is the messaging switch being built in #301, with its privacy text in #304 (Owner only, off
+by default, consent confirmed by the Owner, a fresh Do Not Disturb and opt-out check, quiet hours in the
+lead's time zone, at most one Vistrial message per lead a day, `SEND` typed per message). Dealmaker only ever
 *proposes* a message through it. Until it merges, a message is a draft a person copies (section 4.4).
 
 ### 3.7 Other sources, and what each can and cannot give
@@ -491,7 +492,7 @@ Every screen says what it could not read, the way the Pages tab lists a page und
 | Call Review, Pre-call Brief, the follow-up list | none (internal) | — | — |
 | Move stage, add or remove tag, add note, create task | `accountChange` via `crmActions` | Owner or Admin | — |
 | Mark a deal won, lost or abandoned, or reopen | `accountChange`, `ownerOnly` | Owner | `VALUE` |
-| Send a message to a lead (once built in #301 / #302) | `accountChange`, `ownerOnly`, behind the messaging switch | Owner | `SEND`, each message |
+| Send a message to a lead (once #301 and #304 are merged) | `accountChange`, `ownerOnly`, behind the messaging switch | Owner | `SEND`, each message |
 | Starting a run above the organization's spending limit | `spend` via a task, as today | Owner or Admin | — |
 
 Never, whatever is approved: deleting anything in a CRM, changing users, settings, workflows or billing,
@@ -634,7 +635,7 @@ Each with a recommendation.
    of 7, 14, 21 or 30 days. Whether Follow-up may propose moving a long-quiet deal to the business's own
    "lost" or "cold" stage: yes, only after 45 quiet days, and as a proposal like any other.*
 6. **Messages before the messaging switch merges.** *Recommend: drafts with Copy now; the same drafts become
-   `SEND` proposals when #301 / #302 merge, with no change to the skill.*
+   `SEND` proposals when #301 and #304 merge, with no change to the skill.*
 7. **Message words for follow-up context.** No adapter keeps message bodies, so drafts cannot answer what a
    lead last wrote. *Recommend: keep it that way for launch; reconsider reading the last inbound message at
    draft time, not stored, after the privacy policy covers it.*
@@ -677,7 +678,7 @@ story page where it has a screen; none deploys Convex.
 11. **Side chat** routes and the plan/budget messages for Dealmaker.
 12. **Go live.** Catalog `live`, `AVAILABLE_SKILLS`, landing page (section 10), Usage names, planned card
     removed, waitlist email.
-13. **Messaging hook-up**, once #301 / #302 are merged: drafts become `SEND` proposals.
+13. **Messaging hook-up**, once #301 (code) and #304 (privacy) are merged: drafts become `SEND` proposals.
 14. **Second wave**: Objection Playbook, then Proposal Draft.
 15. **HubSpot adapter**, then **Salesforce adapter**, each with its own connection page, scopes document and
     privacy section, and nothing changed in any skill.

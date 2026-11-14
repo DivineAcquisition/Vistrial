@@ -9,7 +9,7 @@ import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalAction, internalMutation, internalQuery, type ActionCtx, type MutationCtx } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, type ActionCtx, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { closeOpenActions } from "./crmActions";
 import { writeAudit } from "./lib/audit";
 import { memberAction, ownerMutation, workspaceQuery } from "./lib/builders";
@@ -236,8 +236,7 @@ export const consumeState = internalMutation({
  * Saves a new connection. Refused when the same sub-account is already connected to another client of this
  * workspace. Connecting a different sub-account to the same client replaces the old one and its data.
  */
-export const saveConnection = internalMutation({
-  args: {
+const connectionArgs = {
     workspaceId: v.id("workspaces"),
     clientId: v.optional(v.id("clients")),
     accessToken: v.string(),
@@ -251,8 +250,30 @@ export const saveConnection = internalMutation({
     timezone: v.optional(v.string()),
     connectedBy: v.string(),
     calls: v.number(),
-  },
-  handler: async (ctx, args): Promise<{ ok: true; connectionId: Id<"crmConnections"> } | { ok: false; code: string }> => {
+};
+
+type ConnectionFields = {
+  workspaceId: Id<"workspaces">;
+  clientId?: Id<"clients">;
+  accessToken: string;
+  refreshToken: string;
+  tokenExpiresAt: number;
+  scopes: string[];
+  accountId: string;
+  accountName: string;
+  companyId?: string;
+  currency: string;
+  timezone?: string;
+  connectedBy: string;
+  calls: number;
+};
+
+export const saveConnection = internalMutation({
+  args: connectionArgs,
+  handler: async (ctx, args) => saveConnectionRow(ctx, args),
+});
+
+async function saveConnectionRow(ctx: MutationCtx, args: ConnectionFields): Promise<{ ok: true; connectionId: Id<"crmConnections"> } | { ok: false; code: string }> {
     const sameAccount = await ctx.db
       .query("crmConnections")
       .withIndex("by_account", (q) => q.eq("provider", "highlevel").eq("accountId", args.accountId))
@@ -281,54 +302,170 @@ export const saveConnection = internalMutation({
     }
     await writeAudit(ctx, { workspaceId: args.workspaceId, actorType: "user", actorId: args.connectedBy, action: "crm.connected", subject: `highlevel:${args.accountId}` });
     return { ok: true, connectionId };
-  },
-});
+}
 
-/**
- * Finishes an install that came back to the callback: uses the state once, swaps the code for a sub-account
- * token on the server, checks every read scope was granted, names the sub-account and saves the connection.
- */
-export async function completeConnect(ctx: ActionCtx, url: URL) {
-  const state = await ctx.runMutation(internal.highLevel.consumeState, { nonce: url.searchParams.get("state") ?? "" });
-  if (!state) return { outcome: "expired", returnOrigin: null, returnPath: null };
-  const back = { returnOrigin: state.returnOrigin, returnPath: state.returnPath };
+type Installed = {
+  accessToken: string;
+  refreshToken: string;
+  tokenExpiresAt: number;
+  scopes: string[];
+  accountId: string;
+  accountName: string;
+  companyId?: string;
+  currency: string;
+  timezone?: string;
+  calls: number;
+};
+
+/** Swaps the code for a sub-account token on the server, checks every permission was granted and names the sub-account. */
+async function exchangeInstall(url: URL): Promise<{ ok: true; installed: Installed } | { ok: false; outcome: string }> {
   const code = url.searchParams.get("code");
-  if (url.searchParams.get("error") || !code) return { outcome: "cancelled", ...back };
-  const id = process.env.HIGHLEVEL_CLIENT_ID;
-  const secret = process.env.HIGHLEVEL_CLIENT_SECRET;
-  if (!id || !secret) return { outcome: "not_configured", ...back };
-
+  if (url.searchParams.get("error") || !code) return { ok: false, outcome: "cancelled" };
+  if (!process.env.HIGHLEVEL_CLIENT_ID || !process.env.HIGHLEVEL_CLIENT_SECRET) return { ok: false, outcome: "not_configured" };
   const exchanged = await tokenRequest({ grant_type: "authorization_code", code, user_type: "Location", redirect_uri: redirectUri() });
-  if (!exchanged.ok) return { outcome: "failed", ...back };
+  if (!exchanged.ok) return { ok: false, outcome: "failed" };
   const tokens = exchanged.body;
   // An agency-level install gives a token that reaches every sub-account. Not accepted: choose one sub-account.
-  if (tokens.userType !== "Location" || !isHlId(tokens.locationId)) return { outcome: "agency_install", ...back };
+  if (tokens.userType !== "Location" || !isHlId(tokens.locationId)) return { ok: false, outcome: "agency_install" };
   const granted = typeof tokens.scope === "string" ? tokens.scope.split(/[\s,]+/).filter(Boolean) : [];
-  if (!HL_SCOPES.every((scope) => granted.includes(scope))) return { outcome: "missing_permission", ...back };
-
+  if (!HL_SCOPES.every((scope) => granted.includes(scope))) return { ok: false, outcome: "missing_permission" };
   const counter: Counter = { ok: 0, failed: 0, lastCode: null };
-  const located = await hlRequest(tokens.access_token as string, `/locations/${tokens.locationId}`, counter);
+  const located = await hlRequest(tokens.access_token, `/locations/${tokens.locationId}`, counter);
   const location = located.ok ? parseLocation(located.body) : null;
-  if (!location) return { outcome: "failed", ...back };
+  if (!location) return { ok: false, outcome: "failed" };
+  return {
+    ok: true,
+    installed: {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      tokenExpiresAt: Date.now() + Number(tokens.expires_in) * 1000,
+      scopes: granted.filter((scope) => (HL_SCOPES as readonly string[]).includes(scope)),
+      accountId: location.id,
+      accountName: location.name,
+      companyId: isHlId(tokens.companyId) ? tokens.companyId : undefined,
+      currency: location.currency,
+      timezone: location.timezone ?? undefined,
+      calls: counter.ok,
+    },
+  };
+}
+
+/**
+ * Finishes an install that came back to the callback. One started from Vistrial carries a state, used once,
+ * that names the workspace and client. One started on HighLevel's marketplace carries none: its token waits
+ * as a pending install, and the person is sent to Vistrial to choose where it belongs.
+ */
+export async function completeConnect(ctx: ActionCtx, url: URL): Promise<{ outcome: string; returnOrigin: string | null; returnPath: string | null }> {
+  const nonce = url.searchParams.get("state");
+  if (!nonce) {
+    const result = await exchangeInstall(url);
+    if (!result.ok) return { outcome: result.outcome, returnOrigin: null, returnPath: null };
+    const claimCode: string = await ctx.runMutation(internal.highLevel.savePending, result.installed);
+    return { outcome: "choose", returnOrigin: null, returnPath: `/app/connections/highlevel?install=${claimCode}` };
+  }
+  const state = await ctx.runMutation(internal.highLevel.consumeState, { nonce });
+  if (!state) return { outcome: "expired", returnOrigin: null, returnPath: null };
+  const back = { returnOrigin: state.returnOrigin, returnPath: state.returnPath };
+  const result = await exchangeInstall(url);
+  if (!result.ok) return { outcome: result.outcome, ...back };
   const saved = await ctx.runMutation(internal.highLevel.saveConnection, {
+    ...result.installed,
     workspaceId: state.workspaceId,
     clientId: state.clientId ?? undefined,
-    accessToken: tokens.access_token as string,
-    refreshToken: tokens.refresh_token as string,
-    tokenExpiresAt: Date.now() + Number(tokens.expires_in) * 1000,
-    scopes: granted.filter((scope) => (HL_SCOPES as readonly string[]).includes(scope)),
-    accountId: location.id,
-    accountName: location.name,
-    companyId: isHlId(tokens.companyId) ? tokens.companyId : undefined,
-    currency: location.currency,
-    timezone: location.timezone ?? undefined,
     connectedBy: state.userId,
-    calls: counter.ok,
   });
   if (!saved.ok) return { outcome: saved.code, ...back };
   await ctx.scheduler.runAfter(0, internal.highLevel.syncOne, { connectionId: saved.connectionId, trigger: "connect" });
   return { outcome: "connected", ...back };
 }
+
+// ---------- Installs started on HighLevel's marketplace ----------
+
+const PENDING_MS = 60 * 60 * 1000;
+
+const installedArgs = {
+  accessToken: v.string(),
+  refreshToken: v.string(),
+  tokenExpiresAt: v.number(),
+  scopes: v.array(v.string()),
+  accountId: v.string(),
+  accountName: v.string(),
+  companyId: v.optional(v.string()),
+  currency: v.string(),
+  timezone: v.optional(v.string()),
+  calls: v.number(),
+};
+
+/** Keeps a marketplace install for an hour, under a one-time code. An earlier one for the same sub-account is replaced. */
+export const savePending = internalMutation({
+  args: installedArgs,
+  handler: async (ctx, args) => {
+    const earlier = await ctx.db
+      .query("crmPendingInstalls")
+      .withIndex("by_account", (q) => q.eq("provider", "highlevel").eq("accountId", args.accountId))
+      .take(20);
+    for (const row of earlier) await ctx.db.delete(row._id);
+    const claimCode = randomHex(24);
+    const id = await ctx.db.insert("crmPendingInstalls", { ...args, provider: "highlevel", claimCode, createdAt: Date.now() });
+    await ctx.scheduler.runAfter(PENDING_MS, internal.highLevel.dropPending, { id });
+    return claimCode;
+  },
+});
+
+export const dropPending = internalMutation({
+  args: { id: v.id("crmPendingInstalls") },
+  handler: async (ctx, args) => {
+    if (await ctx.db.get(args.id)) await ctx.db.delete(args.id);
+  },
+});
+
+async function pendingByCode(ctx: MutationCtx | QueryCtx, code: string) {
+  if (!isNonce(code)) return null;
+  const row = await ctx.db
+    .query("crmPendingInstalls")
+    .withIndex("by_code", (q) => q.eq("claimCode", code))
+    .unique();
+  return row && Date.now() - row.createdAt <= PENDING_MS ? row : null;
+}
+
+/** The sub-account a marketplace install is waiting with: its name only. Null when the code is unknown or too old. */
+export const pendingInstall = workspaceQuery({
+  args: { code: v.string() },
+  handler: async (ctx, args) => {
+    const row = await pendingByCode(ctx, args.code);
+    if (!row) return null;
+    return { accountName: row.accountName, canClaim: isOwner(ctx.member.role), expiresAt: row.createdAt + PENDING_MS };
+  },
+});
+
+/** Connects a marketplace install to the organization or one client. Owner only; the code works once. */
+export const claimInstall = ownerMutation({
+  args: { code: v.string(), ...clientArg },
+  handler: async (ctx, args) => {
+    const row = await pendingByCode(ctx, args.code);
+    if (!row) throw userError("That HighLevel install has expired. Install the app again, or press Connect HighLevel here.");
+    await requireClient(ctx, ctx.workspaceId, args.clientId);
+    const saved = await saveConnectionRow(ctx, {
+      accessToken: row.accessToken,
+      refreshToken: row.refreshToken,
+      tokenExpiresAt: row.tokenExpiresAt,
+      scopes: row.scopes,
+      accountId: row.accountId,
+      accountName: row.accountName,
+      companyId: row.companyId,
+      currency: row.currency,
+      timezone: row.timezone,
+      calls: row.calls,
+      workspaceId: ctx.workspaceId,
+      clientId: args.clientId,
+      connectedBy: ctx.identity.subject,
+    });
+    if (!saved.ok) throw userError("This HighLevel sub-account is already connected to another client here. Disconnect it there first.");
+    await ctx.db.delete(row._id);
+    await ctx.scheduler.runAfter(0, internal.highLevel.syncOne, { connectionId: saved.connectionId, trigger: "connect" });
+    return { clientId: args.clientId ?? null };
+  },
+});
 
 type TokenBody = Record<string, unknown> & { access_token: string; refresh_token: string; expires_in: number };
 
@@ -1103,6 +1240,11 @@ export const uninstalled = internalMutation({
       .query("crmConnections")
       .withIndex("by_account", (q) => q.eq("provider", "highlevel").eq("accountId", args.locationId))
       .take(50);
+    const pending = await ctx.db
+      .query("crmPendingInstalls")
+      .withIndex("by_account", (q) => q.eq("provider", "highlevel").eq("accountId", args.locationId))
+      .take(20);
+    for (const row of pending) await ctx.db.delete(row._id);
     let removed = 0;
     for (const row of rows) {
       if (args.at !== undefined && args.at < row.connectedAt) continue;

@@ -2,6 +2,7 @@
 
 import { useAction, useMutation, useQuery } from "convex/react";
 
+import { HighLevelClaimView, type ClaimChoice } from "@/components/connections/highlevel-claim-view";
 import { HighLevelActionsView, type HighLevelActionsData } from "@/components/connections/highlevel-actions-view";
 import { HighLevelView, type HighLevelStatus } from "@/components/connections/highlevel-view";
 import { describeError } from "@/lib/errors/user-error";
@@ -120,6 +121,43 @@ export function HighLevelActions({ workspaceId, clientId }: { workspaceId: Id<"w
           return null;
         },
         undo: (actionId) => reasonOf(() => undo({ workspaceId, actionId: actionId as Id<"crmActions"> })),
+      }}
+    />
+  );
+}
+
+/**
+ * Finishes an install that began on HighLevel's marketplace: the Owner chooses the organization or a client,
+ * and `onConnected` is told which so the page can show that connection.
+ */
+export function HighLevelClaim({
+  workspaceId,
+  workspaceName,
+  code,
+  choices,
+  onConnected,
+}: {
+  workspaceId: Id<"workspaces">;
+  workspaceName: string;
+  code: string;
+  choices: ClaimChoice[];
+  onConnected: (clientId: Id<"clients"> | null) => void;
+}) {
+  const pending = useQuery(api.highLevel.pendingInstall, { workspaceId, code });
+  const claim = useMutation(api.highLevel.claimInstall);
+  return (
+    <HighLevelClaimView
+      pending={pending}
+      workspaceName={workspaceName}
+      choices={choices}
+      claim={async (choiceId) => {
+        try {
+          const done = await claim({ workspaceId, code, clientId: choiceId === "own" ? undefined : (choiceId as Id<"clients">) });
+          onConnected(done.clientId);
+          return null;
+        } catch (problem) {
+          return describeError(problem, "Could not connect HighLevel. Try again.").message;
+        }
       }}
     />
   );

@@ -372,11 +372,26 @@ It follows Convex live, so it switches to the connected numbers on its own after
 
 `HIGHLEVEL_CALL_GAP_MS` (default 150) is the pause between calls; the tests set it to 0. Leave it unset.
 
+## Installs from HighLevel's marketplace
+
+An install started on HighLevel (the marketplace listing, or HighLevel's own install link) comes back to
+`/crm/hl/callback` with a `code` and no `state`, so it names no workspace. The callback still swaps the code
+on the server and checks it as usual (one sub-account, every permission), then keeps the token as a
+**pending install** (`crmPendingInstalls`) for one hour under a random one-time code, and sends the browser
+to `/app/connections/highlevel?install=<code>`. Signing in keeps that address. The page asks the signed-in
+Owner whether the sub-account is for the organization or one of its clients; **Connect HighLevel** saves it
+like any connection and starts the first read. Admins, Members and Viewers see the sub-account's name and are
+told an Owner must connect it. The pending install is deleted when claimed, after an hour, or when the app is
+uninstalled from that sub-account. No public function returns its token.
+
 ## Unproven until a real app exists
 
 - Whether `chooselocation` passes our `state` back unchanged. The external-auth docs say HighLevel keeps
-  `state`; the marketplace install docs do not mention it. The callback **requires** it; if HighLevel
-  drops it, connecting fails safely with `expired` and this must change.
+  `state`; the marketplace install docs do not mention it. A callback with a state that is unknown, used or
+  old is refused (`expired`). A callback with **no** state is treated as an install from HighLevel's
+  marketplace (below), so a dropped state still connects, through the Owner's choice.
+- Whether HighLevel needs `version_id` in the install address. Its own install links carry one; set
+  `HIGHLEVEL_VERSION_ID` to the value in the developer portal's install link and Vistrial adds it.
 - The exact bytes the Ed25519 webhook signature covers (the docs' sample signs `JSON.stringify(body)`), and
   whether Convex's runtime verifies Ed25519 with Web Crypto. Until proven, a delivery that does not verify
   is refused, and the 30-day **Reconnect needed** removal is the fallback.

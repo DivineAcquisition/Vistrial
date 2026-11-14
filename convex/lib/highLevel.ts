@@ -46,7 +46,7 @@ export function isConfigured() {
   return Boolean(process.env.HIGHLEVEL_CLIENT_ID && process.env.HIGHLEVEL_CLIENT_SECRET);
 }
 
-export function installUrl(input: { clientId: string; redirectUri: string; state: string }) {
+export function installUrl(input: { clientId: string; redirectUri: string; state?: string }) {
   const wanted = process.env.HIGHLEVEL_INSTALL_HOST ?? "";
   const host = INSTALL_HOSTS.includes(wanted) ? wanted : INSTALL_HOSTS[0];
   const params = new URLSearchParams({
@@ -54,8 +54,11 @@ export function installUrl(input: { clientId: string; redirectUri: string; state
     client_id: input.clientId,
     redirect_uri: input.redirectUri,
     scope: HL_SCOPES.join(" "),
-    state: input.state,
   });
+  if (input.state) params.set("state", input.state);
+  // The app version HighLevel's own install link names. Optional: copied from the developer portal's link.
+  const version = process.env.HIGHLEVEL_VERSION_ID?.trim();
+  if (version && /^[A-Za-z0-9-]{6,64}$/.test(version)) params.set("version_id", version);
   return `https://${host}/oauth/chooselocation?${params}`;
 }
 

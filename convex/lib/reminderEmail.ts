@@ -172,3 +172,22 @@ export function firstPackageEmail(input: {
   });
   return { subject: `Your first Vistrial package: ${fewWords(input.workspaceName, 70)}`, ...body };
 }
+
+/**
+ * A pre-call brief is ready, to the closer. It names the lead and the call and nothing else about them: what
+ * the lead said stays in Vistrial, one tap away.
+ */
+export function preCallBriefEmail(input: { workspaceName: string; leadName: string; when: string | null; briefingId: string; appUrl: string }): ReminderEmail {
+  const lead = fewWords(input.leadName, 60);
+  const workspace = fewWords(input.workspaceName, 80);
+  const body = layout({
+    lines: [
+      `Your brief for the call with ${lead}${input.when ? ` on ${input.when}` : ""} is ready.`,
+      "It has who they are, what is established and what is still open, and a question to open with.",
+    ],
+    button: { label: "Open the brief", url: `${appBase(input.appUrl)}/app/agents/sales-conversion/work/calls?brief=${encodeURIComponent(input.briefingId)}` },
+    why: `You got this because a pre-call brief was made for one of your calls in ${workspace} on Vistrial.`,
+    settingsUrl: settingsUrl(input.appUrl),
+  });
+  return { subject: `Pre-call brief ready: ${lead}${input.when ? `, ${fewWords(input.when, 40)}` : ""}`, ...body };
+}

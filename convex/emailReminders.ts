@@ -66,16 +66,16 @@ async function recipientsFor(ctx: QueryCtx, workspaceId: Id<"workspaces">, flag:
   return out;
 }
 
-function resendKey(): string | null {
+export function resendKey(): string | null {
   return process.env.RESEND_API_KEY?.trim() || null;
 }
 
-function appUrl(): string {
+export function appUrl(): string {
   return process.env.SITE_URL?.trim() || DEFAULT_APP_URL;
 }
 
 /** True when Resend took the email. Never throws. The idempotency key makes a retry a no-op at Resend. */
-async function send(key: string, to: string, idempotencyKey: string, message: ReminderEmail): Promise<boolean> {
+export async function send(key: string, to: string, idempotencyKey: string, message: ReminderEmail): Promise<boolean> {
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",

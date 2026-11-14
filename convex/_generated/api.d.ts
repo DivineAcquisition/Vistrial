@@ -25,6 +25,7 @@ import type * as agentsMigration from "../agentsMigration.js";
 import type * as approvals from "../approvals.js";
 import type * as assets from "../assets.js";
 import type * as billing from "../billing.js";
+import type * as briefEmail from "../briefEmail.js";
 import type * as billingActions from "../billingActions.js";
 import type * as bookings from "../bookings.js";
 import type * as brandKits from "../brandKits.js";
@@ -309,6 +310,7 @@ declare const fullApi: ApiFromModules<{
   approvals: typeof approvals;
   assets: typeof assets;
   billing: typeof billing;
+  briefEmail: typeof briefEmail;
   billingActions: typeof billingActions;
   bookings: typeof bookings;
   brandKits: typeof brandKits;

@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-import { CalendarIcon, CheckCircle2, CircleDashed, CircleSlash, ClipboardList, Hand, ListChecks, Loader2, MessageCircleQuestion, MessageSquareWarning, Quote, Target, TriangleAlert, User, Users, XCircle, type LucideIcon } from "@/components/icons";
+import { CalendarIcon, CheckCircle2, ExternalLink, Globe, CircleDashed, CircleSlash, ClipboardList, Hand, ListChecks, Loader2, MessageCircleQuestion, MessageSquareWarning, Quote, Target, TriangleAlert, User, Users, XCircle, type LucideIcon } from "@/components/icons";
 import { EvidenceLabel } from "@/components/readable";
 import { useClientScope } from "@/components/shell/shell-context";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ type BriefState = NonNullable<Upcoming["brief"]>["state"];
 
 export type CallsActions = {
   /** Asks for a brief on one booked call, or (without a CRM) on a lead by name. */
-  request: (input: { contactRef?: string; dealRef?: string; appointmentRef?: string; leadName?: string; about?: string; handoff?: string; confirmedCredits: number }) => Promise<unknown>;
+  request: (input: { contactRef?: string; dealRef?: string; appointmentRef?: string; leadName?: string; about?: string; handoff?: string; website?: string; confirmedCredits: number }) => Promise<unknown>;
 };
 
 /** Colour is never alone: every brief state has an icon and its words. */
@@ -63,9 +64,14 @@ function StateBadge({ state }: { state: BriefState | "none" }) {
 /** Asking for a brief: an optional hand-off, then the budget confirmed before anything runs. */
 function AskBrief({ call, maxCredits, actions, onDone }: { call: Upcoming; maxCredits: number; actions: CallsActions; onDone: () => void }) {
   const [handoff, setHandoff] = useState("");
+  const [website, setWebsite] = useState("");
   const [busy, setBusy] = useState(false);
   return (
     <div className="grid gap-2 rounded-lg border border-border bg-muted/40 p-3">
+      <label className="grid gap-1 text-xs text-muted-foreground" htmlFor={`site-${call.ref}`}>
+        Their business website (optional). Without it, Dealmaker reads the site at their work email&apos;s domain, if they have one.
+        <Input id={`site-${call.ref}`} inputMode="url" value={website} onChange={(event) => setWebsite(event.target.value)} placeholder="https://their-business.com" />
+      </label>
       <label className="grid gap-1 text-xs text-muted-foreground" htmlFor={`handoff-${call.ref}`}>
         What the setter found (optional). It is shown as their account, with their name.
         <Textarea id={`handoff-${call.ref}`} rows={3} value={handoff} onChange={(event) => setHandoff(event.target.value)} placeholder="Booked from the webinar. Wants more booked calls; partner signs off." />
@@ -76,7 +82,7 @@ function AskBrief({ call, maxCredits, actions, onDone }: { call: Upcoming; maxCr
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            const ok = await run(() => actions.request({ contactRef: call.contactRef, appointmentRef: call.ref, ...(call.dealRef ? { dealRef: call.dealRef } : {}), ...(handoff.trim() ? { handoff } : {}), confirmedCredits: maxCredits }));
+            const ok = await run(() => actions.request({ contactRef: call.contactRef, appointmentRef: call.ref, ...(call.dealRef ? { dealRef: call.dealRef } : {}), ...(handoff.trim() ? { handoff } : {}), ...(website.trim() ? { website } : {}), confirmedCredits: maxCredits }));
             setBusy(false);
             if (ok) onDone();
           }}
@@ -126,6 +132,7 @@ function CallRow({ call, data, actions, onOpen }: { call: Upcoming; data: CallsD
 function BriefByName({ data, actions }: { data: CallsData; actions: CallsActions }) {
   const [leadName, setLeadName] = useState("");
   const [about, setAbout] = useState("");
+  const [website, setWebsite] = useState("");
   const [busy, setBusy] = useState(false);
   return (
     <Panel className="grid min-w-0 gap-3 p-4 sm:p-6">
@@ -135,17 +142,19 @@ function BriefByName({ data, actions }: { data: CallsData; actions: CallsActions
         <div className="grid gap-2">
           <Input aria-label="The lead's name" value={leadName} onChange={(event) => setLeadName(event.target.value)} placeholder="Jordan Lee" />
           <Textarea aria-label="What you know about them" rows={3} value={about} onChange={(event) => setAbout(event.target.value)} placeholder="Runs a three-person agency; wants more booked calls." />
+          <Input aria-label="Their business website (optional)" inputMode="url" value={website} onChange={(event) => setWebsite(event.target.value)} placeholder="Their business website (optional)" />
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               disabled={busy || !leadName.trim() || !about.trim()}
               onClick={async () => {
                 setBusy(true);
-                const ok = await run(() => actions.request({ leadName, about, confirmedCredits: data.maxCredits }));
+                const ok = await run(() => actions.request({ leadName, about, ...(website.trim() ? { website } : {}), confirmedCredits: data.maxCredits }));
                 setBusy(false);
                 if (ok) {
                   setLeadName("");
                   setAbout("");
+                  setWebsite("");
                 }
               }}
             >
@@ -224,6 +233,25 @@ export function BriefView({ brief, onClose }: { brief: BriefData; onClose?: () =
           <EvidenceLabel label="Your data" /> As your CRM records it. Vistrial keeps no message words, so this is counts and dates.
         </span>
       </Block>
+
+      {view.publicRead ? (
+        <Block icon={Globe} title="Their business, in public">
+          <ul className="grid gap-1.5 text-sm">
+            {view.publicRead.lines.map((row, i) => (
+              <li key={i} className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                <span className="min-w-0 text-foreground">{row.text}</span>
+                <a href={row.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2">
+                  Source <ExternalLink aria-hidden className="size-3" />
+                </a>
+              </li>
+            ))}
+          </ul>
+          <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <EvidenceLabel label="Observed" /> On {view.publicRead.domain}
+            {view.publicRead.from === "email" ? ", the domain of their work email" : ""}: what the business says about itself.
+          </span>
+        </Block>
+      ) : null}
 
       <Block icon={ListChecks} title="Readiness">
         <ul className="grid gap-2 sm:grid-cols-2">
@@ -419,7 +447,8 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   const { clientId } = useClientScope();
   const data = useQuery(api.dealBriefings.calls, { workspaceId, clientId });
   const request = useMutation(api.dealBriefings.request);
-  const [open, setOpen] = useState<string | null>(null);
+  const linked = useSearchParams().get("brief");
+  const [open, setOpen] = useState<string | null>(linked);
   if (open) return <OpenBrief workspaceId={workspaceId} briefingId={open} onClose={() => setOpen(null)} />;
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your booked calls…</p>;
   const actions: CallsActions = { request: (input) => request({ workspaceId, clientId, ...input }) };

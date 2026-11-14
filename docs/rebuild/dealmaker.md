@@ -353,6 +353,14 @@ tests, lint, both typechecks and the build, never deploying Convex:
    Only open questions are asked; one can be skipped. Answers become Playbook items from the interview
    ("Your data") or the new `dealmakerSettings` row for the organization or client. Step 7 is complete.
 8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
+   *Built (server):* `convex/lib/dealmaker/{roles,autonomy}.ts` and `convex/dealmakerTeam.ts`. Sales roles
+   (setter, closer, sales lead) sit beside the app roles; Owners and Admins give a member a role and link them
+   to a CRM user seen on deals (the CRM gives an id, no name). A home shows every deal to Owners, Admins and
+   sales leads, otherwise only the deals assigned to that CRM user, and says why when it shows none.
+   `decideSend` holds the four hard stops first (a paused lead, a price, a first message; won or lost stays the
+   Owner's), then lets only the low-stakes kinds the Owner chose go without a person. Only the Owner changes
+   that, and only for reminders, confirmations and sending something promised. A person pauses a lead and
+   only a person lifts it. The screens come with the Pipeline tab (step 9).
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.
 10. **Calls tab, before**: Deal Briefing with research, readiness, the setter's hand-off, offer fit and opening line; email and the

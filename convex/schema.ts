@@ -2548,9 +2548,26 @@ export default defineSchema({
     channels: v.optional(v.array(v.union(v.literal("sms"), v.literal("email"), v.literal("voice"), v.literal("dm")))),
     /** Interview questions a person chose to skip. */
     skipped: v.optional(v.array(v.string())),
+    /** Each member's sales role and the CRM user they are, for their home. */
+    team: v.optional(v.array(v.object({ memberId: v.id("members"), salesRole: v.union(v.literal("setter"), v.literal("closer"), v.literal("lead")), crmUserRef: v.optional(v.string()) }))),
+    /** The message kinds the Owner made automatic. Only the low-stakes kinds are ever accepted. */
+    autonomous: v.optional(v.array(v.string())),
     updatedBy: v.string(),
     updatedAt: v.number(),
   }).index("by_workspace_client", ["workspaceId", "clientId"]),
+
+  /** A lead Dealmaker must not contact: paused after a negative reply, until a person lifts it (0.2). */
+  dealmakerPauses: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    /** The CRM contact's id. */
+    contactRef: v.string(),
+    reason: v.string(),
+    pausedBy: v.string(),
+    pausedAt: v.number(),
+    liftedBy: v.optional(v.string()),
+    liftedAt: v.optional(v.number()),
+  }).index("by_workspace_contact", ["workspaceId", "contactRef", "pausedAt"]),
 
   /** "What I've learned about how you sell": proposed until a person approves it; only approved ones guide drafts. */
   playbookLessons: defineTable({

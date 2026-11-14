@@ -209,6 +209,7 @@ import type * as playbookInterview from "../playbookInterview.js";
 import type * as playbookStudyActions from "../playbookStudyActions.js";
 import type * as playbookStudySite from "../playbookStudySite.js";
 import type * as profile from "../profile.js";
+import type * as proposalPage from "../proposalPage.js";
 import type * as proposals from "../proposals.js";
 import type * as publicSubmissions from "../publicSubmissions.js";
 import type * as records from "../records.js";
@@ -530,6 +531,7 @@ declare const fullApi: ApiFromModules<{
   playbookStudyActions: typeof playbookStudyActions;
   playbookStudySite: typeof playbookStudySite;
   profile: typeof profile;
+  proposalPage: typeof proposalPage;
   proposals: typeof proposals;
   publicSubmissions: typeof publicSubmissions;
   records: typeof records;

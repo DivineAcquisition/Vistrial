@@ -82,7 +82,82 @@ export function ProposalPanel({ data, actions }: { data: ProposalForReview; acti
 }
 
 /** One proposal, drawn from its saved view. The package, price, guarantee and proof are the Offer folder's own words. */
-export function ProposalView({ proposal, onClose }: { proposal: ProposalData; onClose?: () => void }) {
+function day(at: number) {
+  return new Date(at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+const PAYMENT_WORDS: Record<ProposalData["payment"], string> = {
+  notSetUp: "Payment link: Not set up yet. Stripe is not configured on Vistrial, so send payment details yourself.",
+  ready: "Payment link: Stripe is configured on Vistrial. Links from a proposal come in a later step; send one from Stripe for now.",
+};
+
+/** Sharing an approved proposal: its page's link, the email in Comms, and what the lead did with it. */
+function SharePanel({ proposal, onShare }: { proposal: ProposalData; onShare?: () => Promise<unknown> }) {
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const share = proposal.share;
+  return (
+    <section className="grid min-w-0 gap-2 rounded-lg border border-border p-3 sm:p-4" aria-label="Sharing" data-proposal-share>
+      <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">With {proposal.leadName}</h3>
+      {share ? (
+        <>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <code className="min-w-0 flex-1 basis-56 truncate rounded-md bg-muted px-2 py-1 text-xs">{share.url}</code>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(share.url);
+                  setCopied(true);
+                } catch {
+                  setCopied(false);
+                }
+              }}
+            >
+              {copied ? "Copied" : "Copy link"}
+            </Button>
+          </div>
+          <p className="text-sm text-foreground">
+            {share.drafted ? "The email with this link waits in Comms for a person to approve and send it." : "No CRM contact is linked, so copy the link and send it yourself."}
+          </p>
+          <p className="text-sm text-foreground">
+            {share.firstViewedAt ? `Opened ${share.views} time${share.views === 1 ? "" : "s"}, first on ${day(share.firstViewedAt)}.` : share.nudged ? "Not opened in 3 days. A follow-up waits in Comms." : "Not opened yet."}
+          </p>
+          {share.acceptedAt ? (
+            <p className="text-sm text-foreground">
+              Accepted by {share.acceptedName} on {day(share.acceptedAt)}. {share.wonStep?.detail ?? "Mark the deal won in your CRM when you are ready."}
+            </p>
+          ) : null}
+        </>
+      ) : onShare ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onShare();
+              } catch (error) {
+                showError(error);
+              }
+              setBusy(false);
+            }}
+          >
+            Share with {proposal.leadName}
+          </Button>
+          <span className="text-xs text-muted-foreground">{proposal.hasLead ? "Makes the page's link and drafts the email in Comms. Nothing is sent until a person approves it." : "Makes the page's link for you to send."}</span>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">Not shared yet.</p>
+      )}
+      <p className="text-xs text-muted-foreground">{PAYMENT_WORDS[proposal.payment]}</p>
+    </section>
+  );
+}
+
+export function ProposalView({ proposal, onClose, onShare }: { proposal: ProposalData; onClose?: () => void; onShare?: () => Promise<unknown> }) {
   const view = proposal.view;
   const look = stateOf(proposal);
   return (
@@ -114,7 +189,9 @@ export function ProposalView({ proposal, onClose }: { proposal: ProposalData; on
             </p>
           ) : !proposal.approved ? (
             <p className="text-sm text-muted-foreground">It waits for your review in Approvals. Nothing reaches {proposal.leadName} until a person approves it and sends it.</p>
-          ) : null}
+          ) : (
+            <SharePanel proposal={proposal} onShare={proposal.canRequest ? onShare : undefined} />
+          )}
           <p className="text-sm break-words text-foreground">{view.intro}</p>
           <section className="grid gap-2" aria-label="What they told you">
             <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">What {proposal.leadName} told you</h3>

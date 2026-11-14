@@ -79,4 +79,7 @@ crons.interval("Dealmaker weekly scorecard", { hours: 6 }, internal.dealmakerPro
 /** The Objection Playbook's weekly talk tracks, where an Owner turned them on: one run per Playbook per week. */
 crons.interval("Dealmaker weekly objection playbook", { hours: 6 }, internal.objectionPlaybook.weekly, {});
 
+/** Proposals shared and not opened within three days: one follow-up each, drafted in code, waiting in Comms. */
+crons.interval("Dealmaker proposal follow-ups", { hours: 6 }, internal.proposalPage.nudges, {});
+
 export default crons;

@@ -35,6 +35,8 @@ export type CallsActions = {
   allowLinks?: () => Promise<unknown>;
   /** Asks for a review of a held call: its transcript, its notes, or both. */
   requestReview?: (input: { transcriptId?: string; callNoteId?: string; confirmedCredits: number }) => Promise<unknown>;
+  /** Shares the open proposal (a story passes a stand-in; the live tab wires it per proposal). */
+  shareProposal?: () => Promise<unknown>;
   /** Saves the closer's notes after a call, the memo uploaded first. */
   saveNote?: NotesActions["saveNote"];
   request: (input: { contactRef?: string; dealRef?: string; appointmentRef?: string; leadName?: string; about?: string; handoff?: string; website?: string; confirmedCredits: number }) => Promise<unknown>;
@@ -526,7 +528,7 @@ export function CallsView({
   onOpenProposal?: (id: string | null) => void;
 }) {
   if (open) return <BriefView brief={open} onClose={() => onOpen(null)} />;
-  if (openProposal) return <ProposalView proposal={openProposal} onClose={() => onOpenProposal(null)} />;
+  if (openProposal) return <ProposalView proposal={openProposal} onClose={() => onOpenProposal(null)} onShare={actions.shareProposal} />;
   if (openReview) return <ReviewView review={openReview} onClose={() => onOpenReview(null)} proposal={reviewProposal ?? null} />;
   const others = data.recent.filter((row) => !data.upcoming.some((call) => call.brief?.id === row.id));
   return (
@@ -629,8 +631,9 @@ function OpenReview({ workspaceId, reviewId, onClose, onOpenProposal }: { worksp
 
 function OpenProposal({ workspaceId, proposalId, onClose }: { workspaceId: Id<"workspaces">; proposalId: string; onClose: () => void }) {
   const proposal = useQuery(api.proposals.proposal, { workspaceId, proposalId: proposalId as Id<"proposals"> });
+  const share = useMutation(api.proposalPage.share);
   if (proposal === undefined) return <p className="text-sm text-muted-foreground">Opening the proposal…</p>;
-  return <ProposalView proposal={proposal} onClose={onClose} />;
+  return <ProposalView proposal={proposal} onClose={onClose} onShare={() => share({ workspaceId, proposalId: proposalId as Id<"proposals"> })} />;
 }
 
 /** Dealmaker's Calls tab, before the call, for the organization or the client the picker names. */

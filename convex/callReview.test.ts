@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { ScriptedModel } from "./lib/toolRouter";
+import { isLead, quoteSpeaker, speakerOf } from "./lib/dealmaker/speakers";
 import { runChecks } from "./skills/callReview/checks";
 import { computeReview, talkOf, type ReviewInput } from "./skills/callReview/compute";
 import type { Review } from "./skills/callReview/shapes";
@@ -67,7 +68,7 @@ function goodReview(): Review {
       { field: "budget", finding: "Around $3,000 a month", quote: "Our budget is around $3,000 a month.", sourceId: "t1" },
       { field: "decider", finding: "A business partner signs off", quote: "I have to check with my business partner", sourceId: "t1" },
     ],
-    objections: [{ objection: "Price feels high", quote: "it feels expensive for where we are", sourceId: "t1", answered: true, answerQuote: "Most of the cost is the follow-up we run for you" }],
+    objections: [{ objection: "Price feels high", itemId: "", quote: "it feels expensive for where we are", sourceId: "t1", answered: true, answerQuote: "Most of the cost is the follow-up we run for you" }],
     commitments: [
       { owner: "us", what: "Send the proposal and the clinic case study", due: "2026-11-20", quote: "I'll send the proposal and the clinic case study by Friday.", sourceId: "t1" },
       { owner: "lead", what: "Talk to the partner", due: "", quote: "I'll talk to Sam on Monday.", sourceId: "t1" },
@@ -94,6 +95,19 @@ describe("what a review knows (code)", () => {
       ["p2", "scriptStep"],
       ["p3", "package"],
     ]);
+  });
+});
+
+describe("who said a quote (code)", () => {
+  it("is the buyer only on the lead's own line; our side's line is a rep's words; no label, no known speaker", () => {
+    expect(quoteSpeaker("Our budget is around $3,000 a month.", CALL, "Jordan Lee")).toEqual({ kind: "buyer", speaker: "Jordan" });
+    expect(quoteSpeaker("I'll send the proposal and the clinic case study by Friday.", CALL, "Jordan Lee")).toEqual({ kind: "rep", speaker: "Milo" });
+    expect(quoteSpeaker("send the proposal", "We will send the proposal soon.", "Jordan Lee")).toEqual({ kind: "unknown", speaker: null });
+    // A label carries down to the unlabelled lines under it, and a quote running over a line break keeps its speaker.
+    expect(speakerOf("the second line", "Jordan: first line\nthe second line")).toBe("Jordan");
+    expect(speakerOf("end of one start of", "Milo: the end of one\nstart of two")).toBe("Milo");
+    expect(isLead("jordan", "Jordan Lee")).toBe(true);
+    expect(isLead("Milo", "Jordan Lee")).toBe(false);
   });
 });
 
@@ -204,7 +218,9 @@ describe("a call review, run end to end", () => {
       ["Timing", false, null],
       ["Fit with the offer", false, null],
     ]);
-    expect(shown.view?.objections[0]).toMatchObject({ answered: true });
+    expect(shown.view?.objections[0]).toMatchObject({ answered: true, kind: "Buyer's words" });
+    // Our side's promise is labelled as the rep's words, not the buyer's.
+    expect(shown.view?.commitments.map((row) => row.kind)).toEqual(["Rep's words, Milo", "Buyer's words"]);
     expect(shown.view?.coverage).toEqual([
       { title: "Ask what it is worth to them", covered: true, quote: "What would that be worth to you?" },
       { title: "Ask for the decision", covered: false, quote: "" },
@@ -249,6 +265,25 @@ describe("a call review, run end to end", () => {
     expect(recent.reviews.map((row) => [row.leadName, row.state])).toEqual([["Jordan Lee", "ready"]]);
   });
 
+  it("files a rep's line from the call as the rep's, with their name, never as the buyer's", async () => {
+    script(() => ({
+      ...goodReview(),
+      fit: [
+        { field: "fit", finding: "The retainer fits", quote: "Most of the cost is the follow-up we run for you", sourceId: "t1" },
+        { field: "need", finding: "More booked calls", quote: "We need more booked calls every month", sourceId: "t1" },
+      ],
+    }));
+    const s = await setup();
+    const out = await runReview(s, { transcriptId: s.transcriptId });
+    const facts = await s.t.run((ctx) => ctx.db.query("dealFacts").collect());
+    expect(facts.map((row) => [row.field, row.kind, row.author ?? null])).toEqual([
+      ["need", "buyer", null],
+      ["fit", "rep", "Milo"],
+    ]);
+    const shown = await s.owner.query(api.callReviews.review, { workspaceId: s.workspaceId, reviewId: out.reviewId });
+    expect(shown.view?.fit.find((row) => row.field === "fit")?.kind).toBe("Rep's words, Milo");
+  });
+
   it("files nothing when the review still fails its checks after the revision", async () => {
     const bad = { ...goodReview(), fit: [{ field: "need" as const, finding: "x", quote: "words never said", sourceId: "t1" }] };
     const inputs = script(() => bad);
@@ -284,5 +319,33 @@ describe("a call review, run end to end", () => {
     await expect(s.owner.mutation(api.callReviews.request, { workspaceId: s.workspaceId, confirmedCredits: maxCredits })).rejects.toThrow(/Pick a call/);
     const hidden = await s.t.run(async (ctx) => (await ctx.db.query("callTranscripts").collect()).find((row) => row.title === "Strategist only")!._id);
     await expect(s.owner.mutation(api.callReviews.request, { workspaceId: s.workspaceId, confirmedCredits: maxCredits, transcriptId: hidden })).rejects.toThrow(/not shared with Dealmaker/);
+  });
+});
+
+describe("a review names the Playbook objection it heard", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel;
+  });
+
+  it("keeps the item's own id for an objection the review was shown, and drops an id that is not one", async () => {
+    // Script steps come first (p1, p2), then the objection (p3), then the package (p4).
+    const inputs = script(() => ({ ...goodReview(), objections: [{ ...goodReview().objections[0], itemId: "p3" }, { objection: "Partner decides", itemId: "p4", quote: "I have to check with my business partner", sourceId: "t1", answered: false, answerQuote: "" }] }));
+    const s = await setup();
+    const itemId = await s.t.run((ctx) => ctx.db.insert("playbookItems", { workspaceId: s.workspaceId, folder: "objections", kind: "objection", tag: "money", title: "It costs more than I expected", body: "", source: { type: "starter" }, basis: "hypothesis", status: "active", createdBy: "dana", createdAt: 1, updatedAt: 1 }));
+    const out = await runReview(s, { transcriptId: s.transcriptId });
+    expect(out.status).toBe("completed");
+    expect(inputs[0]).toContain('"id":"p3","kind":"objection"');
+    expect(inputs[0]).not.toContain(itemId);
+    const shown = await s.owner.query(api.callReviews.review, { workspaceId: s.workspaceId, reviewId: out.reviewId });
+    expect(shown.view?.objections.map((row) => row.itemId ?? null)).toEqual([itemId, null]);
+    // The Objection Playbook counts it from the review, with the buyer's words.
+    const playbook = await s.owner.query(api.objectionPlaybook.view, { workspaceId: s.workspaceId });
+    expect(playbook.rows[0]).toMatchObject({ itemId, heard: 1, heardWords: "Heard on 1 call", quotes: [{ quote: "it feels expensive for where we are", leadName: "Jordan Lee" }] });
+    expect(playbook.unmatched).toEqual([expect.objectContaining({ title: "Partner decides", heard: 1, quote: "I have to check with my business partner" })]);
   });
 });

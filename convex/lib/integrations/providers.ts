@@ -151,7 +151,7 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: "Google Calendar",
     kind: "Booked calls",
     reads: "How many calls were booked, cancelled or declined each week. Counts only.",
-    never: "Create, change or delete events, or email your guests.",
+    never: "Create or delete events, or email your guests. It changes an event only to add a link to Dealmaker's pre-call brief, and only after an Owner turns that on.",
     oauth: { app: "google", scopes: ["https://www.googleapis.com/auth/calendar.events.owned.readonly"] },
     extraEnv: [],
     webhook: null,
@@ -195,6 +195,12 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     stage: "designed",
   },
 };
+
+/**
+ * Asked for only when an Owner turns on Dealmaker's brief links (docs/rebuild/dealmaker.md, 0.10 item 5): it lets
+ * Vistrial change events the connected person owns, which it uses only to add one line linking the pre-call brief.
+ */
+export const CALENDAR_LINK_SCOPE = "https://www.googleapis.com/auth/calendar.events.owned";
 
 export function providerList() {
   return PROVIDER_KEYS.map((key) => PROVIDERS[key]);

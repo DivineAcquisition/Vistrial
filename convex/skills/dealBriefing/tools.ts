@@ -168,13 +168,13 @@ export function briefClaims(brief: Brief | null, value: BriefRecord): Claim[] {
       continue;
     }
     const cited = brief!.readiness.find((item) => item.field === row.field && item.quote === row.quote)!;
-    claims.push({ claimKey: `ready-${row.field}`, statement: `${FIT_WORDS[row.field]}: ${row.finding} (${KIND_WORDS[row.kind!]}, ${row.source}: "${row.quote}")`, basis: "firstParty", sourceRefIds: refsOf([cited.sourceId]) });
+    claims.push({ claimKey: `ready-${row.field}`, statement: `${FIT_WORDS[row.field]}: ${row.finding} (${row.words}, ${row.source}: "${row.quote}")`, basis: "firstParty", sourceRefIds: refsOf([cited.sourceId]) });
   }
   if (!brief) return claims;
   brief.commitments.forEach((row, i) => {
     const source = sources.get(row.sourceId);
     if (!source) return;
-    claims.push({ claimKey: `commitment-${i + 1}`, statement: `${row.owner === "us" ? "We" : value.leadName}: ${row.what}${row.due ? ` (by ${row.due})` : ""}. ${KIND_WORDS[kindOf(source)]}: "${row.quote}"`, basis: "firstParty", sourceRefIds: refsOf([row.sourceId]) });
+    claims.push({ claimKey: `commitment-${i + 1}`, statement: `${row.owner === "us" ? "We" : value.leadName}: ${row.what}${row.due ? ` (by ${row.due})` : ""}. ${kindOf(source, row.quote, value.leadName).words}: "${row.quote}"`, basis: "firstParty", sourceRefIds: refsOf([row.sourceId]) });
   });
   // A reading of what is known: an inference when it rests on a saved source, else an untested hypothesis.
   const reading = (claimKey: string, statement: string, ids: string[]): Claim => {
@@ -288,6 +288,8 @@ async function publicRead(ctx: MutationCtx, run: Doc<"agentRuns">, steps: Step[]
 /** Tells the closer their brief is ready, when the closer is not the person who asked for it. */
 async function announce(ctx: MutationCtx, briefingId: Id<"dealBriefings">) {
   await ctx.scheduler.runAfter(0, internal.briefEmail.sendBriefReady, { briefingId });
+  // When the Owner turned it on, the brief's link goes on the call's calendar event too.
+  await ctx.scheduler.runAfter(0, internal.briefCalendar.addLink, { briefingId });
 }
 
 const save: MutationTool = async (ctx, run, steps) => {

@@ -3,12 +3,23 @@
  * "said on the call" is decided here, in code: a field or an objection stands only when its quote is in its source.
  */
 
+import type { Id } from "../../_generated/dataModel";
 import type { ReviewView } from "../../lib/dealmaker/reviewView";
 import { quoted } from "../dealBriefing/checks";
+import { quoteSpeaker, speakerWords, type QuoteSpeaker } from "../../lib/dealmaker/speakers";
 import { dueOf } from "./checks";
 import { FIT_FIELDS, FIT_WORDS, NOT_ENOUGH_DATA, type ChecksRecord, type Review, type ReviewRecord, type ReviewSource } from "./shapes";
 
-const KIND = (source: ReviewSource | undefined) => (source?.type === "call" ? "Buyer's words" : `Rep's account, ${source?.by ?? "the closer"}`);
+/** Who said a quote, from its source: the buyer or our side on the call, by its speaker label, or the closer's account in the notes. */
+export function whoSaid(source: ReviewSource | undefined, quote: string, leadName: string): QuoteSpeaker | { kind: "notes"; speaker: string } {
+  if (source?.type === "call") return quoteSpeaker(quote, source.text, leadName);
+  return { kind: "notes", speaker: source?.by ?? "the closer" };
+}
+
+const KIND = (source: ReviewSource | undefined, quote: string, leadName: string) => {
+  const who = whoSaid(source, quote, leadName);
+  return who.kind === "notes" ? `Rep's account, ${who.speaker}` : speakerWords(who);
+};
 
 /** The parts of a review that hold: quotes found in their sources, script steps covered with a quote from the call. */
 export function settled(review: Review, record: ReviewRecord) {
@@ -17,14 +28,18 @@ export function settled(review: Review, record: ReviewRecord) {
   const call = record.sources.find((row) => row.type === "call");
   const fit = FIT_FIELDS.map((field) => {
     const row = review.fit.find((item) => item.field === field && ok(item.quote, item.sourceId));
-    return row ? { field, label: FIT_WORDS[field], said: true, finding: row.finding, quote: row.quote, kind: KIND(sources.get(row.sourceId)), sourceId: row.sourceId } : { field, label: FIT_WORDS[field], said: false, finding: "", quote: "" };
+    return row ? { field, label: FIT_WORDS[field], said: true, finding: row.finding, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), sourceId: row.sourceId } : { field, label: FIT_WORDS[field], said: false, finding: "", quote: "" };
   });
-  const objections = review.objections.filter((row) => row.quote && ok(row.quote, row.sourceId)).map((row) => ({ text: row.objection, quote: row.quote, kind: KIND(sources.get(row.sourceId)), answered: row.answered && Boolean(call) && quoted(row.answerQuote, call!.text), answerQuote: row.answerQuote, sourceId: row.sourceId }));
+  // The Playbook objection it is, by the item's own id: only an objection item the review was shown.
+  const objectionItems = new Map(record.playbook.filter((row) => row.kind === "objection" && row.itemId).map((row) => [row.id, row.itemId!]));
+  const objections = review.objections
+    .filter((row) => row.quote && ok(row.quote, row.sourceId))
+    .map((row) => ({ text: row.objection, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), answered: row.answered && Boolean(call) && quoted(row.answerQuote, call!.text), answerQuote: row.answerQuote, sourceId: row.sourceId, ...(objectionItems.has(row.itemId) ? { itemId: objectionItems.get(row.itemId)! } : {}) }));
   const commitments = review.commitments
     .filter((row) => row.quote && row.what && ok(row.quote, row.sourceId))
     .map((row) => {
       const due = dueOf(row.due, record.callDate);
-      return { owner: row.owner, what: row.what, due: typeof due === "number" ? due : null, quote: row.quote, kind: KIND(sources.get(row.sourceId)), sourceId: row.sourceId };
+      return { owner: row.owner, what: row.what, due: typeof due === "number" ? due : null, quote: row.quote, kind: KIND(sources.get(row.sourceId), row.quote, record.leadName), sourceId: row.sourceId };
     });
   const steps = record.playbook.filter((row) => row.kind === "scriptStep");
   const coverage = steps.map((step) => {
@@ -90,7 +105,7 @@ export function viewOf(review: Review, record: ReviewRecord, checksPassed: boole
     checksPassed,
     ...(record.talk ? { talk: record.talk } : {}),
     fit: parts.fit.map(({ field, label, said, finding, quote, ...rest }) => ({ field, label, said, finding, quote, ...("kind" in rest && rest.kind ? { kind: rest.kind } : {}) })),
-    objections: parts.objections.map(({ text, quote, kind, answered, answerQuote }) => ({ text, quote, kind, answered, answerQuote })),
+    objections: parts.objections.map(({ text, quote, kind, answered, answerQuote, itemId }) => ({ text, quote, kind, answered, answerQuote, ...(itemId ? { itemId: itemId as Id<"playbookItems"> } : {}) })),
     commitments: parts.commitments.map((row) => ({ owner: row.owner === "us" ? "We" : record.leadName, what: row.what, ...(row.due ? { due: row.due } : {}), quote: row.quote, kind: row.kind })),
     coverage: parts.coverage,
     updates,

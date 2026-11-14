@@ -20,6 +20,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { KINDS, KIND_LABEL, LIMITS, OBJECTION_TAGS, STAGES, STAGE_FOLDER, STAGE_LABEL, type Folder, type Kind, type ObjectionTag, type Stage } from "../../../convex/lib/playbook";
 
+import { ObjectionPlaybookPanel, type ObjectionActions, type ObjectionData } from "./objection-playbook";
 import { InterviewPanel, type InterviewActions, type InterviewData } from "./playbook-interview";
 import { SectionTitle, WorkHero } from "./work-shell";
 
@@ -491,12 +492,15 @@ export function PlaybookView({
   editor,
   actions,
   interview,
+  objections,
   initialFolder = "offer",
 }: {
   data: PlaybookData;
   editor: boolean;
   actions: PlaybookActions;
   interview?: { data: InterviewData; actions: InterviewActions } | null;
+  /** The Objection Playbook, shown in the Objections folder. */
+  objections?: { data: ObjectionData; actions: ObjectionActions } | null;
   initialFolder?: Folder;
 }) {
   const [open, setOpen] = useState<Folder>(initialFolder);
@@ -522,6 +526,7 @@ export function PlaybookView({
         wrap
       />
       <FolderPanel key={folder.id} folder={folder} editor={canEdit} actions={actions} />
+      {folder.id === "objections" && objections ? <ObjectionPlaybookPanel data={objections.data} actions={objections.actions} /> : null}
       <LessonsPanel lessons={data.lessons} editor={canEdit} actions={actions} />
     </div>
   );
@@ -548,6 +553,9 @@ export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspac
   const editLesson = useMutation(api.playbook.editLesson);
   const removeLesson = useMutation(api.playbook.removeLesson);
   const study = useMutation(api.playbook.study);
+  const objectionData = useQuery(api.objectionPlaybook.view, { workspaceId, clientId });
+  const addStarter = useMutation(api.objectionPlaybook.addStarter);
+  const addHeard = useMutation(api.objectionPlaybook.addHeard);
   if (data === undefined) return <p className="text-sm text-muted-foreground">Opening the Playbook…</p>;
   const actions: PlaybookActions = {
     addItem: (draft) => addItem({ workspaceId, clientId, ...draft }),
@@ -578,5 +586,17 @@ export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspac
     consent: (input) => answerConsent({ workspaceId, clientId, ...input }),
     skip: (question) => skip({ workspaceId, clientId, question }),
   };
-  return <PlaybookView data={data} editor={editor} actions={actions} interview={interviewData ? { data: interviewData, actions: interviewActions } : null} />;
+  const objectionActions: ObjectionActions = {
+    addStarter: () => addStarter({ workspaceId, clientId }),
+    addHeard: (reviewId, title, tag) => addHeard({ workspaceId, reviewId: reviewId as Id<"callReviews">, title, tag }),
+  };
+  return (
+    <PlaybookView
+      data={data}
+      editor={editor}
+      actions={actions}
+      interview={interviewData ? { data: interviewData, actions: interviewActions } : null}
+      objections={objectionData ? { data: objectionData, actions: objectionActions } : null}
+    />
+  );
 }

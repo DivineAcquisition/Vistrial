@@ -7,6 +7,7 @@
 import { when } from "./compute";
 import { FIT_FIELDS, FIT_WORDS, NOT_ENOUGH_DATA, type Brief, type BriefRecord, type BriefSource, type ChecksRecord, type EvidenceKind, type FitField } from "./shapes";
 import { quoted } from "./checks";
+import { quoteSpeaker, speakerWords } from "../../lib/dealmaker/speakers";
 import type { BriefView } from "../../lib/dealmaker/briefView";
 
 export const KIND_WORDS: Record<EvidenceKind, string> = { recorded: "Recorded event", buyer: "Buyer's words", rep: "Rep's account", measured: "Measured result" };
@@ -17,12 +18,19 @@ export type ReadinessRow = {
   finding: string;
   quote: string;
   kind: EvidenceKind | null;
+  /** The kind in words, with who: "Buyer's words", "Rep's words, Milo", or a speaker not named. */
+  words: string | null;
   source: string | null;
 };
 
-/** The kind of evidence a source gives: a call is the buyer's words; a hand-off or a note is a person's account. */
-export function kindOf(source: BriefSource): EvidenceKind {
-  return source.type === "call" ? "buyer" : "rep";
+/**
+ * The kind of evidence a quote is: on a call, the buyer's words only when the lead's own line says it (our side's
+ * line is a rep's words, an unlabelled line has no known speaker); a hand-off or a note is a person's account.
+ */
+export function kindOf(source: BriefSource, quote: string, leadName: string): { kind: EvidenceKind | null; words: string } {
+  if (source.type !== "call") return { kind: "rep", words: KIND_WORDS.rep };
+  const who = quoteSpeaker(quote, source.text, leadName);
+  return { kind: who.kind === "buyer" ? "buyer" : who.kind === "rep" ? "rep" : null, words: speakerWords(who) };
 }
 
 function sourceWords(source: BriefSource) {
@@ -37,9 +45,10 @@ export function readinessOf(brief: Brief | null, record: BriefRecord): Readiness
   const sources = new Map(record.sources.map((row) => [row.id, row]));
   return FIT_FIELDS.map((field) => {
     const found = (brief?.readiness ?? []).find((row) => row.field === field && sources.has(row.sourceId) && quoted(row.quote, sources.get(row.sourceId)!.text));
-    if (!found) return { field, established: false, finding: "", quote: "", kind: null, source: null };
+    if (!found) return { field, established: false, finding: "", quote: "", kind: null, words: null, source: null };
     const source = sources.get(found.sourceId)!;
-    return { field, established: true, finding: found.finding, quote: found.quote, kind: kindOf(source), source: sourceWords(source) };
+    const said = kindOf(source, found.quote, record.leadName);
+    return { field, established: true, finding: found.finding, quote: found.quote, kind: said.kind, words: said.words, source: sourceWords(source) };
   });
 }
 
@@ -101,7 +110,7 @@ export function renderBrief(brief: Brief, record: BriefRecord, checks: ChecksRec
   const readiness = readinessOf(brief, record);
   lines.push("## Readiness", "", "| Field | Where it stands | Evidence |", "|---|---|---|");
   for (const row of readiness) {
-    lines.push(row.established ? `| ${FIT_WORDS[row.field]} | ${row.finding} | ${KIND_WORDS[row.kind!]} (${row.source}): "${row.quote}" |` : `| ${FIT_WORDS[row.field]} | Unresolved | ${NOT_ENOUGH_DATA} |`);
+    lines.push(row.established ? `| ${FIT_WORDS[row.field]} | ${row.finding} | ${row.words} (${row.source}): "${row.quote}" |` : `| ${FIT_WORDS[row.field]} | Unresolved | ${NOT_ENOUGH_DATA} |`);
   }
   lines.push("");
 
@@ -160,7 +169,7 @@ export function viewOf(brief: Brief | null, record: BriefRecord, checksPassed: b
       established: row.established,
       finding: row.finding,
       quote: row.quote,
-      ...(row.kind ? { kind: KIND_WORDS[row.kind] } : {}),
+      ...(row.words ? { kind: row.words } : {}),
       ...(row.source ? { source: row.source } : {}),
     })),
     ...(handoff ? { handoff: { by: handoff.by ?? "a teammate", text: handoff.text } } : {}),

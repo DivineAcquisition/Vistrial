@@ -22,12 +22,16 @@ import { ReviewView, type ReviewData, type ReviewsData } from "./review-view";
 import { SectionTitle, WorkHero } from "./work-shell";
 
 export type CallsData = FunctionReturnType<typeof api.dealBriefings.calls>;
+export type LinksData = FunctionReturnType<typeof api.briefCalendar.status>;
 export type BriefData = FunctionReturnType<typeof api.dealBriefings.brief>;
 type Upcoming = CallsData["upcoming"][number];
 type BriefState = NonNullable<Upcoming["brief"]>["state"];
 
 export type CallsActions = {
   /** Asks for a brief on one booked call, or (without a CRM) on a lead by name. */
+  /** The Owner's switch for brief links on calendar events, and the Google sign-in that allows them. */
+  setLinks?: (on: boolean) => Promise<unknown>;
+  allowLinks?: () => Promise<unknown>;
   /** Asks for a review of a held call: its transcript, its notes, or both. */
   requestReview?: (input: { transcriptId?: string; callNoteId?: string; confirmedCredits: number }) => Promise<unknown>;
   /** Saves the closer's notes after a call, the memo uploaded first. */
@@ -456,12 +460,48 @@ export function BriefView({ brief, onClose }: { brief: BriefData; onClose?: () =
   );
 }
 
+/** The Owner's switch for a brief's link on the call's Google Calendar event (off by default). */
+function BriefLinks({ links, actions }: { links: LinksData; actions: CallsActions }) {
+  const [busy, setBusy] = useState(false);
+  const act = async (action: (() => Promise<unknown>) | undefined) => {
+    if (!action) return;
+    setBusy(true);
+    await run(action);
+    setBusy(false);
+  };
+  return (
+    <Panel className="grid min-w-0 gap-2 p-4 sm:p-6" data-brief-links={links.state}>
+      <SectionTitle icon={CalendarIcon}>Brief link on the calendar event</SectionTitle>
+      <p className="text-sm text-muted-foreground">{links.words}</p>
+      {links.canChange ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {links.state === "off" ? (
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => void act(actions.setLinks && (() => actions.setLinks!(true)))}>
+              Turn on
+            </Button>
+          ) : links.state === "on" ? (
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => void act(actions.setLinks && (() => actions.setLinks!(false)))}>
+              Turn off
+            </Button>
+          ) : links.state === "needsPermission" ? (
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => void act(actions.allowLinks && (async () => { await actions.setLinks?.(true); await actions.allowLinks!(); }))}>
+              Allow brief links in Google Calendar
+            </Button>
+          ) : null}
+          <span className="text-xs text-muted-foreground">Vistrial adds one line with the brief&apos;s link to the event and does not notify the guests.</span>
+        </div>
+      ) : null}
+    </Panel>
+  );
+}
+
 /** The Calls tab before the call, with its data handed in, so a story can show it without a server. */
 export function CallsView({
   data,
   actions,
   notes = null,
   reviews = null,
+  links = null,
   open,
   onOpen,
   openReview,
@@ -471,6 +511,7 @@ export function CallsView({
   actions: CallsActions;
   notes?: NotesData | null;
   reviews?: ReviewsData | null;
+  links?: LinksData | null;
   open?: BriefData | null;
   onOpen: (id: string | null) => void;
   openReview?: ReviewData | null;
@@ -508,6 +549,7 @@ export function CallsView({
         </>
       )}
       {notes ? <RecentNotes notes={notes.notes} /> : null}
+      {links?.canChange && data.connected ? <BriefLinks links={links} actions={actions} /> : null}
       {reviews?.reviews.length ? (
         <Panel className="grid min-w-0 gap-3 p-4 sm:p-6">
           <SectionTitle icon={ClipboardList}>Call reviews</SectionTitle>
@@ -577,6 +619,9 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   const saveNote = useMutation(api.callNotes.save);
   const reviews = useQuery(api.callReviews.recent, { workspaceId, clientId });
   const requestReview = useMutation(api.callReviews.request);
+  const links = useQuery(api.briefCalendar.status, { workspaceId, clientId });
+  const setLinks = useMutation(api.briefCalendar.setLinks);
+  const startConnect = useMutation(api.integrations.startConnect);
   const linked = useSearchParams().get("brief");
   const [open, setOpen] = useState<string | null>(linked);
   const [openReview, setOpenReview] = useState<string | null>(null);
@@ -585,6 +630,11 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your booked calls…</p>;
   const actions: CallsActions = {
     request: (input) => request({ workspaceId, clientId, ...input }),
+    setLinks: (on) => setLinks({ workspaceId, clientId, on }),
+    allowLinks: async () => {
+      const { url } = await startConnect({ workspaceId, provider: "google_calendar", briefLinks: true, returnOrigin: window.location.origin });
+      window.location.assign(url);
+    },
     requestReview: ({ transcriptId, callNoteId, confirmedCredits }) =>
       requestReview({ workspaceId, clientId, confirmedCredits, ...(transcriptId ? { transcriptId: transcriptId as Id<"callTranscripts"> } : {}), ...(callNoteId ? { callNoteId: callNoteId as Id<"callNotes"> } : {}) }),
     saveNote: async ({ memo, objections, ...input }) => {
@@ -597,5 +647,5 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
       return saveNote({ workspaceId, clientId, ...input, objections: objections.map((row) => ({ title: row.title, ...(row.itemId ? { itemId: row.itemId as Id<"playbookItems"> } : {}) })), ...(stored ? { memo: stored } : {}) });
     },
   };
-  return <CallsView data={data} actions={actions} notes={notes ?? null} reviews={reviews ?? null} onOpen={setOpen} onOpenReview={setOpenReview} />;
+  return <CallsView data={data} actions={actions} notes={notes ?? null} reviews={reviews ?? null} links={links ?? null} onOpen={setOpen} onOpenReview={setOpenReview} />;
 }

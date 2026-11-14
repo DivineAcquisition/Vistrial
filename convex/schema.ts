@@ -2619,6 +2619,8 @@ export default defineSchema({
     actionId: v.optional(v.id("crmActions")),
     /** "agent" for Dealmaker, else the user. */
     createdBy: v.string(),
+    /** The last person who changed its words. A draft a person wrote or edited never goes by the Owner's switch. */
+    editedBy: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_workspace_status", ["workspaceId", "status", "updatedAt"]),

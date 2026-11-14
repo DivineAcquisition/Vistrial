@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { api, internal } from "./_generated/api";
 import { NOT_ALLOWED } from "./lib/errors";
 import { STOP_WORDS, hasPrice } from "./lib/dealmaker/autonomy";
-import { COMMS_TEXT } from "./comms";
+import { COMMS_TEXT, fileAgentDraft } from "./comms";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -110,7 +110,7 @@ describe("Comms", () => {
     expect(view.lanes.find((row) => row.id === "failed")!.items[0].note).toBe("This lead is paused after they asked us to stop, so nothing was sent.");
   });
 
-  it("lets the Owner's switch stand in for SEND on a low-stakes kind only, and records which switch allowed it", async () => {
+  it("lets the Owner's switch stand in for SEND only on Dealmaker's own untouched low-stakes drafts, and records which switch allowed it", async () => {
     const { t, owner, workspaceId } = await setup();
     // Jordan was messaged before, so this is not a first message.
     await t.run(async (ctx) => {
@@ -118,21 +118,36 @@ describe("Comms", () => {
       await ctx.db.insert("crmActions", { workspaceId, connectionId: connection._id, kind: "send_sms", contactId: "con1", body: "Earlier.", summary: "Earlier text", why: "Earlier.", state: "done", proposedBy: "agent", proposedAt: Date.now() - 3 * DAY, doneAt: Date.now() - 3 * DAY } as never);
     });
     await owner.mutation(api.dealmakerTeam.setAutonomy, { workspaceId, kind: "reminder", automatic: true });
+    const agentReminder = () =>
+      t.run((ctx) => fileAgentDraft(ctx, { workspaceId, contactRef: "con1", dealRef: "opp1", kind: "reminder", channel: "sms", body: "See you at 3pm today for our call.", why: "A call is booked for today.", trigger: "reminder" }));
 
-    const reminder = await owner.mutation(api.comms.createDraft, { workspaceId, ...draft });
-    expect(await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: reminder })).toEqual({ outcome: "sending", reason: STOP_WORDS.autonomous });
-    const actions = await t.run((ctx) => ctx.db.query("crmActions").collect());
-    const sent = actions.find((row) => row.state !== "done")!;
-    expect(sent).toMatchObject({ state: "approved", decidedBy: "owner-switch:reminder" });
+    // Dealmaker's own reminder, untouched: the switch is the standing SEND.
+    const untouched = await agentReminder();
+    expect(await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: untouched })).toEqual({ outcome: "sending", reason: STOP_WORDS.autonomous });
+    const approved = (await t.run((ctx) => ctx.db.query("crmActions").collect())).find((row) => row.state === "approved")!;
+    expect(approved.decidedBy).toBe("owner-switch:reminder");
     const audit = await t.run((ctx) => ctx.db.query("auditLog").collect());
     expect(audit.some((row) => row.action === "crm.action.approvedBySwitch" && row.actorId === "owner-switch:reminder")).toBe(true);
 
-    // Any other kind still waits for the typed SEND, even with the switch on.
-    const followUp = await owner.mutation(api.comms.createDraft, { workspaceId, ...draft, kind: "followUp", body: "Did the case study help?" });
-    expect(await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: followUp })).toEqual({ outcome: "proposed", reason: STOP_WORDS.kind });
-    // A price stops the switch too.
-    const priced = await owner.mutation(api.comms.createDraft, { workspaceId, ...draft, body: "Reminder: the $4,500 invoice is due." });
+    // A Member's own words labelled "reminder" wait for SEND, switch or not.
+    const handWritten = await owner.mutation(api.comms.createDraft, { workspaceId, ...draft, body: "Anything at all." });
+    expect(await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: handWritten })).toEqual({ outcome: "proposed", reason: STOP_WORDS.kind });
+
+    // Dealmaker's reminder once a person edited it: a person's words, so SEND.
+    const edited = await agentReminder();
+    await owner.mutation(api.comms.updateDraft, { workspaceId, draftId: edited, channel: "sms", body: "See you at 3pm. Also, have you thought about upgrading?" });
+    expect(await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: edited })).toEqual({ outcome: "proposed", reason: STOP_WORDS.kind });
+
+    // A price stops the switch even on Dealmaker's own draft.
+    const priced = await t.run((ctx) => fileAgentDraft(ctx, { workspaceId, contactRef: "con1", kind: "reminder", channel: "sms", body: "Reminder: the $4,500 invoice is due.", why: "Due.", trigger: "reminder" }));
     expect((await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: priced })).outcome).toBe("proposed");
+    const proposed = (await t.run((ctx) => ctx.db.query("crmActions").collect())).filter((row) => row.state === "proposed");
+    expect(proposed).toHaveLength(3);
+  });
+
+  it("files Dealmaker's drafts only with a known kind", async () => {
+    const { t, workspaceId } = await setup();
+    await expect(t.run((ctx) => fileAgentDraft(ctx, { workspaceId, contactRef: "con1", kind: "anything", channel: "sms", body: "Hi.", why: "x" }))).rejects.toThrow(/Unknown message kind/);
   });
 
   it("refuses at send time a lead without a consent tag, however the message was approved", async () => {

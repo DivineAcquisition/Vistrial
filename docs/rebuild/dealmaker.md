@@ -426,7 +426,7 @@ tests, lint, both typechecks and the build, never deploying Convex:
     quiet hours, Do Not Disturb and one message a day still apply. `crmActions.claim` now also refuses a
     message to a paused lead. **Owner's decision (2026-11-14):** the Owner's switch for a low-stakes kind
     (reminders, confirmations, sending something already promised) is their standing SEND for that kind
-    only. `crmActions.approveByStandingSwitch` approves such a message as `owner-switch:<kind>`, recorded on
+    only, and only for a draft Dealmaker wrote itself (created by the internal drafting path, its kind from the trigger) that no person has edited; a message a person wrote or edited always needs the typed SEND. `crmActions.approveByStandingSwitch` approves such a message as `owner-switch:<kind>`, recorded on
     the approval and in the audit log. Every send-time check still runs: messaging on, Do Not Disturb or
     opted out, quiet hours, one message a day, Dealmaker pauses, and consent tags (now also checked in
     `claim`). Everything else still needs the typed SEND. Next, 13b: the Follow-up Engine's triggers and

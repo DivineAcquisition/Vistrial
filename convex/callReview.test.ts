@@ -233,6 +233,22 @@ describe("a call review, run end to end", () => {
     expect(await s.t.run((ctx) => ctx.db.query("approvals").collect())).toEqual([]);
   });
 
+  it("shows a held call with its transcript and its review on the Calls tab", async () => {
+    script(() => goodReview());
+    const s = await setup();
+    await s.t.run(async (ctx) => {
+      const connection = (await ctx.db.query("crmConnections").collect())[0];
+      await ctx.db.insert("crmActivities", { workspaceId: s.workspaceId, connectionId: connection._id, externalId: "a0", kind: "appointment", at: NOW - DAY, contactId: "c1", status: "showed" });
+    });
+    const before = (await s.owner.query(api.dealBriefings.calls, { workspaceId: s.workspaceId })).upcoming;
+    expect(before.map((row) => [row.ref, row.past, row.transcriptId, row.review])).toEqual([["a0", true, s.transcriptId, null]]);
+    const out = await runReview(s, { transcriptId: s.transcriptId });
+    const after = (await s.owner.query(api.dealBriefings.calls, { workspaceId: s.workspaceId })).upcoming;
+    expect(after[0].review).toEqual({ id: out.reviewId, state: "ready" });
+    const recent = await s.owner.query(api.callReviews.recent, { workspaceId: s.workspaceId });
+    expect(recent.reviews.map((row) => [row.leadName, row.state])).toEqual([["Jordan Lee", "ready"]]);
+  });
+
   it("files nothing when the review still fails its checks after the revision", async () => {
     const bad = { ...goodReview(), fit: [{ field: "need" as const, finding: "x", quote: "words never said", sourceId: "t1" }] };
     const inputs = script(() => bad);

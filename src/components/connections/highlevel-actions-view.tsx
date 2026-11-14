@@ -29,6 +29,8 @@ export type HighLevelActionsData = {
     why: string;
     lead: string | null;
     body: string | null;
+    /** A voice note's audio, for the approver to listen to first. */
+    audioUrl?: string | null;
     state: "proposed" | "approved" | "running" | "done" | "failed" | "declined" | "expired" | "cancelled";
     restricted: { word: string; why: string } | null;
     mayTriggerAutomation: boolean;
@@ -319,6 +321,14 @@ function ActionRow({ action, can, handlers }: { action: HighLevelActionsData["ac
       </div>
       <p className="text-sm text-muted-foreground">{action.why}</p>
       {action.body ? <p className="rounded-lg border border-border bg-card px-3 py-2 text-sm whitespace-pre-wrap text-card-foreground">{action.body}</p> : null}
+      {action.audioUrl ? (
+        <div className="grid gap-1">
+          <p className="text-xs text-muted-foreground">A voice note in the cloned voice, sent as an audio attachment. Listen to it before you approve.</p>
+          <audio controls preload="none" src={action.audioUrl} className="w-full max-w-md">
+            <track kind="captions" />
+          </audio>
+        </div>
+      ) : null}
       {action.checks ? (
         <p className="text-xs text-muted-foreground">
           Checked {when(action.checks.at)}: {action.checks.dnd ? "on Do Not Disturb" : "not opted out"}

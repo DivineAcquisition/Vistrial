@@ -253,15 +253,40 @@ export const calls = workspaceQuery({
       if (home.kind === "none" || !contactRef) return false;
       return dealOf.get(contactRef)?.ownerRef === home.crmUserRef;
     };
-    const noted = new Set(
-      (
-        await ctx.db
-          .query("callNotes")
-          .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", scope.clientId))
-          .order("desc")
-          .take(200)
-      ).flatMap((row) => (row.appointmentRef ? [row.appointmentRef] : [])),
-    );
+    // For calls already held: the closer's notes, a transcript shared with Dealmaker, and the latest review.
+    const notesByCall = new Map<string, Id<"callNotes">>();
+    for (const row of await ctx.db
+      .query("callNotes")
+      .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", scope.clientId))
+      .order("desc")
+      .take(200)) {
+      if (row.appointmentRef && !notesByCall.has(row.appointmentRef)) notesByCall.set(row.appointmentRef, row._id);
+    }
+    const transcripts = (
+      await ctx.db
+        .query("callTranscripts")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+        .order("desc")
+        .take(300)
+    ).filter((row) => row.clientId === scope.clientId && row.crmContactRef && (row.agents ?? []).includes(SALES_CONVERSION));
+    const reviews = await ctx.db
+      .query("callReviews")
+      .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", scope.clientId))
+      .order("desc")
+      .take(200);
+    /** A transcript of this lead from the call's day (or the day after), the one a review reads. */
+    const transcriptFor = (contactRef: string, startsAt: number) => {
+      const day = new Date(startsAt).toISOString().slice(0, 10);
+      const next = new Date(startsAt + 86_400_000).toISOString().slice(0, 10);
+      return transcripts.find((row) => row.crmContactRef === contactRef && (row.callDate === day || row.callDate === next)) ?? null;
+    };
+    const afterCall = async (ref: string, contactRef: string, startsAt: number) => {
+      if (startsAt > now) return { callNoteId: null, transcriptId: null, review: null };
+      const callNoteId = notesByCall.get(ref) ?? null;
+      const transcript = transcriptFor(contactRef, startsAt);
+      const review = reviews.find((row) => (callNoteId && row.callNoteId === callNoteId) || (transcript && row.transcriptId === transcript._id)) ?? null;
+      return { callNoteId, transcriptId: transcript?._id ?? null, review: review ? { id: review._id, state: await reviewState(ctx, review) } : null };
+    };
     const upcoming = [];
     for (const call of appointments) {
       if (call.status === "cancelled" || !call.contactRef || !mine(call.contactRef)) continue;
@@ -282,7 +307,8 @@ export const calls = workspaceQuery({
         brief: brief ? briefRow(brief, await stateOf(ctx, brief), timezone) : null,
         /** The call has started: the closer may add their notes. */
         past: call.startsAt <= now,
-        noted: noted.has(call.ref),
+        noted: notesByCall.has(call.ref),
+        ...(await afterCall(call.ref, call.contactRef, call.startsAt)),
       });
       if (upcoming.length >= 50) break;
     }
@@ -301,3 +327,11 @@ export const brief = workspaceQuery({
     return { ...briefRow(row, await stateOf(ctx, row), crm?.connection.timezone ?? null), view: row.view ?? null, assetId: row.assetId ?? null };
   },
 });
+
+/** A review's state as a person reads it: a row still "running" whose run has ended without saving failed. */
+async function reviewState(ctx: Pick<QueryCtx, "db">, row: Doc<"callReviews">): Promise<BriefState> {
+  if (row.status === "ready") return row.view?.checksPassed ? "ready" : "needsReview";
+  if (row.status === "failed") return "failed";
+  const run = row.runId ? await ctx.db.get(row.runId) : null;
+  return run && (run.status === "failed" || run.status === "stopped" || run.status === "completed") ? "failed" : "running";
+}

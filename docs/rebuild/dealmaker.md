@@ -469,6 +469,17 @@ tests, lint, both typechecks and the build, never deploying Convex:
     `callReview` asset (a new kind) is internal and joins no approvals queue; coaching notes are kept apart on
     the row and only the Owner reads them. Next: 12b the Calls tab's "after" screen; 12c the live checklist;
     12d the end-of-day reports.
+    *12b, built:* the Calls tab after the call (`src/components/work/review-view.tsx`). Each held call in
+    `dealBriefings.calls` now carries its notes, a transcript of that lead shared with Dealmaker from the call's
+    day (or the day after), and its latest review with its state. A held call with a transcript or notes offers
+    "Review this call", which shows what it reads and the budget ("Up to N credits") before anything runs; a
+    reviewed call offers "Open the review", and `callReviews.recent` lists recent reviews. The review is drawn
+    from its saved view: the outcome and next step (Inference), four counts (fit fields said, objections
+    answered, commitments, CRM updates), who spoke with a bar per speaker (a measured result), the fit grid
+    ("Said" with the quote and its kind, or "Not raised"), objections with an "Answered on the call" or "Not
+    answered" chip, commitments with dates, the script steps covered or not seen, the CRM updates waiting for
+    approval or handed back as a step, the recap with where it waits in Comms, and coaching for the Owner only.
+    A review that failed its checks says nothing was filed from it. `/dev/calls-tab?state=review|reviewMember`.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
     over; SMS and email through the merged messaging path; Instagram and Facebook DMs.
     *13a, built (server):* `convex/comms.ts`. A `dealmakerDrafts` row per message, edited freely until it is
@@ -501,6 +512,17 @@ tests, lint, both typechecks and the build, never deploying Convex:
     "Draft follow-ups" starts the Follow-up Engine after the most it may use is shown and confirmed.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
     attachment only.
+    *14, built:* `convex/voiceNotes.ts`, `convex/lib/dealmaker/voice.ts`, the "Your voice" panel and voice
+    notes in Comms. An Owner records the speaker reading the consent statement aloud (with the business's
+    name) and a short passage, 30 seconds to 3 minutes, then types the speaker's name to confirm; ElevenLabs
+    (`ELEVENLABS_API_KEY`) clones the voice from that recording under a generic name. Without the key every
+    screen says "Voice notes are not set up yet" and no recording is kept. Deleting the voice deletes the
+    recording here and the clone at ElevenLabs. A draft marked as a voice note gets its audio made on request
+    for exactly its words (new words throw the audio away), and a person listens before sending it on.
+    Every voice note waits for the typed SEND, never the Owner's switch; it is held unless consent tags are
+    named and voice is an allowed channel; and it goes as an audio attachment to the text or email
+    (HighLevel `attachments`, a fresh link at send time), never a voicemail drop. The approver hears it in
+    Connections before approving.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.
 16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
 17. **Calendar tab.**

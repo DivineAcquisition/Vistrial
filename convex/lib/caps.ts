@@ -77,6 +77,48 @@ export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
     maxSteps: 20,
     maxDurationMs: 600_000,
   },
+  // Dealmaker (docs/rebuild/dealmaker.md, section 9), revised after ten real runs of each.
+  /** One write over figures computed in code from the CRM, plus one revision held in reserve. */
+  "pipeline-forensics": {
+    maxCostCentsPerRun: 100,
+    maxCostCentsPerDay: 600,
+    maxSteps: 20,
+    maxDurationMs: 600_000,
+  },
+  /** One read of one call transcript; grows with the call's length. */
+  "conversation-intelligence": {
+    maxCostCentsPerRun: 60,
+    maxCostCentsPerDay: 600,
+    maxSteps: 12,
+    maxDurationMs: 600_000,
+  },
+  /** One short write per brief. Automatic briefs also have their own monthly cap. */
+  "deal-briefing": {
+    maxCostCentsPerRun: 25,
+    maxCostCentsPerDay: 300,
+    maxSteps: 8,
+    maxDurationMs: 300_000,
+  },
+  /** One write of drafts for up to fifteen quiet deals. */
+  "follow-up-engine": {
+    maxCostCentsPerRun: 100,
+    maxCostCentsPerDay: 600,
+    maxSteps: 12,
+    maxDurationMs: 600_000,
+  },
+  /** One read across the reviewed calls and one write of answers. */
+  "objection-playbook": {
+    maxCostCentsPerRun: 150,
+    maxCostCentsPerDay: 600,
+    maxSteps: 20,
+    maxDurationMs: 600_000,
+  },
+  "proposal-architect": {
+    maxCostCentsPerRun: 100,
+    maxCostCentsPerDay: 600,
+    maxSteps: 12,
+    maxDurationMs: 600_000,
+  },
 };
 
 /** The caps row and day counter a skill uses: its own slug when it has its own caps, otherwise the agent's (undefined). */

@@ -19,7 +19,7 @@ import { crmConnectionFor } from "./lib/crm/read";
 import { notFound, userError } from "./lib/errors";
 import { MESSAGE_KINDS, MESSAGE_KIND_LABEL, decideSend, hasPrice, type MessageKind } from "./lib/dealmaker/autonomy";
 import { SALES_CONVERSION } from "./catalog";
-import { FAILURE_WORDS } from "./crmActions";
+import { FAILURE_WORDS, approveByStandingSwitch } from "./crmActions";
 import { isPaused } from "./dealmakerTeam";
 import { settingsOf } from "./playbookInterview";
 
@@ -201,8 +201,8 @@ async function tagsOf(ctx: Pick<QueryCtx, "db">, scope: Scope, contactRef: strin
 }
 
 /**
- * Sends a draft for approval. Dealmaker's checks first, then the approvals path. Until the Owner decides how
- * the switch for low-stakes kinds and SEND fit together, every message waits for a person here.
+ * Sends a draft for approval. Dealmaker's checks first, then the approvals path. A low-stakes kind the Owner
+ * made automatic is approved by that switch, their standing SEND; everything else waits for a person.
  */
 export const submitDraft = workspaceMutation({
   args: { draftId: v.id("dealmakerDrafts") },
@@ -244,6 +244,11 @@ export const submitDraft = workspaceMutation({
     }
     await ctx.db.patch(row._id, { status: "proposed", actionId: outcome.actionId as Id<"crmActions">, reason: decision.reason, updatedAt: now });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "dealmaker.draft_proposed", subject: row._id });
+    // The Owner's switch for this low-stakes kind is their standing SEND; the send-time checks still run.
+    if (decision.action === "send") {
+      const approved = await approveByStandingSwitch(ctx, outcome.actionId as Id<"crmActions">, row.kind);
+      if (approved.state === "approved") return { outcome: "sending" as const, reason: decision.reason };
+    }
     return { outcome: "proposed" as const, reason: decision.reason };
   },
 });

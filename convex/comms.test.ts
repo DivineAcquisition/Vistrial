@@ -109,4 +109,41 @@ describe("Comms", () => {
     const view = await owner.query(api.comms.view, { workspaceId });
     expect(view.lanes.find((row) => row.id === "failed")!.items[0].note).toBe("This lead is paused after they asked us to stop, so nothing was sent.");
   });
+
+  it("lets the Owner's switch stand in for SEND on a low-stakes kind only, and records which switch allowed it", async () => {
+    const { t, owner, workspaceId } = await setup();
+    // Jordan was messaged before, so this is not a first message.
+    await t.run(async (ctx) => {
+      const connection = (await ctx.db.query("crmConnections").first())!;
+      await ctx.db.insert("crmActions", { workspaceId, connectionId: connection._id, kind: "send_sms", contactId: "con1", body: "Earlier.", summary: "Earlier text", why: "Earlier.", state: "done", proposedBy: "agent", proposedAt: Date.now() - 3 * DAY, doneAt: Date.now() - 3 * DAY } as never);
+    });
+    await owner.mutation(api.dealmakerTeam.setAutonomy, { workspaceId, kind: "reminder", automatic: true });
+
+    const reminder = await owner.mutation(api.comms.createDraft, { workspaceId, ...draft });
+    expect(await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: reminder })).toEqual({ outcome: "sending", reason: STOP_WORDS.autonomous });
+    const actions = await t.run((ctx) => ctx.db.query("crmActions").collect());
+    const sent = actions.find((row) => row.state !== "done")!;
+    expect(sent).toMatchObject({ state: "approved", decidedBy: "owner-switch:reminder" });
+    const audit = await t.run((ctx) => ctx.db.query("auditLog").collect());
+    expect(audit.some((row) => row.action === "crm.action.approvedBySwitch" && row.actorId === "owner-switch:reminder")).toBe(true);
+
+    // Any other kind still waits for the typed SEND, even with the switch on.
+    const followUp = await owner.mutation(api.comms.createDraft, { workspaceId, ...draft, kind: "followUp", body: "Did the case study help?" });
+    expect(await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: followUp })).toEqual({ outcome: "proposed", reason: STOP_WORDS.kind });
+    // A price stops the switch too.
+    const priced = await owner.mutation(api.comms.createDraft, { workspaceId, ...draft, body: "Reminder: the $4,500 invoice is due." });
+    expect((await owner.mutation(api.comms.submitDraft, { workspaceId, draftId: priced })).outcome).toBe("proposed");
+  });
+
+  it("refuses at send time a lead without a consent tag, however the message was approved", async () => {
+    const { t, owner, workspaceId } = await setup();
+    const draftId = await owner.mutation(api.comms.createDraft, { workspaceId, ...draft });
+    await owner.mutation(api.comms.submitDraft, { workspaceId, draftId });
+    const action = (await t.run((ctx) => ctx.db.query("crmActions").first()))!;
+    await t.run((ctx) => ctx.db.patch(action._id, { state: "approved" }));
+    // The business names a consent tag Jordan does not have, after the message was approved.
+    await owner.mutation(api.playbookInterview.answerConsent, { workspaceId, tags: ["texts-ok"], channels: ["sms"] });
+    expect(await t.mutation(internal.crmActions.claim, { actionId: action._id })).toBeNull();
+    expect((await t.run((ctx) => ctx.db.get(action._id)))?.resultCode).toBe("no_consent_tag");
+  });
 });

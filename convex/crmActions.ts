@@ -63,6 +63,7 @@ export const FAILURE_WORDS: Record<string, string> = {
   unreadable: "HighLevel did not return the lead.",
   too_soon: "Vistrial already messaged this lead in the last day.",
   paused: "This lead is paused after they asked us to stop, so nothing was sent.",
+  no_consent_tag: "This lead has none of your consent tags, so nothing was sent.",
   token_rejected: "HighLevel no longer accepts the connection.",
   permission_missing: "HighLevel refused: the app lacks permission for this.",
   rate_limited: "HighLevel asked Vistrial to slow down.",
@@ -318,6 +319,28 @@ export async function decideAction(ctx: Decider, args: { actionId: Id<"crmAction
   return { state: "approved" as const };
 }
 
+/**
+ * The Owner's switch for a low-stakes kind of message stands in for their typed SEND (the owner's decision,
+ * docs/rebuild/dealmaker.md 0.2). Only for a message Dealmaker drafted of a kind the Owner made automatic;
+ * the caller has checked that with decideSend. Every send-time check still runs in claim and execute. The
+ * approval and the audit name the switch that allowed it.
+ */
+export async function approveByStandingSwitch(ctx: Ctx, actionId: Id<"crmActions">, kind: string) {
+  const action = await ctx.db.get(actionId);
+  if (!action || action.state !== "proposed" || !isMessage(action.kind)) return { state: "notWaiting" as const };
+  const connection = await ctx.db.get(action.connectionId);
+  if (!connection || (await gate(ctx, connection, action.kind))) {
+    await settle(ctx, action, "cancelled", "system");
+    return { state: "cancelled" as const };
+  }
+  const actor = `owner-switch:${kind}`;
+  await ctx.db.patch(action._id, { state: "approved", decidedBy: actor, decidedAt: Date.now() });
+  await recordDecision(ctx, { ...actionApproval(action), status: "approved", actor });
+  await writeAudit(ctx, { workspaceId: action.workspaceId, actorType: "system", actorId: actor, action: "crm.action.approvedBySwitch", subject: action._id });
+  await ctx.scheduler.runAfter(0, internal.crmActions.execute, { actionId: action._id });
+  return { state: "approved" as const };
+}
+
 /** Approve or decline from the HighLevel page. The approvals queue uses the same rule. */
 export const decide = workspaceMutation({
   args: { actionId: v.id("crmActions"), approve: v.boolean(), confirmWord: v.optional(v.string()) },
@@ -462,6 +485,23 @@ export const claim = internalMutation({
         await ctx.db.patch(action._id, { state: "running" });
         await failAndReport(ctx, { ...action, state: "running" }, "paused");
         return null;
+      }
+      // When the business named consent tags, a lead without one gets nothing, however it was approved.
+      const settings = await ctx.db
+        .query("dealmakerSettings")
+        .withIndex("by_workspace_client", (q) => q.eq("workspaceId", action.workspaceId).eq("clientId", action.clientId))
+        .first();
+      const consentTags = (settings?.consentTags ?? []).map((tag) => tag.toLowerCase());
+      if (consentTags.length) {
+        const contact = await ctx.db
+          .query("crmContacts")
+          .withIndex("by_connection", (q) => q.eq("connectionId", connection._id).eq("externalId", action.contactId!))
+          .first();
+        if (!(contact?.tags ?? []).some((tag) => consentTags.includes(tag.toLowerCase()))) {
+          await ctx.db.patch(action._id, { state: "running" });
+          await failAndReport(ctx, { ...action, state: "running" }, "no_consent_tag");
+          return null;
+        }
       }
       // At most one message from Vistrial to a lead a day, whoever approved it.
       const done = await ctx.db

@@ -55,13 +55,14 @@ async function gate(ctx: Pick<QueryCtx, "db">, connection: Doc<"crmConnections">
 }
 
 /** What a failure code means, for the Briefing. Never HighLevel's own words. */
-const FAILURE_WORDS: Record<string, string> = {
+export const FAILURE_WORDS: Record<string, string> = {
   opted_out: "The lead is on Do Not Disturb or opted out in HighLevel.",
   quiet_hours: "It was outside 8 am to 8 pm in the lead's local time.",
   no_timezone: "The lead's local time is not known, so quiet hours could not be checked.",
   no_address: "The lead has no phone number or email address for that message.",
   unreadable: "HighLevel did not return the lead.",
   too_soon: "Vistrial already messaged this lead in the last day.",
+  paused: "This lead is paused after they asked us to stop, so nothing was sent.",
   token_rejected: "HighLevel no longer accepts the connection.",
   permission_missing: "HighLevel refused: the app lacks permission for this.",
   rate_limited: "HighLevel asked Vistrial to slow down.",
@@ -452,6 +453,16 @@ export const claim = internalMutation({
       return null;
     }
     if (isMessage(action.kind) && action.contactId) {
+      // A lead paused after a negative reply gets nothing until a person lifts the pause (Dealmaker, 0.2).
+      const pauses = await ctx.db
+        .query("dealmakerPauses")
+        .withIndex("by_workspace_contact", (q) => q.eq("workspaceId", action.workspaceId).eq("contactRef", action.contactId!))
+        .take(20);
+      if (pauses.some((row) => row.liftedAt === undefined)) {
+        await ctx.db.patch(action._id, { state: "running" });
+        await failAndReport(ctx, { ...action, state: "running" }, "paused");
+        return null;
+      }
       // At most one message from Vistrial to a lead a day, whoever approved it.
       const done = await ctx.db
         .query("crmActions")

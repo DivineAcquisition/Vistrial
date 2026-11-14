@@ -2556,6 +2556,35 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_workspace_client", ["workspaceId", "clientId"]),
 
+  /**
+   * A message Dealmaker or a person drafted for one lead, before and after it is proposed (Comms, 0.5). The
+   * draft can be edited until it is proposed; then the crmActions row carries it through approval and sending.
+   */
+  dealmakerDrafts: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    contactRef: v.string(),
+    dealRef: v.optional(v.string()),
+    /** The kind of message (lib/dealmaker/autonomy.ts). */
+    kind: v.string(),
+    channel: v.union(v.literal("sms"), v.literal("email")),
+    /** The email subject. */
+    title: v.optional(v.string()),
+    body: v.string(),
+    /** Why this message, in a sentence the approver reads. */
+    why: v.string(),
+    /** What started it: a quiet deal, a no-show, a proposal with no reply, a new lead, a reply, or a person. */
+    trigger: v.optional(v.string()),
+    status: v.union(v.literal("draft"), v.literal("held"), v.literal("proposed"), v.literal("discarded")),
+    /** Why it is held, or why it could not be proposed, with the step for a person. */
+    reason: v.optional(v.string()),
+    actionId: v.optional(v.id("crmActions")),
+    /** "agent" for Dealmaker, else the user. */
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_workspace_status", ["workspaceId", "status", "updatedAt"]),
+
   /** A lead Dealmaker must not contact: paused after a negative reply, until a person lifts it (0.2). */
   dealmakerPauses: defineTable({
     workspaceId: v.id("workspaces"),

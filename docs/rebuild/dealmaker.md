@@ -371,6 +371,14 @@ tests, lint, both typechecks and the build, never deploying Convex:
     readiness inputs, commitments, owner-only coaching, the live checklist, and the end-of-day reports.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
     over; SMS and email through the merged messaging path; Instagram and Facebook DMs.
+    *13a, built (server):* `convex/comms.ts`. A `dealmakerDrafts` row per message, edited freely until it is
+    proposed; lanes drafted, held, waiting for approval, sent, not sent. Proposing runs Dealmaker's checks
+    first (a paused lead is held; with consent tags set, a lead without one is held; `decideSend` marks a
+    price or a first message as needing a person) and then `proposeCrmAction`, where the Owner's SEND,
+    quiet hours, Do Not Disturb and one message a day still apply. `crmActions.claim` now also refuses a
+    message to a paused lead. **Open for the owner:** the switch for low-stakes kinds and the typed SEND
+    conflict; until decided, every message waits for SEND. Next, 13b: the Follow-up Engine's triggers and
+    drafting; 13c: the Comms tab.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
     attachment only.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.

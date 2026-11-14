@@ -34,6 +34,7 @@ import type * as catalog from "../catalog.js";
 import type * as clients from "../clients.js";
 import type * as clientsMigration from "../clientsMigration.js";
 import type * as collections from "../collections.js";
+import type * as comms from "../comms.js";
 import type * as controls from "../controls.js";
 import type * as creative from "../creative.js";
 import type * as creativeImageActions from "../creativeImageActions.js";
@@ -303,6 +304,7 @@ declare const fullApi: ApiFromModules<{
   clients: typeof clients;
   clientsMigration: typeof clientsMigration;
   collections: typeof collections;
+  comms: typeof comms;
   controls: typeof controls;
   creative: typeof creative;
   creativeImageActions: typeof creativeImageActions;

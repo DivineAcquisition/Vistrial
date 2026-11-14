@@ -68,3 +68,10 @@ export function decideSend(context: SendContext): SendDecision {
   if (!context.autonomous.includes(context.kind)) return { action: "approve", reason: STOP_WORDS.notAutonomous };
   return { action: "send", reason: STOP_WORDS.autonomous };
 }
+
+/** A money amount or a price word in a draft: then a person approves it, whatever is automatic. */
+const PRICE = /([$€£]\s?\d)|(\b\d[\d,.]*\s?(usd|dollars?|euros?|pounds?|per month|a month|\/mo)\b)|\b(price|pricing|cost|fee|invoice|discount|deposit)\b/i;
+
+export function hasPrice(text: string) {
+  return PRICE.test(text);
+}

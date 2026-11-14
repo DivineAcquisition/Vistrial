@@ -123,6 +123,17 @@ describe("every connection type, with the key set", () => {
     // HighLevel and Meta.
     const hl = await s.t.mutation(internal.highLevel.saveConnection, { workspaceId: s.workspaceId, accessToken: "hl-access", refreshToken: "hl-refresh", tokenExpiresAt: NOW + DAY, scopes: [], accountId: "loc1", accountName: "Aster", currency: "USD", connectedBy: "dana", calls: 0 });
     await s.t.mutation(internal.metaAds.saveConnection, { workspaceId: s.workspaceId, source: "oauth", accessToken: "meta-access", scopes: ["ads_read"], metaUserId: "m1", metaUserName: "Dana", connectedBy: "dana", calls: 0 });
+    // A HighLevel marketplace install waiting to be claimed, then claimed onto a client.
+    const code = await s.t.mutation(internal.highLevel.savePending, { accessToken: "hl-pending-access", refreshToken: "hl-pending-refresh", tokenExpiresAt: NOW + DAY, scopes: [], accountId: "loc2", accountName: "Bright", currency: "USD", calls: 0 });
+    const pending = await s.t.run((ctx) => ctx.db.query("crmPendingInstalls").collect());
+    expect(pending.map((row) => [row.accessToken, row.refreshToken].every((value) => SEALED.test(value)))).toEqual([true]);
+    const clientId = await s.owner.mutation(api.clients.create, { workspaceId: s.workspaceId, type: "business", name: "Bright" });
+    await s.owner.mutation(api.highLevel.claimInstall, { workspaceId: s.workspaceId, code, clientId });
+    const claimed = await s.t.run((ctx) => ctx.db.query("crmConnections").collect());
+    const bright = claimed.find((row) => row.accountId === "loc2")!;
+    // Moved as stored, not sealed twice: it opens to the real token in one step.
+    expect(await openSecret(bright.accessToken)).toBe("hl-pending-access");
+    expect(await s.t.query(internal.highLevel.connectionById, { connectionId: bright._id })).toMatchObject({ accessToken: "hl-pending-access", refreshToken: "hl-pending-refresh" });
     // A PKCE verifier, made by a real sign-in start.
     const start = await s.owner.mutation(api.integrations.startConnect, { workspaceId: s.workspaceId, provider: "google_calendar" });
 
@@ -131,6 +142,8 @@ describe("every connection type, with the key set", () => {
     expect(stored.map((row) => `${row.table}.${row.field}`).sort()).toEqual(
       [
         "crmConnections.accessToken",
+        "crmConnections.accessToken",
+        "crmConnections.refreshToken",
         "crmConnections.refreshToken",
         "integrationConnections.accessToken",
         "integrationConnections.accessToken",
@@ -201,6 +214,7 @@ describe("the migration", () => {
       await ctx.db.insert("crmConnections", { ...base, provider: "highlevel", status: "connected", accessToken: "plain-hl-access", refreshToken: "plain-hl-refresh", tokenExpiresAt: NOW + DAY, accountId: "loc1", accountName: "Aster", currency: "USD", callsOk: 0, callsFailed: 0 });
       await ctx.db.insert("metaConnections", { ...base, source: "oauth", accessToken: "plain-meta", metaUserId: "m1", metaUserName: "Dana", status: "connected", callsOk: 0, callsFailed: 0 });
       await ctx.db.insert("integrationOauthStates", { workspaceId, userId: "dana", provider: "google_calendar", nonce: "n".repeat(48), codeVerifier: "plain-verifier", createdAt: NOW });
+      await ctx.db.insert("crmPendingInstalls", { provider: "highlevel", claimCode: "c".repeat(48), accessToken: "plain-pending-access", refreshToken: "plain-pending-refresh", tokenExpiresAt: NOW + DAY, scopes: [], accountId: "loc9", accountName: "Pending", currency: "USD", calls: 0, createdAt: NOW });
       return ids;
     });
   }
@@ -221,10 +235,10 @@ describe("the migration", () => {
     await s.t.mutation(internal.secretsMigration.encryptExisting, {});
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     const after = await storedSecrets(s.t);
-    expect(after).toHaveLength(9);
+    expect(after).toHaveLength(11);
     for (const row of after) expect(row.value, `${row.table}.${row.field}`).toMatch(SEALED);
     expect((await Promise.all(after.map((row) => openSecret(row.value)))).sort()).toEqual(
-      ["plain-access-0", "plain-access-1", "plain-access-2", "plain-hl-access", "plain-hl-refresh", "plain-hook", "plain-meta", "plain-refresh-0", "plain-verifier"].sort(),
+      ["plain-access-0", "plain-access-1", "plain-access-2", "plain-hl-access", "plain-hl-refresh", "plain-hook", "plain-meta", "plain-pending-access", "plain-pending-refresh", "plain-refresh-0", "plain-verifier"].sort(),
     );
     // Reads still work for every connection type.
     expect(await s.t.query(internal.metaAds.connectionFor, { workspaceId: s.workspaceId })).toMatchObject({ accessToken: "plain-meta" });

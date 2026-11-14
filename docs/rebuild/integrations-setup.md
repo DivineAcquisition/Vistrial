@@ -714,7 +714,8 @@ anything for upload or paste.
 
 Every third-party credential Vistrial stores is encrypted in the database with AES-256-GCM
 (`convex/lib/secrets.ts`): Google and Calendly access and refresh tokens, the Fireflies API key a customer
-pastes, HighLevel access and refresh tokens, the Meta ads token, any webhook signing secret stored per
+pastes, HighLevel access and refresh tokens (including a marketplace install waiting to be claimed), the
+Meta ads token, any webhook signing secret stored per
 connection, and the PKCE verifier kept during a sign-in. A stored value looks like
 `enc:v1:<iv>:<ciphertext>`, with a new random IV for every value. The full list of fields is `SECRET_FIELDS`
 in that file; a new credential field must be added there.

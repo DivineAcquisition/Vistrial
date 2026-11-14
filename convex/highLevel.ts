@@ -409,7 +409,7 @@ export const savePending = internalMutation({
       .take(20);
     for (const row of earlier) await ctx.db.delete(row._id);
     const claimCode = randomHex(24);
-    const id = await ctx.db.insert("crmPendingInstalls", { ...args, provider: "highlevel", claimCode, createdAt: Date.now() });
+    const id = await ctx.db.insert("crmPendingInstalls", { ...args, accessToken: await sealSecret(args.accessToken), refreshToken: await sealSecret(args.refreshToken), provider: "highlevel", claimCode, createdAt: Date.now() });
     await ctx.scheduler.runAfter(PENDING_MS, internal.highLevel.dropPending, { id });
     return claimCode;
   },
@@ -448,6 +448,7 @@ export const claimInstall = ownerMutation({
     const row = await pendingByCode(ctx, args.code);
     if (!row) throw userError("That HighLevel install has expired. Install the app again, or press Connect HighLevel here.");
     await requireClient(ctx, ctx.workspaceId, args.clientId);
+    // The tokens move as they are stored: a sealed value is not sealed again.
     const saved = await saveConnectionRow(ctx, {
       accessToken: row.accessToken,
       refreshToken: row.refreshToken,

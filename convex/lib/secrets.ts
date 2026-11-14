@@ -150,6 +150,8 @@ export async function needsReseal(value: string): Promise<boolean> {
 export const SECRET_FIELDS = {
   integrationConnections: ["accessToken", "refreshToken", "hookSecret"],
   crmConnections: ["accessToken", "refreshToken"],
+  /** A HighLevel marketplace install waiting up to an hour to be claimed. */
+  crmPendingInstalls: ["accessToken", "refreshToken"],
   metaConnections: ["accessToken"],
   integrationOauthStates: ["codeVerifier"],
 } as const;

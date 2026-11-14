@@ -53,6 +53,7 @@ import type * as facts from "../facts.js";
 import type * as feedback from "../feedback.js";
 import type * as files from "../files.js";
 import type * as firstPackage from "../firstPackage.js";
+import type * as followUps from "../followUps.js";
 import type * as followups from "../followups.js";
 import type * as goals from "../goals.js";
 import type * as highLevel from "../highLevel.js";
@@ -214,6 +215,9 @@ import type * as skills_dealBriefing_render from "../skills/dealBriefing/render.
 import type * as skills_dealBriefing_shapes from "../skills/dealBriefing/shapes.js";
 import type * as skills_dealBriefing_tools from "../skills/dealBriefing/tools.js";
 import type * as skills_dealmaker_doctrine from "../skills/dealmaker/doctrine.js";
+import type * as skills_followUpEngine_index from "../skills/followUpEngine/index.js";
+import type * as skills_followUpEngine_shapes from "../skills/followUpEngine/shapes.js";
+import type * as skills_followUpEngine_tools from "../skills/followUpEngine/tools.js";
 import type * as skills_pipelineForensics_checks from "../skills/pipelineForensics/checks.js";
 import type * as skills_pipelineForensics_compute from "../skills/pipelineForensics/compute.js";
 import type * as skills_pipelineForensics_index from "../skills/pipelineForensics/index.js";
@@ -333,6 +337,7 @@ declare const fullApi: ApiFromModules<{
   feedback: typeof feedback;
   files: typeof files;
   firstPackage: typeof firstPackage;
+  followUps: typeof followUps;
   followups: typeof followups;
   goals: typeof goals;
   highLevel: typeof highLevel;
@@ -494,6 +499,9 @@ declare const fullApi: ApiFromModules<{
   "skills/dealBriefing/shapes": typeof skills_dealBriefing_shapes;
   "skills/dealBriefing/tools": typeof skills_dealBriefing_tools;
   "skills/dealmaker/doctrine": typeof skills_dealmaker_doctrine;
+  "skills/followUpEngine/index": typeof skills_followUpEngine_index;
+  "skills/followUpEngine/shapes": typeof skills_followUpEngine_shapes;
+  "skills/followUpEngine/tools": typeof skills_followUpEngine_tools;
   "skills/pipelineForensics/checks": typeof skills_pipelineForensics_checks;
   "skills/pipelineForensics/compute": typeof skills_pipelineForensics_compute;
   "skills/pipelineForensics/index": typeof skills_pipelineForensics_index;

@@ -17,6 +17,7 @@ import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
+import { CallNotesForm, RecentNotes, type NotesActions, type NotesData } from "./call-notes";
 import { SectionTitle, WorkHero } from "./work-shell";
 
 export type CallsData = FunctionReturnType<typeof api.dealBriefings.calls>;
@@ -26,6 +27,8 @@ type BriefState = NonNullable<Upcoming["brief"]>["state"];
 
 export type CallsActions = {
   /** Asks for a brief on one booked call, or (without a CRM) on a lead by name. */
+  /** Saves the closer's notes after a call, the memo uploaded first. */
+  saveNote?: NotesActions["saveNote"];
   request: (input: { contactRef?: string; dealRef?: string; appointmentRef?: string; leadName?: string; about?: string; handoff?: string; website?: string; confirmedCredits: number }) => Promise<unknown>;
 };
 
@@ -95,8 +98,9 @@ function AskBrief({ call, maxCredits, actions, onDone }: { call: Upcoming; maxCr
   );
 }
 
-function CallRow({ call, data, actions, onOpen }: { call: Upcoming; data: CallsData; actions: CallsActions; onOpen: (id: string) => void }) {
+function CallRow({ call, data, actions, notes, onOpen }: { call: Upcoming; data: CallsData; actions: CallsActions; notes: NotesData | null; onOpen: (id: string) => void }) {
   const [asking, setAsking] = useState(false);
+  const [noting, setNoting] = useState(false);
   const state = call.brief?.state ?? "none";
   const canAsk = data.canRequest && (state === "none" || state === "failed");
   return (
@@ -111,20 +115,52 @@ function CallRow({ call, data, actions, onOpen }: { call: Upcoming; data: CallsD
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <StateBadge state={state} />
+          {call.past && !call.brief ? null : <StateBadge state={state} />}
           {call.brief && (state === "ready" || state === "needsReview") ? (
             <Button size="sm" variant="outline" onClick={() => onOpen(call.brief!.id)}>
               Open the brief
             </Button>
-          ) : canAsk && !asking ? (
+          ) : canAsk && !asking && !call.past ? (
             <Button size="sm" variant="outline" onClick={() => setAsking(true)}>
               Make a brief
             </Button>
           ) : null}
+          {call.past ? (
+            call.noted ? (
+              <Badge variant="success" size="sm">
+                <CheckCircle2 aria-hidden className="size-3" />
+                Notes added
+              </Badge>
+            ) : notes?.canWrite && actions.saveNote && !noting ? (
+              <Button size="sm" variant="outline" onClick={() => setNoting(true)}>
+                Add call notes
+              </Button>
+            ) : null
+          ) : null}
         </div>
       </div>
       {asking ? <AskBrief call={call} maxCredits={data.maxCredits} actions={actions} onDone={() => setAsking(false)} /> : null}
+      {noting && notes && actions.saveNote ? (
+        <CallNotesForm lead={{ contactRef: call.contactRef, dealRef: call.dealRef, appointmentRef: call.ref, leadName: call.leadName }} options={notes} actions={{ saveNote: actions.saveNote }} onDone={() => setNoting(false)} />
+      ) : null}
     </li>
+  );
+}
+
+/** With no CRM, notes after a call start from who it was with. */
+function NotesByName({ notes, saveNote }: { notes: NotesData; saveNote: NotesActions["saveNote"] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Panel className="grid min-w-0 gap-3 p-4 sm:p-6">
+      <SectionTitle icon={ClipboardList}>Notes after a call</SectionTitle>
+      {open ? (
+        <CallNotesForm lead={{ leadName: "this lead", askName: true }} options={notes} actions={{ saveNote }} onDone={() => setOpen(false)} />
+      ) : (
+        <Button size="sm" variant="outline" className="w-fit" onClick={() => setOpen(true)}>
+          Add call notes
+        </Button>
+      )}
+    </Panel>
   );
 }
 
@@ -381,7 +417,7 @@ export function BriefView({ brief, onClose }: { brief: BriefData; onClose?: () =
 }
 
 /** The Calls tab before the call, with its data handed in, so a story can show it without a server. */
-export function CallsView({ data, actions, open, onOpen }: { data: CallsData; actions: CallsActions; open?: BriefData | null; onOpen: (id: string | null) => void }) {
+export function CallsView({ data, actions, notes = null, open, onOpen }: { data: CallsData; actions: CallsActions; notes?: NotesData | null; open?: BriefData | null; onOpen: (id: string | null) => void }) {
   if (open) return <BriefView brief={open} onClose={() => onOpen(null)} />;
   const others = data.recent.filter((row) => !data.upcoming.some((call) => call.brief?.id === row.id));
   return (
@@ -395,11 +431,11 @@ export function CallsView({ data, actions, open, onOpen }: { data: CallsData; ac
       />
       {data.connected ? (
         <Panel className="grid min-w-0 gap-3 p-4 sm:p-6">
-          <SectionTitle icon={CalendarIcon}>Booked calls this week</SectionTitle>
+          <SectionTitle icon={CalendarIcon}>Booked calls, the last two days and this week</SectionTitle>
           {data.upcoming.length ? (
             <ul className="grid gap-2">
               {data.upcoming.map((call) => (
-                <CallRow key={call.ref} call={call} data={data} actions={actions} onOpen={onOpen} />
+                <CallRow key={call.ref} call={call} data={data} actions={actions} notes={notes} onOpen={onOpen} />
               ))}
             </ul>
           ) : (
@@ -407,8 +443,12 @@ export function CallsView({ data, actions, open, onOpen }: { data: CallsData; ac
           )}
         </Panel>
       ) : (
-        <BriefByName data={data} actions={actions} />
+        <>
+          <BriefByName data={data} actions={actions} />
+          {notes?.canWrite && actions.saveNote ? <NotesByName notes={notes} saveNote={actions.saveNote} /> : null}
+        </>
       )}
+      {notes ? <RecentNotes notes={notes.notes} /> : null}
       {others.length ? (
         <Panel className="grid min-w-0 gap-3 p-4 sm:p-6">
           <SectionTitle icon={ClipboardList}>Recent briefs</SectionTitle>
@@ -447,10 +487,24 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   const { clientId } = useClientScope();
   const data = useQuery(api.dealBriefings.calls, { workspaceId, clientId });
   const request = useMutation(api.dealBriefings.request);
+  const notes = useQuery(api.callNotes.recent, { workspaceId, clientId });
+  const uploadUrl = useMutation(api.callNotes.memoUploadUrl);
+  const saveNote = useMutation(api.callNotes.save);
   const linked = useSearchParams().get("brief");
   const [open, setOpen] = useState<string | null>(linked);
   if (open) return <OpenBrief workspaceId={workspaceId} briefingId={open} onClose={() => setOpen(null)} />;
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your booked calls…</p>;
-  const actions: CallsActions = { request: (input) => request({ workspaceId, clientId, ...input }) };
-  return <CallsView data={data} actions={actions} onOpen={setOpen} />;
+  const actions: CallsActions = {
+    request: (input) => request({ workspaceId, clientId, ...input }),
+    saveNote: async ({ memo, objections, ...input }) => {
+      let stored: { storageId: Id<"_storage">; seconds: number } | undefined;
+      if (memo) {
+        const response = await fetch(await uploadUrl({ workspaceId }), { method: "POST", headers: { "Content-Type": memo.blob.type || "audio/webm" }, body: memo.blob });
+        if (!response.ok) throw new Error("The memo could not be uploaded. Try again, or save the notes without it.");
+        stored = { storageId: ((await response.json()) as { storageId: Id<"_storage"> }).storageId, seconds: memo.seconds };
+      }
+      return saveNote({ workspaceId, clientId, ...input, objections: objections.map((row) => ({ title: row.title, ...(row.itemId ? { itemId: row.itemId as Id<"playbookItems"> } : {}) })), ...(stored ? { memo: stored } : {}) });
+    },
+  };
+  return <CallsView data={data} actions={actions} notes={notes ?? null} onOpen={setOpen} />;
 }

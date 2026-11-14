@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { CallNotesForm, type NotesData } from "@/components/work/call-notes";
 import { CallsView, type BriefData, type CallsData } from "@/components/work/calls-tab";
 
 import { StoryFrame } from "../work-tabs/story-frame";
@@ -21,9 +22,11 @@ function calls(state: string): CallsData {
     connected: true,
     crm: { label: "HighLevel", accountName: "Northlight Growth" },
     upcoming: [
-      { ref: "a1", startsAt: 1, when: "Sun, Nov 15, 3:00 PM", status: "confirmed", contactRef: "c1", dealRef: "d1", leadName: "Jordan Lee", source: "Facebook ads", stage: "Proposal sent", brief: recent[0] },
-      { ref: "a2", startsAt: 2, when: "Mon, Nov 16, 10:30 AM", status: "booked", contactRef: "c2", dealRef: "d2", leadName: "Riley Park", source: "Referral", stage: "Call booked", brief: { id: "b2", leadName: "Riley Park", when: "Mon, Nov 16, 10:30 AM", state: "running", createdAt: 2 } },
-      { ref: "a3", startsAt: 3, when: "Tue, Nov 17, 4:00 PM", status: "booked", contactRef: "c3", dealRef: null, leadName: "Sam Okafor-Whitfield, Okafor Coaching Collective", source: "Webinar", stage: null, brief: null },
+      { ref: "a0", startsAt: 0, when: "Fri, Nov 13, 2:00 PM", status: "showed", contactRef: "c0", dealRef: "d0", leadName: "Priya Raman", source: "Referral", stage: "Call booked", brief: recent[1], past: true, noted: false },
+      { ref: "a9", startsAt: 0, when: "Fri, Nov 13, 9:30 AM", status: "showed", contactRef: "c9", dealRef: "d9", leadName: "Marcus Hale", source: "Webinar", stage: "Proposal sent", brief: null, past: true, noted: true },
+      { ref: "a1", startsAt: 1, when: "Sun, Nov 15, 3:00 PM", status: "confirmed", contactRef: "c1", dealRef: "d1", leadName: "Jordan Lee", source: "Facebook ads", stage: "Proposal sent", brief: recent[0], past: false, noted: false },
+      { ref: "a2", startsAt: 2, when: "Mon, Nov 16, 10:30 AM", status: "booked", contactRef: "c2", dealRef: "d2", leadName: "Riley Park", source: "Referral", stage: "Call booked", brief: { id: "b2", leadName: "Riley Park", when: "Mon, Nov 16, 10:30 AM", state: "running", createdAt: 2 }, past: false, noted: false },
+      { ref: "a3", startsAt: 3, when: "Tue, Nov 17, 4:00 PM", status: "booked", contactRef: "c3", dealRef: null, leadName: "Sam Okafor-Whitfield, Okafor Coaching Collective", source: "Webinar", stage: null, brief: null, past: false, noted: false },
     ],
     recent,
   } as unknown as CallsData;
@@ -92,11 +95,53 @@ function brief(state: string): BriefData {
   } as unknown as BriefData;
 }
 
+const notes: NotesData = {
+  canWrite: true,
+  outcomes: [
+    { id: "nextCall", label: "Booked another call" },
+    { id: "proposal", label: "Asked for a proposal" },
+    { id: "thinking", label: "Wants time to think" },
+    { id: "yes", label: "Said yes" },
+    { id: "no", label: "Said no" },
+    { id: "notFit", label: "Not a fit" },
+    { id: "noShow", label: "Did not show" },
+  ],
+  objections: [
+    { id: "o1", title: "Too expensive right now" },
+    { id: "o2", title: "Need to talk to my partner" },
+    { id: "o3", title: "Tried an agency before and it did not work" },
+  ],
+  notes: [
+    {
+      id: "n1",
+      leadName: "Marcus Hale",
+      contactRef: "c9",
+      appointmentRef: "a9",
+      outcome: "proposal",
+      outcomeWords: "Asked for a proposal",
+      nextStep: "Send the proposal with the clinic case study",
+      nextStepDue: Date.UTC(2026, 10, 16),
+      fit: [
+        { field: "budget", value: "About $3k a month" },
+        { field: "decider", value: "His co-founder, who was not on the call" },
+      ],
+      objections: ["Need to talk to my partner"],
+      memo: { status: "done", seconds: 41, transcript: "He wants to start in January once his co-founder agrees. Asked twice about results for clinics like his.", problem: null },
+      writtenBy: "Milo",
+      createdAt: 1,
+    },
+  ],
+} as unknown as NotesData;
+
 export function CallsTabStory({ state, theme }: { state: string; theme: string }) {
   const [open, setOpen] = useState<string | null>(state === "brief" || state === "first" ? "b1" : null);
   return (
     <StoryFrame theme={theme} role={state === "viewer" ? "viewer" : "owner"}>
-      <CallsView data={calls(state)} actions={{ request: noop }} open={open ? brief(state) : null} onOpen={setOpen} />
+      {state === "intake" ? (
+        <CallNotesForm lead={{ contactRef: "c0", dealRef: "d0", appointmentRef: "a0", leadName: "Priya Raman" }} options={notes} actions={{ saveNote: noop }} onDone={() => undefined} />
+      ) : (
+        <CallsView data={calls(state)} actions={{ request: noop, saveNote: noop }} notes={state === "viewer" ? { ...notes, canWrite: false } : notes} open={open ? brief(state) : null} onOpen={setOpen} />
+      )}
     </StoryFrame>
   );
 }

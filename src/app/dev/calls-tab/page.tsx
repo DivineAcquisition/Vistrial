@@ -4,7 +4,7 @@ import { CallsTabStory } from "./story";
 
 export const metadata = { title: "Calls tab story", robots: { index: false, follow: false } };
 
-/** ?state=calls|brief|first|nocrm|viewer and ?theme=light|dark, for screenshots. */
+/** ?state=calls|brief|first|nocrm|viewer|intake and ?theme=light|dark, for screenshots. */
 export default async function CallsTabStoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (process.env.NODE_ENV === "production") notFound();
   const query = await searchParams;

@@ -431,6 +431,20 @@ tests, lint, both typechecks and the build, never deploying Convex:
     Next: 10d the automatic brief 3 hours before each booked call, with its monthly cap.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
     recordings; the Zoom and Meet note taker.
+    *11a, built:* the closer's notes after a call (`convex/callNotes.ts`, `src/components/work/call-notes.tsx`).
+    The Calls tab now also lists the last two days of booked calls; a past call offers "Add call notes" (or,
+    with no CRM, "Notes after a call" by name). The form: how it ended (booked another call, asked for a
+    proposal, wants time to think, said yes, said no, not a fit, did not show), the next step and its date,
+    the five fit fields, the objections heard (picked from the Playbook's Objections folder, or a few words),
+    and a voice memo of up to a minute. **Everything is the closer's account**: with a deal, each fit field
+    becomes a `dealFacts` row of kind "rep" with the closer's name and `sourceRef` `callNote:<id>`, and the next
+    step a `dealCommitments` row the closer owns, so the Pipeline shows both. A "said yes" or "said no" is
+    recorded as their account only; marking the deal won or lost stays the Owner's hard stop. Nothing changes
+    the CRM or contacts the lead. **The memo** is the closer's own voice, never the call (the form says so):
+    uploaded to Convex storage, transcribed by Deepgram (`nova-3`, `DEEPGRAM_API_KEY`), and the audio deleted
+    whatever happens; without the key the notes are kept and the memo says "not set up yet". Conversation
+    Intelligence (step 12) reads the notes and the memo as the closer's account. Next: 11b the business's own
+    note taker and HighLevel recordings; the Zoom and Meet note taker waits for a vendor (0.10 item 1).
 12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the
     readiness inputs, commitments, owner-only coaching, the live checklist, and the end-of-day reports.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed

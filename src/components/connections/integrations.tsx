@@ -3,6 +3,7 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 
 import { IntegrationsView } from "@/components/connections/integrations-view";
+import { TranscriptLead } from "@/components/connections/transcript-lead";
 import { TranscriptsView } from "@/components/connections/transcripts-view";
 import { useWorkspaceShell, useClientScope } from "@/components/shell/shell-context";
 import { describeError } from "@/lib/errors/user-error";
@@ -83,6 +84,7 @@ export function Integrations({
               }}
               onRemove={(id) => attempt(() => removeTranscript({ workspaceId, transcriptId: id as Id<"callTranscripts"> }))}
               onGrant={(id, agentSlug, granted) => void attempt(() => grantTranscript({ workspaceId, transcriptId: id as Id<"callTranscripts">, agentSlug, granted }))}
+              renderLead={transcripts.canEdit ? (row) => <TranscriptLead workspaceId={workspaceId} row={row} /> : undefined}
             />
           ) : null,
         },

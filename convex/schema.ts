@@ -2327,6 +2327,12 @@ export default defineSchema({
     consentConfirmedAt: v.number(),
     /** Agents granted use of this transcript. Missing means the Strategist only. */
     agents: v.optional(v.array(v.string())),
+    /**
+     * The lead the call was with, as the connected CRM's own ids. A person chooses it; Vistrial never links a
+     * call to a lead on its own. Missing means not linked.
+     */
+    crmContactRef: v.optional(v.string()),
+    crmDealRef: v.optional(v.string()),
   }).index("by_workspace", ["workspaceId"]),
 
   /** Webhook deliveries that passed their signature check: which, when and what kind. Never the body. */

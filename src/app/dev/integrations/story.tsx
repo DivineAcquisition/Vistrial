@@ -32,6 +32,7 @@ const TRANSCRIPTS: TranscriptRow[] = [
     createdAt: Date.UTC(2026, 10, 4),
     agents: ["growth-architect"],
     opening: "Dana Ortiz: Thanks for making time. What made you book the call? Prospect: We spend about four thousand a month on Meta and cannot tell which ads bring retainers.",
+    lead: { contactRef: "con1", dealRef: "opp1", name: "Priya Shah" },
   },
   {
     id: "t2",

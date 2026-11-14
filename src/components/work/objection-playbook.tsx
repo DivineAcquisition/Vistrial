@@ -6,10 +6,12 @@ import { useState } from "react";
 import { Plus, Quote, Users } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { showError } from "@/lib/errors/show-error";
 import type { api } from "../../../convex/_generated/api";
+import { MIN_CALLS } from "../../../convex/lib/dealmaker/objections";
 import { OBJECTION_TAGS, type ObjectionTag } from "../../../convex/lib/playbook";
 
 import { SectionTitle } from "./work-shell";
@@ -22,6 +24,16 @@ type Heard = ObjectionData["unmatched"][number];
 export type ObjectionActions = {
   addStarter: () => Promise<unknown>;
   addHeard: (reviewId: string, title: string, tag: ObjectionTag) => Promise<unknown>;
+  /** Asks for talk tracks, after the budget shown is confirmed. */
+  requestTracks?: (confirmedCredits: number) => Promise<unknown>;
+  setWeekly?: (on: boolean) => Promise<unknown>;
+};
+
+const STATE_WORDS: Record<NonNullable<ObjectionData["tracksState"]>, string> = {
+  running: "Writing talk tracks…",
+  ready: "Talk tracks are written.",
+  needsReview: "The last talk tracks did not pass their checks, so none of them are shown. Open them in Approvals to read why.",
+  failed: "The last talk tracks could not be written. Nothing was shown.",
 };
 
 const TAG_LABEL: Record<ObjectionTag, string> = { money: "Money", time: "Time", trust: "Trust", fit: "Fit" };
@@ -95,6 +107,18 @@ function ObjectionRow({ row, isOwner }: { row: Row; isOwner: boolean }) {
           ) : null}
         </section>
       ) : null}
+      {row.track ? (
+        <section className="grid gap-1.5" aria-label="Talk track">
+          <h4 className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Talk track
+            <Badge variant={row.track.approved ? "warning" : "outline"} size="sm">
+              {row.track.approved ? "Untested hypothesis" : "Waiting for your review"}
+            </Badge>
+          </h4>
+          <p className="min-w-0 text-sm break-words text-foreground">{row.track.text}</p>
+          {row.track.offer.length ? <p className="min-w-0 text-xs break-words text-muted-foreground">Stands on: {row.track.offer.join("; ")}</p> : null}
+        </section>
+      ) : null}
       {isOwner && row.reps?.length ? (
         <section className="grid gap-1.5" aria-label="Per rep">
           <h4 className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -147,6 +171,53 @@ function HeardRow({ row, canEdit, actions }: { row: Heard; canEdit: boolean; act
   );
 }
 
+/** Asking for talk tracks, and the Owner's weekly switch, each with the budget shown first. */
+function TracksBar({ data, actions }: { data: ObjectionData; actions: ObjectionActions }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="grid min-w-0 gap-3 rounded-lg border border-border p-3 sm:p-4" data-objection-tracks>
+      <p className="text-sm text-foreground">Talk tracks: what a closer could say back to each objection heard, built only on your Offer folder. Each is an untested hypothesis until it is used on a call, and waits for your review first.</p>
+      {data.tracksState ? <p className="text-sm text-muted-foreground">{STATE_WORDS[data.tracksState]}{data.tracksAt && data.tracksState !== "running" ? ` Last written ${day(data.tracksAt)}.` : ""}</p> : null}
+      {data.tracksBlocked ? <p className="text-sm text-muted-foreground">{data.tracksBlocked}</p> : null}
+      {data.canAskTracks && actions.requestTracks && data.tracksState !== "running" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              await run(() => actions.requestTracks!(data.maxCredits));
+              setBusy(false);
+            }}
+          >
+            Write talk tracks
+          </Button>
+          <span className="text-xs text-muted-foreground">Up to {data.maxCredits} credits. Nothing runs until you press it.</span>
+        </div>
+      ) : null}
+      {data.weekly.canChange && actions.setWeekly ? (
+        <label className="flex min-w-0 items-start gap-2 text-sm text-foreground">
+          <Checkbox
+            className="mt-0.5"
+            checked={data.weekly.on}
+            disabled={busy}
+            onCheckedChange={async (checked) => {
+              setBusy(true);
+              await run(() => actions.setWeekly!(checked === true));
+              setBusy(false);
+            }}
+          />
+          <span className="min-w-0">
+            Refresh the talk tracks every week (up to {data.maxCredits} credits a week, only once there are {MIN_CALLS} calls). Only you can change this.
+          </span>
+        </label>
+      ) : data.weekly.on ? (
+        <p className="text-xs text-muted-foreground">The Owner refreshes these every week.</p>
+      ) : null}
+    </div>
+  );
+}
+
 /** The Objection Playbook, shown in the Playbook's Objections folder. Counts and quotes come from your own calls. */
 export function ObjectionPlaybookPanel({ data, actions }: { data: ObjectionData; actions: ObjectionActions }) {
   const [busy, setBusy] = useState(false);
@@ -175,6 +246,7 @@ export function ObjectionPlaybookPanel({ data, actions }: { data: ObjectionData;
         Dealmaker · Objection playbook
       </SectionTitle>
       <p className="text-sm text-muted-foreground">{data.callsWords} Counted from reviewed calls and the closer&apos;s notes as they come in.</p>
+      <TracksBar data={data} actions={actions} />
       {data.rows.length ? (
         <ul className="grid gap-3">
           {data.rows.map((row) => (

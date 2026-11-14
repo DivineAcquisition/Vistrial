@@ -56,6 +56,24 @@ describe("the seven-agent workforce", () => {
     expect(dealmaker.every((skill) => skill.status === "available")).toBe(true);
   });
 
+  it("shows Dealmaker live from the catalog at once, even before the stored rows are synced, and lets it be turned on", async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity(person("owner"));
+    const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
+    // A deployment whose rows still say planned: the sync has not run since the deploy.
+    await t.run(async (ctx) => {
+      const agent = (await ctx.db.query("agents").withIndex("by_slug", (q) => q.eq("slug", SALES_CONVERSION)).unique())!;
+      await ctx.db.patch(agent._id, { status: "planned" });
+      for (const skill of await ctx.db.query("skills").collect()) if (skill.agentSlug === SALES_CONVERSION) await ctx.db.patch(skill._id, { status: "comingSoon" });
+    });
+    const shell = await owner.query(api.workspace.shell, { workspaceId });
+    const dealmaker = shell.agents.find((agent) => agent.slug === SALES_CONVERSION)!;
+    expect(dealmaker.status).toBe("live");
+    expect(dealmaker.skills.every((skill) => skill.status === "available")).toBe(true);
+    await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: SALES_CONVERSION, state: "on" });
+    expect((await owner.query(api.workspace.shell, { workspaceId })).agents.find((agent) => agent.slug === SALES_CONVERSION)?.state).toBe("on");
+  });
+
   it("does not let a planned agent be turned on or start a run", async () => {
     process.env.ALLOW_DEV_SKILLS = "true";
     const t = convexTest(schema, modules);

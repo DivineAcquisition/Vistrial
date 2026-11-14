@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { currentAgentSlug } from "./catalog";
+import { CATALOG, currentAgentSlug, isAgentLive } from "./catalog";
 import type { Id } from "./_generated/dataModel";
 import { signedInMutation, signedInQuery, workspaceQuery, adminMutation } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
@@ -72,6 +72,8 @@ export const shell = workspaceQuery({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .take(50);
     const stateByAgent = new Map(links.map((link) => [link.agentId, link.state]));
+    const catalogBySlug = new Map(CATALOG.map((agent) => [agent.slug, agent]));
+    const skillStatus = new Map(CATALOG.flatMap((agent) => agent.skills.map((skill) => [skill.slug, skill.status] as const)));
     const skillsByAgent = new Map<string, typeof skills>();
     for (const skill of skills) {
       const list = skillsByAgent.get(skill.agentSlug) ?? [];
@@ -91,7 +93,8 @@ export const shell = workspaceQuery({
           name: agent.name,
           number: agent.number ?? null,
           department: agent.department ?? null,
-          status: agent.status ?? ("planned" as const),
+          // The catalog in code is the truth for an agent's status, so a deploy shows at once, before the sync.
+          status: catalogBySlug.get(agent.slug)?.status ?? agent.status ?? ("planned" as const),
           lifecycle: agent.lifecycle ?? null,
           job: agent.job,
           promise: agent.promise,
@@ -103,7 +106,7 @@ export const shell = workspaceQuery({
               name: skill.name,
               handsBack: skill.job,
               promise: skill.promise,
-              status: skill.status,
+              status: skillStatus.get(skill.slug) ?? skill.status,
               sort: skill.sort,
             })),
           state: stateByAgent.get(agent._id) ?? "off",
@@ -145,7 +148,7 @@ export const setAgentState = adminMutation({
       .withIndex("by_slug", (q) => q.eq("slug", currentAgentSlug(args.slug)))
       .unique();
     if (!agent || agent.retired === true) notFound();
-    if (agent.status !== "live" && args.state !== "off") throw userError(`${agent.name} is not available yet.`);
+    if (!isAgentLive(agent) && args.state !== "off") throw userError(`${agent.name} is not available yet.`);
     const link = await ctx.db
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))

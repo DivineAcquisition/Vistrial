@@ -60,6 +60,15 @@ export const SALES_CONVERSION = "sales-conversion";
 /** Old agent slugs and the agent that took each one over. The catalog sync renames these rows in place. */
 export const RENAMED_AGENTS: Record<string, string> = { sales: GROWTH_ARCHITECT };
 
+/**
+ * Whether an agent is live. The catalog in code decides, so a deploy that makes an agent live takes effect at
+ * once, before the stored rows are synced; a row the catalog no longer has keeps its stored status.
+ */
+export function isAgentLive(row: { slug: string; status?: string | null }) {
+  const listed = CATALOG.find((agent) => agent.slug === row.slug);
+  return (listed?.status ?? row.status) === "live";
+}
+
 /** The slug an agent has now, for a slug that may come from an older row or an older client. */
 export function currentAgentSlug(slug: string) {
   return RENAMED_AGENTS[slug] ?? slug;

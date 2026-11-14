@@ -1,18 +1,19 @@
 "use client";
 
-import { canWork } from "@/lib/roles";
+import { canWork, isAdmin } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { AgentOverviewView, overviewFrom } from "@/components/agents/agent-overview";
+import { DealmakerHomeView } from "@/components/agents/dealmaker-home";
 import { PlannedAgent } from "@/components/agents/planned-agent";
 import { useWorkspaceShell, type ShellAgent, type WorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { agentStateLabel } from "@/lib/shell/rail";
 import { api } from "../../../../../../convex/_generated/api";
-import { GROWTH_ARCHITECT } from "../../../../../../convex/catalog";
+import { GROWTH_ARCHITECT, SALES_CONVERSION } from "../../../../../../convex/catalog";
 import { hasWorkTabs } from "../../../../../../convex/lib/agentSurfaces";
 
 /** The agent's home, reached from its name in the sidebar: status, what waits on you, recent results and skills. */
@@ -22,7 +23,21 @@ export default function AgentOverview() {
   const agent = shell?.agents.find((row) => row.slug === params.slug);
   if (!shell || !agent) return null;
   if (agent.status !== "live") return <PlannedAgent workspaceId={shell.workspaceId} slug={agent.slug} name={agent.name} job={agent.job} />;
+  if (agent.slug === SALES_CONVERSION) return <DealmakerHome shell={shell} agent={agent} />;
   return <LiveOverview shell={shell} agent={agent} />;
+}
+
+/** Dealmaker's home: its switch and its six tabs. Its work lives in those tabs, not in the Strategist's overview. */
+function DealmakerHome({ shell, agent }: { shell: WorkspaceShell; agent: ShellAgent }) {
+  const setState = useMutation(api.workspace.setAgentState);
+  return (
+    <DealmakerHomeView
+      base={`/app/agents/${agent.slug}`}
+      on={agent.state === "on"}
+      canTurnOn={isAdmin(shell.role)}
+      onTurnOn={() => setState({ workspaceId: shell.workspaceId, slug: agent.slug, state: "on" })}
+    />
+  );
 }
 
 function LiveOverview({ shell, agent }: { shell: WorkspaceShell; agent: ShellAgent }) {

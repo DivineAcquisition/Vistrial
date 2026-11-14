@@ -438,7 +438,15 @@ tests, lint, both typechecks and the build, never deploying Convex:
     cancels an event. The privacy policy says so in section J (brief links, and the Limited Use sentence), and
     section K and the service providers now name Deepgram for the voice memo (11a), which is the team member's
     own voice and never the call. The policy date stays November 14, 2026, which is today.
-    Next: 10d the automatic brief 3 hours before each booked call, with its monthly cap.
+    *10d, built (automatic briefs):* `convex/autoBriefs.ts`, the switch on the Calendar tab. Off by default;
+    an Owner or Admin turns it on only after confirming the cap shown beside it (at most 200 briefs and 600
+    credits a calendar month, UTC). A cron every 15 minutes makes a brief for each booked CRM call starting
+    within 3 hours that has none, as the person who turned it on (`dealBriefings.createBrief`, shared with a
+    person's request; trigger `auto`, an unattended run on the platform's route), counting each new brief at
+    the most it may use against the monthly credits. It stops if that person is no longer an active Owner or
+    Admin, if Dealmaker is off, or at the cap. The brief's email goes as before (to the linked closer, else to
+    the person who turned it on). Once a day the Briefing lists the briefs made automatically the day before,
+    in one post.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
     recordings; the Zoom and Meet note taker.
     *11a, built:* the closer's notes after a call (`convex/callNotes.ts`, `src/components/work/call-notes.tsx`).

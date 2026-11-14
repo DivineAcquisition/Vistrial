@@ -2737,6 +2737,8 @@ export default defineSchema({
     calendarBriefLinks: v.optional(v.boolean()),
     /** The Owner turned on the Objection Playbook's weekly talk tracks, with the cap shown (0.8). */
     objectionWeekly: v.optional(v.boolean()),
+    /** Automatic pre-call briefs (10d): off unless an Owner or Admin turned them on, and who did. */
+    autoBriefs: v.optional(v.object({ on: v.boolean(), by: v.string(), at: v.number() })),
     updatedBy: v.string(),
     updatedAt: v.number(),
   }).index("by_workspace_client", ["workspaceId", "clientId"]),

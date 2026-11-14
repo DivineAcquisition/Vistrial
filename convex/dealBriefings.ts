@@ -21,6 +21,7 @@ import { notFound, userError } from "./lib/errors";
 import { dealScope, type TeamRow } from "./lib/dealmaker/roles";
 import { capsFor, previewChoice, skillNeeds } from "./lib/modelChoice";
 import { requireWork } from "./lib/roles";
+import { parsePublicUrl } from "./lib/sourceRefs";
 import { settingsOf } from "./playbookInterview";
 import { startRunFor } from "./runs";
 import { when } from "./skills/dealBriefing/compute";
@@ -37,6 +38,7 @@ export const BRIEF_TEXT = {
   noCrmNeedsWho: "No CRM is connected here. Say who the lead is and what you know about them.",
   tooLong: `Keep each note under ${BRIEF_LIMITS.noteChars} characters.`,
   running: "A brief for this call is already being written.",
+  badSite: "That website is not a public link. Paste the address, starting with https://.",
 } as const;
 
 async function budgetCaps(ctx: QueryCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } }) {
@@ -79,6 +81,8 @@ export const request = workspaceMutation({
     about: v.optional(v.string()),
     /** The setter's hand-off: what they found, in their words. */
     handoff: v.optional(v.string()),
+    /** The lead's business website, read in public for the brief. Without one, a work email's domain is used. */
+    website: v.optional(v.string()),
     confirmedCredits: v.number(),
   },
   handler: async (ctx, args) => {
@@ -88,6 +92,8 @@ export const request = workspaceMutation({
     const caps = await budgetCaps(ctx);
     if (args.confirmedCredits !== priceFor(caps.maxCostCentsPerRun)) throw userError(BRIEF_TEXT.budgetMoved);
     const handoff = note(args.handoff);
+    const website = args.website?.trim() ? parsePublicUrl(args.website.trim()) : null;
+    if (args.website?.trim() && !website) throw userError(BRIEF_TEXT.badSite);
     const about = note(args.about);
     const now = Date.now();
 
@@ -146,6 +152,7 @@ export const request = workspaceMutation({
       leadName,
       ...(about && !crm ? { about } : {}),
       ...(handoff ? { handoff } : {}),
+      ...(website ? { website: website.toString() } : {}),
       ...(handoff || (about && !crm) ? { writtenBy: ctx.member.displayName } : {}),
       trigger: "request",
       status: "running",

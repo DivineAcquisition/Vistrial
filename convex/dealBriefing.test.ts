@@ -16,7 +16,7 @@ import type { ScriptedModel } from "./lib/toolRouter";
 import { moneyIn, runChecks } from "./skills/dealBriefing/checks";
 import { computeBrief, type BriefInput } from "./skills/dealBriefing/compute";
 import { readinessOf } from "./skills/dealBriefing/render";
-import type { Brief, BriefRecord } from "./skills/dealBriefing/shapes";
+import { siteFor, type Brief, type BriefRecord } from "./skills/dealBriefing/shapes";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -42,7 +42,7 @@ function input(overrides: Partial<BriefInput> = {}): BriefInput {
     projectId: "proj1",
     leadName: "Jordan Lee",
     crm: { label: "HighLevel", accountName: "Aster Coaching", currency: "USD", timezone: null },
-    contact: { ref: "c1", name: "Jordan Lee", email: "jordan@example.com", phone: null, source: "Facebook ads", tags: [], addedAt: NOW - 12 * DAY, lastActivityAt: NOW - 2 * DAY },
+    contact: { ref: "c1", name: "Jordan Lee", email: "jordan@jordanco.com", phone: null, source: "Facebook ads", tags: [], addedAt: NOW - 12 * DAY, lastActivityAt: NOW - 2 * DAY },
     deal: { ref: "d1", pipelineRef: "pipe1", stageRef: "stProposal", status: "open", value: 4500, source: "Facebook ads", contactRef: "c1", ownerRef: null, createdAt: NOW - 12 * DAY, updatedAt: NOW - 2 * DAY, stageChangedAt: NOW - 5 * DAY, statusChangedAt: null },
     stage: { pipeline: "Sales calls", stage: "Proposal sent" },
     call: { ref: "a1", startsAt: NOW + DAY, status: "confirmed", contactRef: "c1", dealRef: null },
@@ -63,6 +63,7 @@ function input(overrides: Partial<BriefInput> = {}): BriefInput {
       { id: "i1", folder: "offer", kind: "package", title: "Growth retainer", body: "$3,000 a month: ads, booking and follow-up.", basis: "firstParty" },
       { id: "i3", folder: "closing", kind: "voice", title: "Sign off as Dana", body: "", basis: "firstParty" },
     ],
+    site: { url: "https://jordanco.com", domain: "jordanco.com", from: "email" },
     now: NOW,
     ...overrides,
   };
@@ -124,6 +125,15 @@ describe("what a brief knows (code)", () => {
   });
 });
 
+describe("the lead's own site", () => {
+  it("is the one a person gave, else a work email's domain, never a free mail provider's", () => {
+    expect(siteFor("https://www.Acme.io/services", "x@gmail.com")).toEqual({ url: "https://acme.io/services", domain: "acme.io", from: "given" });
+    expect(siteFor(null, "jordan@jordanco.com")).toEqual({ url: "https://jordanco.com", domain: "jordanco.com", from: "email" });
+    expect(siteFor(null, "jordan@gmail.com")).toBeNull();
+    expect(siteFor("not a link", null)).toBeNull();
+  });
+});
+
 describe("pre-call brief checks (code)", () => {
   const record = computeBrief(input());
 
@@ -177,6 +187,19 @@ function script(options: { guessFirst?: boolean } = {}) {
     const text = String(params.messages[0].content);
     inputs.push(text);
     const revise = text.startsWith("Revise the pre-call brief");
+    if (text.startsWith("Read the public website")) {
+      // The fetch returns two pages; the model cites one of them, one page it never read, and a guess about a person.
+      return {
+        text: JSON.stringify({
+          lines: [
+            { text: "Jordan & Co. runs paid ads for dental clinics.", url: "https://jordanco.com/about" },
+            { text: "It says it serves 40 clinics.", url: "https://elsewhere.com/press" },
+            { text: "The founder is married with kids.", url: "https://jordanco.com/about" },
+          ],
+        }),
+        sources: [{ url: "https://jordanco.com/", title: "Jordan & Co." }, { url: "https://jordanco.com/about", title: "About Jordan & Co." }],
+      };
+    }
     if (!text.startsWith("Brief the closer") && !revise) throw new Error(`unscripted call: ${text.slice(0, 40)}`);
     const record = computeBrief(input());
     const brief = goodBrief(record);
@@ -224,7 +247,7 @@ async function setup(options: { crm?: boolean; history?: boolean } = {}) {
       await ctx.db.insert("crmPipelines", { ...base, externalId: "pipe1", name: "Sales calls", stages: [{ id: "stBooked", name: "Call booked", position: 0 }, { id: "stProposal", name: "Proposal sent", position: 1 }] });
       const deal = fixture.deal!;
       await ctx.db.insert("crmDeals", { ...base, externalId: deal.ref, pipelineId: deal.pipelineRef, stageId: deal.stageRef, status: deal.status, value: deal.value, source: "Facebook ads", contactId: "c1", createdAt: deal.createdAt!, updatedAt: deal.updatedAt!, lastStageChangeAt: deal.stageChangedAt! });
-      await ctx.db.insert("crmContacts", { ...base, externalId: "c1", name: "Jordan Lee", email: "jordan@example.com", source: "Facebook ads", tags: [], addedAt: NOW - 12 * DAY });
+      await ctx.db.insert("crmContacts", { ...base, externalId: "c1", name: "Jordan Lee", email: "jordan@jordanco.com", source: "Facebook ads", tags: [], addedAt: NOW - 12 * DAY });
       await ctx.db.insert("crmContacts", { ...base, externalId: "c2", name: "Riley Park", tags: [], addedAt: NOW - DAY });
       for (const row of fixture.activities) {
         await ctx.db.insert("crmActivities", { workspaceId, connectionId, externalId: row.ref, kind: row.kind as "call", direction: row.direction ?? undefined, at: row.at, contactId: "c1", dealId: row.dealRef ?? undefined, status: row.status ?? undefined, fromStage: row.fromStageRef ?? undefined, toStage: row.toStageRef ?? undefined });
@@ -281,7 +304,9 @@ describe("a pre-call brief, run end to end", () => {
     const s = await setup();
     const out = await runBrief(s, { contactRef: "c1", appointmentRef: "a1", handoff: HANDOFF });
     expect(out.status).toBe("completed");
-    expect(inputs).toHaveLength(1);
+    // The brief first, then the public read of the lead's own site, which never feeds the brief's writing.
+    expect(inputs.map((row) => row.split("\n")[0])).toEqual(["Brief the closer before their call with this lead.", "Read the public website of the lead's business."]);
+    expect(inputs[0]).not.toContain("jordanco.com");
     expect(inputs[0]).toContain("UNTRUSTED CONTENT");
     expect(inputs[0]).toContain("Hand-off from dana (dana's own account)");
     // Only this lead's call shared with Dealmaker is read.
@@ -297,7 +322,13 @@ describe("a pre-call brief, run end to end", () => {
     expect(body).toContain("| Timing | Unresolved | Not enough data |");
     expect(body).toContain("**Growth retainer.**");
     // The CRM, the call and the hand-off are each a Your data source; facts cite the CRM.
-    expect(out.sources.map((row) => row.title).sort()).toEqual(["Hand-off from dana", "Your CRM: Aster Coaching (HighLevel)", "Your call: Discovery call (2026-11-08)"]);
+    expect(out.sources.map((row) => row.title).sort()).toEqual(["About Jordan & Co.", "Hand-off from dana", "Your CRM: Aster Coaching (HighLevel)", "Your call: Discovery call (2026-11-08)"]);
+    // Only the line citing a page the fetch returned, on the lead's own site, and about the business, is kept.
+    expect(out.briefing?.view?.publicRead).toEqual({ domain: "jordanco.com", from: "email", lines: [{ text: "Jordan & Co. runs paid ads for dental clinics.", url: "https://jordanco.com/about" }] });
+    const page = out.sources.find((row) => row.title === "About Jordan & Co.")!;
+    expect(page).toMatchObject({ platform: "web", origin: "found", kind: "page" });
+    expect(out.evidence.find((row) => row.claimKey === "public-1")).toMatchObject({ basis: "observed", sourceRefIds: [page._id] });
+    expect(body).toContain("## Their business, in public");
     const crm = out.sources.find((row) => row.title.startsWith("Your CRM"))!;
     expect(out.evidence.find((row) => row.claimKey === "fact-F1")).toMatchObject({ basis: "firstParty", sourceRefIds: [crm._id] });
     expect(out.evidence.find((row) => row.claimKey === "ready-timing")).toMatchObject({ basis: "insufficient" });
@@ -338,18 +369,50 @@ describe("a pre-call brief, run end to end", () => {
     expect(await viewer.query(api.dealBriefings.calls, { workspaceId: s.workspaceId })).toMatchObject({ canRequest: false });
   });
 
+  it("emails the closer linked to the deal's owner, and nobody when the closer asked for it themselves", async () => {
+    script();
+    const s = await setup();
+    const invite = await s.owner.mutation(api.workspace.invite, { workspaceId: s.workspaceId, email: "milo@example.com", role: "member" });
+    const milo = s.t.withIdentity(person("milo"));
+    await milo.mutation(api.workspace.acceptInvite, { token: invite.token });
+    await s.t.run(async (ctx) => {
+      const member = (await ctx.db.query("members").collect()).find((row) => row.userId === "milo")!;
+      await ctx.db.patch(member._id, { email: "milo@example.com" });
+      const deal = (await ctx.db.query("crmDeals").collect())[0];
+      await ctx.db.patch(deal._id, { assignedTo: "crm-milo" });
+      await ctx.db.insert("dealmakerSettings", { workspaceId: s.workspaceId, team: [{ memberId: member._id, salesRole: "closer", crmUserRef: "crm-milo" }], updatedBy: "dana", updatedAt: NOW });
+    });
+    const emails = () => s.t.run(async (ctx) => (await ctx.db.query("auditLog").collect()).filter((row) => row.action === "email.pre_call_brief"));
+    await runBrief(s, { contactRef: "c1", appointmentRef: "a1" });
+    await s.t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    // No Resend key in tests: the attempt is recorded, for Milo, with nothing sent, and never the address.
+    expect((await emails()).map((row) => [row.subject?.toString().split(":")[1], row.count])).toEqual([["milo", 0]]);
+    expect(JSON.stringify(await emails())).not.toContain("milo@example.com");
+    // Milo asks for a brief on the same lead himself: he is watching the Calls tab, so no email.
+    const { maxCredits } = await milo.query(api.dealBriefings.quote, { workspaceId: s.workspaceId });
+    await milo.mutation(api.dealBriefings.request, { workspaceId: s.workspaceId, contactRef: "c1", confirmedCredits: maxCredits });
+    for (let i = 0; i < 30; i += 1) {
+      vi.advanceTimersByTime(1);
+      await s.t.finishInProgressScheduledFunctions();
+    }
+    await s.t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    expect(await s.t.run(async (ctx) => (await ctx.db.query("dealBriefings").collect()).map((row) => row.status))).toEqual(["ready", "ready"]);
+    expect(await emails()).toHaveLength(1);
+  });
+
   it("revises once when the first draft guesses about the lead, and keeps both versions", async () => {
     const inputs = script({ guessFirst: true });
     const out = await runBrief(await setup(), { contactRef: "c1", appointmentRef: "a1", handoff: HANDOFF });
-    expect(inputs.map((row) => row.split("\n")[0])).toEqual(["Brief the closer before their call with this lead.", "Revise the pre-call brief so it passes these failed checks, and change nothing else that passed."]);
+    expect(inputs.map((row) => row.split("\n")[0])).toEqual(["Brief the closer before their call with this lead.", "Revise the pre-call brief so it passes these failed checks, and change nothing else that passed.", "Read the public website of the lead's business."]);
     expect(inputs[1]).toContain("Nothing guessed about the lead as a person");
     expect(out.asset).toMatchObject({ status: "draft", currentVersion: 2 });
   });
 
-  it("writes who and so far in code, with no model call, when nothing else is known", async () => {
+  it("writes who and so far in code, with no model writing, when nothing else is known", async () => {
     const inputs = script();
     const out = await runBrief(await setup({ history: false }), { contactRef: "c1" });
-    expect(inputs).toEqual([]);
+    // Only the public read of the lead's site runs; nothing writes the brief.
+    expect(inputs.map((row) => row.split("\n")[0])).toEqual(["Read the public website of the lead's business."]);
     expect(out.status).toBe("completed");
     expect(out.asset).toMatchObject({ status: "draft" });
     expect(out.versions[0].body).toContain("## First call");

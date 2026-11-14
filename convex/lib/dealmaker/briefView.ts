@@ -34,6 +34,8 @@ export const briefView = v.object({
   offerFit: v.optional(v.object({ title: v.string(), why: v.string() })),
   objections: v.array(v.object({ text: v.string(), where: v.string(), label: evidenceWord })),
   openingQuestion: v.string(),
+  /** What the lead's own site says about the business, each line Observed on a page that was fetched. */
+  publicRead: v.optional(v.object({ domain: v.string(), from: v.union(v.literal("given"), v.literal("email")), lines: v.array(v.object({ text: v.string(), url: v.string() })) })),
   missing: v.array(v.string()),
 });
 

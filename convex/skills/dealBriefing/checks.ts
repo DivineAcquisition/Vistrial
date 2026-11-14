@@ -18,7 +18,7 @@ export const CHECK_NAMES = [
 ] as const;
 
 /** Guesses about a person that no kept field holds (age, family, income, health, beliefs). */
-const PERSONAL = /\b(\d+\s*years? old|in (his|her|their) (20s|30s|40s|50s|60s)|married|divorced|single (mom|mum|dad|parent)|wife|husband|kids|children|pregnan\w*|income|salary|net worth|religio\w*|church|disabilit\w*|illness|diagnos\w*)\b/i;
+export const PERSONAL = /\b(\d+\s*years? old|in (his|her|their) (20s|30s|40s|50s|60s)|married|divorced|single (mom|mum|dad|parent)|wife|husband|kids|children|pregnan\w*|income|salary|net worth|religio\w*|church|disabilit\w*|illness|diagnos\w*)\b/i;
 
 /** Manufactured urgency or scarcity: the doctrine forbids it (IV). */
 const PRESSURE = /\b(act (now|fast)|limited[- ]time|only \d+ (spots?|places?|seats?) left|before it'?s gone|last chance|price (goes|will go) up|expires? (today|tonight|soon)|fomo|create (some )?urgency|push (them|him|her) to (sign|decide|close))\b/i;

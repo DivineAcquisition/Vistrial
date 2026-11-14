@@ -75,6 +75,10 @@ export type Card = {
 };
 
 const days = (ms: number) => Math.floor(ms / DAY);
+const ago = (ms: number) => {
+  const n = days(ms);
+  return n === 0 ? "today" : `${n} ${n === 1 ? "day" : "days"} ago`;
+};
 
 /** Health from the last touch against the quiet-days setting: active up to half of it, cooling to it, quiet after. */
 export function healthOf(deal: Pick<CrmDeal, "status">, lastTouch: number | null, now: number, quietDays: number): { health: Health; why: string } {
@@ -90,10 +94,10 @@ export function healthOf(deal: Pick<CrmDeal, "status">, lastTouch: number | null
 /** Temperature from engagement only: a reply or a show in the last week is hot, a reply in two weeks warm. */
 export function temperatureOf(inbound: number | null, showed: number | null, now: number): { temperature: Temperature; why: string } {
   const recent = (at: number | null, within: number) => at !== null && now - at <= within * DAY;
-  if (recent(inbound, 7)) return { temperature: "hot", why: `Replied ${days(now - inbound!)} days ago.` };
+  if (recent(inbound, 7)) return { temperature: "hot", why: `Replied ${ago(now - inbound!)}.` };
   if (recent(showed, 7)) return { temperature: "hot", why: "Showed up to a call this week." };
-  if (recent(inbound, 14)) return { temperature: "warm", why: `Replied ${days(now - inbound!)} days ago.` };
-  return { temperature: "cold", why: inbound === null ? "No reply recorded." : `Last replied ${days(now - inbound)} days ago.` };
+  if (recent(inbound, 14)) return { temperature: "warm", why: `Replied ${ago(now - inbound!)}.` };
+  return { temperature: "cold", why: inbound === null ? "No reply recorded." : `Last replied ${ago(now - inbound)}.` };
 }
 
 const TOUCH_KINDS = new Set(["call", "sms", "email", "chat", "social", "meeting", "stage_change", "status_change"]);

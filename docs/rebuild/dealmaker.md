@@ -372,6 +372,10 @@ tests, lint, both typechecks and the build, never deploying Convex:
    quality and a forecast range only from at least 5 of the business's own closed deals, else "Not enough
    data"; per rep for Owners and Admins only. The board is filtered to each person's home. New tables
    `dealFacts` and `dealCommitments` (people write now; call reviews add theirs later).
+   *9b, built (tab):* `src/components/work/pipeline-tab.tsx` behind the work gate; `/dev/pipeline-tab` shows it
+   with sample data. Health counts, deals by stage as colour-coded cards (every colour with an icon and its
+   word), today's moves, forecast, source quality, by person (Owners and Admins), and the team and autonomy
+   panel. Dragging a card to propose a stage move comes with Comms (step 13), through the approvals path.
 10. **Calls tab, before**: Deal Briefing with research, readiness, the setter's hand-off, offer fit and opening line; email and the
     calendar-event link.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel

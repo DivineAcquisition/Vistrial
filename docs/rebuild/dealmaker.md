@@ -397,7 +397,20 @@ tests, lint, both typechecks and the build, never deploying Convex:
     writes who and so far and says "First call". The `preCallBrief` asset (a new kind) cites the CRM, each call
     and the hand-off as Your data sources; a brief is internal (answer 12.3), so it joins no approvals queue
     (`INTERNAL_WORK` in `lib/briefing.ts`, which also holds call reviews).
-    Next: 10b the Calls tab's "before" screen with its story page; 10c the public read of the lead's business,
+    *10b, built:* the Calls tab before the call (`src/components/work/calls-tab.tsx`, route `work/calls`, behind
+    the work gate until go-live; `/dev/calls-tab?state=calls|brief|first|nocrm|viewer`). `dealBriefings.calls`
+    lists the next seven days of booked calls from the CRM, filtered to the deals the person's home shows (Owner,
+    Admin or sales lead: every call; a setter or closer: calls with their own deals, through `dealScope`), each
+    with its brief's state (no brief, being written, ready, ready but needs a check, could not be written; a
+    run that ended without saving reads as the last), plus recent briefs. Without a CRM it offers "Brief a lead
+    by name". "Make a brief" takes an optional hand-off and shows the budget ("Up to N credits") before
+    anything runs. `dealBriefings.brief` returns the brief's saved view (`lib/dealmaker/briefView.ts`, an
+    optional `view` on `dealBriefings`, written by `dbr.save`), so the screen draws every line with the label
+    code gave it: facts as Your data, readiness as Established with its kind and quote or Unresolved (Not
+    enough data), points to cover as Inference (or Untested hypothesis when they rest on the Playbook alone),
+    the lead's own objections as Your data and Playbook ones as Untested hypothesis. Viewers read; they cannot
+    ask for a brief.
+    Next: 10c the public read of the lead's business,
     the email to the closer and the calendar-event link (off by default, 0.10 item 5); 10d the automatic brief 3
     hours before each booked call, with its monthly cap.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel

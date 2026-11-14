@@ -307,6 +307,37 @@ describe("a pre-call brief, run end to end", () => {
     expect(await s.t.run((ctx) => ctx.db.query("approvals").collect())).toEqual([]);
   });
 
+  it("lists the week's booked calls with each brief, and draws a brief from its saved view", async () => {
+    script();
+    const s = await setup();
+    const before = await s.owner.query(api.dealBriefings.calls, { workspaceId: s.workspaceId });
+    expect(before).toMatchObject({ connected: true, canRequest: true });
+    expect(before.upcoming.map((row) => [row.ref, row.leadName, row.stage, row.brief])).toEqual([
+      ["a1", "Jordan Lee", "Proposal sent", null],
+      ["a9", "Riley Park", null, null],
+    ]);
+    const out = await runBrief(s, { contactRef: "c1", appointmentRef: "a1", handoff: HANDOFF });
+    const after = await s.owner.query(api.dealBriefings.calls, { workspaceId: s.workspaceId });
+    expect(after.upcoming[0].brief).toMatchObject({ state: "ready", leadName: "Jordan Lee" });
+    expect(after.recent).toHaveLength(1);
+    const shown = await s.owner.query(api.dealBriefings.brief, { workspaceId: s.workspaceId, briefingId: out.briefing!._id });
+    expect(shown.view?.readiness.map((row) => [row.label, row.established, row.kind ?? null])).toEqual([
+      ["Need", true, "Buyer's words"],
+      ["Budget", true, "Buyer's words"],
+      ["Who decides", true, "Rep's account"],
+      ["Timing", false, null],
+      ["Fit with the offer", false, null],
+    ]);
+    expect(shown.view?.objections[0]).toMatchObject({ label: "Your data" });
+    expect(shown.view?.cover.map((row) => row.label)).toEqual(["Inference", "Untested hypothesis"]);
+    expect(shown.view?.offerFit?.title).toBe("Growth retainer");
+    // A Viewer reads the calls and briefs but may not ask for one.
+    const invite = await s.owner.mutation(api.workspace.invite, { workspaceId: s.workspaceId, email: "vera@example.com", role: "viewer" });
+    const viewer = s.t.withIdentity(person("vera"));
+    await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
+    expect(await viewer.query(api.dealBriefings.calls, { workspaceId: s.workspaceId })).toMatchObject({ canRequest: false });
+  });
+
   it("revises once when the first draft guesses about the lead, and keeps both versions", async () => {
     const inputs = script({ guessFirst: true });
     const out = await runBrief(await setup(), { contactRef: "c1", appointmentRef: "a1", handoff: HANDOFF });

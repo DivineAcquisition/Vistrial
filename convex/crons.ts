@@ -73,4 +73,7 @@ crons.interval("monthly industry trends", { hours: 6 }, internal.planner.monthly
 /** First packages that waited for the day's free budget: started as the budget allows. Hourly. */
 crons.interval("start waiting first packages", { hours: 1 }, internal.firstPackage.startWaiting, {});
 
+/** Dealmaker's automatic pre-call briefs, where an Owner or Admin turned them on: about 3 hours before each call. */
+crons.interval("Dealmaker automatic briefs", { minutes: 15 }, internal.autoBriefs.sweep, {});
+
 export default crons;

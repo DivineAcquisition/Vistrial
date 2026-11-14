@@ -2659,6 +2659,8 @@ export default defineSchema({
     team: v.optional(v.array(v.object({ memberId: v.id("members"), salesRole: v.union(v.literal("setter"), v.literal("closer"), v.literal("lead")), crmUserRef: v.optional(v.string()) }))),
     /** The message kinds the Owner made automatic. Only the low-stakes kinds are ever accepted. */
     autonomous: v.optional(v.array(v.string())),
+    /** Automatic pre-call briefs (10d): off unless an Owner or Admin turned them on, and who did. */
+    autoBriefs: v.optional(v.object({ on: v.boolean(), by: v.string(), at: v.number() })),
     updatedBy: v.string(),
     updatedAt: v.number(),
   }).index("by_workspace_client", ["workspaceId", "clientId"]),

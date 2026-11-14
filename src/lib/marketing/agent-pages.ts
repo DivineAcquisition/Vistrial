@@ -218,7 +218,7 @@ export const STRATEGIST_PAGE: AgentPage = {
         numeral: "V",
         title: "Judgment stays human",
         body: "Agents do the study and the drafting. A person decides what is used and what goes out.",
-        inProduct: "Every report and ad set waits as a draft until an Owner or Manager approves it. Strategist never publishes, posts or contacts anyone.",
+        inProduct: "Every report and ad set waits as a draft until an Owner or Admin approves it. Strategist never publishes, posts or contacts anyone.",
       },
       {
         id: "learn",

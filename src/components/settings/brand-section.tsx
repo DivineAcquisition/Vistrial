@@ -33,6 +33,8 @@ export type CaptureData = {
 
 export type CaptureQuote = { free: boolean; maxCredits: number; canAfford: boolean; canStart: boolean };
 export type CaptureEdits = { headingFont?: string; bodyFont?: string; tone?: string; audience?: string; location?: string };
+/** What a person chose to keep from a capture. */
+export type CaptureChoices = { take: Set<FieldKey>; logoOwned: boolean; edits: CaptureEdits };
 export type CaptureActions = {
   start: (url: string) => Promise<unknown>;
   apply: (take: FieldKey[], logoOwned: boolean, edits: CaptureEdits) => Promise<unknown>;
@@ -133,8 +135,8 @@ function PagesFound({ pages }: { pages: CaptureData["pages"] }) {
   );
 }
 
-/** The fields worth using by default: everything the site supports. */
-function defaultTake(result: CaptureResult | null): Set<FieldKey> {
+/** The fields worth using by default: everything the site supports, except the logo, which a person must claim. */
+export function defaultTake(result: CaptureResult | null): Set<FieldKey> {
   const take = new Set<FieldKey>();
   if (!result) return take;
   for (const key of [...BRAND_KEYS, ...BUSINESS_KEYS, "offers", "proof", "guarantees", "social"] as FieldKey[]) {
@@ -148,16 +150,44 @@ function defaultTake(result: CaptureResult | null): Set<FieldKey> {
  * it found with where it came from, ticked to use. Nothing is used until "Use the ticked items". Plain data in,
  * so the story can show every state.
  */
-export function SiteCaptureView({ target, capture, quote, actions, editor }: { target: string; capture: CaptureData | null; quote: CaptureQuote | null; actions: CaptureActions; editor: boolean }) {
+export function SiteCaptureView({
+  target,
+  capture,
+  quote,
+  actions,
+  editor,
+  mode = "settings",
+  choices,
+  onChoices,
+}: {
+  target: string;
+  capture: CaptureData | null;
+  quote: CaptureQuote | null;
+  actions: CaptureActions;
+  editor: boolean;
+  /** "confirm": inside onboarding's Confirm step. No form, no Read again, no Apply: the step saves the choices. */
+  mode?: "settings" | "confirm";
+  choices?: CaptureChoices;
+  onChoices?: (next: CaptureChoices) => void;
+}) {
   const credits = useCredits();
   const [url, setUrl] = useState(capture?.url.replace(/^https:\/\//, "").replace(/\/$/, "") ?? "");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [again, setAgain] = useState(false);
   const result = capture?.result ?? null;
-  const [take, setTake] = useState<Set<FieldKey>>(() => defaultTake(result));
-  const [logoOwned, setLogoOwned] = useState(false);
-  const [edits, setEdits] = useState<CaptureEdits>({});
+  const [ownTake, setOwnTake] = useState<Set<FieldKey>>(() => defaultTake(result));
+  const [ownLogo, setOwnLogo] = useState(false);
+  const [ownEdits, setOwnEdits] = useState<CaptureEdits>({});
+  // Controlled when the Confirm step holds the choices; otherwise this panel keeps its own.
+  const take = choices?.take ?? ownTake;
+  const logoOwned = choices?.logoOwned ?? ownLogo;
+  const edits = choices?.edits ?? ownEdits;
+  const current = { take, logoOwned, edits };
+  const setTake = (next: (prior: Set<FieldKey>) => Set<FieldKey>) => (onChoices ? onChoices({ ...current, take: next(take) }) : setOwnTake(next));
+  const setLogoOwned = (next: boolean) => (onChoices ? onChoices({ ...current, logoOwned: next, take: next ? new Set([...take, "logo"]) : take }) : setOwnLogo(next));
+  const setEdits = (next: (prior: CaptureEdits) => CaptureEdits) => (onChoices ? onChoices({ ...current, edits: next(edits) }) : setOwnEdits(next));
+  const confirming = mode === "confirm";
   const run = async (work: () => Promise<unknown>, fallback: string) => {
     setBusy(true);
     setProblem(null);
@@ -173,7 +203,7 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
   };
 
   const reading = capture && (capture.status === "reading" || capture.status === "understanding");
-  const showForm = !capture || capture.status === "failed" || again;
+  const showForm = !confirming && (!capture || capture.status === "failed" || again);
   const price = quote ? (quote.free ? "Free: the first read of each website is on Vistrial." : `Uses up to ${credits.words(quote.maxCredits)}. Pages that cannot be read are not charged.`) : null;
 
   const form = (
@@ -233,7 +263,7 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
     <Panel as="section" className="grid gap-4 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="grid gap-1">
-          <h3 className={sectionTitle}>Read from the website</h3>
+          <h3 className={sectionTitle}>{confirming ? "From your website" : "Read from the website"}</h3>
           <p className={bodyText}>
             {capture ? (
               <>
@@ -244,7 +274,7 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
             )}
           </p>
         </div>
-        {capture && !reading && !again && editor ? (
+        {capture && !reading && !again && editor && !confirming ? (
           <Button size="sm" variant="ghost" onClick={() => setAgain(true)}>
             <RefreshCw aria-hidden className="size-4" /> Read again
           </Button>
@@ -284,8 +314,8 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
                         checked={logoOwned}
                         disabled={!editor}
                         onCheckedChange={(next) => {
+                          if (!onChoices && next) setOwnTake((prior) => new Set([...prior, "logo"]));
                           setLogoOwned(Boolean(next));
-                          if (next) toggle("logo")(true);
                         }}
                       />
                       This is our logo and we may use it.
@@ -332,8 +362,9 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
             </ul>
           </div>
 
-          <div className="grid gap-1">
-            <h4 className={cardTitle}>Business</h4>
+          {confirming ? null : (
+            <div className="grid gap-1">
+              <h4 className={cardTitle}>Business</h4>
             <ul>
               {BUSINESS_KEYS.map((key) => {
                 const field = result[key] as Field<string>;
@@ -352,6 +383,8 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
               })}
             </ul>
           </div>
+
+          )}
 
           <div className="grid gap-1">
             <h4 className={cardTitle}>Offers and prices</h4>
@@ -411,7 +444,7 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
             </ul>
           </div>
 
-          <PagesFound pages={capture!.pages} />
+          {confirming ? null : <PagesFound pages={capture!.pages} />}
 
           {missing.length ? (
             <div className="grid gap-1.5 rounded-md border border-border/60 bg-muted/30 p-3">
@@ -424,7 +457,7 @@ export function SiteCaptureView({ target, capture, quote, actions, editor }: { t
             </div>
           ) : null}
 
-          {editor ? (
+          {editor && !confirming ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button
                 disabled={busy || take.size === 0 || (take.has("logo") && !logoOwned)}

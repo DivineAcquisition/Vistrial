@@ -445,6 +445,10 @@ export default defineSchema({
     userId: v.string(),
     workspaceId: v.optional(v.id("workspaces")),
     stage: v.union(
+      v.literal("website"),
+      v.literal("connect"),
+      v.literal("confirm"),
+      v.literal("package"),
       v.literal("about"),
       v.literal("business"),
       v.literal("offer"),
@@ -472,6 +476,10 @@ export default defineSchema({
     freeRunId: v.optional(v.id("agentRuns")),
     /** How many free sessions were started. One retry is allowed when the first one stops without a report. */
     freeAttempts: v.optional(v.number()),
+    /** The reading of the business's website from step 1. */
+    captureId: v.optional(v.id("siteCaptures")),
+    /** The pages (capture page ids) the person chose for the first teardown, at most five. */
+    teardownPages: v.optional(v.array(v.string())),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

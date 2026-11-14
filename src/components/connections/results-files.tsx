@@ -217,7 +217,7 @@ export function ResultsUploadCard({
 }
 
 /** Upload form: the file, where it comes from, and its currency. Owners and managers. */
-function UploadForm({ workspaceId, onNotice }: { workspaceId: Id<"workspaces">; onNotice: (words: string) => void }) {
+export function UploadForm({ workspaceId, onNotice }: { workspaceId: Id<"workspaces">; onNotice: (words: string) => void }) {
   const createUpload = useMutation(api.resultUploads.createUpload);
   const { clientId } = useClientScope();
   const start = useMutation(api.resultUploads.start);

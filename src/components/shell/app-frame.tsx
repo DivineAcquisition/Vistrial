@@ -40,7 +40,8 @@ function LiveFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-const WIZARD_STAGES = new Set(["about", "business", "offer", "goal", "review"]);
+/** Before anything runs: Website, Connect, Confirm (and the old wizard's stages, shown as the website step). */
+const WIZARD_STAGES = new Set(["website", "connect", "confirm", "about", "business", "offer", "goal", "review"]);
 /** After the wizard and before paying: the free research session, its report, and the paywall. */
 const LOCKED_STAGES = new Set(["freeSession", "paywall"]);
 

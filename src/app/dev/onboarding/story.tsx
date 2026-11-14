@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 
-import { OnboardingWizard, type WizardData, type WizardStage } from "@/components/onboarding/wizard";
+import { OnboardingSetup, type SetupStage } from "@/components/onboarding/setup";
+import { connectCards } from "@/lib/onboarding/connect";
 
-const STAGES: WizardStage[] = ["about", "business", "offer", "goal", "review"];
+import { STORY_CAPTURES } from "../settings-brand/story";
+import { StoryTheme } from "../story-theme";
+
 const GOALS = [
   { kind: "leads", label: "Get more leads" },
   { kind: "ads", label: "Make my ads work better" },
@@ -14,54 +17,39 @@ const GOALS = [
   { kind: "other", label: "Something else" },
 ] as const;
 
-const READ = {
-  name: "DivineACQ",
-  offer: "Growth systems for cleaning businesses: ads, follow-up and booking that turn calls into recurring clients",
-  area: "United States (remote)",
-  audience: "Owners of residential cleaning companies",
-};
+const STAGES: SetupStage[] = ["website", "connect", "confirm"];
 
-/** The wizard with an in-memory backend: saving moves on, and the website "reads" after two seconds. */
+/** Onboarding with an in-memory backend, for a paid ads agency that serves coaches. */
 export function OnboardingStory({ step, site }: { step: string; site: string }) {
-  const index = Math.max(0, STAGES.indexOf(step as WizardStage));
-  const filledFrom = (at: number) => index > at;
-  const [data, setData] = useState<WizardData>(() => ({
-    wizardStep: index,
-    person: filledFrom(0) ? { fullName: "Jaylen Brooks", role: "Owner", phone: "", heardFrom: "Google search" } : { fullName: "Jaylen Brooks", role: "", phone: "", heardFrom: "" },
-    business: {
-      name: filledFrom(0) ? "DivineACQ" : "",
-      website: filledFrom(0) ? "https://divineacquisition.io/" : "",
-      ...(site === "read" || filledFrom(2) ? { offer: READ.offer, area: READ.area, audience: READ.audience } : { offer: "", area: "", audience: "" }),
-    },
-    goal: filledFrom(3) ? { kind: "leads", text: "More booked recurring cleans from the calls we already get." } : { kind: "", text: "" },
-    site: {
-      status: site === "reading" ? "reading" : site === "read" || filledFrom(2) ? "read" : "idle",
-      url: filledFrom(0) ? "https://divineacquisition.io/" : "",
-      summary: "",
-      competitors: site === "read" || filledFrom(2) ? ["Cleaning Business Growth", "BrandBooster.ai"] : [],
-    },
-    goals: GOALS,
-  }));
-
+  const [stage, setStage] = useState<SetupStage>(STAGES.includes(step as SetupStage) ? (step as SetupStage) : "website");
+  const capture = site === "none" ? null : (STORY_CAPTURES[site] ?? STORY_CAPTURES.done);
+  const cards = connectCards({
+    meta: { configured: true, connected: stage !== "website", label: "Brightline Media Ads" },
+    providers: [
+      { key: "google_calendar", readiness: "ready", connection: null },
+      { key: "calendly", readiness: "ready", connection: { status: "connected", accountLabel: "dana@brightline-media.example.com" } },
+    ],
+    uploads: 0,
+    highLevel: { configured: true, connected: false, label: null },
+  });
+  const noop = async () => undefined;
   return (
-    <OnboardingWizard
-      data={data}
-      actions={{
-        save: async () => undefined,
-        readSite: async (url) => {
-          setData((prev) => ({ ...prev, site: { ...prev.site, status: "reading", url } }));
-          setTimeout(() => {
-            setData((prev) => ({
-              ...prev,
-              business: { ...prev.business, offer: READ.offer, area: READ.area, audience: READ.audience },
-              site: { ...prev.site, status: "read", competitors: ["Cleaning Business Growth", "BrandBooster.ai"] },
-            }));
-          }, 2000);
-        },
-        finish: async () => {
-          window.alert("Workspace created. Next: the free research session.");
-        },
-      }}
-    />
+    <>
+      <StoryTheme theme="light" />
+      <OnboardingSetup
+        key={stage}
+        data={{
+          stage,
+          person: { fullName: "Dana Ruiz", role: "" },
+          business: { name: "", website: capture?.url ?? "", offer: "", area: "", audience: "" },
+          goal: { kind: "", text: "" },
+          goals: GOALS,
+          hasWorkspace: true,
+        }}
+        capture={capture}
+        connect={cards}
+        actions={{ submitWebsite: noop, skipWebsite: async () => setStage("connect"), goTo: async (next) => setStage(next), connect: noop, confirm: noop }}
+      />
+    </>
   );
 }

@@ -172,3 +172,6 @@ export function SettingsBrandStory({ state, theme }: { state: string; theme: str
     </StoryFrame>
   );
 }
+
+/** The same agency capture, for the onboarding story. */
+export { DONE as STORY_CAPTURE_DONE, STATES as STORY_CAPTURES };

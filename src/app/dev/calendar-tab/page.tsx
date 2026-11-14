@@ -4,7 +4,7 @@ import { CalendarTabStory } from "./story";
 
 export const metadata = { title: "Calendar tab story", robots: { index: false, follow: false } };
 
-/** ?view=week|empty and ?theme=light|dark, for screenshots. */
+/** ?view=week|empty|auto and ?theme=light|dark, for screenshots. */
 export default async function CalendarTabStoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (process.env.NODE_ENV === "production") notFound();
   const query = await searchParams;

@@ -82,4 +82,7 @@ crons.interval("Dealmaker weekly objection playbook", { hours: 6 }, internal.obj
 /** Proposals shared and not opened within three days: one follow-up each, drafted in code, waiting in Comms. */
 crons.interval("Dealmaker proposal follow-ups", { hours: 6 }, internal.proposalPage.nudges, {});
 
+/** Dealmaker's automatic pre-call briefs, where an Owner or Admin turned them on: about 3 hours before each call. */
+crons.interval("Dealmaker automatic briefs", { minutes: 15 }, internal.autoBriefs.sweep, {});
+
 export default crons;

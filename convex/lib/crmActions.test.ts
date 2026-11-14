@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { checkInput, isAllowedWrite, mayTriggerAutomation, restrictionOf, reverseOf, summaryOf, writeRequest } from "./crmActions";
+import { checkInput, emailHtml, isAllowedWrite, localHour, mayTriggerAutomation, messagingCheck, reachabilityOf, restrictionOf, reverseOf, summaryOf, writeRequest } from "./crmActions";
 
 const NOW = Date.parse("2026-11-13T12:00:00Z");
 
 describe("CRM action rules", () => {
   it("makes only a deal's outcome the Owner's alone", () => {
     expect(restrictionOf("set_status")).toBe("value");
+    expect(restrictionOf("send_sms")).toBe("message");
+    expect(restrictionOf("send_email")).toBe("message");
     for (const kind of ["move_stage", "add_tag", "remove_tag", "add_note", "create_task"] as const) expect(restrictionOf(kind)).toBeNull();
     expect(mayTriggerAutomation("move_stage")).toBe(true);
     expect(mayTriggerAutomation("add_note")).toBe(false);
@@ -44,7 +46,6 @@ describe("CRM action rules", () => {
     for (const [method, path] of [
       ["DELETE", "/contacts/c1"],
       ["DELETE", "/opportunities/opp1"],
-      ["POST", "/conversations/messages"],
       ["POST", "/calendars/events/appointments"],
       ["POST", "/contacts/"],
       ["PUT", "/contacts/c1"],
@@ -67,5 +68,41 @@ describe("CRM action rules", () => {
   it("describes an action without naming the lead", () => {
     expect(summaryOf({ kind: "move_stage", dealId: "opp1", stageId: "s2" }, { fromStage: "New", toStage: "Booked" })).toBe("HighLevel: move a deal from New to Booked");
     expect(summaryOf({ kind: "set_status", dealId: "opp1", status: "won" }, { fromStatus: "open" })).toBe("HighLevel: mark a deal won (now open)");
+  });
+});
+
+describe("checks before messaging a lead", () => {
+  const NOON_CHICAGO = Date.parse("2026-11-13T18:00:00Z");
+  const reach = { phone: "+1555", email: "a@b.co", timezone: "America/Chicago", dnd: false, channelDnd: false };
+
+  it("reads opt-outs from a fresh HighLevel contact, counting anything but inactive as on", () => {
+    expect(reachabilityOf({ contact: { id: "c1", phone: "+1", dnd: false, dndSettings: { SMS: { status: "inactive" } } } }, "SMS")).toMatchObject({ dnd: false, channelDnd: false });
+    expect(reachabilityOf({ contact: { id: "c1", dndSettings: { SMS: { status: "active" } } } }, "SMS")?.channelDnd).toBe(true);
+    expect(reachabilityOf({ contact: { id: "c1", dndSettings: { SMS: { status: "permanent" } } } }, "SMS")?.channelDnd).toBe(true);
+    expect(reachabilityOf({ contact: { id: "c1", dnd: true } }, "Email")?.dnd).toBe(true);
+    expect(reachabilityOf({}, "SMS")).toBeNull();
+  });
+
+  it("passes only with no opt-out, an address, and 8 am to 8 pm in the lead's time", () => {
+    expect(messagingCheck({ reach, channel: "SMS", locationTimezone: null, now: NOON_CHICAGO })).toEqual({ ok: true, timezone: "America/Chicago", localHour: 12 });
+    expect(messagingCheck({ reach: { ...reach, channelDnd: true }, channel: "SMS", locationTimezone: null, now: NOON_CHICAGO })).toMatchObject({ ok: false, code: "opted_out" });
+    expect(messagingCheck({ reach: { ...reach, phone: null }, channel: "SMS", locationTimezone: null, now: NOON_CHICAGO })).toMatchObject({ ok: false, code: "no_address" });
+    expect(messagingCheck({ reach: null, channel: "SMS", locationTimezone: null, now: NOON_CHICAGO })).toMatchObject({ ok: false, code: "unreadable" });
+    // 8 pm and 7 am in Chicago are quiet; 8 am is not.
+    expect(messagingCheck({ reach, channel: "SMS", locationTimezone: null, now: Date.parse("2026-11-14T02:00:00Z") })).toMatchObject({ ok: false, code: "quiet_hours" });
+    expect(messagingCheck({ reach, channel: "SMS", locationTimezone: null, now: Date.parse("2026-11-13T13:00:00Z") })).toMatchObject({ ok: false, code: "quiet_hours" });
+    expect(messagingCheck({ reach, channel: "SMS", locationTimezone: null, now: Date.parse("2026-11-13T14:00:00Z") })).toMatchObject({ ok: true, localHour: 8 });
+    // The lead's zone wins over the sub-account's; with neither, nothing is sent.
+    expect(messagingCheck({ reach: { ...reach, timezone: null }, channel: "SMS", locationTimezone: "Asia/Tokyo", now: NOON_CHICAGO })).toMatchObject({ ok: false, code: "quiet_hours" });
+    expect(messagingCheck({ reach: { ...reach, timezone: null }, channel: "SMS", locationTimezone: null, now: NOON_CHICAGO })).toMatchObject({ ok: false, code: "no_timezone" });
+    expect(localHour("Not/AZone", NOON_CHICAGO)).toBeNull();
+  });
+
+  it("builds the message requests and escapes email HTML", () => {
+    expect(writeRequest({ kind: "send_sms", contactId: "c1", body: "Hi" })).toEqual({ method: "POST", path: "/conversations/messages", body: { type: "SMS", contactId: "c1", message: "Hi" } });
+    expect(isAllowedWrite("POST", "/conversations/messages")).toBe(true);
+    expect(emailHtml('a <b> & "c"\nd\n\ne')).toBe("<p>a &lt;b&gt; &amp; &quot;c&quot;<br>d</p><p>e</p>");
+    expect(checkInput({ kind: "send_sms", contactId: "c1", body: "x".repeat(641) }, 0).ok).toBe(false);
+    expect(checkInput({ kind: "send_email", contactId: "c1", body: "hi" }, 0).ok).toBe(false);
   });
 });

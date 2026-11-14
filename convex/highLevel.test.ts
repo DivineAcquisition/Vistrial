@@ -17,7 +17,22 @@ const LOCATION = "locAAAA1111";
  * A fake HighLevel. It answers the read endpoints Vistrial uses with fixed data, records every request, and
  * can be told to refuse. No real HighLevel is reached in any test.
  */
-function fakeHighLevel(options: { userType?: string; scope?: string; refresh?: "ok" | "invalid_grant"; rateLimitAt?: string; stage?: string; status?: string } = {}) {
+function fakeHighLevel(
+  options: {
+    userType?: string;
+    scope?: string;
+    refresh?: "ok" | "invalid_grant";
+    rateLimitAt?: string;
+    stage?: string;
+    status?: string;
+    /** The lead's own time zone, from a fresh read. Null means HighLevel has none. */
+    leadTimezone?: string | null;
+    dnd?: boolean;
+    smsDnd?: "active" | "inactive";
+    /** Every write is refused with this status. */
+    failWrites?: number;
+  } = {},
+) {
   const calls: { method: string; path: string; body: string | null; auth: string | null }[] = [];
   let tokenCount = 0;
   const now = Date.now();
@@ -97,7 +112,22 @@ function fakeHighLevel(options: { userType?: string; scope?: string; refresh?: "
     }
     if (p === "/calendars/") return json({ calendars: [{ id: "cal1", name: "Sales calls" }] });
     if (p === "/calendars/events") return json({ events: [{ id: "ev1", startTime: new Date(now + DAY).toISOString(), appointmentStatus: "confirmed", contactId: "cont2", notes: "SECRET NOTE", title: "Call with Omar" }] });
+    // A fresh read of one lead, made just before a message is sent.
+    if (method === "GET" && /^\/contacts\/cont\d$/.test(p)) {
+      return json({
+        contact: {
+          id: p.split("/")[2],
+          phone: "+15550001111",
+          email: "jane@example.com",
+          timezone: options.leadTimezone === undefined ? "America/Chicago" : options.leadTimezone,
+          dnd: options.dnd ?? false,
+          dndSettings: { SMS: { status: options.smsDnd ?? "inactive" }, Email: { status: "inactive" } },
+        },
+      });
+    }
     // Writes: only reached after a person approved an action.
+    if (options.failWrites && method !== "GET" && p !== "/oauth/token" && p !== "/contacts/search") return json({ message: "refused" }, options.failWrites);
+    if (method === "POST" && p === "/conversations/messages") return json({ conversationId: "conv1", messageId: "msg9" });
     if (method === "PUT" && /^\/opportunities\/opp\d$/.test(p)) return json({ opportunity: { id: p.split("/")[2] } });
     if (method === "PUT" && /^\/opportunities\/opp\d\/status$/.test(p)) return json({ succeded: true });
     if ((method === "POST" || method === "DELETE") && /^\/contacts\/cont\d\/tags$/.test(p)) return json({ tags: [] });
@@ -551,5 +581,155 @@ describe("acting in HighLevel, with approval", () => {
     expect((await s.admin.query(api.approvals.waiting, { workspaceId: s.workspaceId })).items.filter((row) => row.summary.startsWith("HighLevel"))).toHaveLength(0);
     expect(await s.t.run((ctx) => ctx.db.query("crmActions").collect())).toHaveLength(0);
     expect(s.writes()).toHaveLength(0);
+  });
+});
+
+/** An IANA zone where it is now `hour` o'clock: Etc/GMT zones cover every offset from -12 to +14 hours. */
+function zoneAt(hour: number) {
+  const utc = new Date().getUTCHours();
+  let offset = (((hour - utc) % 24) + 24) % 24;
+  if (offset > 14) offset -= 24;
+  return offset === 0 ? "Etc/GMT" : offset > 0 ? `Etc/GMT-${offset}` : `Etc/GMT+${-offset}`;
+}
+
+describe("messaging leads, behind its own switch", () => {
+  async function ready(options: Parameters<typeof fakeHighLevel>[0] = {}) {
+    const s = await setup();
+    const hl = fakeHighLevel({ leadTimezone: zoneAt(12), ...options });
+    vi.stubGlobal("fetch", hl.fake);
+    await connectThroughCallback(s);
+    await settle(s.t);
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    const sends = () => hl.calls.filter((call) => call.path === "/conversations/messages");
+    return { ...s, hl, sends };
+  }
+  const text = { kind: "send_sms" as const, contactId: "cont1", body: "Hi Jane, your estimate is ready. Reply STOP to opt out.", why: "She asked for it by text." };
+
+  async function sendApproved(s: Awaited<ReturnType<typeof ready>>, input: Parameters<typeof s.member.mutation<typeof api.crmActions.propose>>[1] = { workspaceId: s.workspaceId, ...text }) {
+    const actionId = await s.member.mutation(api.crmActions.propose, input);
+    await s.owner.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true, confirmWord: "SEND" });
+    await settle(s.t);
+    return { actionId, action: await s.t.run((ctx) => ctx.db.get(actionId)) };
+  }
+
+  it("is off by default; only an Owner turns it on, after acting, confirming consent", async () => {
+    const s = await ready();
+    await expect(s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...text })).rejects.toThrow(/Messaging leads is off/);
+    await expect(s.admin.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: true, consentConfirmed: true })).rejects.toThrow();
+    await expect(s.owner.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: true })).rejects.toThrow(/consent/);
+    await s.owner.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: true, consentConfirmed: true });
+    const list = await s.owner.query(api.crmActions.list, { workspaceId: s.workspaceId });
+    expect(list.messaging.enabled).toBe(true);
+    expect(list.messaging.consentAt).toBeTypeOf("number");
+    expect(s.sends()).toHaveLength(0);
+  });
+
+  it("sends a text only on the Owner's typed SEND, after checking opt-out and local time, and records the checks", async () => {
+    const s = await ready();
+    await s.owner.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: true, consentConfirmed: true });
+    const actionId = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...text });
+    await expect(s.admin.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true, confirmWord: "SEND" })).rejects.toThrow(/Only an Owner/);
+    await expect(s.owner.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true, confirmWord: "VALUE" })).rejects.toThrow(/Type SEND/);
+    await s.owner.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true, confirmWord: "SEND" });
+    await settle(s.t);
+    expect(s.sends()).toEqual([expect.objectContaining({ method: "POST", body: JSON.stringify({ type: "SMS", contactId: "cont1", message: text.body }) })]);
+    // The fresh read came before the send.
+    const order = s.hl.calls.map((call) => `${call.method} ${call.path}`);
+    expect(order.indexOf("GET /contacts/cont1")).toBeLessThan(order.indexOf("POST /conversations/messages"));
+    const action = await s.t.run((ctx) => ctx.db.get(actionId));
+    expect(action).toMatchObject({ state: "done", checks: { dnd: false, localHour: 12, result: "passed" } });
+    expect(action?.checks?.consent).toMatch(/^Owner confirmed consent on \d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("refuses a lead on Do Not Disturb, and says so in the Briefing", async () => {
+    const s = await ready({ smsDnd: "active" });
+    await s.owner.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: true, consentConfirmed: true });
+    const { action } = await sendApproved(s);
+    expect(s.sends()).toHaveLength(0);
+    expect(action).toMatchObject({ state: "failed", resultCode: "opted_out", checks: { dnd: true, result: "opted_out" } });
+    const alerts = await s.t.run((ctx) => ctx.db.query("briefingItems").filter((q) => q.eq(q.field("kind"), "alert")).collect());
+    expect(alerts.find((row) => row.refId === action?._id)?.body).toMatch(/Do Not Disturb.*not retried/);
+  });
+
+  it("refuses during quiet hours in the lead's own time, and when their time is unknown", async () => {
+    const night = await ready({ leadTimezone: zoneAt(23) });
+    await night.owner.mutation(api.crmActions.setMessaging, { workspaceId: night.workspaceId, on: true, consentConfirmed: true });
+    expect((await sendApproved(night)).action).toMatchObject({ state: "failed", resultCode: "quiet_hours" });
+    expect(night.sends()).toHaveLength(0);
+
+    const early = await ready({ leadTimezone: zoneAt(7) });
+    await early.owner.mutation(api.crmActions.setMessaging, { workspaceId: early.workspaceId, on: true, consentConfirmed: true });
+    expect((await sendApproved(early)).action).toMatchObject({ state: "failed", resultCode: "quiet_hours" });
+
+    const unknown = await ready({ leadTimezone: null });
+    await unknown.owner.mutation(api.crmActions.setMessaging, { workspaceId: unknown.workspaceId, on: true, consentConfirmed: true });
+    await unknown.t.run(async (ctx) => {
+      const row = (await ctx.db.query("crmConnections").first())!;
+      await ctx.db.patch(row._id, { timezone: undefined });
+    });
+    expect((await sendApproved(unknown)).action).toMatchObject({ state: "failed", resultCode: "no_timezone" });
+    expect(unknown.sends()).toHaveLength(0);
+  });
+
+  it("sends at most one message to a lead a day", async () => {
+    const s = await ready();
+    await s.owner.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: true, consentConfirmed: true });
+    await sendApproved(s);
+    const second = await sendApproved(s, { workspaceId: s.workspaceId, ...text, body: "Just checking in." });
+    expect(second.action).toMatchObject({ state: "failed", resultCode: "too_soon" });
+    expect(s.sends()).toHaveLength(1);
+  });
+
+  it("emails with a subject and escaped HTML", async () => {
+    const s = await ready();
+    await s.owner.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: true, consentConfirmed: true });
+    await sendApproved(s, { workspaceId: s.workspaceId, kind: "send_email", contactId: "cont1", title: "Your estimate", body: "Hi <Jane>,\n\nAttached.", why: "Asked by email." });
+    expect(JSON.parse(s.sends()[0].body!)).toEqual({ type: "Email", contactId: "cont1", subject: "Your estimate", message: "Hi <Jane>,\n\nAttached.", html: "<p>Hi &lt;Jane&gt;,</p><p>Attached.</p>" });
+  });
+
+  it("turning messaging off closes open messages but leaves other actions", async () => {
+    const s = await ready();
+    await s.owner.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: true, consentConfirmed: true });
+    const message = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, ...text });
+    const tag = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_tag", contactId: "cont1", tag: "warm", why: "Replied." });
+    await s.owner.mutation(api.crmActions.setMessaging, { workspaceId: s.workspaceId, on: false });
+    const states = await s.t.run(async (ctx) => [(await ctx.db.get(message))?.state, (await ctx.db.get(tag))?.state]);
+    expect(states).toEqual(["cancelled", "proposed"]);
+  });
+});
+
+describe("the organization's off switch and failures", () => {
+  it("lets only an Owner stop every CRM action at once", async () => {
+    const s = await setup();
+    const hl = fakeHighLevel();
+    vi.stubGlobal("fetch", hl.fake);
+    await connectThroughCallback(s);
+    await settle(s.t);
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    const waiting = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_tag", contactId: "cont1", tag: "warm", why: "Replied." });
+    await expect(s.admin.mutation(api.crmActions.setOrganizationActing, { workspaceId: s.workspaceId, on: false })).rejects.toThrow();
+    await s.owner.mutation(api.crmActions.setOrganizationActing, { workspaceId: s.workspaceId, on: false });
+    expect(await s.t.run(async (ctx) => (await ctx.db.get(waiting))?.state)).toBe("cancelled");
+    await expect(s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_tag", contactId: "cont1", tag: "hot", why: "x" })).rejects.toThrow(/stopped every CRM action/);
+    expect((await s.member.query(api.crmActions.list, { workspaceId: s.workspaceId })).organizationOff).toBe(true);
+    await s.owner.mutation(api.crmActions.setOrganizationActing, { workspaceId: s.workspaceId, on: true });
+    await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_tag", contactId: "cont1", tag: "hot", why: "x" });
+  });
+
+  it("reports a refused write in the Briefing once and does not retry it", async () => {
+    const s = await setup();
+    const hl = fakeHighLevel({ failWrites: 422 });
+    vi.stubGlobal("fetch", hl.fake);
+    await connectThroughCallback(s);
+    await settle(s.t);
+    await s.owner.mutation(api.crmActions.setActing, { workspaceId: s.workspaceId, on: true });
+    const actionId = await s.member.mutation(api.crmActions.propose, { workspaceId: s.workspaceId, kind: "add_tag", contactId: "cont1", tag: "warm", why: "Replied." });
+    await s.admin.mutation(api.crmActions.decide, { workspaceId: s.workspaceId, actionId, approve: true });
+    await settle(s.t);
+    expect(hl.calls.filter((call) => call.path === "/contacts/cont1/tags")).toHaveLength(1);
+    expect(await s.t.run(async (ctx) => (await ctx.db.get(actionId))?.state)).toBe("failed");
+    const alerts = await s.t.run((ctx) => ctx.db.query("briefingItems").filter((q) => q.eq(q.field("refId"), actionId)).collect());
+    expect(alerts.filter((row) => row.kind === "alert")).toHaveLength(1);
+    expect(alerts.find((row) => row.kind === "alert")?.body).toMatch(/did not accept the change. It was not retried/);
   });
 });

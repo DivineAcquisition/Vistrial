@@ -110,11 +110,14 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 function actingFor(state: string, now: number): HighLevelActionsData {
   const owner = state !== "acting-admin";
   const enabled = state !== "acting-off";
-  const base = { id: "", why: "", lead: null, body: null, restricted: null, mayTriggerAutomation: true, proposedBy: "dealmaker", decidedAt: null, doneAt: null, resultCode: null, canUndo: false, undone: false };
+  const base = { id: "", why: "", lead: null, body: null, restricted: null, mayTriggerAutomation: true, proposedBy: "dealmaker", decidedAt: null, doneAt: null, resultCode: null, checks: null, canUndo: false, undone: false };
+  const send = { word: "SEND", why: "It sends a message to a person." };
   const actions: HighLevelActionsData["actions"] = enabled
     ? [
         { ...base, id: "a1", kind: "move_stage", summary: "HighLevel: move a deal from Contacted to Estimate booked", why: "She booked a site visit for Thursday in her last text.", lead: "Lead 12", state: "proposed", proposedAt: now - 12 * 60_000 },
         { ...base, id: "a2", kind: "set_status", summary: "HighLevel: mark a deal won (now open)", why: "The signed estimate came back by email this morning.", lead: "Lead 4", state: "proposed", restricted: { word: "VALUE", why: "It changes a deal's outcome, and so the revenue your team reports." }, proposedAt: now - 40 * 60_000 },
+        { ...base, id: "m1", kind: "send_sms", summary: "HighLevel: text a lead", why: "She asked for the estimate by text.", lead: "Lead 12", body: "Hi, it's Brightside. Your estimate is ready: $4,200 for the deck. Reply STOP to opt out.", state: "proposed", restricted: send, proposedAt: now - 5 * 60_000 },
+        { ...base, id: "m2", kind: "send_sms", summary: "HighLevel: text a lead", why: "Follow up on Tuesday's quote.", lead: "Lead 7", body: "Any questions about the quote?", state: "failed", restricted: send, proposedAt: now - 3 * 3_600_000, doneAt: now - 3 * 3_600_000, resultCode: "quiet_hours", checks: { at: now - 3 * 3_600_000, dnd: false, timezone: "America/Chicago", consent: "Owner confirmed consent on 2026-11-12", result: "quiet_hours" } },
         { ...base, id: "a3", kind: "add_note", summary: "HighLevel: add a note to a lead", why: "From Tuesday's call.", lead: "Lead 9", body: "Prefers mornings. Asked about financing for the deck.", state: "done", mayTriggerAutomation: false, proposedBy: "person", proposedAt: now - 5 * 3_600_000, decidedAt: now - 4 * 3_600_000, doneAt: now - 4 * 3_600_000, resultCode: "ok" },
         { ...base, id: "a4", kind: "add_tag", summary: 'HighLevel: add the tag "estimate-sent" to a lead', why: "Estimate sent Monday.", lead: "Lead 21", state: "done", proposedAt: now - 26 * 3_600_000, doneAt: now - 25 * 3_600_000, resultCode: "ok", canUndo: true },
         { ...base, id: "a5", kind: "create_task", summary: 'HighLevel: create the task "Call back about the quote" on a lead', why: "No reply in three days.", lead: "Lead 30", state: "declined", proposedAt: now - 30 * 3_600_000 },
@@ -123,6 +126,8 @@ function actingFor(state: string, now: number): HighLevelActionsData {
   return {
     connected: true,
     enabled,
+    organizationOff: false,
+    messaging: { enabled: state === "acting", consentAt: state === "acting" ? now - DAY : null },
     can: { toggle: owner, propose: true, approve: true, approveRestricted: owner },
     actions,
     deals: [
@@ -130,8 +135,8 @@ function actingFor(state: string, now: number): HighLevelActionsData {
       { id: "d4", pipelineId: "pipe1", stage: "Estimate sent", stageId: "s4", value: 3100, lead: "Lead 4" },
     ],
     leads: [
-      { id: "c12", name: "Lead 12", tags: ["facebook"] },
-      { id: "c21", name: "Lead 21", tags: ["estimate-sent"] },
+      { id: "c12", name: "Lead 12", tags: ["facebook"], phone: true, email: true },
+      { id: "c21", name: "Lead 21", tags: ["estimate-sent"], phone: true, email: false },
     ],
     stages: PIPELINES.map((pipeline) => ({ pipelineId: pipeline.externalId, name: pipeline.name, stages: pipeline.stages.map((stage) => ({ id: stage.id, name: stage.name })) })),
   };
@@ -160,7 +165,7 @@ export function HighLevelConnectionStory({ state }: { state: string }) {
         {acting ? (
           <HighLevelActionsView
             data={actingFor(state, now)}
-            handlers={{ setActing: async () => wait(300), propose: async () => (await wait(300), null), decide: async () => (await wait(300), null), undo: async () => (await wait(300), null) }}
+            handlers={{ setActing: async () => wait(300), setMessaging: async () => (await wait(300), null), setOrganization: async () => wait(300), propose: async () => (await wait(300), null), decide: async () => (await wait(300), null), undo: async () => (await wait(300), null) }}
           />
         ) : (
           view

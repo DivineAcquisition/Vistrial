@@ -2,7 +2,10 @@
  * Acting in a connected HighLevel sub-account, with approval. An agent or a person proposes one change;
  * nothing is sent to HighLevel until an Owner or Admin approves that change (an Owner with a typed word when
  * it changes a deal's outcome); it is carried out once; and every action keeps who proposed it, who decided,
- * and what HighLevel answered. An Owner can switch acting off for a connection, which closes everything open.
+ * and what HighLevel answered. An Owner can switch acting off for a connection, or for the whole organization,
+ * which closes everything open. Messaging a lead has its own switch, off by default, and is checked against a
+ * fresh read of the lead (opt-out, local time) at the moment it is sent. A failed action is reported in the
+ * Briefing and never retried.
  * docs/rebuild/crm-highlevel.md, section 2A. The rules themselves are in lib/crmActions.ts.
  */
 
@@ -11,14 +14,18 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { hlWrite, liveToken, type Counter } from "./highLevel";
+import { hlRequest, hlWrite, liveToken, type Counter } from "./highLevel";
 import { NOT_WAITING_WORDS, recordDecision } from "./lib/approvals";
 import { writeAudit } from "./lib/audit";
-import { askApproval } from "./lib/briefing";
+import { askApproval, post } from "./lib/briefing";
 import { ownerMutation, workspaceMutation, workspaceQuery, type MemberAccess } from "./lib/builders";
 import {
   checkInput,
+  isMessage,
+  MESSAGE_GAP_HOURS,
+  messagingCheck,
   mayTriggerAutomation,
+  reachabilityOf,
   PROPOSAL_HOURS,
   RESTRICTED,
   restrictionOf,
@@ -31,9 +38,50 @@ import { notFound, userError } from "./lib/errors";
 import { isAdmin, isOwner } from "./lib/roles";
 
 export const ACTING_OFF_WORDS = "An Owner has not let Vistrial act in this HighLevel sub-account. Turn on acting on the HighLevel page first.";
+export const ORG_OFF_WORDS = "An Owner has stopped every CRM action for this organization.";
+export const MESSAGING_OFF_WORDS = "Messaging leads is off for this HighLevel sub-account. Only an Owner can turn it on.";
+
+/** Why nothing may be done through this connection right now, or null when it may. */
+async function gate(ctx: Pick<QueryCtx, "db">, connection: Doc<"crmConnections">, kind: Doc<"crmActions">["kind"]): Promise<string | null> {
+  const settings = await ctx.db
+    .query("workspaceSettings")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", connection.workspaceId))
+    .unique();
+  if (settings?.crmActingOff) return ORG_OFF_WORDS;
+  if (!connection.actingEnabled) return ACTING_OFF_WORDS;
+  if (isMessage(kind) && !connection.messagingEnabled) return MESSAGING_OFF_WORDS;
+  if (connection.status !== "connected") return "HighLevel no longer accepts this connection. Reconnect it first.";
+  return null;
+}
+
+/** What a failure code means, for the Briefing. Never HighLevel's own words. */
+const FAILURE_WORDS: Record<string, string> = {
+  opted_out: "The lead is on Do Not Disturb or opted out in HighLevel.",
+  quiet_hours: "It was outside 8 am to 8 pm in the lead's local time.",
+  no_timezone: "The lead's local time is not known, so quiet hours could not be checked.",
+  no_address: "The lead has no phone number or email address for that message.",
+  unreadable: "HighLevel did not return the lead.",
+  too_soon: "Vistrial already messaged this lead in the last day.",
+  token_rejected: "HighLevel no longer accepts the connection.",
+  permission_missing: "HighLevel refused: the app lacks permission for this.",
+  rate_limited: "HighLevel asked Vistrial to slow down.",
+  bad_request: "HighLevel did not accept the change.",
+  not_found: "HighLevel could not find the deal or lead.",
+  connection_failed: "HighLevel could not be reached.",
+  provider_down: "HighLevel is having trouble.",
+};
 
 const inputArgs = {
-  kind: v.union(v.literal("move_stage"), v.literal("set_status"), v.literal("add_tag"), v.literal("remove_tag"), v.literal("add_note"), v.literal("create_task")),
+  kind: v.union(
+    v.literal("move_stage"),
+    v.literal("set_status"),
+    v.literal("add_tag"),
+    v.literal("remove_tag"),
+    v.literal("add_note"),
+    v.literal("create_task"),
+    v.literal("send_sms"),
+    v.literal("send_email"),
+  ),
   dealId: v.optional(v.string()),
   contactId: v.optional(v.string()),
   stageId: v.optional(v.string()),
@@ -92,8 +140,8 @@ async function proposeAction(
   proposedBy: string,
   extra: { agentSlug?: string; undoOf?: Id<"crmActions"> } = {},
 ): Promise<Id<"crmActions">> {
-  if (!connection.actingEnabled) throw userError(ACTING_OFF_WORDS, "not_allowed");
-  if (connection.status !== "connected") throw userError("HighLevel no longer accepts this connection. Reconnect it first.");
+  const blocked = await gate(ctx, connection, input.kind);
+  if (blocked) throw userError(blocked, "not_allowed");
   const now = Date.now();
   const checked = checkInput(input, now);
   if (!checked.ok) throw userError(checked.reason);
@@ -126,6 +174,8 @@ async function proposeAction(
     if (!contact) throw userError("Vistrial has not read that lead from this sub-account. Read again, then try.");
     const has = contact.tags.some((tag) => tag.toLowerCase() === value.tag?.toLowerCase());
     if (value.kind === "add_tag" && has) throw userError("The lead already has that tag.");
+    if (value.kind === "send_sms" && !contact.phone) throw userError("Vistrial has no phone number for that lead.");
+    if (value.kind === "send_email" && !contact.email) throw userError("Vistrial has no email address for that lead.");
   }
 
   // The same change already waiting is not asked for twice.
@@ -173,7 +223,11 @@ async function proposeAction(
     undoOf: extra.undoOf,
   });
   const row = (await ctx.db.get(actionId))!;
-  const warning = mayTriggerAutomation(value.kind) ? " This may start a workflow set up in HighLevel, which can message the lead." : "";
+  const warning = isMessage(value.kind)
+    ? " This messages the lead. Vistrial checks their opt-out and local time again just before sending."
+    : mayTriggerAutomation(value.kind)
+      ? " This may start a workflow set up in HighLevel, which can message the lead."
+      : "";
   await askApproval(ctx, { ...actionApproval(row), requestedBy: proposedBy === "agent" ? "agent" : proposedBy }, { title: summary, body: `${reason}${warning}` });
   await writeAudit(ctx, {
     workspaceId: connection.workspaceId,
@@ -240,7 +294,7 @@ export async function decideAction(ctx: Decider, args: { actionId: Id<"crmAction
     if ((args.confirmWord ?? "").trim() !== confirm.word) throw userError(`Type ${confirm.word} to approve this.`);
   }
   const connection = await ctx.db.get(action.connectionId);
-  if (!connection || connection.status !== "connected" || !connection.actingEnabled) {
+  if (!connection || (await gate(ctx, connection, action.kind))) {
     await settle(ctx, action, "cancelled", "system");
     return { state: "cancelled" as const };
   }
@@ -282,13 +336,14 @@ export const undo = workspaceMutation({
  * Closes every open action of a connection: waiting ones are declined in the approvals queue, approved ones
  * not yet carried out are cancelled. Used when acting is switched off and when a connection is removed.
  */
-export async function closeOpenActions(ctx: Ctx, connectionId: Id<"crmConnections">, actor: string, state: "cancelled") {
+export async function closeOpenActions(ctx: Ctx, connectionId: Id<"crmConnections">, actor: string, state: "cancelled", only?: (row: Doc<"crmActions">) => boolean) {
   for (const open of ["proposed", "approved"] as const) {
     const rows = await ctx.db
       .query("crmActions")
       .withIndex("by_connection_state", (q) => q.eq("connectionId", connectionId).eq("state", open))
       .take(500);
     for (const row of rows) {
+      if (only && !only(row)) continue;
       if (open === "proposed") await settle(ctx, row, state, actor);
       else await ctx.db.patch(row._id, { state, resultCode: "acting_off" });
     }
@@ -304,6 +359,53 @@ export const setActing = ownerMutation({
     await ctx.db.patch(connection._id, { actingEnabled: args.on, actingChangedBy: ctx.identity.subject, actingChangedAt: Date.now() });
     if (!args.on) await closeOpenActions(ctx, connection._id, ctx.identity.subject, "cancelled");
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: args.on ? "crm.acting.on" : "crm.acting.off", subject: `highlevel:${connection.accountId}` });
+    return null;
+  },
+});
+
+/**
+ * Turns messaging leads on or off for this sub-account. Owner only, and off by default. Turning it on needs
+ * acting on, and the Owner's confirmation that the business has its leads' consent to be texted and emailed
+ * (TCPA, CAN-SPAM): Vistrial cannot see consent, so the business is responsible for it. Off closes every open
+ * message at once.
+ */
+export const setMessaging = ownerMutation({
+  args: { clientId: v.optional(v.id("clients")), on: v.boolean(), consentConfirmed: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    const connection = await connectionOf(ctx, ctx.workspaceId, args.clientId);
+    if (!connection) notFound();
+    if (args.on) {
+      if (!connection.actingEnabled) throw userError("Turn on acting in this sub-account first.");
+      if (args.consentConfirmed !== true) throw userError("Confirm that your business has its leads' consent to be texted and emailed.");
+      await ctx.db.patch(connection._id, { messagingEnabled: true, consentAttestedBy: ctx.identity.subject, consentAttestedAt: Date.now() });
+    } else {
+      await ctx.db.patch(connection._id, { messagingEnabled: false });
+      await closeOpenActions(ctx, connection._id, ctx.identity.subject, "cancelled", (row) => isMessage(row.kind));
+    }
+    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: args.on ? "crm.messaging.on" : "crm.messaging.off", subject: `highlevel:${connection.accountId}` });
+    return null;
+  },
+});
+
+/** Stops (or allows again) every CRM action across the organization, whatever each connection allows. Owner only. */
+export const setOrganizationActing = ownerMutation({
+  args: { on: v.boolean() },
+  handler: async (ctx, args) => {
+    const settings = await ctx.db
+      .query("workspaceSettings")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .unique();
+    if (settings) await ctx.db.patch(settings._id, { crmActingOff: !args.on });
+    else await ctx.db.insert("workspaceSettings", { workspaceId: ctx.workspaceId, setupDone: false, themeDefault: "light", crmActingOff: !args.on });
+    if (!args.on) {
+      // The raw database: an Owner sees every client, and every connection must close.
+      const connections = await ctx.db
+        .query("crmConnections")
+        .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId))
+        .take(500);
+      for (const connection of connections) await closeOpenActions(ctx, connection._id, ctx.identity.subject, "cancelled");
+    }
+    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: args.on ? "crm.organization.on" : "crm.organization.off", subject: ctx.workspaceId });
     return null;
   },
 });
@@ -339,12 +441,52 @@ export const claim = internalMutation({
     const action = await ctx.db.get(args.actionId);
     if (!action || action.state !== "approved") return null;
     const connection = await ctx.db.get(action.connectionId);
-    if (!connection || connection.status !== "connected" || !connection.actingEnabled) {
+    if (!connection || (await gate(ctx, connection, action.kind))) {
       await ctx.db.patch(action._id, { state: "cancelled", resultCode: "acting_off" });
       return null;
     }
+    if (isMessage(action.kind) && action.contactId) {
+      // At most one message from Vistrial to a lead a day, whoever approved it.
+      const done = await ctx.db
+        .query("crmActions")
+        .withIndex("by_connection_state", (q) => q.eq("connectionId", connection._id).eq("state", "done"))
+        .take(500);
+      const recent = done.some((row) => isMessage(row.kind) && row.contactId === action.contactId && (row.doneAt ?? 0) > Date.now() - MESSAGE_GAP_HOURS * 3_600_000);
+      if (recent) {
+        await ctx.db.patch(action._id, { state: "running" });
+        await failAndReport(ctx, { ...action, state: "running" }, "too_soon");
+        return null;
+      }
+    }
     await ctx.db.patch(action._id, { state: "running" });
-    return action;
+    return { action, timezone: connection.timezone ?? null, consentAt: connection.consentAttestedAt ?? null };
+  },
+});
+
+/** Marks a failed action and says so in the Briefing. A failure is reported once and never retried. */
+async function failAndReport(ctx: Ctx, action: Doc<"crmActions">, code: string) {
+  await ctx.db.patch(action._id, { state: "failed", doneAt: Date.now(), resultCode: code });
+  await writeAudit(ctx, { workspaceId: action.workspaceId, actorType: "system", actorId: "crm", action: "crm.action.failed", subject: action._id });
+  await post(ctx, {
+    workspaceId: action.workspaceId,
+    clientId: action.clientId,
+    kind: "alert",
+    title: "A HighLevel change was not made",
+    body: `${action.summary.replace(/^HighLevel: /, "").replace(/^./, (c) => c.toUpperCase())}. ${FAILURE_WORDS[code] ?? "HighLevel returned an error."} It was not retried.`,
+    ref: { table: "crmActions", id: action._id },
+    key: `crm-failed:${action._id}`,
+  });
+}
+
+/** Keeps what the checks found before a message was sent or refused. */
+export const recordChecks = internalMutation({
+  args: {
+    actionId: v.id("crmActions"),
+    checks: v.object({ at: v.number(), dnd: v.boolean(), timezone: v.optional(v.string()), localHour: v.optional(v.number()), consent: v.string(), result: v.string() }),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.actionId, { checks: args.checks });
+    return null;
   },
 });
 
@@ -354,9 +496,12 @@ export const finish = internalMutation({
   handler: async (ctx, args) => {
     const action = await ctx.db.get(args.actionId);
     if (!action) return null;
-    await ctx.db.patch(action._id, { state: args.ok ? "done" : "failed", doneAt: Date.now(), resultCode: args.code, externalId: args.externalId });
-    await writeAudit(ctx, { workspaceId: action.workspaceId, actorType: "system", actorId: "crm", action: args.ok ? "crm.action.done" : "crm.action.failed", subject: action._id });
-    if (!args.ok) return null;
+    if (!args.ok) {
+      await failAndReport(ctx, action, args.code);
+      return null;
+    }
+    await ctx.db.patch(action._id, { state: "done", doneAt: Date.now(), resultCode: args.code, externalId: args.externalId });
+    await writeAudit(ctx, { workspaceId: action.workspaceId, actorType: "system", actorId: "crm", action: "crm.action.done", subject: action._id });
     if (action.undoOf) await ctx.db.patch(action.undoOf, { undoneBy: action._id });
     if (action.dealId && (action.kind === "move_stage" || action.kind === "set_status")) {
       const deal = await findDeal(ctx, action.connectionId, action.dealId);
@@ -384,14 +529,39 @@ export const finish = internalMutation({
 export const execute = internalAction({
   args: { actionId: v.id("crmActions") },
   handler: async (ctx, args): Promise<{ code: string }> => {
-    const action: Doc<"crmActions"> | null = await ctx.runMutation(internal.crmActions.claim, args);
-    if (!action) return { code: "cancelled" };
+    const claimed: { action: Doc<"crmActions">; timezone: string | null; consentAt: number | null } | null = await ctx.runMutation(internal.crmActions.claim, args);
+    if (!claimed) return { code: "cancelled" };
+    const { action } = claimed;
     const live = await liveToken(ctx, action.connectionId);
     if (!live.ok) {
       await ctx.runMutation(internal.crmActions.finish, { actionId: action._id, ok: false, code: live.code });
       return { code: live.code };
     }
     const counter: Counter = { ok: 0, failed: 0, lastCode: null };
+    if (isMessage(action.kind)) {
+      // Read the lead fresh from HighLevel and check opt-out and local time at the moment of sending.
+      const channel = action.kind === "send_sms" ? "SMS" : "Email";
+      const fresh = await hlRequest(live.token, `/contacts/${action.contactId}`, counter);
+      const reach = fresh.ok ? reachabilityOf(fresh.body, channel) : null;
+      const now = Date.now();
+      const check = messagingCheck({ reach, channel, locationTimezone: claimed.timezone, now });
+      await ctx.runMutation(internal.crmActions.recordChecks, {
+        actionId: action._id,
+        checks: {
+          at: now,
+          dnd: Boolean(reach && (reach.dnd || reach.channelDnd)),
+          timezone: check.ok ? check.timezone : (reach?.timezone ?? claimed.timezone ?? undefined),
+          localHour: check.ok ? check.localHour : undefined,
+          consent: claimed.consentAt ? `Owner confirmed consent on ${new Date(claimed.consentAt).toISOString().slice(0, 10)}` : "No consent confirmation on record",
+          result: check.ok ? "passed" : check.code,
+        },
+      });
+      if (!check.ok) {
+        await ctx.runMutation(internal.crmActions.finish, { actionId: action._id, ok: false, code: check.code });
+        await ctx.runMutation(internal.highLevel.recordCalls, { connectionId: action.connectionId, ok: counter.ok, failed: counter.failed, code: check.code });
+        return { code: check.code };
+      }
+    }
     const request = writeRequest({
       kind: action.kind,
       dealId: action.dealId,
@@ -425,7 +595,12 @@ export const list = workspaceQuery({
     const connection = await connectionOf(ctx, ctx.workspaceId, args.clientId);
     const role = ctx.member.role;
     const can = { toggle: isOwner(role), propose: role !== "viewer" && ctx.role !== "viewer", approve: isAdmin(role), approveRestricted: isOwner(role) };
-    if (!connection) return { connected: false, enabled: false, can, actions: [], deals: [], leads: [], stages: [] };
+    const settings = await ctx.db
+      .query("workspaceSettings")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .unique();
+    const organizationOff = settings?.crmActingOff === true;
+    if (!connection) return { connected: false, enabled: false, organizationOff, messaging: { enabled: false, consentAt: null }, can, actions: [], deals: [], leads: [], stages: [] };
     const rows = await ctx.db
       .query("crmActions")
       .withIndex("by_connection", (q) => q.eq("connectionId", connection._id))
@@ -449,6 +624,8 @@ export const list = workspaceQuery({
     return {
       connected: true,
       enabled: connection.actingEnabled === true,
+      organizationOff,
+      messaging: { enabled: connection.messagingEnabled === true, consentAt: connection.consentAttestedAt ?? null },
       can,
       actions: rows.map((row) => ({
         id: row._id,
@@ -465,6 +642,7 @@ export const list = workspaceQuery({
         decidedAt: row.decidedAt ?? null,
         doneAt: row.doneAt ?? null,
         resultCode: row.resultCode ?? null,
+        checks: row.checks ?? null,
         canUndo: row.state === "done" && !row.undoneBy && reverseOf(row, row.before) !== null,
         undone: Boolean(row.undoneBy),
       })),
@@ -476,7 +654,7 @@ export const list = workspaceQuery({
       leads: contacts
         .sort((a, b) => (b.lastActivityAt ?? b.addedAt ?? 0) - (a.lastActivityAt ?? a.addedAt ?? 0))
         .slice(0, 100)
-        .map((row) => ({ id: row.externalId, name: row.name ?? row.email ?? "A lead", tags: row.tags })),
+        .map((row) => ({ id: row.externalId, name: row.name ?? row.email ?? "A lead", tags: row.tags, phone: Boolean(row.phone), email: Boolean(row.email) })),
       stages: pipelines.map((pipeline) => ({ pipelineId: pipeline.externalId, name: pipeline.name, stages: pipeline.stages.map((stage) => ({ id: stage.id, name: stage.name })) })),
     };
   },

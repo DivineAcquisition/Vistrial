@@ -981,6 +981,8 @@ export default defineSchema({
       v.literal("preCallBrief"),
       /** What happened on one sales call (Dealmaker, Conversation Intelligence). Internal: never leaves Vistrial. */
       v.literal("callReview"),
+      /** Talk tracks for the objections heard on the business's calls (Dealmaker, Objection Playbook). Waits for review. */
+      v.literal("objectionPlaybook"),
       /** A proposal for one lead after a call (Dealmaker, Proposal Architect). Goes to a lead: waits for review. */
       v.literal("proposal"),
     ),
@@ -2425,6 +2427,40 @@ export default defineSchema({
     .index("by_workspace_transcript", ["workspaceId", "transcriptId"]),
 
   /**
+   * One talk-track run of the Objection Playbook (docs/rebuild/dealmaker.md, 0.8 and 4.5), on request or weekly.
+   * The run reads `inputRef` = its own project. The counts are worked out in code each time the Playbook is read;
+   * this row keeps only the talk tracks, each an untested hypothesis until a person approves and uses it.
+   */
+  objectionRuns: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    projectId: v.id("researchProjects"),
+    trigger: v.union(v.literal("request"), v.literal("weekly")),
+    /** For a weekly run, the week it is for ("2026-W46"), so a week runs once. */
+    week: v.optional(v.string()),
+    status: v.union(v.literal("running"), v.literal("ready"), v.literal("failed")),
+    runId: v.optional(v.id("agentRuns")),
+    assetId: v.optional(v.id("assets")),
+    checksPassed: v.optional(v.boolean()),
+    tracks: v.optional(
+      v.array(
+        v.object({
+          itemId: v.id("playbookItems"),
+          track: v.string(),
+          /** The Offer folder items it stands on, by their own id and title. */
+          offer: v.array(v.object({ itemId: v.id("playbookItems"), title: v.string() })),
+        }),
+      ),
+    ),
+    missing: v.optional(v.array(v.string())),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"]),
+
+  /**
    * A proposal for one lead, written from one passing call review and the Offer folder (Dealmaker, Proposal
    * Architect; docs/rebuild/dealmaker.md, 0.8 and 4.5). The run reads `inputRef` = this row's own project. It goes
    * to a lead, so its asset waits for a person's review; sending it is a separate, approved step.
@@ -2699,6 +2735,8 @@ export default defineSchema({
     autonomous: v.optional(v.array(v.string())),
     /** The Owner turned on a link to each pre-call brief on the booked call's Google Calendar event (0.10 item 5). */
     calendarBriefLinks: v.optional(v.boolean()),
+    /** The Owner turned on the Objection Playbook's weekly talk tracks, with the cap shown (0.8). */
+    objectionWeekly: v.optional(v.boolean()),
     updatedBy: v.string(),
     updatedAt: v.number(),
   }).index("by_workspace_client", ["workspaceId", "clientId"]),

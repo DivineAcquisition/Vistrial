@@ -27,6 +27,12 @@ export type ReadinessRow = {
  * The kind of evidence a quote is: on a call, the buyer's words only when the lead's own line says it (our side's
  * line is a rep's words, an unlabelled line has no known speaker); a hand-off or a note is a person's account.
  */
+/** Where a likely objection from the Playbook comes from: heard on the business's calls, or the untested starter set. */
+export function playbookWhere(item: { basis: string; heard?: number }, capital = false) {
+  const words = item.heard ? `from your Playbook, heard on ${item.heard} of your calls` : item.basis === "hypothesis" ? "from the Playbook's starter set, not yet heard on your calls" : "from your Playbook";
+  return capital ? words[0].toUpperCase() + words.slice(1) : words;
+}
+
 export function kindOf(source: BriefSource, quote: string, leadName: string): { kind: EvidenceKind | null; words: string } {
   if (source.type !== "call") return { kind: "rep", words: KIND_WORDS.rep };
   const who = quoteSpeaker(quote, source.text, leadName);
@@ -139,7 +145,7 @@ export function renderBrief(brief: Brief, record: BriefRecord, checks: ChecksRec
     for (const row of brief.objections) {
       const source = sources.get(row.sourceId);
       const item = items.get(row.sourceId);
-      const where = source ? `said on ${source.label}: "${row.quote}"` : item ? `from the Playbook${item.basis === "hypothesis" ? ", not yet heard on your calls" : ""}` : "";
+      const where = source ? `said on ${source.label}: "${row.quote}"` : item ? playbookWhere(item) : "";
       lines.push(`- ${row.objection} _(${where})_`);
     }
     lines.push("");
@@ -182,7 +188,7 @@ export function viewOf(brief: Brief | null, record: BriefRecord, checksPassed: b
       const item = items.get(row.sourceId);
       return source
         ? { text: row.objection, where: `Said on ${source.label}: "${row.quote}"`, label: "Your data" as const }
-        : { text: row.objection, where: item?.basis === "hypothesis" ? "From the Playbook's starter set, not yet heard on your calls" : "From your Playbook", label: "Untested hypothesis" as const };
+        : { text: row.objection, where: item ? playbookWhere(item, true) : "From your Playbook", label: "Untested hypothesis" as const };
     }),
     openingQuestion: brief?.openingQuestion ?? "",
     ...(record.publicRead?.lines.length ? { publicRead: record.publicRead } : {}),

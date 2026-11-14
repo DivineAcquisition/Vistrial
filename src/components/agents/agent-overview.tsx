@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
-import { ArrowRight, FileSearch, FileText, Gauge, Hourglass, MessageCircleQuestion, MessagesSquare, Rocket, Sparkles, Store, type LucideIcon } from "@/components/icons";
+import { ArrowRight, ChevronDown, FileSearch, FileText, Gauge, Hourglass, MessageCircleQuestion, MessagesSquare, Rocket, Sparkles, Store, type LucideIcon } from "@/components/icons";
 import { AssetStatusBadge } from "@/components/runs/run-parts";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
@@ -13,7 +14,6 @@ import { shortDate } from "@/lib/research/words";
 import type { RailSkill } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 import { SKILL_TAB, type WorkTab } from "../../../convex/lib/workTabs";
-import { workLabel } from "../../../convex/lib/workWords";
 
 const TAB_LOOK: Record<WorkTab, { label: string; icon: LucideIcon }> = {
   research: { label: "Research", icon: FileSearch },
@@ -188,38 +188,65 @@ export function AgentOverviewView({
         </section>
       </div>
 
-      {skills.length > 0 ? (
-        <section className="grid gap-3" aria-label="What it does">
-          <SectionTitle icon={Sparkles}>What it does</SectionTitle>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {skills.map((skill) => {
-              const tab = skill.status === "available" ? SKILL_TAB[skill.slug] : undefined;
-              const look = tab ? TAB_LOOK[tab] : null;
-              return (
-                <li key={skill.slug} className="grid content-start gap-2 rounded-xl border border-border bg-card p-4">
-                  <span className="flex items-start justify-between gap-2">
-                    <span className="font-medium text-card-foreground">{workLabel(skill.slug)}</span>
-                    <StatusBadge label={skill.status === "available" ? "Available" : "Coming soon"} tone={skill.status === "available" ? "good" : "neutral"} className="[&_span]:normal-case" />
-                  </span>
-                  <span className="text-sm text-muted-foreground">{skill.handsBack}</span>
-                  {tab && look ? (
-                    <span className="mt-1 flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" render={<Link href={`${base}/work/${tab}`} />}>
-                        <look.icon aria-hidden className="size-4" /> Open {look.label}
-                      </Button>
-                      {editor ? (
-                        <Button size="sm" variant="ghost" render={<Link href={`${base}/work/chat?skill=${skill.slug}`} />}>
-                          <MessagesSquare aria-hidden className="size-4" /> Ask in chat
-                        </Button>
-                      ) : null}
-                    </span>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
+      {skills.length > 0 ? <SkillsSection base={base} editor={editor} skills={skills} /> : null}
     </div>
+  );
+}
+
+/** The agent's skills, by their own names, folded away until someone asks to see them. */
+function SkillsSection({ base, editor, skills }: { base: string; editor: boolean; skills: RailSkill[] }) {
+  const [open, setOpen] = useState(false);
+  const available = skills.filter((skill) => skill.status === "available").length;
+  const soon = skills.length - available;
+  const counts = [`${available} available`, soon ? `${soon} coming soon` : null].filter(Boolean).join(" · ");
+  return (
+    <section className="grid gap-3" aria-label="Skills">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="agent-skills"
+        onClick={() => setOpen((value) => !value)}
+        className="group flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        <Sparkles aria-hidden className="size-4 shrink-0 text-primary" />
+        <span className="grid min-w-0 flex-1 gap-0.5">
+          <span className="font-medium text-card-foreground">Skills and what this agent does</span>
+          <span className="text-xs text-muted-foreground">{counts}</span>
+        </span>
+        <span className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground group-hover:text-card-foreground">
+          <span className="hidden sm:inline">{open ? "Hide skills" : `Show all ${skills.length}`}</span>
+          <ChevronDown aria-hidden className={cn("size-4 transition-transform", open && "rotate-180")} />
+        </span>
+      </button>
+      {open ? (
+        <ul id="agent-skills" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {skills.map((skill) => {
+            const tab = skill.status === "available" ? SKILL_TAB[skill.slug] : undefined;
+            const look = tab ? TAB_LOOK[tab] : null;
+            return (
+              <li key={skill.slug} className="grid content-start gap-2 rounded-xl border border-border bg-card p-4">
+                <span className="flex items-start justify-between gap-2">
+                  <span className="font-medium text-card-foreground">{skill.name}</span>
+                  <StatusBadge label={skill.status === "available" ? "Available" : "Coming soon"} tone={skill.status === "available" ? "good" : "neutral"} className="[&_span]:normal-case" />
+                </span>
+                <span className="text-sm text-muted-foreground">{skill.handsBack}</span>
+                {tab && look ? (
+                  <span className="mt-1 flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" render={<Link href={`${base}/work/${tab}`} />}>
+                      <look.icon aria-hidden className="size-4" /> Open {look.label}
+                    </Button>
+                    {editor ? (
+                      <Button size="sm" variant="ghost" render={<Link href={`${base}/work/chat?skill=${skill.slug}`} />}>
+                        <MessagesSquare aria-hidden className="size-4" /> Ask in chat
+                      </Button>
+                    ) : null}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </section>
   );
 }

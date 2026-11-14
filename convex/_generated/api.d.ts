@@ -202,6 +202,9 @@ import type * as skills_pipelineForensics_index from "../skills/pipelineForensic
 import type * as skills_pipelineForensics_render from "../skills/pipelineForensics/render.js";
 import type * as skills_pipelineForensics_shapes from "../skills/pipelineForensics/shapes.js";
 import type * as skills_pipelineForensics_tools from "../skills/pipelineForensics/tools.js";
+import type * as skills_playbookStudy_index from "../skills/playbookStudy/index.js";
+import type * as skills_playbookStudy_shapes from "../skills/playbookStudy/shapes.js";
+import type * as skills_playbookStudy_tools from "../skills/playbookStudy/tools.js";
 import type * as skills_creativeProduction_checks from "../skills/creativeProduction/checks.js";
 import type * as skills_creativeProduction_index from "../skills/creativeProduction/index.js";
 import type * as skills_creativeProduction_render from "../skills/creativeProduction/render.js";
@@ -461,6 +464,9 @@ declare const fullApi: ApiFromModules<{
   "skills/pipelineForensics/render": typeof skills_pipelineForensics_render;
   "skills/pipelineForensics/shapes": typeof skills_pipelineForensics_shapes;
   "skills/pipelineForensics/tools": typeof skills_pipelineForensics_tools;
+  "skills/playbookStudy/index": typeof skills_playbookStudy_index;
+  "skills/playbookStudy/shapes": typeof skills_playbookStudy_shapes;
+  "skills/playbookStudy/tools": typeof skills_playbookStudy_tools;
   "skills/creativeProduction/checks": typeof skills_creativeProduction_checks;
   "skills/creativeProduction/index": typeof skills_creativeProduction_index;
   "skills/creativeProduction/render": typeof skills_creativeProduction_render;

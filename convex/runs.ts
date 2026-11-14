@@ -28,6 +28,7 @@ import { OFFER_TOOLS } from "./skills/offerIntelligence/tools";
 import { CREATIVE_TOOLS } from "./skills/creativeProduction/tools";
 import { GD_MUTATION_TOOLS } from "./skills/growthDiagnostics/tools";
 import { PF_MUTATION_TOOLS } from "./skills/pipelineForensics/tools";
+import { PBS_MUTATION_TOOLS } from "./skills/playbookStudy/tools";
 import { LP_MUTATION_TOOLS } from "./skills/landingTeardown/tools";
 import { LPB_MUTATION_TOOLS } from "./skills/landingPageBuild/tools";
 import { TREND_TOOLS } from "./skills/industryTrends/tools";
@@ -41,7 +42,7 @@ import { runChanged } from "./lib/briefing";
 const OPEN = new Set(["queued", "running", "waiting"]);
 
 /** Every skill's code-only tools, by slug. */
-const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS, ...LPB_MUTATION_TOOLS, ...PROPOSER_TOOLS, ...TREND_TOOLS, ...PF_MUTATION_TOOLS };
+const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS, ...LPB_MUTATION_TOOLS, ...PROPOSER_TOOLS, ...TREND_TOOLS, ...PF_MUTATION_TOOLS, ...PBS_MUTATION_TOOLS };
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
 

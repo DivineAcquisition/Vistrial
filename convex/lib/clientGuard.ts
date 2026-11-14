@@ -45,6 +45,7 @@ const DIRECT: readonly TableNames[] = [
   "personalNotes",
   "playbookItems",
   "playbookLessons",
+  "playbookStudies",
   "researchProjects",
   "resultUploads",
   "siteCaptures",

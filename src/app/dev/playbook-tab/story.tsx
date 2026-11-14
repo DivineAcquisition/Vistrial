@@ -39,6 +39,7 @@ function data(state: string): PlaybookData {
     tag: row.tag ?? null,
     title: row.title,
     body: row.body,
+    quote: row.source === "call" ? "Honestly it's more than we budgeted for this quarter." : null,
     source: { type: row.source, label: row.label ?? null, ref: null, words: SOURCE_LABEL[row.source] },
     basis: row.basis as "firstParty",
     basisLabel: BASIS[row.basis],
@@ -55,6 +56,20 @@ function data(state: string): PlaybookData {
             proposed: [lesson("l1", "Clinic owners answer a text within the hour; email waits a day.", "proposed", true)],
             approved: [lesson("l2", "Never mention the guarantee before the price.", "approved", false)],
           },
+    studies:
+      state === "empty"
+        ? []
+        : [
+            { id: "st2", status: "running", sources: ["Call with Harbor Dental, Nov 10"], filed: null, dropped: null, missing: [], createdAt: 1_763_000_000_000 },
+            { id: "st1", status: "done", sources: ["Call with Aster Coaching, Nov 3", "Sales script.docx"], filed: 6, dropped: 1, missing: [], createdAt: 1_762_900_000_000 },
+          ],
+    readable: {
+      transcripts: [
+        { id: "t1", title: "Call with Aster Coaching", callDate: "2026-11-03" },
+        { id: "t2", title: "Call with Harbor Dental", callDate: "2026-11-10" },
+      ],
+      offerAnalysis: { id: "a1", title: "Offer analysis: Growth Sprint" },
+    },
     needs: needsFrom(rows.map((row) => ({ kind: row.kind, stage: row.stage })), state === "empty" ? 0 : 2),
     canEdit: state !== "viewer",
   } as unknown as PlaybookData;
@@ -69,7 +84,7 @@ export function PlaybookTabStory({ state, folder, theme }: { state: string; fold
         data={data(state)}
         editor={editor}
         initialFolder={open}
-        actions={{ addItem: noop, updateItem: noop, archiveItem: noop, addLesson: noop, decideLesson: noop, editLesson: noop, removeLesson: noop }}
+        actions={{ addItem: noop, updateItem: noop, archiveItem: noop, addLesson: noop, decideLesson: noop, editLesson: noop, removeLesson: noop, study: noop }}
       />
     </StoryFrame>
   );

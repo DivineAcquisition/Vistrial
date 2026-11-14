@@ -44,6 +44,9 @@ export const TOOLS = [
   "pf.read",
   "pf.check",
   "pf.save",
+  "pbs.gather",
+  "pbs.check",
+  "pbs.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

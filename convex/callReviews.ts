@@ -9,7 +9,7 @@
 
 import { v } from "convex/values";
 
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { SALES_CONVERSION } from "./catalog";
 import { writeAudit } from "./lib/audit";
@@ -109,6 +109,15 @@ export const request = workspaceMutation({
   },
 });
 
+type ReviewState = "running" | "ready" | "needsReview" | "failed";
+
+async function stateOf(ctx: Pick<QueryCtx, "db">, row: Doc<"callReviews">): Promise<ReviewState> {
+  if (row.status === "ready") return row.view?.checksPassed ? "ready" : "needsReview";
+  if (row.status === "failed") return "failed";
+  const run = row.runId ? await ctx.db.get(row.runId) : null;
+  return run && run.status !== "queued" && run.status !== "running" ? "failed" : "running";
+}
+
 /** One review as the Calls tab draws it. Coaching notes only for the Owner. */
 export const review = workspaceQuery({
   args: { reviewId: v.id("callReviews") },
@@ -116,8 +125,7 @@ export const review = workspaceQuery({
     const row = await ctx.db.get(args.reviewId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
     ctx.clients.require(row.clientId);
-    const run = row.runId ? await ctx.db.get(row.runId) : null;
-    const state = row.status === "ready" ? (row.view?.checksPassed ? "ready" : "needsReview") : row.status === "failed" || (run && run.status !== "queued" && run.status !== "running") ? "failed" : "running";
+    const state = await stateOf(ctx, row);
     return {
       id: row._id,
       leadName: row.leadName,
@@ -125,6 +133,29 @@ export const review = workspaceQuery({
       view: row.view ?? null,
       coaching: ctx.role === "owner" ? (row.coaching ?? []) : null,
       createdAt: row.createdAt,
+    };
+  },
+});
+
+/** Reviews made lately for the organization or a client, newest first. */
+export const recent = workspaceQuery({
+  args: { clientId: v.optional(v.id("clients")) },
+  handler: async (ctx, args) => {
+    if (args.clientId) {
+      const client = await ctx.db.get(args.clientId);
+      if (!client || client.workspaceId !== ctx.workspaceId) notFound();
+    }
+    ctx.clients.require(args.clientId);
+    const rows = await ctx.db
+      .query("callReviews")
+      .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", args.clientId))
+      .order("desc")
+      .take(20);
+    const caps = await budgetCaps(ctx);
+    return {
+      canRequest: ctx.role !== "viewer",
+      maxCredits: priceFor(caps.maxCostCentsPerRun),
+      reviews: await Promise.all(rows.map(async (row) => ({ id: row._id, leadName: row.leadName, state: await stateOf(ctx, row), createdAt: row.createdAt }))),
     };
   },
 });

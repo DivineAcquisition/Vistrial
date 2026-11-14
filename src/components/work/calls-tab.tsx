@@ -18,6 +18,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 import { CallNotesForm, RecentNotes, type NotesActions, type NotesData } from "./call-notes";
+import { ReviewView, type ReviewData, type ReviewsData } from "./review-view";
 import { SectionTitle, WorkHero } from "./work-shell";
 
 export type CallsData = FunctionReturnType<typeof api.dealBriefings.calls>;
@@ -27,6 +28,8 @@ type BriefState = NonNullable<Upcoming["brief"]>["state"];
 
 export type CallsActions = {
   /** Asks for a brief on one booked call, or (without a CRM) on a lead by name. */
+  /** Asks for a review of a held call: its transcript, its notes, or both. */
+  requestReview?: (input: { transcriptId?: string; callNoteId?: string; confirmedCredits: number }) => Promise<unknown>;
   /** Saves the closer's notes after a call, the memo uploaded first. */
   saveNote?: NotesActions["saveNote"];
   request: (input: { contactRef?: string; dealRef?: string; appointmentRef?: string; leadName?: string; about?: string; handoff?: string; website?: string; confirmedCredits: number }) => Promise<unknown>;
@@ -53,13 +56,13 @@ async function run(action: () => Promise<unknown>) {
   }
 }
 
-function StateBadge({ state }: { state: BriefState | "none" }) {
+function StateBadge({ state, of = "brief" }: { state: BriefState | "none"; of?: "brief" | "review" }) {
   const look = STATE[state];
   const Icon = look.icon;
   return (
     <Badge variant={look.badge} size="sm">
       <Icon aria-hidden className={state === "running" ? "size-3 animate-spin" : "size-3"} />
-      {look.words}
+      {of === "review" ? look.words.replace("Brief", "Review").replace("No brief yet", "No review yet") : look.words}
     </Badge>
   );
 }
@@ -98,8 +101,10 @@ function AskBrief({ call, maxCredits, actions, onDone }: { call: Upcoming; maxCr
   );
 }
 
-function CallRow({ call, data, actions, notes, onOpen }: { call: Upcoming; data: CallsData; actions: CallsActions; notes: NotesData | null; onOpen: (id: string) => void }) {
+function CallRow({ call, data, actions, notes, reviews, onOpen, onOpenReview }: { call: Upcoming; data: CallsData; actions: CallsActions; notes: NotesData | null; reviews: ReviewsData | null; onOpen: (id: string) => void; onOpenReview: (id: string) => void }) {
   const [asking, setAsking] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [noting, setNoting] = useState(false);
   const state = call.brief?.state ?? "none";
   const canAsk = data.canRequest && (state === "none" || state === "failed");
@@ -137,8 +142,43 @@ function CallRow({ call, data, actions, notes, onOpen }: { call: Upcoming; data:
               </Button>
             ) : null
           ) : null}
+          {call.past && call.review && (call.review.state === "ready" || call.review.state === "needsReview") ? (
+            <Button size="sm" variant="outline" onClick={() => onOpenReview(call.review!.id)}>
+              Open the review
+            </Button>
+          ) : call.past && call.review?.state === "running" ? (
+            <StateBadge state="running" of="review" />
+          ) : call.past && (call.transcriptId || call.callNoteId) && reviews?.canRequest && actions.requestReview && !reviewing ? (
+            <Button size="sm" variant="outline" onClick={() => setReviewing(true)}>
+              Review this call
+            </Button>
+          ) : null}
         </div>
       </div>
+      {reviewing && reviews && actions.requestReview ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3">
+          <span className="text-xs text-muted-foreground">
+            Reviews {call.transcriptId ? "the call's transcript" : ""}
+            {call.transcriptId && call.callNoteId ? " and " : ""}
+            {call.callNoteId ? "your notes" : ""}. Up to {reviews.maxCredits} credits. Anything it suggests waits for a person.
+          </span>
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              const ok = await run(() => actions.requestReview!({ ...(call.transcriptId ? { transcriptId: call.transcriptId } : {}), ...(call.callNoteId ? { callNoteId: call.callNoteId } : {}), confirmedCredits: reviews.maxCredits }));
+              setBusy(false);
+              if (ok) setReviewing(false);
+            }}
+          >
+            Review it
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setReviewing(false)}>
+            Cancel
+          </Button>
+        </div>
+      ) : null}
       {asking ? <AskBrief call={call} maxCredits={data.maxCredits} actions={actions} onDone={() => setAsking(false)} /> : null}
       {noting && notes && actions.saveNote ? (
         <CallNotesForm lead={{ contactRef: call.contactRef, dealRef: call.dealRef, appointmentRef: call.ref, leadName: call.leadName }} options={notes} actions={{ saveNote: actions.saveNote }} onDone={() => setNoting(false)} />
@@ -417,8 +457,27 @@ export function BriefView({ brief, onClose }: { brief: BriefData; onClose?: () =
 }
 
 /** The Calls tab before the call, with its data handed in, so a story can show it without a server. */
-export function CallsView({ data, actions, notes = null, open, onOpen }: { data: CallsData; actions: CallsActions; notes?: NotesData | null; open?: BriefData | null; onOpen: (id: string | null) => void }) {
+export function CallsView({
+  data,
+  actions,
+  notes = null,
+  reviews = null,
+  open,
+  onOpen,
+  openReview,
+  onOpenReview = () => undefined,
+}: {
+  data: CallsData;
+  actions: CallsActions;
+  notes?: NotesData | null;
+  reviews?: ReviewsData | null;
+  open?: BriefData | null;
+  onOpen: (id: string | null) => void;
+  openReview?: ReviewData | null;
+  onOpenReview?: (id: string | null) => void;
+}) {
   if (open) return <BriefView brief={open} onClose={() => onOpen(null)} />;
+  if (openReview) return <ReviewView review={openReview} onClose={() => onOpenReview(null)} />;
   const others = data.recent.filter((row) => !data.upcoming.some((call) => call.brief?.id === row.id));
   return (
     <div className="grid min-w-0 gap-5">
@@ -426,7 +485,7 @@ export function CallsView({ data, actions, notes = null, open, onOpen }: { data:
         icon={CalendarIcon}
         agent="sales-conversion"
         eyebrow="Dealmaker · Calls"
-        title="Before each call, one page on the lead"
+        title="Before each call, one page on the lead; after it, the review"
         promise={`${data.scopeWhy} A brief reads your ${data.connected ? data.crm.label : "notes"}, the lead's earlier calls and your Playbook. It contacts nobody.`}
       />
       {data.connected ? (
@@ -435,7 +494,7 @@ export function CallsView({ data, actions, notes = null, open, onOpen }: { data:
           {data.upcoming.length ? (
             <ul className="grid gap-2">
               {data.upcoming.map((call) => (
-                <CallRow key={call.ref} call={call} data={data} actions={actions} notes={notes} onOpen={onOpen} />
+                <CallRow key={call.ref} call={call} data={data} actions={actions} notes={notes} reviews={reviews} onOpen={onOpen} onOpenReview={onOpenReview} />
               ))}
             </ul>
           ) : (
@@ -449,6 +508,26 @@ export function CallsView({ data, actions, notes = null, open, onOpen }: { data:
         </>
       )}
       {notes ? <RecentNotes notes={notes.notes} /> : null}
+      {reviews?.reviews.length ? (
+        <Panel className="grid min-w-0 gap-3 p-4 sm:p-6">
+          <SectionTitle icon={ClipboardList}>Call reviews</SectionTitle>
+          <ul className="grid gap-2">
+            {reviews.reviews.map((row) => (
+              <li key={row.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+                <span className="min-w-0 text-sm text-foreground">{row.leadName}</span>
+                <span className="flex items-center gap-2">
+                  <StateBadge state={row.state} of="review" />
+                  {row.state === "ready" || row.state === "needsReview" ? (
+                    <Button size="sm" variant="outline" onClick={() => onOpenReview(row.id)}>
+                      Open
+                    </Button>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
       {others.length ? (
         <Panel className="grid min-w-0 gap-3 p-4 sm:p-6">
           <SectionTitle icon={ClipboardList}>Recent briefs</SectionTitle>
@@ -482,6 +561,12 @@ function OpenBrief({ workspaceId, briefingId, onClose }: { workspaceId: Id<"work
   return <BriefView brief={brief} onClose={onClose} />;
 }
 
+function OpenReview({ workspaceId, reviewId, onClose }: { workspaceId: Id<"workspaces">; reviewId: string; onClose: () => void }) {
+  const review = useQuery(api.callReviews.review, { workspaceId, reviewId: reviewId as Id<"callReviews"> });
+  if (review === undefined) return <p className="text-sm text-muted-foreground">Opening the review…</p>;
+  return <ReviewView review={review} onClose={onClose} />;
+}
+
 /** Dealmaker's Calls tab, before the call, for the organization or the client the picker names. */
 export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   const { clientId } = useClientScope();
@@ -490,12 +575,18 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   const notes = useQuery(api.callNotes.recent, { workspaceId, clientId });
   const uploadUrl = useMutation(api.callNotes.memoUploadUrl);
   const saveNote = useMutation(api.callNotes.save);
+  const reviews = useQuery(api.callReviews.recent, { workspaceId, clientId });
+  const requestReview = useMutation(api.callReviews.request);
   const linked = useSearchParams().get("brief");
   const [open, setOpen] = useState<string | null>(linked);
+  const [openReview, setOpenReview] = useState<string | null>(null);
   if (open) return <OpenBrief workspaceId={workspaceId} briefingId={open} onClose={() => setOpen(null)} />;
+  if (openReview) return <OpenReview workspaceId={workspaceId} reviewId={openReview} onClose={() => setOpenReview(null)} />;
   if (data === undefined) return <p className="text-sm text-muted-foreground">Reading your booked calls…</p>;
   const actions: CallsActions = {
     request: (input) => request({ workspaceId, clientId, ...input }),
+    requestReview: ({ transcriptId, callNoteId, confirmedCredits }) =>
+      requestReview({ workspaceId, clientId, confirmedCredits, ...(transcriptId ? { transcriptId: transcriptId as Id<"callTranscripts"> } : {}), ...(callNoteId ? { callNoteId: callNoteId as Id<"callNotes"> } : {}) }),
     saveNote: async ({ memo, objections, ...input }) => {
       let stored: { storageId: Id<"_storage">; seconds: number } | undefined;
       if (memo) {
@@ -506,5 +597,5 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
       return saveNote({ workspaceId, clientId, ...input, objections: objections.map((row) => ({ title: row.title, ...(row.itemId ? { itemId: row.itemId as Id<"playbookItems"> } : {}) })), ...(stored ? { memo: stored } : {}) });
     },
   };
-  return <CallsView data={data} actions={actions} notes={notes ?? null} onOpen={setOpen} />;
+  return <CallsView data={data} actions={actions} notes={notes ?? null} reviews={reviews ?? null} onOpen={setOpen} onOpenReview={setOpenReview} />;
 }

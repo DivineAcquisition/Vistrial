@@ -711,6 +711,14 @@ Convex. The coordinator verifies each; the owner merges.
    `SKILL_CAPS`. Tool slugs and the work tabs come with the first skill that uses them (step 6), so no slug
    or tab exists without code behind it.
 6. **Pipeline Forensics, server.** Read, compute, write, checks, save, evidence; tests against a fake CRM.
+   *Built:* `convex/skills/pipelineForensics/` (`pf.read`, `pf.check`, `pf.save`). It reads the CRM only
+   through `crmFor`, reviews the pipeline with the most deals in the last 90 days, and needs 20 deals; a rate
+   or a median needs 5 cases. Code decides the stall (the stage with the most quiet deals, else the slowest
+   with a sample) and the model explains it; six code checks; one revision from the reserve; a
+   `pipelineReview` asset (a new asset kind) with Your data evidence citing one CRM source on the project.
+   Not built yet: cost per booked call and per won deal from Meta or a results file, and show rate from
+   calendar counts when the CRM has no appointments; both come with the screen in step 7. No report-ready
+   email yet (the email names Strategist's tabs); it comes with the screen too.
 7. **Pipeline Forensics, screen** and its Briefing post; the task proposer reads its approved steps.
 8. **Conversation Intelligence**, server and screen, with CRM update proposals.
 9. **Deal Briefing**, on request, then the automatic switch with its monthly cap; Home "Today's calls".

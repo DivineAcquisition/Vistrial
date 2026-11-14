@@ -969,6 +969,8 @@ export default defineSchema({
       v.literal("pageTeardown"),
       /** A landing page Vistrial built for a business, to the owner's framework (Landing Page Build). */
       v.literal("landingPage"),
+      /** Where a sales pipeline's deals stop moving, from the CRM's own figures (Dealmaker, Pipeline Forensics). */
+      v.literal("pipelineReview"),
     ),
     title: v.string(),
     status: assetStatus,

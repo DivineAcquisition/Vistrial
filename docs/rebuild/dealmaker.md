@@ -1,8 +1,9 @@
 # Dealmaker: the second live agent (design)
 
-Date: 2026-11-14. Designed, then **answered by the owner the same day** (section 12). The build goes in
-the small stacked pull requests of section 13. Where an answer changed the design, the sections below say
-what was decided.
+Date: 2026-11-14. Designed, then **answered by the owner the same day** (section 12), then shaped further
+in a discovery session with the owner (section 0). **Section 0 wins wherever it differs from the sections
+after it**: it sets the philosophy, the six tabs, each skill as refined, and the build order from here
+(0.9). Sections 1 to 13 stay as the record of the first design and what steps 1 to 6 built.
 
 Dealmaker is the catalog agent `sales-conversion` (`convex/catalog.ts`, number 3, department `sales`,
 lifecycle `Convert`, display name **Dealmaker**). Its customers are the same as Strategist's: marketing
@@ -23,6 +24,226 @@ The owner's brief, 2026-11-14, in short:
 - In the app, label work by the agent and what it produced ("Dealmaker · pipeline review"). Skill names stay
   for the landing page, future per-agent pages, and a condensed form on the Usage page. No model names and no
   credits used on work screens; only a budget a person confirms before work starts.
+
+---
+
+## 0. How Dealmaker is built (owner discovery, 2026-11-14)
+
+The owner's answers in a discovery session, in five rounds on philosophy and six on the skills. Quoted
+words are the owner's. Where something here changes an earlier section, this wins.
+
+### 0.1 What Dealmaker is
+
+- **One agent that earns its role in stages** ("all three, in stages"): it starts as a **sales assistant**
+  (briefs, notes, drafts, CRM upkeep), becomes a **sales manager** (where deals stall, today's moves, rep
+  coaching), and works as a **setter** (working leads, rebooking no-shows) as the owner trusts it.
+- **What it is for: closed deals.** Show rate, no lead going cold and time saved all count, "with a focus on
+  deal closes".
+- **Who uses it: everyone in a sales team.** The owner who closes their own calls, an agency's reps, the
+  agency running it inside each client's CRM, and setter-plus-closer teams. **Each role gets its own home**
+  (setter: booking and no-show work; closer: calls and proposals; owner: everything and the approvals),
+  **filtered to the deals assigned to that person** in the CRM.
+- **For an agency's clients it speaks in the client's voice**: the client's offer, proof and cloned voice.
+  The agency approves on the client's behalf.
+
+### 0.2 How much it does on its own
+
+- **Anything that talks to a lead waits for approval by default, and the user may make a kind of message
+  autonomous** (for example, no-show rebook texts). The owner turns each kind on.
+- **Always stops for a person, whatever is autonomous:**
+  1. anything with a price;
+  2. the first message to a lead;
+  3. marking a deal won or lost (the Owner's `VALUE`, as today);
+  4. a negative reply from a lead (stop, angry, not interested): everything for that lead pauses.
+- **One next move at a time.** It drafts the single best next message when a deal needs one. No
+  multi-step sequences.
+- **Honest selling, Strategist's rules.** Messages to leads claim nothing beyond the business's proof and
+  offer, invent no urgency or scarcity, and promise no result.
+- **It learns in the open.** When a person edits or rejects a draft, Dealmaker adds what it learned to a
+  "What I've learned about how you sell" list in the Playbook, which anyone who may edit the Playbook can
+  change or delete. Nothing is learned silently.
+
+### 0.3 How it proves it works
+
+All four, from the business's own CRM, compared only with itself:
+
+- **Close rate, show rate and speed to lead, before and after** Dealmaker was switched on.
+- **Deals it touched**: revenue from deals where its brief, follow-up or proposal was used, worded
+  "involved", never "caused".
+- **Time saved**: drafts, notes and CRM updates it did, counted, with a stated time per item.
+- **A weekly scorecard** in the Briefing: what moved, what it did, what is next.
+
+### 0.4 How it looks and feels
+
+All four, together ("a cockpit, a to-do feed, an agent you watch work, a shared team room"): dense live
+numbers with colour-coded status; a feed of "your moves today", one at a time; a visible stream of
+Dealmaker working (drafting, checking, waiting on you); and setters, closers and the owner seeing each
+other's moves and handing deals off. Colour is never alone: every status has an icon and words.
+
+### 0.5 The six tabs
+
+| Tab | What happens there | Skills behind it |
+|---|---|---|
+| **Chat** | Talk to Dealmaker; it routes to a skill and shows the plan and budget first | All six |
+| **Calendar** | Booked calls in a week grid with a Today rail; each call shows its brief status (ready, due, none), confirmed or not, showed, no-show, cancelled; show-rate figures on top | Deal Briefing |
+| **Pipeline** | Deals by stage, colour-coded by **health** (active, cooling, quiet, won, lost), with a badge for **who has the ball** (the lead, us, waiting for approval) and the lead's **temperature**; the lead score with its reasons; today's moves; the weekly review on top; dragging a card *proposes* the stage move | Pipeline Forensics, Follow-up Engine |
+| **Calls** | Before the call: the brief. During: a live checklist and Dealmaker taking notes. After: the review, the recap, the proposal, the next step. A short intake form for calls taken on a mobile phone | Deal Briefing, Conversation Intelligence, Objection Playbook, Proposal Architect |
+| **Comms** | Every message drafted for sending: SMS, email, voice notes (the user's cloned voice), DMs (Instagram, Facebook); WhatsApp marked coming soon. Lanes: drafted, waiting for approval, held for quiet hours, sent, failed | Follow-up Engine, Proposal Architect |
+| **Playbook** | Dealmaker's sales brain: what it knows about how this business sells (section 0.7), what it learned, and the objection playbook | Feeds every skill; holds Objection Playbook |
+
+Calendar shows calls from the **CRM's appointments**, which carry the lead. The Google Calendar and Calendly
+connections keep weekly counts only, with no names, and stay that way unless the privacy policy changes.
+
+### 0.6 Fuel: how Dealmaker learns the business
+
+"Fuel" means two things: what the business gives Dealmaker, and how we define its skills, functions and
+goal (this section). For the first, **all of these, together**:
+
+- **It reads first**: the CRM, the website, the connected note taker, Strategist's approved offer analysis.
+- **Then a guided interview, only for the gaps** (about ten minutes): what each pipeline stage means, the
+  quiet-days setting, the sales script, packages and prices, proof it may quote, the voice and sign-off,
+  consent tags and channels.
+- **Uploads**: the sales script, offer documents, past proposals that won, call transcripts.
+- **YouTube links**: a person pastes a link to a sales training video; Dealmaker reads its transcript and
+  files what it teaches into the Playbook, labelled with the video as its source.
+- **It shows what it still does not know**: each folder says what is in it and what each skill still needs
+  ("Objection Playbook needs 5 reviewed calls; you have 2"). A count, never a score.
+
+### 0.7 The Playbook's four folders
+
+The owner chose the two middle options together, read as: **four folders**, and the four stages of a sales
+call organise what is inside them.
+
+| Folder | What it holds | Call stages inside it |
+|---|---|---|
+| **Offer** | Packages, prices allowed in proposals, guarantees, proof (case studies, testimonials) | — |
+| **Prospect** | Who buys, the discovery questions, the qualification fields (need, budget, who decides, timing, fit) | Open, Discover |
+| **Objections** | Every objection with how often it is heard, the lead's own words, what worked, a talk track, and per rep; tagged money, time, trust or fit | — |
+| **Closing** | The pitch, the close, proposal templates and past winning proposals, follow-up wording | Pitch, Close |
+
+Every item keeps where it came from (an upload, a call, a video, the interview, a learned edit) and its
+evidence label. The Playbook is one per organization and one per client.
+
+### 0.8 Each skill, refined
+
+**Pipeline Forensics.**
+- **Live and weekly.** The figures, the stage flow, the health colours and the lead score are recomputed in
+  code after every CRM read, at no model cost. The written review (the stall explained, the plan) runs
+  **weekly, automatically**, with its cap shown before it is switched on, and on request.
+- **The lead score lives here**, worked out in code from **engagement** (replied lately, showed, answered
+  messages, reply speed), **fit** (source, value, budget, who decides and timing from call reviews) and
+  **what the business's own won deals had in common** (only once there are enough won deals; until then it
+  says "Not enough data" for that part). Shown as a number **with every reason listed under it**, labelled
+  an estimate, and never shown to a lead. **This is the owner's decision to break the app's no-score rule**
+  (readable-output: "there is no score, grade or percentage") for this one place.
+- **Lead temperature** (hot, warm, cold) is the engagement part of the score in three bands, named so the
+  colour has words.
+- **Hands back, beyond the stall**: today's moves (the deals to act on now, each with one next move), a
+  per-rep breakdown, source quality (booked calls and won deals per source; cost per won deal with Meta),
+  and a **forecast** of revenue from open deals, as a range with its basis, or "Not enough data".
+- **Owner and Admin only** see and start the review (it shows every rep). Reps see their own deals on the
+  Pipeline tab.
+
+**Conversation Intelligence.**
+- **When it runs: every call automatically, sales calls only, or on request**, chosen in a setting, with
+  the option to turn it off or focus it on certain calls (a calendar, a pipeline, a rep).
+- **Dealmaker takes the notes.** Calls come from Zoom or Google Meet (a note taker that joins, or Zoom's
+  recording), HighLevel's dialer recordings, the business's own note taker (Fathom, Fireflies, Otter), or,
+  for a call on a mobile phone, a short **intake form** after the call (outcome and next step, the fit
+  fields, objections heard from the Playbook's list, and a 60-second voice memo Dealmaker transcribes and
+  uses to fill in the rest).
+- **Hands back, added**: talk time and questions asked, which steps of the business's own script were
+  covered or skipped, a recap for the lead drafted in Comms, and the fit answers that feed the lead score.
+- **Coaching notes are the owner's only.**
+- **The live checklist** during the call holds both the script's steps and this lead's points from the
+  brief, marked apart. It does not listen to the call; real-time prompts are not built.
+
+**Deal Briefing.**
+- As decided: automatic 3 hours before each booked call, and on request; at most 200 briefs and 600
+  credits a month, shown before the switch is turned on.
+- **Adds**: a short public read of the lead's business (website, public profile), sourced and labelled the
+  Strategist way; the lead score and why; the package that fits what is known (no price unless it is in the
+  offer); and a suggested opening question.
+- **Delivered** on the Calls tab, by email to the closer, and as a link added to the calendar event (this
+  writes to the closer's calendar, so it needs the calendar's write permission and a setting).
+
+**Follow-up Engine.**
+- **Starts a next move on**: a deal gone quiet (the quiet-days setting), a no-show, a proposal with no reply
+  after a set number of days, and a **new lead nobody has touched** (speed to lead; a first message, so it
+  always waits for a person).
+- **Channel**: Dealmaker suggests one with its reason; the approver can switch it before sending.
+- **When the lead replies**, it drafts the answer **and** hands it to the deal's person. A negative reply
+  stops everything for that lead. Notifications to Slack or Discord come later.
+- **Dead deals**: people decide when a deal is dead; Dealmaker may **propose** moving a deal to the
+  business's lost or cold stage after **30 days with no engagement** (this replaces the 45 days of answer
+  12.5), as a proposal like any other.
+
+**Objection Playbook.** The objections folder of the Playbook.
+- **From day one**: the owner's own answers, a starter set for agencies, coaches and consultants labelled
+  "not yet heard on your calls", and whatever it studies from uploads, transcripts and YouTube links.
+  Replaced by real call evidence over time.
+- **Each objection shows** how often it is heard with the lead's own words, what worked (answers given on
+  calls that later closed against ones that did not, as the business's own data), a talk track built on the
+  offer and proof (an untested hypothesis until used), and per rep (owner only).
+- **Used** in the brief, in the live checklist, in follow-up replies, and later in **rep training** (a
+  practice mode where Dealmaker plays the lead).
+- **Refreshes weekly**; counts and quotes update in code as calls are reviewed.
+
+**Proposal Architect.**
+- **A branded PDF**, built from the call review (the lead's own words), the Offer folder's packages and
+  prices (it never sets a price), and the business's past winning proposals as its template.
+- **After sending**: opened or viewed, accept or sign, a payment link (Stripe; it touches money, so the
+  Owner approves it), and a hand-off to Follow-up Engine when it is not opened or answered. A PDF attached to
+  an email cannot report that it was opened, so the PDF is sent as a link to a page that serves it, and the
+  page records the view.
+
+### 0.9 Build order from here
+
+Steps 1 to 6 are built (#309, #311 to #315). The rest, in small stacked draft pull requests, each passing
+tests, lint, both typechecks and the build, never deploying Convex:
+
+7. **Playbook, the fuel**: the four folders, uploads, transcripts, YouTube links, the guided interview
+   (reading the CRM and website first), what it still needs, and the "learned" list.
+8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
+9. **Pipeline tab**: live figures and colours on every read, the lead score with reasons, temperature,
+   who has the ball, today's moves, the weekly review, per rep, source quality, forecast.
+10. **Calls tab, before**: Deal Briefing with research, score, offer fit and opening line; email and the
+    calendar-event link.
+11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
+    recordings; the Zoom and Meet note taker.
+12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the
+    score inputs, owner-only coaching, and the live checklist.
+13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
+    over; SMS and email through the merged messaging path; Instagram and Facebook DMs.
+14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
+    attachment only.
+15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.
+16. **Proposal Architect**: the PDF, the viewed page, accept, the Stripe link, the hand-off.
+17. **Calendar tab.**
+18. **Chat, the weekly scorecard and the proof** (before and after, deals touched, time saved).
+19. **Go live** (catalog, landing page, waitlist email), then HubSpot, Salesforce, rep training, WhatsApp,
+    Slack and Discord notifications.
+
+### 0.10 Open before the steps that need them
+
+1. **The Zoom and Meet note taker.** A note taker that joins calls is usually bought from a vendor (Recall.ai
+   is the common one) rather than built. *Recommend: start with the business's own note taker, HighLevel
+   recordings and the intake form (step 11), and choose the vendor before adding the joining note taker.*
+2. **Recording consent.** About a dozen US states, California among them, need everyone on a call to agree
+   to recording. *Recommend: the note taker announces itself, and the closer confirms consent for each call,
+   as transcripts do today.*
+3. **Voice notes and the law.** A cloned voice counts as an artificial voice under US calling law (TCPA).
+   *Recommend: audio attachments by text or email only, never voicemail drops, only to leads under the
+   consent tags, every voice note approved; each client's voice cloned only with that client's own recorded
+   consent.*
+4. **Accept and sign.** A legally binding signature needs a provider (Dropbox Sign or DocuSign).
+   *Recommend: "Accept" on the proposal page first; a signature provider later.*
+5. **Calendar write permission** for the brief link on the event: a new Google Calendar scope and a privacy
+   policy line. *Recommend: off by default, Owner turns it on.*
+6. **DMs through HighLevel**: Instagram and Facebook messages through HighLevel's conversations API are not
+   yet tested. *Recommend: prove them on a test sub-account before step 13 promises them.*
+7. **YouTube videos**: only public videos with captions, read through captions, never downloaded.
+   *Recommend: as written.*
 
 ---
 
@@ -569,6 +790,8 @@ Each with the three-row digest (what changed, what it means, what to do), from f
 
 ### 8.2 Work tabs
 
+_Superseded by section 0.5: the six tabs are Chat, Calendar, Pipeline, Calls, Comms and Playbook._
+
 Dealmaker's tabs, in `agentTabs` order: **Chat**, **Pipeline** (pipeline reviews), **Calls** (pre-call
 briefs and call reviews, newest first, upcoming calls at the top), **Follow-ups**. Each tab follows the
 shape of Strategist's (`work-shell.tsx`: running now, results, suggested next) and each result is built from
@@ -690,6 +913,8 @@ The questions this section asked, and what the owner decided. The sections above
 ---
 
 ## 13. Build order, in small stacked pull requests
+
+_Steps 1 to 6 are built. Section 0.9 replaces the order from step 7 on._
 
 Each is a draft from current main (or stacked on the one before), passes tests, lint, `npm run typecheck`,
 `npx tsc --noEmit -p convex` and `npm run build`, has a story page where it has a screen, and never deploys

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { CallNotesForm, type NotesData } from "@/components/work/call-notes";
 import { CallsView, type BriefData, type CallsData } from "@/components/work/calls-tab";
+import type { ReviewData, ReviewsData } from "@/components/work/review-view";
 
 import { StoryFrame } from "../work-tabs/story-frame";
 
@@ -22,11 +23,11 @@ function calls(state: string): CallsData {
     connected: true,
     crm: { label: "HighLevel", accountName: "Northlight Growth" },
     upcoming: [
-      { ref: "a0", startsAt: 0, when: "Fri, Nov 13, 2:00 PM", status: "showed", contactRef: "c0", dealRef: "d0", leadName: "Priya Raman", source: "Referral", stage: "Call booked", brief: recent[1], past: true, noted: false },
-      { ref: "a9", startsAt: 0, when: "Fri, Nov 13, 9:30 AM", status: "showed", contactRef: "c9", dealRef: "d9", leadName: "Marcus Hale", source: "Webinar", stage: "Proposal sent", brief: null, past: true, noted: true },
-      { ref: "a1", startsAt: 1, when: "Sun, Nov 15, 3:00 PM", status: "confirmed", contactRef: "c1", dealRef: "d1", leadName: "Jordan Lee", source: "Facebook ads", stage: "Proposal sent", brief: recent[0], past: false, noted: false },
-      { ref: "a2", startsAt: 2, when: "Mon, Nov 16, 10:30 AM", status: "booked", contactRef: "c2", dealRef: "d2", leadName: "Riley Park", source: "Referral", stage: "Call booked", brief: { id: "b2", leadName: "Riley Park", when: "Mon, Nov 16, 10:30 AM", state: "running", createdAt: 2 }, past: false, noted: false },
-      { ref: "a3", startsAt: 3, when: "Tue, Nov 17, 4:00 PM", status: "booked", contactRef: "c3", dealRef: null, leadName: "Sam Okafor-Whitfield, Okafor Coaching Collective", source: "Webinar", stage: null, brief: null, past: false, noted: false },
+      { ref: "a0", startsAt: 0, when: "Fri, Nov 13, 2:00 PM", status: "showed", contactRef: "c0", dealRef: "d0", leadName: "Priya Raman", source: "Referral", stage: "Call booked", brief: recent[1], past: true, noted: false, callNoteId: null, transcriptId: "t0", review: null },
+      { ref: "a9", startsAt: 0, when: "Fri, Nov 13, 9:30 AM", status: "showed", contactRef: "c9", dealRef: "d9", leadName: "Marcus Hale", source: "Webinar", stage: "Proposal sent", brief: null, past: true, noted: true, callNoteId: "n1", transcriptId: "t9", review: { id: "r1", state: "ready" } },
+      { ref: "a1", startsAt: 1, when: "Sun, Nov 15, 3:00 PM", status: "confirmed", contactRef: "c1", dealRef: "d1", leadName: "Jordan Lee", source: "Facebook ads", stage: "Proposal sent", brief: recent[0], past: false, noted: false, callNoteId: null, transcriptId: null, review: null },
+      { ref: "a2", startsAt: 2, when: "Mon, Nov 16, 10:30 AM", status: "booked", contactRef: "c2", dealRef: "d2", leadName: "Riley Park", source: "Referral", stage: "Call booked", brief: { id: "b2", leadName: "Riley Park", when: "Mon, Nov 16, 10:30 AM", state: "running", createdAt: 2 }, past: false, noted: false, callNoteId: null, transcriptId: null, review: null },
+      { ref: "a3", startsAt: 3, when: "Tue, Nov 17, 4:00 PM", status: "booked", contactRef: "c3", dealRef: null, leadName: "Sam Okafor-Whitfield, Okafor Coaching Collective", source: "Webinar", stage: null, brief: null, past: false, noted: false, callNoteId: null, transcriptId: null, review: null },
     ],
     recent,
   } as unknown as CallsData;
@@ -133,6 +134,50 @@ const notes: NotesData = {
   ],
 } as unknown as NotesData;
 
+const reviews: ReviewsData = { canRequest: true, maxCredits: 180, reviews: [{ id: "r1", leadName: "Marcus Hale", state: "ready", createdAt: 1 }] } as unknown as ReviewsData;
+
+function review(owner: boolean): ReviewData {
+  return {
+    id: "r1",
+    leadName: "Marcus Hale",
+    state: "ready",
+    createdAt: 1,
+    coaching: owner ? ["The decision was not asked for once the price question was answered.", "Timing never came up; ask when they want to start."] : null,
+    view: {
+      outcome: "Marcus asked for a proposal and needs his co-founder's sign-off before deciding.",
+      nextStep: "Send the proposal and the clinic case study by Friday.",
+      checksPassed: true,
+      talk: [
+        { name: "Milo", words: 2140, share: 58, questions: 14 },
+        { name: "Marcus", words: 1550, share: 42, questions: 3 },
+      ],
+      fit: [
+        { field: "need", label: "Need", said: true, finding: "Twice the booked consultations by spring", quote: "we need to double the consults we book before spring", kind: "Buyer's words" },
+        { field: "budget", label: "Budget", said: true, finding: "Around $3k a month", quote: "we can do about three thousand a month", kind: "Buyer's words" },
+        { field: "decider", label: "Who decides", said: true, finding: "His co-founder signs off", quote: "my co-founder has to see it first", kind: "Buyer's words" },
+        { field: "timing", label: "Timing", said: false, finding: "", quote: "" },
+        { field: "fit", label: "Fit with the offer", said: true, finding: "The Growth retainer covers it", quote: "Booked from the webinar; wants the retainer", kind: "Rep's account, Milo" },
+      ],
+      objections: [
+        { text: "Price feels high for now", quote: "it feels expensive for where we are", kind: "Buyer's words", answered: true, answerQuote: "most of the cost is the follow-up we run for you" },
+        { text: "Tried an agency before", quote: "the last agency burned us", kind: "Buyer's words", answered: false, answerQuote: "" },
+      ],
+      commitments: [
+        { owner: "We", what: "Send the proposal and the clinic case study", due: Date.UTC(2026, 10, 20), quote: "I'll send the proposal and the case study by Friday", kind: "Buyer's words" },
+        { owner: "Marcus Hale", what: "Talk to the co-founder", quote: "I'll talk to Sam on Monday", kind: "Buyer's words" },
+      ],
+      coverage: [
+        { title: "Open with their goal", covered: true, quote: "what made you book the call" },
+        { title: "Ask what it is worth to them", covered: true, quote: "what would that be worth to you" },
+        { title: "Ask for the decision", covered: false, quote: "" },
+      ],
+      updates: [{ words: "Move the deal to Proposal sent", state: "proposed", detail: "Waiting for approval.", label: "Inference" }],
+      recap: { subject: "Thanks for the call, Marcus", body: "Thanks for your time today. You want to double the consults you book before spring. I'll send the proposal and the clinic case study by Friday, and you'll talk to Sam on Monday.", draftId: "d1" },
+      missing: [],
+    },
+  } as unknown as ReviewData;
+}
+
 export function CallsTabStory({ state, theme }: { state: string; theme: string }) {
   const [open, setOpen] = useState<string | null>(state === "brief" || state === "first" ? "b1" : null);
   return (
@@ -140,7 +185,15 @@ export function CallsTabStory({ state, theme }: { state: string; theme: string }
       {state === "intake" ? (
         <CallNotesForm lead={{ contactRef: "c0", dealRef: "d0", appointmentRef: "a0", leadName: "Priya Raman" }} options={notes} actions={{ saveNote: noop }} onDone={() => undefined} />
       ) : (
-        <CallsView data={calls(state)} actions={{ request: noop, saveNote: noop }} notes={state === "viewer" ? { ...notes, canWrite: false } : notes} open={open ? brief(state) : null} onOpen={setOpen} />
+        <CallsView
+          data={calls(state)}
+          actions={{ request: noop, saveNote: noop, requestReview: noop }}
+          notes={state === "viewer" ? { ...notes, canWrite: false } : notes}
+          reviews={state === "viewer" ? { ...reviews, canRequest: false } : reviews}
+          open={open ? brief(state) : null}
+          onOpen={setOpen}
+          openReview={state === "review" || state === "reviewMember" ? review(state === "review") : null}
+        />
       )}
     </StoryFrame>
   );

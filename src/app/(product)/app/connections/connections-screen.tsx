@@ -1,18 +1,12 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import {
-  ArrowRight,
-  BriefcaseBusiness,
-  FileSpreadsheet,
-  Store,
-  type LucideIcon,
-} from "@/components/icons";
+import { ArrowRight } from "@/components/icons";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
-import { MetaLogo } from "@/components/connections/meta-logo";
+import { ConnectionLogo } from "@/components/connections/connection-logo";
 import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -37,7 +31,7 @@ function Card({
   title: string;
   kind: string;
   words: string;
-  status: { label: string; tone: Tone };
+  status?: { label: string; tone: Tone };
   href?: string;
   action?: string;
   dim?: boolean;
@@ -46,19 +40,19 @@ function Card({
     <>
       <span className="flex items-start justify-between gap-2">
         <span className="flex items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
-            {icon}
-          </span>
+          {icon}
           <span className="grid">
             <span className="font-medium text-card-foreground">{title}</span>
             <span className="text-xs text-muted-foreground">{kind}</span>
           </span>
         </span>
-        <StatusBadge
-          label={status.label}
-          tone={status.tone}
-          className="shrink-0 [&_span]:normal-case"
-        />
+        {status ? (
+          <StatusBadge
+            label={status.label}
+            tone={status.tone}
+            className="shrink-0 [&_span]:normal-case"
+          />
+        ) : null}
       </span>
       <span className="text-sm text-muted-foreground">{words}</span>
       {action ? (
@@ -82,9 +76,7 @@ function Card({
   );
 }
 
-const icon = (Icon: LucideIcon) => (
-  <Icon aria-hidden className="size-4 text-muted-foreground" />
-);
+const logo = (id: string) => <ConnectionLogo id={id} size={40} className="rounded-xl" />;
 
 /**
  * The workspace's connections: accounts you log in to, and the ones coming next. Research sources are not
@@ -138,7 +130,7 @@ export function ConnectionsScreen() {
       <PageHeader
         eyebrow="Workspace"
         title="Connections"
-        description="Connect your accounts once, here. Agents use only the connections you grant them, and everything is read-only: nothing is posted, published or spent."
+        description="Connect your accounts once, here. Agents use only the connections you grant them, and nothing is posted, published or spent. A change in HighLevel waits for a person to approve it."
       />
 
       <section className="grid gap-3" aria-label="Your accounts">
@@ -147,7 +139,7 @@ export function ConnectionsScreen() {
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Card
-            icon={<MetaLogo className="h-4" />}
+            icon={logo("meta")}
             title="Meta ads"
             kind="Facebook and Instagram ad results"
             words={
@@ -160,7 +152,15 @@ export function ConnectionsScreen() {
             action={conn ? "Manage" : "Connect"}
           />
           <Card
-            icon={icon(FileSpreadsheet)}
+            icon={logo("highlevel")}
+            title="HighLevel"
+            kind="Your CRM"
+            words="Pipelines, won deals, lead sources and lead activity for your organization or each client. Changes wait for your approval."
+            href="/app/connections/highlevel"
+            action="Open"
+          />
+          <Card
+            icon={logo("results")}
             title="Results files"
             kind="Exports from your other tools"
             words={
@@ -186,23 +186,23 @@ export function ConnectionsScreen() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Card
             dim
-            icon={icon(Store)}
-            title="Google Business Profile"
-            kind="Your listing"
-            words="Reviews, calls and direction requests: how local customers find you."
+            icon={logo("hubspot")}
+            title="HubSpot"
+            kind="Your CRM"
+            words="Your pipeline: leads, stages and won deals."
             status={{ label: "Coming soon", tone: "neutral" }}
           />
           <Card
             dim
-            icon={icon(BriefcaseBusiness)}
-            title="Jobber"
-            kind="Jobs and revenue"
-            words="Which leads became booked jobs, so cost per lead becomes cost per job."
+            icon={logo("salesforce")}
+            title="Salesforce"
+            kind="Your CRM"
+            words="Your pipeline: leads, stages and won deals."
             status={{ label: "Coming soon", tone: "neutral" }}
           />
           <Card
             dim
-            icon={<PlatformLogo id="google-ads" size={18} decorative />}
+            icon={<span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-white"><PlatformLogo id="google-ads" size={20} decorative /></span>}
             title="Google Ads"
             kind="Search ad results"
             words="Your search campaigns and conversions, read-only."

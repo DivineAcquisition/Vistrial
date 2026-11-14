@@ -25,7 +25,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { SyncActivity, type StepWords, type SyncRun } from "@/components/connections/meta-effort";
-import { ToolMark } from "@/components/connectors/tool-mark";
+import { ConnectionLogo } from "@/components/connections/connection-logo";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -146,9 +146,7 @@ function when(time: number) {
 
 function Mark() {
   return (
-    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
-      <ToolMark id="gohighlevel" size={28} />
-    </span>
+    <ConnectionLogo id="highlevel" size={48} className="rounded-xl" />
   );
 }
 
@@ -378,7 +376,7 @@ export function HighLevelView({
               <p className="text-sm text-muted-foreground">An Owner connects HighLevel for {who}.</p>
             )
           ) : null}
-          {compact ? <p className="text-xs text-muted-foreground">Vistrial reads first. It changes your CRM only if an Owner allows it and a person approves each change, and it never messages your leads.</p> : null}
+          {compact ? <p className="text-xs text-muted-foreground">Vistrial reads first. It changes your CRM only if an Owner allows it and a person approves each change. Messaging leads stays off unless an Owner turns it on, and each message needs an Owner&apos;s approval.</p> : null}
         </div>
       ) : null}
 

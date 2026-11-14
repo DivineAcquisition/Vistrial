@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { STATE_WORDS, type ConnectCard } from "@/lib/onboarding/connect";
+import { ConnectionLogo } from "@/components/connections/connection-logo";
 import { errorWords } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { PAGE_KIND_WORDS, type PageKind } from "../../../convex/lib/siteCapture/fields";
@@ -208,9 +209,12 @@ function ConnectTile({ card, onConnect, busy }: { card: ConnectCard; onConnect: 
   return (
     <li className={cn("grid gap-3 rounded-xl border p-4", card.state === "connected" ? "border-success/40 bg-success/5" : "border-border bg-card")}>
       <div className="flex items-start justify-between gap-3">
-        <div className="grid gap-1">
-          <span className="font-medium text-strong">{card.name}</span>
-          <span className="text-sm text-muted-foreground">{card.gives}</span>
+        <div className="flex min-w-0 items-start gap-3">
+          <ConnectionLogo id={card.key} size={36} />
+          <div className="grid min-w-0 gap-1">
+            <span className="font-medium text-strong">{card.name}</span>
+            <span className="text-sm text-muted-foreground">{card.gives}</span>
+          </div>
         </div>
         {card.state === "connected" ? <Check aria-hidden className="size-5 shrink-0 text-success" /> : null}
       </div>

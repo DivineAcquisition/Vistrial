@@ -9,7 +9,8 @@
  * - `mono/` SVGs: simple-icons 16.36.0 (CC0), with fill set to currentColor.
  * - HighLevel, Fathom, Fireflies: their own websites (svgl and simple-icons lack them). Their mono
  *   versions are made here: HighLevel recolored, Fathom and Fireflies cut from the icon's shape.
- * - Google Ads, HubSpot, Airtable color files: the simple-icons glyph in the brand's hex.
+ * - Google Ads, HubSpot, Airtable, Calendly, Google Search Console color files: the simple-icons glyph in the
+ *   brand's hex.
  */
 
 export type PlatformGroup =
@@ -79,6 +80,8 @@ export const PLATFORMS: readonly Platform[] = [
     note: "The company now calls itself HighLevel. Wordmark for light pages: gohighlevel-wordmark.svg.",
   },
   { id: "google-calendar", name: "Google Calendar", group: "connector", color: `${dir}/google-calendar.svg`, mono: `${dir}/mono/google-calendar.svg`, guidelines: null },
+  { id: "calendly", name: "Calendly", group: "connector", color: `${dir}/calendly.svg`, mono: `${dir}/mono/calendly.svg`, guidelines: "https://calendly.com/newsroom" },
+  { id: "google-search-console", name: "Google Search Console", group: "connector", color: `${dir}/google-search-console.svg`, mono: `${dir}/mono/google-search-console.svg`, guidelines: null },
   { id: "outlook", name: "Outlook Calendar", group: "connector", color: `${dir}/outlook.svg`, mono: null, guidelines: null },
   { id: "fathom", name: "Fathom", group: "connector", color: `${dir}/fathom.png`, mono: `${dir}/mono/fathom.png`, guidelines: null, note: "Fathom the call recorder (fathom.ai), not Fathom Analytics." },
   { id: "fireflies", name: "Fireflies", group: "connector", color: `${dir}/fireflies.png`, mono: `${dir}/mono/fireflies.png`, guidelines: null },

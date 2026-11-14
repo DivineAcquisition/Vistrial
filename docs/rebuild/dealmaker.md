@@ -490,6 +490,14 @@ tests, lint, both typechecks and the build, never deploying Convex:
     answered" chip, commitments with dates, the script steps covered or not seen, the CRM updates waiting for
     approval or handed back as a step, the recap with where it waits in Comms, and coaching for the Owner only.
     A review that failed its checks says nothing was filed from it. `/dev/calls-tab?state=review|reviewMember`.
+    *12c, built:* the live checklist (`convex/callChecklist.ts`, `convex/lib/dealmaker/checklist.ts`,
+    `src/components/work/call-checklist.tsx`). An upcoming call in the Calls tab offers "Open the checklist":
+    the Playbook's script steps grouped by stage in call order (steps with no stage last), then this lead's
+    points from a ready brief (the opening question, what to cover, fit fields not yet established, likely
+    objections, commitments to follow through on; at most 10), then the three objections heard most on the
+    business's own calls with a talk track only once a person approved it. Built in code each time; nothing
+    listens to the call and nothing runs a model. Ticks are kept per call in `callChecklists` (client-scoped);
+    only ids on the list are kept, and a closer opens only calls on their own deals. `/dev/call-checklist`.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
     over; SMS and email through the merged messaging path; Instagram and Facebook DMs.
     *13a, built (server):* `convex/comms.ts`. A `dealmakerDrafts` row per message, edited freely until it is

@@ -17,6 +17,7 @@ import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
+import { OpenChecklist } from "./call-checklist";
 import { CallNotesForm, RecentNotes, type NotesActions, type NotesData } from "./call-notes";
 import { ProposalView, type ProposalActions, type ProposalData, type ProposalForReview } from "./proposal-view";
 import { ReviewView, type ReviewData, type ReviewsData } from "./review-view";
@@ -106,7 +107,7 @@ function AskBrief({ call, maxCredits, actions, onDone }: { call: Upcoming; maxCr
   );
 }
 
-function CallRow({ call, data, actions, notes, reviews, onOpen, onOpenReview }: { call: Upcoming; data: CallsData; actions: CallsActions; notes: NotesData | null; reviews: ReviewsData | null; onOpen: (id: string) => void; onOpenReview: (id: string) => void }) {
+function CallRow({ call, data, actions, notes, reviews, onOpen, onOpenReview, onOpenChecklist }: { call: Upcoming; data: CallsData; actions: CallsActions; notes: NotesData | null; reviews: ReviewsData | null; onOpen: (id: string) => void; onOpenReview: (id: string) => void; onOpenChecklist?: (ref: string) => void }) {
   const [asking, setAsking] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -133,6 +134,11 @@ function CallRow({ call, data, actions, notes, reviews, onOpen, onOpenReview }: 
           ) : canAsk && !asking && !call.past ? (
             <Button size="sm" variant="outline" onClick={() => setAsking(true)}>
               Make a brief
+            </Button>
+          ) : null}
+          {!call.past && onOpenChecklist ? (
+            <Button size="sm" variant="outline" onClick={() => onOpenChecklist(call.ref)}>
+              Open the checklist
             </Button>
           ) : null}
           {call.past ? (
@@ -510,6 +516,7 @@ export function CallsView({
   reviewProposal,
   openProposal,
   onOpenProposal = () => undefined,
+  onOpenChecklist,
 }: {
   data: CallsData;
   actions: CallsActions;
@@ -524,6 +531,8 @@ export function CallsView({
   reviewProposal?: { data: ProposalForReview; actions: ProposalActions } | null;
   openProposal?: ProposalData | null;
   onOpenProposal?: (id: string | null) => void;
+  /** The live checklist for an upcoming call. */
+  onOpenChecklist?: (ref: string) => void;
 }) {
   if (open) return <BriefView brief={open} onClose={() => onOpen(null)} />;
   if (openProposal) return <ProposalView proposal={openProposal} onClose={() => onOpenProposal(null)} />;
@@ -544,7 +553,7 @@ export function CallsView({
           {data.upcoming.length ? (
             <ul className="grid gap-2">
               {data.upcoming.map((call) => (
-                <CallRow key={call.ref} call={call} data={data} actions={actions} notes={notes} reviews={reviews} onOpen={onOpen} onOpenReview={onOpenReview} />
+                <CallRow key={call.ref} call={call} data={data} actions={actions} notes={notes} reviews={reviews} onOpen={onOpen} onOpenReview={onOpenReview} onOpenChecklist={onOpenChecklist} />
               ))}
             </ul>
           ) : (
@@ -650,6 +659,8 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   const [open, setOpen] = useState<string | null>(linked);
   const [openReview, setOpenReview] = useState<string | null>(null);
   const [openProposal, setOpenProposal] = useState<string | null>(null);
+  const [openChecklist, setOpenChecklist] = useState<string | null>(null);
+  if (openChecklist) return <OpenChecklist workspaceId={workspaceId} clientId={clientId} appointmentRef={openChecklist} onClose={() => setOpenChecklist(null)} />;
   if (open) return <OpenBrief workspaceId={workspaceId} briefingId={open} onClose={() => setOpen(null)} />;
   if (openProposal) return <OpenProposal workspaceId={workspaceId} proposalId={openProposal} onClose={() => setOpenProposal(null)} />;
   if (openReview) return <OpenReview workspaceId={workspaceId} reviewId={openReview} onClose={() => setOpenReview(null)} onOpenProposal={setOpenProposal} />;
@@ -673,5 +684,5 @@ export function CallsTab({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
       return saveNote({ workspaceId, clientId, ...input, objections: objections.map((row) => ({ title: row.title, ...(row.itemId ? { itemId: row.itemId as Id<"playbookItems"> } : {}) })), ...(stored ? { memo: stored } : {}) });
     },
   };
-  return <CallsView data={data} actions={actions} notes={notes ?? null} reviews={reviews ?? null} links={links ?? null} onOpen={setOpen} onOpenReview={setOpenReview} />;
+  return <CallsView data={data} actions={actions} notes={notes ?? null} reviews={reviews ?? null} links={links ?? null} onOpen={setOpen} onOpenReview={setOpenReview} onOpenChecklist={setOpenChecklist} />;
 }

@@ -88,7 +88,12 @@ export const forCall = workspaceQuery({
 
     // The objections heard on the business's own calls, with a talk track only once a person approved it.
     const objectionItems = items.filter((row) => row.kind === "objection");
-    const heard = objectionPlaybook({ items: objectionItems.map((row) => ({ id: row._id, title: row.title, tag: row.tag ?? null, starter: row.source.type === "starter" })), calls: await heardCalls(ctx, scope), showLeads: false, showReps: false });
+    const heard = objectionPlaybook({
+      items: objectionItems.map((row) => ({ id: row._id, title: row.title, tag: row.tag ?? null, starter: row.source.type === "starter" })),
+      calls: await heardCalls(ctx, scope),
+      showLeads: false,
+      showReps: false,
+    });
     const runs = await ctx.db
       .query("objectionRuns")
       .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", scope.clientId))
@@ -98,7 +103,12 @@ export const forCall = workspaceQuery({
     const approved = source?.assetId ? (await ctx.db.get(source.assetId))?.status === "approved" : false;
     const tracks = new Map(approved ? (source?.tracks ?? []).map((row) => [row.itemId as string, row.track]) : []);
 
-    const list = buildChecklist({ steps, brief: brief?.view ?? null, briefState, objections: heard.rows.map((row) => ({ title: row.title, heard: row.heard, track: tracks.get(row.itemId as string) ?? null })) });
+    const list = buildChecklist({
+      steps,
+      brief: brief?.view ?? null,
+      briefState,
+      objections: heard.rows.map((row) => ({ title: row.title, heard: row.heard, track: tracks.get(row.itemId as string) ?? null })),
+    });
     const ticked = new Set((await ticksOf(ctx, scope, args.appointmentRef))?.ticked ?? []);
     const valid = itemIds(list);
     return {

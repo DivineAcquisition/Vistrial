@@ -274,7 +274,7 @@ export const advance = internalMutation({
         kind: "finished",
         agentSlug: GROWTH_ARCHITECT,
         title: "Your first package is ready",
-        body: "Market research, two offer ideas and a teardown of your own pages, from Strategist. On Vistrial: it used none of your credits.",
+        body: "A market report, two offer ideas and a page breakdown of your own pages, from Strategist. On Vistrial: it used none of your credits.",
         ref: { table: "firstPackages", id: pkg._id },
         key: `first-package:${pkg._id}`,
       });
@@ -312,9 +312,9 @@ export const startWaiting = internalMutation({
 // ------------------------------------------------------------------------------------------- reading
 
 const PART_WORDS: Record<PartKey, { title: string; gives: string }> = {
-  research: { title: "Market research", gives: "Who competes for your buyers, what they offer and charge, and where you can stand out." },
-  offers: { title: "Two offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
-  teardown: { title: "Your pages, torn down", gives: "Up to five of your own pages against the landing page framework, with what to change." },
+  research: { title: "Market report", gives: "Who competes for your buyers, what they offer and charge, and where you can stand out." },
+  offers: { title: "Offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
+  teardown: { title: "Page breakdown", gives: "Up to five of your own pages against the landing page framework, with what to change." },
 };
 
 export const REASON_WORDS: Record<string, string> = {

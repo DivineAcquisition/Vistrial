@@ -5,9 +5,9 @@ import { FirstPackageView, type PackageData, type PackagePart } from "@/componen
 import { StoryFrame } from "../work-tabs/story-frame";
 
 const PARTS: Record<PackagePart["key"], Omit<PackagePart, "state" | "phase" | "steps" | "assetId" | "reason">> = {
-  research: { key: "research", title: "Market research", gives: "Who competes for your buyers, what they offer and charge, and where you can stand out." },
-  offers: { key: "offers", title: "Two offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
-  teardown: { key: "teardown", title: "Your pages, torn down", gives: "Up to five of your own pages against the landing page framework, with what to change." },
+  research: { key: "research", title: "Market report", gives: "Who competes for your buyers, what they offer and charge, and where you can stand out." },
+  offers: { key: "offers", title: "Offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
+  teardown: { key: "teardown", title: "Page breakdown", gives: "Up to five of your own pages against the landing page framework, with what to change." },
 };
 const part = (key: PackagePart["key"], rest: Partial<PackagePart>): PackagePart => ({ ...PARTS[key], state: "waiting", phase: null, steps: 0, assetId: null, reason: null, ...rest });
 

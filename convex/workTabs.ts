@@ -9,6 +9,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
+import { chatAgentOf } from "./lib/agentSurfaces";
 import { currentFigures } from "./decisions";
 import { currentGoal } from "./goals";
 import { workspaceQuery } from "./lib/builders";
@@ -93,6 +94,8 @@ export const tab = workspaceQuery({
   handler: async (ctx, args) => {
     if (!isTabSkill(args.skillSlug)) throw userError("This work has no workspace.");
     const skill: TabSkill = args.skillSlug;
+    // The agent whose page holds this tab: its runs are the ones shown.
+    const agentSlug = chatAgentOf(skill) ?? GROWTH_ARCHITECT;
 
     const running = [];
     for (const status of OPEN) {
@@ -102,7 +105,7 @@ export const tab = workspaceQuery({
         .order("desc")
         .take(20);
       for (const run of rows) {
-        if (run.skillSlug !== skill || run.agentSlug !== GROWTH_ARCHITECT) continue;
+        if (run.skillSlug !== skill || run.agentSlug !== agentSlug) continue;
         const steps = await ctx.db
           .query("runSteps")
           .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("runId", run._id))
@@ -125,7 +128,7 @@ export const tab = workspaceQuery({
     const finished = (
       await ctx.db
         .query("agentRuns")
-        .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", GROWTH_ARCHITECT))
+        .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", agentSlug))
         .order("desc")
         .take(60)
     )

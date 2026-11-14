@@ -171,6 +171,10 @@ describe("tasks on the board", () => {
     expect(await message(viewer.mutation(api.agentTasks.propose, { workspaceId, ...proposal }))).toBe(NOT_ALLOWED);
     expect(await message(member.mutation(api.agentTasks.propose, { workspaceId, ...proposal, title: "This will double booked calls" }))).toBe(CLAIM_WORDS);
     expect(await message(member.mutation(api.agentTasks.propose, { workspaceId, ...proposal, skillSlug: "creative-production" }))).toContain("cannot be started from a task");
+    // Work is for one agent. An agent with no chat cannot take work from a task, and one agent's skill is not another's.
+    expect(await message(member.mutation(api.agentTasks.propose, { workspaceId, ...proposal, agentSlug: "sales-conversion" }))).toContain("cannot take work from a task");
+    expect(await message(member.mutation(api.agentTasks.propose, { workspaceId, ...proposal, agentSlug: "sales-conversion", skillSlug: undefined }))).toContain("cannot take work from a task");
+    expect(await message(member.mutation(api.agentTasks.propose, { workspaceId, ...proposal, agentSlug: "growth-architect", skillSlug: "follow-up-engine" }))).toContain("cannot be started from a task");
     const taskId = await member.mutation(api.agentTasks.propose, { workspaceId, ...proposal, clientId: aster, expectedReturn: { basis: "inferred", low: 2, high: 5, metric: "booked calls" } });
 
     const board = await member.query(api.agentTasks.board, { workspaceId });

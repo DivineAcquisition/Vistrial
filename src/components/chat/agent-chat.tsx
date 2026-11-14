@@ -306,7 +306,7 @@ function asData(chat: ChatDetail): SkillChatData {
   return { intake: { id: chat.id, skillSlug: null, status: chat.status, asking: "skill", answers: {}, runId: null, projectId: null, questions: [] }, messages: chat.messages };
 }
 
-function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, context }: { workspaceId: Id<"workspaces">; base: string; agentName: string; editor: boolean; preset: ChatRoute | null; ask?: string; context: ChatContext | null }) {
+function LiveNewChat({ workspaceId, base, agentSlug, agentName, editor, preset, ask, context }: { workspaceId: Id<"workspaces">; base: string; agentSlug: string; agentName: string; editor: boolean; preset: ChatRoute | null; ask?: string; context: ChatContext | null }) {
   const router = useRouter();
   const shell = useWorkspaceShell();
   const send = useMutation(api.agentChat.send);
@@ -341,6 +341,7 @@ function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, contex
               try {
                 const result = await send({
                   workspaceId,
+                  agentSlug,
                   ...(clientId ? { clientId } : {}),
                   text,
                   ...(route ? { skill: route } : {}),
@@ -420,14 +421,14 @@ export function AgentChat({
   context: ChatContext | null;
 }) {
   const { scope } = useClientScope();
-  const rows = useQuery(api.agentChat.list, { workspaceId, scope });
+  const rows = useQuery(api.agentChat.list, { workspaceId, scope, agentSlug: slug });
   const preset = isChatRoute(skill) ? skill : null;
   return (
     <ChatLayout count={rows?.length} list={<ConversationList rows={rows} activeId={conversationId} base={base} canStart={editor} />}>
       {conversationId ? (
         <LiveConversation workspaceId={workspaceId} base={base} slug={slug} agentName={agentName} intakeId={conversationId} editor={editor} />
       ) : (
-        <LiveNewChat key={`${preset ?? "any"}:${context?.id ?? ""}:${ask ?? ""}`} workspaceId={workspaceId} base={base} agentName={agentName} editor={editor} preset={preset} ask={ask} context={context} />
+        <LiveNewChat key={`${preset ?? "any"}:${context?.id ?? ""}:${ask ?? ""}`} workspaceId={workspaceId} base={base} agentSlug={slug} agentName={agentName} editor={editor} preset={preset} ask={ask} context={context} />
       )}
     </ChatLayout>
   );

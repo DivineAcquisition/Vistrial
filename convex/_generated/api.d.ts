@@ -67,6 +67,7 @@ import type * as landingTeardownActions from "../landingTeardownActions.js";
 import type * as leads from "../leads.js";
 import type * as leadsMigration from "../leadsMigration.js";
 import type * as lib_access from "../lib/access.js";
+import type * as lib_agentSurfaces from "../lib/agentSurfaces.js";
 import type * as lib_agentTasks from "../lib/agentTasks.js";
 import type * as lib_agents from "../lib/agents.js";
 import type * as lib_approvals from "../lib/approvals.js";
@@ -311,6 +312,7 @@ declare const fullApi: ApiFromModules<{
   leads: typeof leads;
   leadsMigration: typeof leadsMigration;
   "lib/access": typeof lib_access;
+  "lib/agentSurfaces": typeof lib_agentSurfaces;
   "lib/agentTasks": typeof lib_agentTasks;
   "lib/agents": typeof lib_agents;
   "lib/approvals": typeof lib_approvals;

@@ -10,7 +10,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { GROWTH_ARCHITECT } from "./catalog";
+import { chatAgentOf } from "./lib/agentSurfaces";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { dayKey } from "./lib/caps";
 import { daySpend } from "./lib/capRows";
@@ -28,6 +28,13 @@ export const CHAT_SKILLS = ["offer-intelligence", "growth-diagnostics"] as const
 export type ChatSkill = (typeof CHAT_SKILLS)[number];
 
 const MAX_ANSWER = 600;
+
+/** The agent whose chat holds this skill's conversation. Every chat skill belongs to one. */
+function agentOfChatSkill(skill: ChatSkill): string {
+  const agentSlug = chatAgentOf(skill);
+  if (!agentSlug) throw new Error(`No agent's chat routes to ${skill}.`);
+  return agentSlug;
+}
 
 type Question = { key: string; text: string; chips: string[] };
 
@@ -137,8 +144,8 @@ async function known(ctx: QueryCtx, workspaceId: Id<"workspaces">, skill: ChatSk
 
 async function plan(ctx: MutationCtx, row: Doc<"intakes">, skill: ChatSkill) {
   // The budget the run will really get: raised for a dearer model exactly as `startRunFor` raises it.
-  const caps = await capsFor(ctx, { workspaceId: row.workspaceId, agentSlug: GROWTH_ARCHITECT, skillSlug: skill, choice: row.modelChoice });
-  const spent = await daySpend(ctx, row.workspaceId, GROWTH_ARCHITECT, skill, dayKey());
+  const caps = await capsFor(ctx, { workspaceId: row.workspaceId, agentSlug: row.agentSlug, skillSlug: skill, choice: row.modelChoice });
+  const spent = await daySpend(ctx, row.workspaceId, row.agentSlug, skill, dayKey());
   return {
     skill,
     name: PLAN_WORDS[skill].name,
@@ -245,7 +252,7 @@ export async function beginSkill(
     intakeId = await ctx.db.insert("intakes", {
       workspaceId: ctx.workspaceId,
       ...(clientId ? { clientId } : {}),
-      agentSlug: GROWTH_ARCHITECT,
+      agentSlug: agentOfChatSkill(skill),
       skillSlug: skill,
       answers,
       ...(context ? { context } : {}),
@@ -326,10 +333,10 @@ export const start = workspaceMutation({
     // Nobody starts work on a budget other than the one they were shown. The run gets the conversation's
     // model; if that would mean a different budget from the one on the plan card, they confirm again.
     const shown = (await latestPlan(ctx, row._id))?.data as { capCents?: number } | undefined;
-    const now = await capsFor(ctx, { workspaceId: ctx.workspaceId, agentSlug: GROWTH_ARCHITECT, skillSlug: skill, choice: row.modelChoice });
+    const now = await capsFor(ctx, { workspaceId: ctx.workspaceId, agentSlug: row.agentSlug, skillSlug: skill, choice: row.modelChoice });
     if (shown?.capCents !== undefined && shown.capCents !== now.maxCostCentsPerRun) throw userError("The budget changed. Check the new budget on the plan, then press Start again.");
     const forClient = row.clientId ? { clientId: row.clientId } : {};
-    const base = { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: GROWTH_ARCHITECT, skillSlug: skill, ...forClient };
+    const base = { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, agentSlug: row.agentSlug, skillSlug: skill, ...forClient };
     let projectId: Id<"researchProjects"> | undefined;
     if (skill === "growth-diagnostics") {
       const goal = clean(answers.goal ?? "", MAX_GOAL);

@@ -447,6 +447,28 @@ tests, lint, both typechecks and the build, never deploying Convex:
     note taker and HighLevel recordings; the Zoom and Meet note taker waits for a vendor (0.10 item 1).
 12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the
     readiness inputs, commitments, owner-only coaching, the live checklist, and the end-of-day reports.
+    *12a, built:* Conversation Intelligence on request, server side (`convex/skills/callReview/`, `cr.read`,
+    `cr.check`, `cr.save`; `callReviews.quote`, `callReviews.request`, `callReviews.review`). A person picks a
+    call: a transcript shared with Dealmaker (its linked lead and deal), the closer's call notes (11a), or both.
+    Code reads the transcript (up to 42,000 characters, so the worst case of one write fits the 60-cent cap with
+    a 20-cent reserve), the notes and memo as the closer's account, the deal and its pipeline through `crmFor`,
+    and the Playbook; it counts **talk time and questions per speaker** from the transcript's own speaker labels
+    (a measured result; "Not enough data" when it names no speakers). One model write gives the outcome, the
+    next step, the fit fields, objections (answered on the call or not), commitments, which script steps were
+    covered, a stage, a decision, up to three coaching notes and a recap for the lead. Seven code checks
+    (quotes found in the source they cite; every objection and commitment quoted; a stage only in this deal's
+    pipeline; won or lost only on the buyer's own words from the call; real dates on or after the call; a recap
+    of at most 150 words with no promise, urgency, new price or guess about the person; at most three coaching
+    notes, none a verdict on a person), one revision from the reserve. **Only a review that passes files
+    anything**: each fit field said becomes a `dealFacts` row (kind "buyer" from the call, "rep" with the
+    closer's name from the notes; `sourceRef` `callReview:<id>`), each commitment a `dealCommitments` row (the
+    lead's, or owned by the person who asked), the recap a Comms draft through `fileAgentDraft` (kind
+    `followUp`, or `price` when it names an amount; a person approves it there), and a stage move or a
+    won/lost as proposals through `proposeCrmAction` (handed back as a step to do in the CRM when acting is
+    off). Script steps are shown in call order, covered with the quote or "Not seen on the call". The
+    `callReview` asset (a new kind) is internal and joins no approvals queue; coaching notes are kept apart on
+    the row and only the Owner reads them. Next: 12b the Calls tab's "after" screen; 12c the live checklist;
+    12d the end-of-day reports.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed
     over; SMS and email through the merged messaging path; Instagram and Facebook DMs.
     *13a, built (server):* `convex/comms.ts`. A `dealmakerDrafts` row per message, edited freely until it is

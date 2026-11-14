@@ -514,7 +514,7 @@ tests, lint, both typechecks and the build, never deploying Convex:
     the Playbook's script steps grouped by stage in call order (steps with no stage last), then this lead's
     points from a ready brief (the opening question, what to cover, fit fields not yet established, likely
     objections, commitments to follow through on; at most 10), then the three objections heard most on the
-    business's own calls with a talk track only once a person approved it. Built in code each time; nothing
+    business's own calls with a talk track only once a person approved it (labelled "Untested hypothesis"). Built in code each time; nothing
     listens to the call and nothing runs a model. Ticks are kept per call in `callChecklists` (client-scoped);
     only ids on the list are kept, and a closer opens only calls on their own deals. `/dev/call-checklist`.
 13. **Comms tab**: Follow-up Engine's four triggers, the channel suggestion, replies drafted and handed

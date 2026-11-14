@@ -5,6 +5,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
 
 import { ListChecks, MessageSquareWarning, Target, User } from "@/components/icons";
+import { EvidenceLabel } from "@/components/readable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -93,10 +94,13 @@ export function ChecklistView({ data, onTick, onClose }: { data: ChecklistData; 
                   </Badge>
                 </div>
                 {row.track ? (
-                  <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Target aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-                    {row.track}
-                  </p>
+                  <div className="grid gap-1">
+                    <EvidenceLabel label="Untested hypothesis" />
+                    <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <Target aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                      {row.track}
+                    </p>
+                  </div>
                 ) : null}
               </li>
             ))}

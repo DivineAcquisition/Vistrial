@@ -13,6 +13,7 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { analyticsChoices, analyticsLine, summarizeAnalytics } from "./lib/integrations/google/analytics";
 import { saveGoogleSourcesFor } from "./lib/integrations/google/research";
+import { searchChoices, searchLine, searchRequests, summarizeSearch } from "./lib/integrations/google/searchConsole";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -201,5 +202,108 @@ describe("a Google Analytics connection", () => {
     }));
     expect(left).toEqual({ connections: [], snapshots: [] });
     expect(calls.at(-1)?.url).toBe("https://oauth2.googleapis.com/revoke");
+  });
+});
+
+describe("Search Console", () => {
+  const SITES = {
+    siteEntry: [
+      { siteUrl: "sc-domain:northpeak.agency", permissionLevel: "siteOwner" },
+      { siteUrl: "https://blog.northpeak.agency/", permissionLevel: "siteUnverifiedUser" },
+      { siteUrl: "not a site", permissionLevel: "siteOwner" },
+    ],
+  };
+  const srow = (key: string, clicks: number, impressions: number, position: number) => ({ keys: [key], clicks, impressions, ctr: clicks / impressions, position });
+  const ANSWERS = {
+    days: { rows: [srow("2026-11-11", 10, 200, 8), srow("2026-11-10", 30, 300, 4)] },
+    queries: { rows: [srow("marketing agency for dentists", 25, 150, 3.24)] },
+    pages: { rows: [srow("https://northpeak.agency/", 40, 500, 6)] },
+  };
+
+  it("lists only verified sites, asks for 28 days ending three days ago, and weights average position by impressions", () => {
+    expect(searchChoices(SITES)).toEqual([{ id: "sc-domain:northpeak.agency", label: "northpeak.agency" }]);
+    const requests = searchRequests(NOW);
+    expect(requests.days).toMatchObject({ startDate: "2026-10-15", endDate: "2026-11-11", dimensions: ["date"] });
+    const snapshot = summarizeSearch(ANSWERS, requests.days);
+    expect(snapshot.totals).toEqual({ clicks: 40, impressions: 500, ctr: 0.08, position: 5.6 });
+    expect(snapshot.days.map((row) => row.date)).toEqual(["2026-11-10", "2026-11-11"]);
+    expect(snapshot.queries[0]).toEqual({ name: "marketing agency for dentists", clicks: 25, impressions: 150, ctr: 0.1667, position: 3.2 });
+    expect(searchLine(snapshot)).toBe(
+      '40 clicks from 500 impressions (click rate 8.0%, average position 5.6) from 2026-10-15 to 2026-11-11; top query "marketing agency for dentists" (25 clicks). As reported by Search Console.',
+    );
+  });
+
+  it("reads Search Analytics only, for the chosen site, and cites it in research", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    vi.stubEnv("GOOGLE_OAUTH_CLIENT_ID", "client-id");
+    vi.stubEnv("GOOGLE_OAUTH_CLIENT_SECRET", "client-secret");
+    const calls: { url: string; method: string }[] = [];
+    vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
+      calls.push({ url: input, method: init?.method ?? "GET" });
+      if (input === "https://www.googleapis.com/webmasters/v3/sites") return Response.json(SITES);
+      const body = JSON.parse(String(init!.body)) as { dimensions: string[] };
+      return Response.json(ANSWERS[{ date: "days", query: "queries", page: "pages" }[body.dimensions[0]] as keyof typeof ANSWERS]);
+    });
+    try {
+      const t = convexTest(schema, modules);
+      const owner = t.withIdentity(person("dana"));
+      const workspaceId = await owner.mutation(api.workspace.create, { name: "Northpeak" });
+      await t.run((ctx) =>
+        ctx.db.insert("integrationConnections", {
+          workspaceId,
+          provider: "search_console",
+          status: "connected",
+          accessToken: "sc-token",
+          tokenExpiresAt: NOW + DAY,
+          scopes: ["https://www.googleapis.com/auth/webmasters.readonly"],
+          accountId: "sub-1",
+          accountLabel: "dana@example.com",
+          connectedBy: "dana",
+          connectedAt: NOW,
+        }),
+      );
+      expect(await t.action(internal.googleData.syncOne, { workspaceId, provider: "search_console" })).toEqual({ code: "ok" });
+      const view = await owner.query(api.googleData.view, { workspaceId, provider: "search_console" });
+      expect(view).toMatchObject({ noun: "site", selected: { id: "sc-domain:northpeak.agency" } });
+      expect(view!.summary!.data).toMatchObject({ totals: { clicks: 40, impressions: 500 } });
+      const posts = calls.filter((row) => row.method === "POST");
+      expect(posts).toHaveLength(3);
+      for (const call of posts) expect(call.url).toBe("https://www.googleapis.com/webmasters/v3/sites/sc-domain%3Anorthpeak.agency/searchAnalytics/query");
+      const known = await t.run(async (ctx) => {
+        const runId = await ctx.db.insert("agentRuns", {
+          workspaceId,
+          agentSlug: "growth-architect",
+          skillSlug: "market-intelligence",
+          status: "running",
+          startedBy: "dana",
+          inputRef: "market-intelligence",
+          startedAt: NOW,
+          costCents: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+        });
+        const projectId = await ctx.db.insert("researchProjects", {
+          workspaceId,
+          title: "Market",
+          objective: "",
+          market: "",
+          geography: "",
+          competitors: [],
+          platforms: ["customerData"],
+          suppliedUrls: [],
+          status: "draft",
+          createdBy: "dana",
+          createdAt: NOW,
+          updatedAt: NOW,
+        });
+        return saveGoogleSourcesFor(ctx, { workspaceId, project: (await ctx.db.get(projectId))!, runId, agentSlug: "growth-architect" });
+      });
+      expect(known.map((row) => row.label)).toEqual(["Your Google Search results: northpeak.agency"]);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    }
   });
 });

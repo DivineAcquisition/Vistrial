@@ -9,11 +9,12 @@ import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { AnalyticsSnapshot } from "../../../convex/lib/integrations/google/analytics";
+import type { SearchRow, SearchSnapshot } from "../../../convex/lib/integrations/google/searchConsole";
 
 export type GoogleDataView = NonNullable<FunctionReturnType<typeof api.googleData.view>>;
 
 /** The Google data connections read here, with a chooser and totals on their cards. */
-export const GOOGLE_DATA = ["google_analytics"];
+export const GOOGLE_DATA = ["google_analytics", "search_console"];
 
 const n = (value: number) => value.toLocaleString("en-US");
 
@@ -79,6 +80,51 @@ function AnalyticsTotals({ data }: { data: AnalyticsSnapshot }) {
   );
 }
 
+const percent = (value: number | null) => (value === null ? "n/a" : `${(value * 100).toFixed(1)}%`);
+
+function SearchList({ title, rows }: { title: string; rows: SearchRow[] }) {
+  if (!rows.length) return null;
+  return (
+    <div className="grid gap-1">
+      <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{title}</h4>
+      <ul className="grid gap-0.5 text-sm">
+        {rows.slice(0, 5).map((row) => (
+          <li key={row.name} className="flex min-w-0 justify-between gap-3">
+            <span className="truncate text-foreground">{row.name}</span>
+            <span className="shrink-0 text-muted-foreground tabular-nums">
+              {n(row.clicks)} clicks · {n(row.impressions)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SearchTotals({ data }: { data: SearchSnapshot }) {
+  if (!data.totals.impressions)
+    return (
+      <p className="text-sm text-muted-foreground">
+        No search impressions from {data.from} to {data.to}.
+      </p>
+    );
+  return (
+    <div className="grid gap-3">
+      <p className="text-xs text-muted-foreground">
+        {data.from} to {data.to}, as Search Console reports it. Its figures arrive 2 to 3 days late, and it lists top rows, not every search.
+      </p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Figure label="Clicks" value={n(data.totals.clicks)} />
+        <Figure label="Impressions" value={n(data.totals.impressions)} />
+        <Figure label="Click rate" value={percent(data.totals.ctr)} />
+        <Figure label="Avg. position" value={data.totals.position === null ? "n/a" : String(data.totals.position)} />
+      </div>
+      <SearchList title="Top queries" rows={data.queries} />
+      <SearchList title="Top pages" rows={data.pages} />
+    </div>
+  );
+}
+
 /** The chooser and the last totals for one Google data connection. */
 export function GoogleDataPanel({ provider, view, onChoose }: { provider: string; view: GoogleDataView; onChoose: (choiceId: string) => Promise<unknown> }) {
   const [pick, setPick] = useState(view.selected?.id ?? "");
@@ -127,6 +173,8 @@ export function GoogleDataPanel({ provider, view, onChoose }: { provider: string
       )}
       {view.summary && provider === "google_analytics" ? (
         <AnalyticsTotals data={view.summary.data as AnalyticsSnapshot} />
+      ) : view.summary && provider === "search_console" ? (
+        <SearchTotals data={view.summary.data as SearchSnapshot} />
       ) : view.selected ? (
         <p className="text-muted-foreground">Reading the totals now.</p>
       ) : null}

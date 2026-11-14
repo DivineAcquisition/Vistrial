@@ -5,7 +5,7 @@
  * totals for that one, saves them as the connection's summary, and refreshes them on a schedule. Nothing is
  * ever changed at Google. Disconnecting deletes the choice, the summary and the token (integrations.ts).
  *
- * Built so far: Google Analytics 4. Each further product adds one entry to READERS.
+ * Built so far: Google Analytics 4 and Search Console. Each further product adds one entry to READERS.
  */
 
 import { v } from "convex/values";
@@ -17,6 +17,7 @@ import { liveToken } from "./integrationActions";
 import { adminMutation, memberAction, workspaceQuery } from "./lib/builders";
 import { notAllowed, userError } from "./lib/errors";
 import { ANALYTICS, analyticsChoices, analyticsRequests, summarizeAnalytics, type Choice } from "./lib/integrations/google/analytics";
+import { SEARCH, isSiteId, searchChoices, searchRequests, summarizeSearch } from "./lib/integrations/google/searchConsole";
 import { isAdmin } from "./lib/roles";
 
 const TIMEOUT_MS = 20_000;
@@ -48,7 +49,7 @@ type Reader = {
   /** What the person chooses, in words: "property", "site", "account", "location". */
   noun: string;
   choices: (token: string) => Promise<{ ok: true; choices: Choice[] } | { ok: false; code: string }>;
-  read: (token: string, selectedId: string) => Promise<{ ok: true; summary: unknown } | { ok: false; code: string }>;
+  read: (token: string, selectedId: string, now: number) => Promise<{ ok: true; summary: unknown } | { ok: false; code: string }>;
 };
 
 export const READERS: Record<string, Reader> = {
@@ -68,6 +69,24 @@ export const READERS: Record<string, Reader> = {
         answers[key] = got.body;
       }
       return { ok: true, summary: summarizeAnalytics(answers as Parameters<typeof summarizeAnalytics>[0]) };
+    },
+  },
+  search_console: {
+    noun: "site",
+    choices: async (token) => {
+      const got = await googleCall(SEARCH.sites, token);
+      return got.ok ? { ok: true, choices: searchChoices(got.body) } : got;
+    },
+    read: async (token, site, now) => {
+      if (!isSiteId(site)) return { ok: false, code: "read_failed" };
+      const requests = searchRequests(now);
+      const answers: Record<string, unknown> = {};
+      for (const [key, body] of Object.entries(requests)) {
+        const got = await googleCall(SEARCH.query(site), token, body);
+        if (!got.ok) return got;
+        answers[key] = got.body;
+      }
+      return { ok: true, summary: summarizeSearch(answers as Parameters<typeof summarizeSearch>[0], requests.days) };
     },
   },
 };
@@ -145,7 +164,7 @@ async function sync(ctx: ActionCtx, workspaceId: Id<"workspaces">, provider: str
     await ctx.runMutation(internal.integrations.recordSync, { connectionId: live.connection._id, code });
     return { code };
   }
-  const read = await reader.read(live.token, selected.id);
+  const read = await reader.read(live.token, selected.id, Date.now());
   if (read.ok) await ctx.runMutation(internal.integrations.saveSnapshot, { workspaceId, provider, kind: "summary", data: { selectedId: selected.id, ...(read.summary as object) } });
   const code = read.ok ? "ok" : read.code;
   await ctx.runMutation(internal.integrations.recordSync, { connectionId: live.connection._id, code });

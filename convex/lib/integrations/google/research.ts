@@ -10,6 +10,7 @@ import type { MutationCtx } from "../../../_generated/server";
 import { GROWTH_ARCHITECT } from "../../../catalog";
 import { canonicalUrl } from "../../sourceRefs";
 import { analyticsLine, type AnalyticsSnapshot } from "./analytics";
+import { pct, searchLine, type SearchSnapshot } from "./searchConsole";
 
 export type GoogleKnown = { key: string; label: string; value: string; recordedAt: number };
 
@@ -52,10 +53,43 @@ function rowsFor(provider: string, connection: Doc<"integrationConnections">, da
         : []),
     ];
   }
+  if (provider === "search_console") {
+    const snapshot = data as SearchSnapshot;
+    const base = `https://search.google.com/search-console/performance/search-analytics?resource_id=${encodeURIComponent(selected.id)}`;
+    return [
+      { url: base, title: `Your Google Search results: ${selected.label} (28 days)`, excerpt: searchLine(snapshot) },
+      ...(snapshot.queries.length
+        ? [
+            {
+              url: `${base}&vistrial=queries`,
+              title: `Your top search queries: ${selected.label}`,
+              excerpt:
+                snapshot.queries
+                  .slice(0, 5)
+                  .map((row) => `"${row.name}": ${n(row.clicks)} clicks, ${n(row.impressions)} impressions, click rate ${pct(row.ctr)}, position ${row.position ?? "n/a"}`)
+                  .join("; ") + ". As reported by Search Console.",
+            },
+          ]
+        : []),
+      ...(snapshot.pages.length
+        ? [
+            {
+              url: `${base}&vistrial=pages`,
+              title: `Your top pages in search: ${selected.label}`,
+              excerpt:
+                snapshot.pages
+                  .slice(0, 5)
+                  .map((row) => `${row.name}: ${n(row.clicks)} clicks, ${n(row.impressions)} impressions`)
+                  .join("; ") + ". As reported by Search Console.",
+            },
+          ]
+        : []),
+    ];
+  }
   return [];
 }
 
-const LABEL: Record<string, string> = { google_analytics: "Your Google Analytics" };
+const LABEL: Record<string, string> = { google_analytics: "Your Google Analytics", search_console: "Your Google Search results" };
 
 /** Saves (or refreshes) each granted Google data connection's totals as sources on the project. */
 export async function saveGoogleSourcesFor(

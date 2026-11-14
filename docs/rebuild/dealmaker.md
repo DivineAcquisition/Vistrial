@@ -1,8 +1,8 @@
 # Dealmaker: the second live agent (design)
 
-Date: 2026-11-14. **Design only.** Nothing here is built. The owner answers the questions at the end
-(section 12) before any code is written. The build then goes in the small stacked pull requests of
-section 13.
+Date: 2026-11-14. Designed, then **answered by the owner the same day** (section 12). The build goes in
+the small stacked pull requests of section 13. Where an answer changed the design, the sections below say
+what was decided.
 
 Dealmaker is the catalog agent `sales-conversion` (`convex/catalog.ts`, number 3, department `sales`,
 lifecycle `Convert`, display name **Dealmaker**). Its customers are the same as Strategist's: marketing
@@ -45,7 +45,7 @@ there is only one agent.
 | Side chat | `convex/agentChat.ts`, `routeIntent` and `CHAT_ROUTES` (`convex/lib/chatRouting.ts`) | Its own chat with its own routes |
 | Work tabs | `convex/lib/workTabs.ts` (`WORK_TABS`, `SKILL_TAB`, `SKILL_ASSET`), `convex/workTabs.ts` (`tab`), `src/lib/shell/journey.ts` (`workTabsFor`, `agentTabs`), `src/components/work/*` | Dealmaker's own tabs (section 8) |
 | Readable output | `docs/rebuild/readable-output.md`, `src/components/readable/*` | Every Dealmaker result is built from those blocks |
-| Usage | `convex/usage.ts` names rows "`<skill name> run`" | Condensed "Dealmaker · Pipeline Review" (section 8.4) |
+| Usage | `convex/usage.ts` names rows "`<skill name> run`" | Condensed "Dealmaker · Pipeline Forensics" (section 8.4) |
 
 **The one-agent assumption.** `GROWTH_ARCHITECT` (`"growth-architect"`) is hard-coded in 36 non-test files
 under `convex/`. The ones that matter here:
@@ -76,21 +76,22 @@ agency or a coach selling on calls, the money leaks in five places:
 4. Deals that go quiet after the call and nobody follows up.
 5. Not knowing which of those four is the real problem.
 
-### 2.2 Recommendation
+### 2.2 The skills (owner's decision, 2026-11-14: all six at launch)
 
 | Skill (landing / Usage name) | In the app it reads | Hands back | Verdict |
 |---|---|---|---|
-| **Pipeline Review** (owner's "Pipeline diagnosis") | Dealmaker · pipeline review | Where deals stall, from the CRM's own figures, with a short plan | **Build first** |
-| **Call Review** | Dealmaker · call review | What happened on one sales call, what was promised, the next steps, proposed CRM updates | **Build, launch set** |
-| **Pre-call Brief** | Dealmaker · pre-call brief | One page on the lead before a booked call | **Build, launch set** |
-| **Stalled Deal Follow-up** | Dealmaker · follow-ups | The stalled deals, who first, a drafted message and proposed CRM actions for each | **Build, launch set** |
-| **Objection Playbook** (owner's "objection library and scripts") | Dealmaker · objection playbook | The objections leads actually raise, counted across calls, with quotes and answers grounded in the approved offer | **Second wave**: needs several reviewed calls first |
-| **Proposal Draft** (owner's "proposal and pricing") | Dealmaker · proposal draft | A proposal after a good call, from the call and the approved offer | **Second wave**, proposal only; **pricing stays Strategist's** (Offer Intelligence) |
-| Show-rate booster | — | — | **Not a skill.** Show rate is a figure in Pipeline Review; reminders are a HighLevel workflow the business already runs and Vistrial cannot see; drafting reminders waits for messaging |
-| Lead priority | — | — | **Not a skill.** It is the order of Stalled Deal Follow-up's list, by a stated rule. A separate "priority score" breaks the readable-output rule (no score, grade or percentage) and would rank by things Vistrial cannot see |
+| **Pipeline Forensics** (owner's "Pipeline diagnosis") | Dealmaker · pipeline review | Where deals stall, from the CRM's own figures, with a short plan | **Launch**, built first |
+| **Conversation Intelligence** | Dealmaker · call review | What happened on one sales call, what was promised, the next steps, proposed CRM updates | **Launch** |
+| **Deal Briefing** | Dealmaker · pre-call brief | One page on the lead before a booked call | **Launch** |
+| **Follow-up Engine** | Dealmaker · follow-ups | The stalled deals, who first, a drafted message and proposed CRM actions for each | **Launch** |
+| **Objection Playbook** (owner's "objection library and scripts") | Dealmaker · objection playbook | The objections leads actually raise, counted across calls, with quotes and answers grounded in the approved offer | **Launch**; says Not enough data until 5 reviewed calls exist |
+| **Proposal Architect** (owner's "proposal and pricing") | Dealmaker · proposal draft | A proposal after a good call, from the call and the approved offer | **Launch**, proposal only; **pricing stays Strategist's** (Offer Intelligence) |
+| Show-rate booster | — | — | **Not a skill.** Show rate is a figure in Pipeline Forensics; reminders are a HighLevel workflow the business already runs and Vistrial cannot see; drafting reminders waits for messaging |
+| Lead priority | — | — | **Not a skill.** It is the order of Follow-up Engine's list, by a stated rule. A separate "priority score" breaks the readable-output rule (no score, grade or percentage) and would rank by things Vistrial cannot see |
 
-Launch set: the owner's four picks. Every one of them works through the CRM layer (section 3) and
-degrades honestly without a CRM (section 6).
+Launch set: all six (owner, 2026-11-14). Skill names are used on the landing page, future per-agent pages
+and the Usage page only; in the app, work is worded "Dealmaker · …" as #306 does it. Every skill works
+through the CRM layer (section 3) and degrades honestly without a CRM (section 6).
 
 ### 2.3 The common shape
 
@@ -131,7 +132,7 @@ the `provider` literal, and appointments stored as activities of kind `appointme
 
 There is no CRM adapter interface. `convex/adapters/*` is for research sources, not CRMs. There is also an
 older native lead model (`leads`, `people`, `identities`, `pipelineStages`, `bookings`, …) fed only by manual
-entry and CSV; nothing links it to `crm*`, and Dealmaker does not use it (question 12.11).
+entry and CSV; nothing links it to `crm*`, and Dealmaker does not use it (answer 12.11).
 
 ### 3.2 The design: one model, one door to read, one door to act
 
@@ -229,21 +230,23 @@ automations warning.
 It hands the step back as a Vistrial task for a person ("Move Jordan's deal to Proposal sent in your CRM"),
 labelled "Do this in your CRM". That is the honest degrade for every CRM and for acting being off.
 
-**Messaging** is the messaging switch being built in #301, with its privacy text in #304 (Owner only, off
-by default, consent confirmed by the Owner, a fresh Do Not Disturb and opt-out check, quiet hours in the
-lead's time zone, at most one Vistrial message per lead a day, `SEND` typed per message). Dealmaker only ever
-*proposes* a message through it. Until it merges, a message is a draft a person copies (section 4.4).
+**Messaging** is the merged messaging path (#301, privacy text #304): actions `send_sms` and `send_email`,
+behind the connection's own Owner switch (off by default, consent confirmed by the Owner), with a fresh Do
+Not Disturb and opt-out check, quiet hours in the lead's time zone, at most one Vistrial message per lead a
+day, and `SEND` typed per message. Dealmaker only ever *proposes* a message through it. When the switch is
+off (or the CRM has no messaging capability), the same draft is shown with **Copy** instead (owner,
+2026-11-14).
 
 ### 3.7 Other sources, and what each can and cannot give
 
 | Source | Today | What Dealmaker uses it for | Limit, said on screen |
 |---|---|---|---|
 | CRM (HighLevel now) | `crm*` tables, six-hourly | Everything about deals, stages, contacts, activity, appointments | Reads up to 365 days of deals, 30 of conversations; activity facts only, no message words |
-| Calendar (Google Calendar, Calendly) | `convex/bookings.ts`: **weekly counts only** (booked, cancelled, no-show), no names | Booked-call and show-rate figures in Pipeline Review when the CRM has no appointments | Cannot say *which* lead booked; no pre-call brief from a calendar alone |
-| Call transcripts | `callTranscripts`: pasted or uploaded text, consent confirmed, `agents` grant (Strategist only by default), no link to a lead | Call Review, the transcript part of Pre-call Brief, Objection Playbook | Text only; needs to be granted to Dealmaker and linked to a lead (section 5) |
-| Meta results | `metaAdSnapshots`: spend, results, cost per result per campaign | Upstream volume and cost in Pipeline Review: cost per booked call, per won deal | Only when both Meta and the CRM cover the same period; matched by totals, not per lead |
+| Calendar (Google Calendar, Calendly) | `convex/bookings.ts`: **weekly counts only** (booked, cancelled, no-show), no names | Booked-call and show-rate figures in Pipeline Forensics when the CRM has no appointments | Cannot say *which* lead booked; no pre-call brief from a calendar alone |
+| Call transcripts | `callTranscripts`: pasted or uploaded text, consent confirmed, `agents` grant (Strategist only by default), no link to a lead | Conversation Intelligence, the transcript part of Deal Briefing, Objection Playbook | Text only; needs to be granted to Dealmaker and linked to a lead (section 5) |
+| Meta results | `metaAdSnapshots`: spend, results, cost per result per campaign | Upstream volume and cost in Pipeline Forensics: cost per booked call, per won deal | Only when both Meta and the CRM cover the same period; matched by totals, not per lead |
 | Results files | `resultUploads`: totals of spend, conversions, revenue | Same as Meta, for other channels | Totals only; no per-lead link |
-| Strategist's approved work | offer analysis, market report, business facts | The offer and its proof for Pre-call Brief, Proposal Draft, Objection Playbook answers | Only **approved** versions are used |
+| Strategist's approved work | offer analysis, market report, business facts | The offer and its proof for Deal Briefing, Proposal Architect, Objection Playbook answers | Only **approved** versions are used |
 
 ---
 
@@ -253,7 +256,7 @@ Costs are in credits at the default markup (1 credit = 1 cent of balance, cost �
 run can use, which is the number a person confirms before it starts. "Usually" is an estimate from token
 counts; the first real runs must measure it (section 11).
 
-### 4.1 Pipeline Review
+### 4.1 Pipeline Forensics
 
 **The job.** "Where are we losing deals?" An agency owner looks at a HighLevel pipeline every day and still
 cannot say whether the problem is leads not booking, calls not showing, or calls not closing. This answers
@@ -301,7 +304,7 @@ nobody is trying. The full text, every figure's definition and the window are on
 figure exists. The **Briefing** gets the `finished` post with a three-row digest. **Home** "In motion" shows
 it while it runs.
 
-### 4.2 Call Review
+### 4.2 Conversation Intelligence
 
 **The job.** A coach's closer, or the coach, had a sales call. They want to know what the lead actually
 said, what was promised, what the next step is, and to get the CRM updated without retyping it.
@@ -310,7 +313,7 @@ said, what was promised, what the next step is, and to get the CRM updated witho
 
 - *Outcome in a sentence*, and where the deal should be now.
 - *Fit, in plain fields*: need, budget, who decides, timing, fit with the offer. Each says what the lead
-  said (a quote) or "Not raised on the call". No branded framework (question 12.9).
+  said (a quote) or "Not raised on the call". No branded framework (answer 12.9).
 - *Objections raised*, each with the lead's quote and whether it was answered on the call.
 - *Commitments*: what each side said they would do, with the quote and any date.
 - *Next step*, from the commitments.
@@ -336,7 +339,7 @@ Check. Revise once. Save; then propose the CRM updates.
 6. No claim about the lead beyond the transcript and the kept CRM fields.
 
 **Approval.** The review itself needs **no** approval: it is the business's own call read back to them and
-never leaves Vistrial (question 12.3). Every CRM update is its own `accountChange` approval, as today.
+never leaves Vistrial (answer 12.3). Every CRM update is its own `accountChange` approval, as today.
 
 **Cost.** Cap 60 cents a run, 600 a day (**180 credits**). Usually 30–90 credits; it grows with the length
 of the call (a one-hour call is about 9,000 words).
@@ -351,7 +354,7 @@ marked (`MarkedText`, kinds: objection, commitment, budget, decision maker) is o
 gets a `finished` post with the digest. A commitment with a date becomes a **Home** "Needs you" line on the
 day before, if no CRM task was approved for it.
 
-### 4.3 Pre-call Brief
+### 4.3 Deal Briefing
 
 **The job.** Five minutes before a call, the closer opens one page: who this is, where they came from, what
 has happened so far, what they said last time, what to cover, what they will probably push back on.
@@ -385,7 +388,7 @@ listed above.
 **automatically** before each booked call: a switch, **off by default**, set by an Owner or Admin, with a
 monthly cap shown beside it before it is switched on (like industry trend posts). Default proposal: a brief
 3 hours before each CRM appointment in the next day, at most 200 briefs and **600 credits** a month
-(question 12.4).
+(answer 12.4).
 
 **Shown as**: one screen; "who" as a short fact row with chips (source, stage, value); "so far" as a compact
 timeline of counts; "last time" with quotes marked; "cover on this call" as a checklist; "likely
@@ -394,7 +397,7 @@ objections" with where each came from.
 **Feeds.** **Home**: today's calls, each with its brief ("Brief ready" or "Make a brief"). **Briefing**:
 one post a day listing the briefs made automatically, not one per brief. No tasks.
 
-### 4.4 Stalled Deal Follow-up
+### 4.4 Follow-up Engine
 
 **The job.** Deals go quiet after the call. Nobody remembers to chase. This finds them, puts them in a
 sensible order, writes the next message for each, and proposes the CRM steps, for a person to approve.
@@ -408,11 +411,11 @@ sensible order, writes the next message for each, and proposes the CRM steps, fo
 - *For each deal*: why it is on the list (in code: "Proposal sent, quiet 19 days, last touch a text"), one
   drafted message (text or email, channel chosen from what the lead last used), and proposed CRM steps:
   create a follow-up task, add a tag (for example "stalled"), or move the deal to the business's own
-  "cold" or "lost" stage after a set number of quiet days (question 12.5).
+  "cold" or "lost" stage after 45 quiet days (answer 12.5).
 
 **Data it needs.** A CRM with deals and activity. Optional: the deal's reviewed calls (for what was
 promised), the approved offer analysis (for what the offer says). It has **no message words** to work
-from, because no adapter keeps them (question 12.7).
+from, because no adapter keeps them (answer 12.7).
 
 **Agent work.** Choose the deals (code). One write for all drafts (model). Check. Revise once. Save; propose
 CRM steps; queue drafts.
@@ -425,9 +428,10 @@ CRM steps; queue drafts.
 5. Commitments it mentions are quotes from a reviewed call, or it mentions none.
 6. A deal not read from the CRM is never on the list.
 
-**Approval.** Every CRM step: Owner or Admin (`accountChange`). Every message: once the messaging switch
-exists, an Owner types `SEND` per message, after its consent, opt-out, quiet-hours and frequency checks.
-Before then, each draft is shown with **Copy** and the person sends it from their CRM.
+**Approval.** Every CRM step: Owner or Admin (`accountChange`). Every message: when the connection's
+messaging switch is on, the draft is proposed as `send_sms` or `send_email` and an Owner types `SEND` per
+message, after the merged consent, opt-out, quiet-hours and frequency checks. When the switch is off, the
+draft is shown with **Copy** and the person sends it from their CRM.
 
 **Cost.** Cap 100 cents a run, 600 a day (**300 credits**). Usually 40–120 credits for 15 deals.
 
@@ -440,15 +444,15 @@ decision" once messaging exists). **Tasks**: the follow-ups a person must send t
 when acting or messaging is off. **Weekly**: a code-written alert, no model and no credits, when the count of
 stalled deals rises ("9 deals went quiet this week").
 
-### 4.5 Second wave (designed now, built after the launch set)
+### 4.5 Objection Playbook and Proposal Architect (launch, built after the first four)
 
 **Objection Playbook** (asset `objectionPlaybook`). Reads all reviewed calls granted to Dealmaker (at least
 5, else Not enough data). Groups objections by what they are about (price, timing, trust, partner or
 spouse, "need to think"), counts them, keeps every quote, and writes an answer for each grounded in the
 approved offer and its proof (Inference; an answer that claims a result is refused). Approval: `publish`.
-Cap 150 cents (450 credits). Feeds Pre-call Brief's "likely objections" and the task proposer.
+Cap 150 cents (450 credits). Feeds Deal Briefing's "likely objections" and the task proposer.
 
-**Proposal Draft** (asset `proposal`). After a reviewed call that ended in "send me something": a
+**Proposal Architect** (asset `proposal`). After a reviewed call that ended in "send me something": a
 proposal from the call's needs and commitments and the approved offer's deliverables and price. It never
 sets or changes a price; a price not in the offer is refused. Approval: `publish` (it goes to a lead).
 Cap 100 cents (300 credits). Sending it is the person's, or the messaging switch's.
@@ -473,10 +477,10 @@ appointment match is offered the same way.
 
 | Skill | No CRM | CRM, acting off | CRM without appointments | No transcripts | No Meta / results |
 |---|---|---|---|---|---|
-| Pipeline Review | Not run. "Connect your CRM" with the list of CRMs; no charge | Runs; proposes nothing anyway | Show rate from calendar counts if connected, else "Not enough data" for show rate | No change | No cost per booked call or won deal; said in one line |
-| Call Review | Runs on the transcript alone; no deal history; no CRM updates | Runs; updates are handed back as "Do this in your CRM" tasks | No change | Not run: "Add a call transcript" | No change |
-| Pre-call Brief | Runs only on request, from what the person types about the lead and any linked transcript | No change | On request for a picked deal; no automatic briefs | No "last time" | No change |
-| Stalled Deal Follow-up | Not run | Drafts and the list still come; CRM steps become tasks | No change | Drafts cannot mention commitments | No change |
+| Pipeline Forensics | Not run. "Connect your CRM" with the list of CRMs; no charge | Runs; proposes nothing anyway | Show rate from calendar counts if connected, else "Not enough data" for show rate | No change | No cost per booked call or won deal; said in one line |
+| Conversation Intelligence | Runs on the transcript alone; no deal history; no CRM updates | Runs; updates are handed back as "Do this in your CRM" tasks | No change | Not run: "Add a call transcript" | No change |
+| Deal Briefing | Runs only on request, from what the person types about the lead and any linked transcript | No change | On request for a picked deal; no automatic briefs | No "last time" | No change |
+| Follow-up Engine | Not run | Drafts and the list still come; CRM steps become tasks | No change | Drafts cannot mention commitments | No change |
 
 Every screen says what it could not read, the way the Pages tab lists a page under "Not read".
 
@@ -488,11 +492,11 @@ Every screen says what it could not read, the way the Pages tab lists a page und
 
 | Thing | Approval kind | Who | Typed word |
 |---|---|---|---|
-| Pipeline Review, Objection Playbook, Proposal Draft (reports and documents) | `publish` | Owner or Admin | — |
-| Call Review, Pre-call Brief, the follow-up list | none (internal) | — | — |
+| Pipeline Forensics, Objection Playbook, Proposal Architect (reports and documents) | `publish` | Owner or Admin | — |
+| Conversation Intelligence, Deal Briefing, the follow-up list | none (internal) | — | — |
 | Move stage, add or remove tag, add note, create task | `accountChange` via `crmActions` | Owner or Admin | — |
 | Mark a deal won, lost or abandoned, or reopen | `accountChange`, `ownerOnly` | Owner | `VALUE` |
-| Send a message to a lead (once #301 and #304 are merged) | `accountChange`, `ownerOnly`, behind the messaging switch | Owner | `SEND`, each message |
+| Send a message to a lead (`send_sms` / `send_email`, merged in #301) | `accountChange`, `ownerOnly`, behind the messaging switch | Owner | `SEND`, each message |
 | Starting a run above the organization's spending limit | `spend` via a task, as today | Owner or Admin | — |
 
 Never, whatever is approved: deleting anything in a CRM, changing users, settings, workflows or billing,
@@ -502,9 +506,9 @@ acting on a lead Vistrial did not read, sending without the messaging switch.
 
 - `insertProposal` takes the agent (`agentSlug`) instead of forcing Strategist, and prices work with that
   agent's routes.
-- The task proposer reads candidates from approved Dealmaker reports too (Pipeline Review steps, Objection
+- The task proposer reads candidates from approved Dealmaker reports too (Pipeline Forensics steps, Objection
   Playbook answers), with `proposedBy: { kind: "agent", agentSlug: "sales-conversion" }`. A task's expected
-  return from a Pipeline Review step can be **Your data** (the stage's own figure) under the existing rules.
+  return from a Pipeline Forensics step can be **Your data** (the stage's own figure) under the existing rules.
 - `runChanged` posts Dealmaker's `finished`, `draft` and `alert` items like Strategist's, with the agent's
   name.
 - Home: "Today's calls" in "Needs you" (with brief status); stalled-deal count in "Since you were last here";
@@ -527,7 +531,7 @@ Each with the three-row digest (what changed, what it means, what to do), from f
 - In the app, work is labelled by the agent and what it produced: **Dealmaker · pipeline review**,
   **Dealmaker · call review with Jordan**, **Dealmaker · pre-call brief for Jordan, Tue 3 pm**,
   **Dealmaker · follow-ups, 12 deals**. No skill names on work screens, task cards, the Briefing or Home.
-- Skill names (Pipeline Review, Call Review, Pre-call Brief, Stalled Deal Follow-up) appear only on the
+- Skill names (Pipeline Forensics, Conversation Intelligence, Deal Briefing, Follow-up Engine) appear only on the
   landing page, future per-agent pages, and the Usage page.
 - No model names and no credits used on any work screen. The only number is the budget confirmed before
   work starts ("Up to 300 credits for this review"), as `docs/rebuild/usage-page.md` already rules.
@@ -543,7 +547,7 @@ briefs and call reviews, newest first, upcoming calls at the top), **Follow-ups*
 shape of Strategist's (`work-shell.tsx`: running now, results, suggested next) and each result is built from
 `src/components/readable/*`:
 
-| Block | Pipeline Review | Call Review | Pre-call Brief | Follow-ups |
+| Block | Pipeline Forensics | Conversation Intelligence | Deal Briefing | Follow-ups |
 |---|---|---|---|---|
 | `ResultHeader` / `VerdictStrip` | The stall, weakest label, 4 counts | Outcome and next step, 4 counts | Who, in one line | Quiet deals and value, 4 counts |
 | Scannable structure | Stage flow table | Fit grid; objection rows with Answered chips | Fact row; timeline counts | Deal rows with stage chip and days quiet |
@@ -564,7 +568,7 @@ call where it can; anything else routes to a skill.
 
 ### 8.4 Usage page
 
-Rows read "Dealmaker · Pipeline Review", "Dealmaker · Call Review", etc. (condensed form). The usage view
+Rows read "Dealmaker · Pipeline Forensics", "Dealmaker · Conversation Intelligence", etc. (condensed form). The usage view
 already reserves a slot for `sales-conversion` (`AGENT_SLOT`). `limitsFor` lists Dealmaker's caps once live.
 
 ---
@@ -573,12 +577,12 @@ already reserves a slot for `sales-conversion` (`AGENT_SLOT`). `limitsFor` lists
 
 | Skill | Run (cost cents) | Day (cost cents) | Run cap in credits | Usually | Steps | Time |
 |---|---|---|---|---|---|---|
-| `pipeline-review` | 100 | 600 | 300 | 30–60 | 20 | 10 min |
-| `call-review` | 60 | 600 | 180 | 30–90 | 12 | 10 min |
-| `pre-call-brief` | 25 | 300 | 75 | 10–25 | 8 | 5 min |
-| `stalled-deal-follow-up` | 100 | 600 | 300 | 40–120 | 12 | 10 min |
-| `objection-playbook` (wave 2) | 150 | 600 | 450 | — | 20 | 10 min |
-| `proposal-draft` (wave 2) | 100 | 600 | 300 | — | 12 | 10 min |
+| `pipeline-forensics` | 100 | 600 | 300 | 30–60 | 20 | 10 min |
+| `conversation-intelligence` | 60 | 600 | 180 | 30–90 | 12 | 10 min |
+| `deal-briefing` | 25 | 300 | 75 | 10–25 | 8 | 5 min |
+| `follow-up-engine` | 100 | 600 | 300 | 40–120 | 12 | 10 min |
+| `objection-playbook` | 150 | 600 | 450 | — | 20 | 10 min |
+| `proposal-architect` | 100 | 600 | 300 | — | 12 | 10 min |
 | Automatic pre-call briefs | — | — | 600 a month | — | — | — |
 
 Code-written posts and the CRM read cost no credits (the read is HTTP only).
@@ -590,18 +594,19 @@ Code-written posts and the CRM read cost no credits (the read is HTTP only).
 Today `src/lib/marketing/content.ts` shows Dealmaker under Convert with `live: false` ("Planned"), and the
 sidebar shows a "Soon" pill. At go-live:
 
-1. `AGENTS_SECTION`: Dealmaker `live: true`; job "Pipeline review, pre-call briefs, call reviews and
-   follow-ups on stalled deals."; the lead line becomes "Strategist and Dealmaker are live today. The others
+1. `AGENTS_SECTION`: Dealmaker `live: true`; job "Pipeline forensics, deal briefings, call intelligence,
+   follow-ups, objections and proposals."; the lead line becomes "Strategist and Dealmaker are live today. The others
    are planned and do not run yet."
-2. The skills section gains Dealmaker's four skills with their plans (the "plan it runs" lines from section
-   4), grouped by agent; the two second-wave skills as "Coming soon".
+2. The skills section gains Dealmaker's six skills, by their names (Pipeline Forensics, Conversation
+   Intelligence, Deal Briefing, Follow-up Engine, Objection Playbook, Proposal Architect), with their plans
+   (the "plan it runs" lines from section 4), grouped by agent.
 3. A CRM line: "Works with HighLevel today. HubSpot and Salesforce are coming." Only HighLevel's logo is shown
    as connected; the others say "Coming soon". No claim of a result.
 4. The promise from 8.1, word for word.
 5. The claims ledger (`content.ts` support lines) and `content.test.ts` follow `AVAILABLE_SKILLS`.
 6. In the app: the "Soon" pill and `PLANNED_AGENTS["sales-conversion"]` (`src/lib/agents/planned.ts`) go away
    because the agent is live; its "Books calls" line is not carried over (booking is not built).
-7. People on Dealmaker's waitlist (`agentWaitlist`) get one email that it is live (question 12.10).
+7. People on Dealmaker's waitlist (`agentWaitlist`) get one email that it is live through the email path merged in #300 (answer 12.10).
 
 ---
 
@@ -616,69 +621,76 @@ sidebar shows a "Soon" pill. At go-live:
 
 ---
 
-## 12. Open questions for the owner
+## 12. The owner's answers (2026-11-14)
 
-Each with a recommendation.
+The questions this section asked, and what the owner decided. The sections above follow these answers.
 
-1. **Launch set.** Pipeline Review, Call Review, Pre-call Brief, Stalled Deal Follow-up first; Objection
-   Playbook and Proposal Draft second; show-rate booster and lead priority folded in, not separate skills.
-   *Recommend: yes, as above.*
-2. **Skill names** for the landing page and Usage: "Pipeline Review", "Call Review", "Pre-call Brief",
-   "Stalled Deal Follow-up". *Recommend: these; "Pipeline Review" over "Pipeline Diagnosis" so it is not
-   confused with Strategist's Growth Diagnostics.*
-3. **Approval for internal results.** Call Review, Pre-call Brief and the follow-up list never leave
-   Vistrial. *Recommend: no approval for them; reports that feed tasks (Pipeline Review) and anything that
-   reaches a lead (Proposal Draft, messages) or the CRM keep approval.*
-4. **Automatic pre-call briefs.** *Recommend: a switch, off by default, Owner or Admin; a brief 3 hours
-   before each CRM appointment; at most 200 briefs and 600 credits a month, shown before it is switched on.*
-5. **What "stalled" means.** *Recommend: open, with no activity and no stage change for 14 days; a setting
-   of 7, 14, 21 or 30 days. Whether Follow-up may propose moving a long-quiet deal to the business's own
-   "lost" or "cold" stage: yes, only after 45 quiet days, and as a proposal like any other.*
-6. **Messages before the messaging switch merges.** *Recommend: drafts with Copy now; the same drafts become
-   `SEND` proposals when #301 and #304 merge, with no change to the skill.*
-7. **Message words for follow-up context.** No adapter keeps message bodies, so drafts cannot answer what a
-   lead last wrote. *Recommend: keep it that way for launch; reconsider reading the last inbound message at
-   draft time, not stored, after the privacy policy covers it.*
-8. **No CRM at all.** *Recommend: Call Review and on-request briefs work without a CRM; Pipeline Review and
-   Follow-up need one. No deals-CSV import at launch; HubSpot next instead.*
-9. **Call Review's fit fields.** *Recommend: plain fields (need, budget, who decides, timing, fit with the
-   offer), not BANT or MEDDIC, which read as enterprise sales to a coach.*
-10. **Waitlist email at go-live.** *Recommend: one email to people on Dealmaker's waitlist, through the
-    email path proposed for Strategist's first package (#300, not merged yet).*
-11. **The old Leads and My day pages** (hidden, built on the native lead model). *Recommend: Dealmaker
-    does not use them; keep them hidden and remove them in a separate cleanup PR after go-live.*
-12. **Which CRM after HighLevel.** *Recommend: HubSpot, then Salesforce. Agencies and coaches use HubSpot far
-    more; Salesforce's Lead/Contact split and sales processes need more mapping.*
-13. **Caps.** *Recommend: the numbers in section 9, revised after the first ten real runs of each skill.*
+1. **Launch set: all six at launch**: Pipeline Forensics, Conversation Intelligence, Deal Briefing,
+   Follow-up Engine, Objection Playbook, Proposal Architect. Show rate and lead priority are folded in, not
+   separate skills.
+2. **Skill names**, for the landing page, future per-agent pages and the Usage page only:
+
+   | Skill name | Slug | In the app |
+   |---|---|---|
+   | Pipeline Forensics | `pipeline-forensics` | Dealmaker · pipeline review |
+   | Conversation Intelligence | `conversation-intelligence` | Dealmaker · call review |
+   | Deal Briefing | `deal-briefing` | Dealmaker · pre-call brief |
+   | Follow-up Engine | `follow-up-engine` | Dealmaker · follow-ups |
+   | Objection Playbook | `objection-playbook` | Dealmaker · objection playbook |
+   | Proposal Architect | `proposal-architect` | Dealmaker · proposal |
+
+   In the app, work is worded "Dealmaker · …" the way #306 (`convex/lib/workWords.ts`) does it.
+3. **No approval** for Conversation Intelligence, Deal Briefing and the follow-up list. Pipeline Forensics
+   (a report that feeds tasks), anything that reaches a lead (Proposal Architect, messages) and every CRM
+   change keep approval.
+4. **Automatic briefs**: a switch, off by default, Owner or Admin; a brief 3 hours before each CRM
+   appointment; at most 200 briefs and 600 credits a month, shown before the switch is turned on.
+5. **Stalled** = 14 days with no activity and no stage change; a setting of 7, 14, 21 or 30 days. After 45
+   quiet days Follow-up Engine may propose moving the deal to the business's own lost or cold stage, as a
+   proposal like any other.
+6. **Messages**: drafts with Copy, and, because #301 is merged, wired as `SEND` proposals (`send_sms` /
+   `send_email`) through the merged messaging path. They respect the connection's messaging switch and fall
+   back to Copy when it is off.
+7. **No lead message text** is stored or read at launch.
+8. **Without a CRM**, Conversation Intelligence and on-request Deal Briefing work; Pipeline Forensics and
+   Follow-up Engine need a CRM. No deals CSV.
+9. **Conversation Intelligence's fit fields** are plain: need, budget, who decides, timing, fit.
+10. **One waitlist email at go-live**, through the email path merged in #300.
+11. **Leads and My day** stay hidden and are removed in a cleanup PR after launch.
+12. **CRMs**: HubSpot after HighLevel, then Salesforce. Skills stay CRM-agnostic through the adapter.
+13. **Caps**: those in section 9, revised after 10 real runs per skill.
 
 ---
 
 ## 13. Build order, in small stacked pull requests
 
-Each passes tests, lint, `npm run typecheck`, `npx tsc --noEmit -p convex` and `npm run build`; each has a
-story page where it has a screen; none deploys Convex.
+Each is a draft from current main (or stacked on the one before), passes tests, lint, `npm run typecheck`,
+`npx tsc --noEmit -p convex` and `npm run build`, has a story page where it has a screen, and never deploys
+Convex. The coordinator verifies each; the owner merges.
 
-1. **This document.**
-2. **One agent becomes a parameter.** `AGENT_SURFACES` per agent (chat routes, chat skills, work tabs, task
-   pricing, home lines); every `GROWTH_ARCHITECT` hard-code that decides behaviour reads it. No behaviour
-   change; Strategist's tests unchanged.
+1. **This document** (#307), and the owner's answers in it.
+2. **One agent becomes a parameter.** A per-agent table (chat routes, chat skills, work tabs, task pricing,
+   the agent that proposes tasks); every `GROWTH_ARCHITECT` hard-code that decides behaviour reads it. No
+   behaviour change; Strategist's tests unchanged.
 3. **The CRM layer.** `convex/lib/crm/{types,adapter,read,act}.ts`; HighLevel's adapter wraps the merged
-   code; `provider` widens; `crmAppointments` split out of activities; `proposeForAgent` checks capabilities;
-   the architecture test that skills never import an adapter. No behaviour change on the HighLevel page.
+   code; `provider` widens; appointments read as their own rows; `proposeForAgent` checks capabilities
+   (messaging included); the architecture test that skills never import an adapter. No behaviour change on
+   the HighLevel page.
 4. **Transcripts for Dealmaker.** The grant checkbox and the optional contact/deal link with its picker and
    appointment suggestion.
-5. **Dealmaker skeleton.** Catalog skills (all `comingSoon`, agent still `planned`), `SKILL_CAPS`, tool
-   slugs, work tabs behind the dev flag, empty states, stories.
-6. **Pipeline Review, server.** Read, compute, write, checks, save, evidence; tests against a fake CRM.
-7. **Pipeline Review, screen** and its Briefing post; the task proposer reads its approved steps.
-8. **Call Review**, server and screen, with CRM update proposals.
-9. **Pre-call Brief**, on request, then the automatic switch with its monthly cap; Home "Today's calls".
-10. **Stalled Deal Follow-up**, server and screen; drafts with Copy; CRM step proposals; the weekly
-    stalled-deals post.
-11. **Side chat** routes and the plan/budget messages for Dealmaker.
-12. **Go live.** Catalog `live`, `AVAILABLE_SKILLS`, landing page (section 10), Usage names, planned card
-    removed, waitlist email.
-13. **Messaging hook-up**, once #301 (code) and #304 (privacy) are merged: drafts become `SEND` proposals.
-14. **Second wave**: Objection Playbook, then Proposal Draft.
-15. **HubSpot adapter**, then **Salesforce adapter**, each with its own connection page, scopes document and
-    privacy section, and nothing changed in any skill.
+5. **Dealmaker skeleton.** The six catalog skills (all `comingSoon`, agent still `planned`), `SKILL_CAPS`,
+   tool slugs, work tabs behind the dev flag, empty states, stories.
+6. **Pipeline Forensics, server.** Read, compute, write, checks, save, evidence; tests against a fake CRM.
+7. **Pipeline Forensics, screen** and its Briefing post; the task proposer reads its approved steps.
+8. **Conversation Intelligence**, server and screen, with CRM update proposals.
+9. **Deal Briefing**, on request, then the automatic switch with its monthly cap; Home "Today's calls".
+10. **Follow-up Engine**, server and screen; drafts as `SEND` proposals when messaging is on, Copy when it
+    is off; CRM step proposals; the 45-day lost/cold proposal; the weekly stalled-deals post.
+11. **Objection Playbook**, server and screen; feeds Deal Briefing's likely objections.
+12. **Proposal Architect**, server and screen, with its `publish` approval.
+13. **Side chat** routes and the plan/budget messages for Dealmaker.
+14. **Go live.** Catalog `live`, `AVAILABLE_SKILLS` (all six), landing page (section 10), Usage names,
+    planned card removed, waitlist email through the #300 path.
+15. **After launch**: Leads and My day removed; caps revised after 10 real runs per skill; **HubSpot
+    adapter**, then **Salesforce adapter**, each with its own connection page, scopes document and privacy
+    section, and nothing changed in any skill.

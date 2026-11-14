@@ -36,6 +36,21 @@ export function dealScope(appRole: string, row: TeamRow | undefined): DealScope 
   return { kind: "assigned", crmUserRef: row.crmUserRef, why: SCOPE_WORDS.assigned };
 }
 
+/**
+ * A person's name for a CRM user: the member linked to it, else "CRM user 1", "CRM user 2" in the order given.
+ * Never the CRM's own id, which means nothing to a person.
+ */
+export function crmUserNames(refs: string[], team: readonly { memberId: string; crmUserRef?: string }[], memberName: (memberId: string) => string | null) {
+  const names = new Map<string, string>();
+  let unlinked = 0;
+  for (const ref of refs) {
+    const row = team.find((item) => item.crmUserRef === ref);
+    const name = row ? memberName(row.memberId) : null;
+    names.set(ref, name ?? `CRM user ${(unlinked += 1)}`);
+  }
+  return names;
+}
+
 export function inScope<T extends { ownerRef: string | null }>(scope: DealScope, deals: T[]): T[] {
   if (scope.kind === "all") return deals;
   if (scope.kind === "none") return [];

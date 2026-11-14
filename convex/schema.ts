@@ -972,6 +972,8 @@ export default defineSchema({
       v.literal("landingPage"),
       /** Where a sales pipeline's deals stop moving, from the CRM's own figures (Dealmaker, Pipeline Forensics). */
       v.literal("pipelineReview"),
+      /** One page on a lead before a booked call (Dealmaker, Deal Briefing). Internal: never leaves Vistrial. */
+      v.literal("preCallBrief"),
     ),
     title: v.string(),
     status: assetStatus,
@@ -2338,6 +2340,39 @@ export default defineSchema({
     crmDealRef: v.optional(v.string()),
   }).index("by_workspace", ["workspaceId"]),
 
+  /**
+   * A pre-call brief a person asked for (Dealmaker, Deal Briefing; docs/rebuild/dealmaker.md, 4.3). The run is
+   * started on this row's own project and finds the row by it. The lead is named by the CRM's own refs; what a person typed (the setter's
+   * hand-off, or what they know about a lead when no CRM is connected) is kept here as their account.
+   */
+  dealBriefings: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    projectId: v.id("researchProjects"),
+    /** The CRM's own ids for the lead, their deal and the booked call; missing without a CRM. */
+    contactRef: v.optional(v.string()),
+    dealRef: v.optional(v.string()),
+    appointmentRef: v.optional(v.string()),
+    startsAt: v.optional(v.number()),
+    leadName: v.string(),
+    /** What a person typed about the lead when there is no CRM. */
+    about: v.optional(v.string()),
+    /** The setter's hand-off: a rep's account, never shown as fact. */
+    handoff: v.optional(v.string()),
+    /** The name of the person who typed `about` or `handoff`, shown beside it. */
+    writtenBy: v.optional(v.string()),
+    trigger: v.union(v.literal("request"), v.literal("auto")),
+    status: v.union(v.literal("running"), v.literal("ready"), v.literal("failed")),
+    runId: v.optional(v.id("agentRuns")),
+    assetId: v.optional(v.id("assets")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index("by_workspace_client", ["workspaceId", "clientId", "createdAt"])
+    .index("by_workspace_appointment", ["workspaceId", "appointmentRef"])
+    .index("by_project", ["projectId"]),
+
   /** Webhook deliveries that passed their signature check: which, when and what kind. Never the body. */
   integrationWebhookEvents: defineTable({
     workspaceId: v.id("workspaces"),
@@ -2584,6 +2619,41 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_workspace_status", ["workspaceId", "status", "updatedAt"]),
+
+  /**
+   * What is established about one deal's fit (need, budget, who decides, timing, fit), each with the kind of
+   * evidence it rests on (doctrine II). Written by a person now, and by call reviews later. Newest per field wins;
+   * older rows stay as history.
+   */
+  dealFacts: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    dealRef: v.string(),
+    field: v.union(v.literal("need"), v.literal("budget"), v.literal("decider"), v.literal("timing"), v.literal("fit")),
+    value: v.string(),
+    kind: v.union(v.literal("recorded"), v.literal("buyer"), v.literal("rep"), v.literal("measured")),
+    /** Who gave a rep's account, by name; a call review's id for a buyer's words. */
+    author: v.optional(v.string()),
+    sourceRef: v.optional(v.string()),
+    recordedBy: v.string(),
+    recordedAt: v.number(),
+  }).index("by_workspace_deal", ["workspaceId", "dealRef", "recordedAt"]),
+
+  /** A promise to a buyer or a hand-off inside the team: an owner, what done means, and a due date where it has one. */
+  dealCommitments: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    dealRef: v.string(),
+    text: v.string(),
+    /** A member's id, or "lead" when the buyer owns it. */
+    owner: v.string(),
+    due: v.optional(v.number()),
+    doneAt: v.optional(v.number()),
+    doneBy: v.optional(v.string()),
+    sourceRef: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_workspace_deal", ["workspaceId", "dealRef", "createdAt"]),
 
   /** A lead Dealmaker must not contact: paused after a negative reply, until a person lifts it (0.2). */
   dealmakerPauses: defineTable({

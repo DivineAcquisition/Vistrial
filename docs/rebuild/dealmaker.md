@@ -363,8 +363,43 @@ tests, lint, both typechecks and the build, never deploying Convex:
    only a person lifts it. The screens come with the Pipeline tab (step 9).
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.
+   *9a, built (server):* `convex/lib/dealmaker/board.ts` and `convex/pipelineBoard.ts`. On every read, in code:
+   health (active, cooling, quiet, won, lost) against the quiet-days setting; temperature (hot, warm, cold)
+   from replies and shows only; who has the ball (the lead, us, approval); readiness as the five fit fields
+   established (with the evidence kind: recorded event, buyer's words, rep's account, measured result) or
+   unresolved; open commitments; one next move per deal (answer, deliver what was promised, rebook a
+   no-show, ask honestly whether contact is welcome, or the first reply, which waits for a person); source
+   quality and a forecast range only from at least 5 of the business's own closed deals, else "Not enough
+   data"; per rep for Owners and Admins only. The board is filtered to each person's home. New tables
+   `dealFacts` and `dealCommitments` (people write now; call reviews add theirs later).
+   *9b, built (tab):* `src/components/work/pipeline-tab.tsx` behind the work gate; `/dev/pipeline-tab` shows it
+   with sample data. Health counts, deals by stage as colour-coded cards (every colour with an icon and its
+   word), today's moves, forecast, source quality, by person (Owners and Admins), and the team and autonomy
+   panel. Dragging a card to propose a stage move comes with Comms (step 13), through the approvals path.
 10. **Calls tab, before**: Deal Briefing with research, readiness, the setter's hand-off, offer fit and opening line; email and the
     calendar-event link.
+    *10a, built:* Deal Briefing on request, server side (`convex/skills/dealBriefing/`, `dbr.read`, `dbr.check`,
+    `dbr.save`; `dealBriefings.quote` and `dealBriefings.request`). A person picks a lead Vistrial read from the
+    CRM (and the booked call, which must be theirs), or, with no CRM, types who the lead is (answer 12.8); they
+    may add the setter's hand-off. Each request gets its own `dealBriefings` row and project, after the budget is
+    confirmed. Code reads the lead only through `crmFor` (who, so far as counts and dates, the deal's stage and
+    value), this lead's calls shared with Dealmaker (`transcriptsFor`, at most three, 12,000 characters each),
+    and the Playbook through `playbookForSkill` (packages, prices, proof, objections, discovery questions). One
+    model step (run as `summarize` work, so its worst case fits the 25-cent cap with an 8-cent reserve) writes
+    the summary, readiness evidence, open commitments, up to five points to cover, likely objections, the
+    package that fits, records that disagree, and an opening question. **Readiness is decided in code**: a fit
+    field is established only when its quote is found in the source it cites, and shown with its kind (buyer's
+    words from a call; a rep's account from the hand-off, with the person's name); every other field is
+    "Unresolved". Seven code checks (quotes found; objections only from this lead's calls or the Playbook; the
+    package from the Offer folder; no price the offer or the CRM does not state; nothing guessed about the lead
+    as a person; no promise and no manufactured urgency; one to five grounded points and an opening question),
+    one revision from the reserve. With no earlier call, no hand-off and no offer, no model is called: code
+    writes who and so far and says "First call". The `preCallBrief` asset (a new kind) cites the CRM, each call
+    and the hand-off as Your data sources; a brief is internal (answer 12.3), so it joins no approvals queue
+    (`INTERNAL_WORK` in `lib/briefing.ts`, which also holds call reviews).
+    Next: 10b the Calls tab's "before" screen with its story page; 10c the public read of the lead's business,
+    the email to the closer and the calendar-event link (off by default, 0.10 item 5); 10d the automatic brief 3
+    hours before each booked call, with its monthly cap.
 11. **Calls tab, notes**: the intake form with voice memo; the business's own note taker; HighLevel
     recordings; the Zoom and Meet note taker.
 12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the

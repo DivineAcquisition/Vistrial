@@ -57,6 +57,7 @@ export const list = workspaceQuery({
         v.literal("swipeItem"),
         v.literal("growthDiagnosis"),
         v.literal("pipelineReview"),
+        v.literal("preCallBrief"),
       ),
     ),
   },

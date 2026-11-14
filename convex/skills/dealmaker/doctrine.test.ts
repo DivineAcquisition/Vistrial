@@ -7,10 +7,11 @@ import { describe, expect, it } from "vitest";
 import { CATALOG } from "../../catalog";
 import { skillFor } from "../../lib/skills";
 import { SYSTEM as PIPELINE_SYSTEM } from "../pipelineForensics";
+import { SYSTEM as BRIEFING_SYSTEM } from "../dealBriefing";
 import { DOCTRINE_PROMPT, DOCTRINE_STEPS, THE_STANDARD } from "./doctrine";
 
 /** Each built Dealmaker skill's system instructions. A new skill adds its own here. */
-const SYSTEMS: Record<string, string> = { "pipeline-forensics": PIPELINE_SYSTEM };
+const SYSTEMS: Record<string, string> = { "pipeline-forensics": PIPELINE_SYSTEM, "deal-briefing": BRIEFING_SYSTEM };
 
 describe("Dealmaker's doctrine", () => {
   it("names the five steps and the five questions of the standard, in order", () => {

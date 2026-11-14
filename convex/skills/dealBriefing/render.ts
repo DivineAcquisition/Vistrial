@@ -1,0 +1,135 @@
+/**
+ * The pre-call brief as plain Markdown for the asset body, and the readiness worked out in code from the
+ * model's quoted findings. The Calls tab draws the brief from the saved record; this is the full text, one step
+ * away, and what a closer reads on a phone.
+ */
+
+import { when } from "./compute";
+import { FIT_FIELDS, FIT_WORDS, NOT_ENOUGH_DATA, type Brief, type BriefRecord, type BriefSource, type ChecksRecord, type EvidenceKind, type FitField } from "./shapes";
+import { quoted } from "./checks";
+
+export const KIND_WORDS: Record<EvidenceKind, string> = { recorded: "Recorded event", buyer: "Buyer's words", rep: "Rep's account", measured: "Measured result" };
+
+export type ReadinessRow = {
+  field: FitField;
+  established: boolean;
+  finding: string;
+  quote: string;
+  kind: EvidenceKind | null;
+  source: string | null;
+};
+
+/** The kind of evidence a source gives: a call is the buyer's words; a hand-off or a note is a person's account. */
+export function kindOf(source: BriefSource): EvidenceKind {
+  return source.type === "call" ? "buyer" : "rep";
+}
+
+function sourceWords(source: BriefSource) {
+  return source.type === "call" ? `call: ${source.label}` : source.label;
+}
+
+/**
+ * Each fit field, established only when the brief quotes a source that holds those words; otherwise unresolved.
+ * Code decides, not the model: a finding whose quote is not in its source does not establish anything.
+ */
+export function readinessOf(brief: Brief | null, record: BriefRecord): ReadinessRow[] {
+  const sources = new Map(record.sources.map((row) => [row.id, row]));
+  return FIT_FIELDS.map((field) => {
+    const found = (brief?.readiness ?? []).find((row) => row.field === field && sources.has(row.sourceId) && quoted(row.quote, sources.get(row.sourceId)!.text));
+    if (!found) return { field, established: false, finding: "", quote: "", kind: null, source: null };
+    const source = sources.get(found.sourceId)!;
+    return { field, established: true, finding: found.finding, quote: found.quote, kind: kindOf(source), source: sourceWords(source) };
+  });
+}
+
+function title(record: BriefRecord) {
+  return `# Pre-call brief: ${record.leadName}${record.call ? `, ${when(record.call.startsAt, record.crm?.timezone ?? null)}` : ""}`;
+}
+
+function factLines(record: BriefRecord, group: "who" | "soFar") {
+  return record.facts.filter((row) => row.group === group).map((row) => `- ${row.label}: **${row.display}** _(${row.kind === "measured" ? `Measured result: ${row.formula}` : "Recorded event"})_`);
+}
+
+/** Code writes the parts it knows: who, so far, and what is missing. The model's parts follow when there are any. */
+function frame(record: BriefRecord) {
+  const lines = [title(record), ""];
+  if (record.crm) lines.push(`_From ${record.crm.label}: ${record.crm.accountName}. Vistrial keeps no message words, so "so far" is counts and dates._`, "");
+  const who = factLines(record, "who");
+  lines.push("## Who", "", ...(who.length ? who : [`- ${record.leadName}. Nothing else is recorded.`]), "");
+  const soFar = factLines(record, "soFar");
+  if (soFar.length) lines.push("## So far", "", ...soFar, "");
+  return lines;
+}
+
+function tail(record: BriefRecord, lines: string[]) {
+  if (record.missing.length) {
+    lines.push("## What this brief could not read", "");
+    for (const text of record.missing) lines.push(`- ${text}`);
+    lines.push("");
+  }
+  lines.push("_Facts are as your CRM records them, quotes are the lead's own words or the named person's account, and everything else is Dealmaker's reading for you to judge._");
+  return lines.join("\n");
+}
+
+/** No call, no hand-off and no offer: code writes the brief alone and says so, without padding. */
+export function renderCodeOnly(record: BriefRecord) {
+  const lines = frame(record);
+  lines.push("## First call", "", "Nothing is known about this lead beyond the booking. Use the call to learn their need, budget, who decides and timing.", "");
+  lines.push("## Unresolved", "", ...FIT_FIELDS.map((field) => `- ${FIT_WORDS[field]}: ${NOT_ENOUGH_DATA}`), "");
+  return tail(record, lines);
+}
+
+export function renderBrief(brief: Brief, record: BriefRecord, checks: ChecksRecord, notes: string[]) {
+  const sources = new Map(record.sources.map((row) => [row.id, row]));
+  const items = new Map(record.playbook.map((row) => [row.id, row]));
+  const lines = frame(record);
+  lines.splice(2, 0, brief.summary, "");
+  if (!checks.passed) {
+    lines.push("## Needs review", "", "This brief did not pass every completion check:", "");
+    for (const row of checks.results.filter((item) => !item.passed)) lines.push(`- **${row.name}.** ${row.detail}`);
+    for (const note of notes) lines.push(`- ${note}`);
+    lines.push("");
+  }
+  if (record.firstCall) lines.push("## First call", "", "No earlier call or hand-off is on record for this lead.", "");
+
+  const readiness = readinessOf(brief, record);
+  lines.push("## Readiness", "", "| Field | Where it stands | Evidence |", "|---|---|---|");
+  for (const row of readiness) {
+    lines.push(row.established ? `| ${FIT_WORDS[row.field]} | ${row.finding} | ${KIND_WORDS[row.kind!]} (${row.source}): "${row.quote}" |` : `| ${FIT_WORDS[row.field]} | Unresolved | ${NOT_ENOUGH_DATA} |`);
+  }
+  lines.push("");
+
+  const handoff = record.sources.find((row) => row.type === "handoff");
+  if (handoff) lines.push("## From the setter", "", `${KIND_WORDS.rep}, ${handoff.by}:`, "", ...handoff.text.split("\n").map((row) => `> ${row}`), "");
+
+  if (brief.commitments.length) {
+    lines.push("## Open commitments", "");
+    for (const row of brief.commitments) lines.push(`- **${row.owner === "us" ? "We" : record.leadName}:** ${row.what}${row.due ? ` (by ${row.due})` : ""}. "${row.quote}"`);
+    lines.push("");
+  }
+
+  if (brief.disagreements.length) {
+    lines.push("## Records that disagree", "", "Dealmaker does not pick one. Check with the person who knows.", "");
+    for (const row of brief.disagreements) lines.push(`- ${row.what}`);
+    lines.push("");
+  }
+
+  lines.push("## Cover on this call", "", ...brief.cover.map((row) => `- [ ] ${row.point}`), "");
+
+  const fit = items.get(brief.offerFit.itemId);
+  lines.push("## The package that fits", "", fit ? `**${fit.title}.** ${brief.offerFit.why} _(Inference)_` : "None named: the offer or what is known about the lead is not enough to say.", "");
+
+  if (brief.objections.length) {
+    lines.push("## Likely objections", "");
+    for (const row of brief.objections) {
+      const source = sources.get(row.sourceId);
+      const item = items.get(row.sourceId);
+      const where = source ? `said on ${source.label}: "${row.quote}"` : item ? `from the Playbook${item.basis === "hypothesis" ? ", not yet heard on your calls" : ""}` : "";
+      lines.push(`- ${row.objection} _(${where})_`);
+    }
+    lines.push("");
+  }
+
+  lines.push("## Opening question", "", `> ${brief.openingQuestion}`, "");
+  return tail(record, lines);
+}

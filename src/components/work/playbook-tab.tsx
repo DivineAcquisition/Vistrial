@@ -20,6 +20,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { KINDS, KIND_LABEL, LIMITS, OBJECTION_TAGS, STAGES, STAGE_FOLDER, STAGE_LABEL, type Folder, type Kind, type ObjectionTag, type Stage } from "../../../convex/lib/playbook";
 
+import { InterviewPanel, type InterviewActions, type InterviewData } from "./playbook-interview";
 import { SectionTitle, WorkHero } from "./work-shell";
 
 /** What `api.playbook.view` returns. */
@@ -40,7 +41,7 @@ export type PlaybookActions = {
   study: (request: StudyRequest) => Promise<unknown>;
 };
 
-export type StudyRequest = { transcriptIds: string[]; texts: { label: string; text: string }[]; offerAnalysis: boolean };
+export type StudyRequest = { transcriptIds: string[]; texts: { label: string; text: string }[]; offerAnalysis: boolean; website: string[]; videos: string[] };
 
 const TAG_LABEL: Record<ObjectionTag, string> = { money: "Money", time: "Time", trust: "Trust", fit: "Fit" };
 
@@ -387,9 +388,13 @@ function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookAc
   const [offer, setOffer] = useState(false);
   const [label, setLabel] = useState("");
   const [text, setText] = useState("");
+  const [pages, setPages] = useState("");
+  const [links, setLinks] = useState("");
   const [sending, setSending] = useState(false);
   const pasted = label.trim() && text.trim();
-  const ready = calls.length > 0 || offer || pasted;
+  const website = pages.split(/\s+/).map((row) => row.trim()).filter(Boolean);
+  const videos = links.split(/\s+/).map((row) => row.trim()).filter(Boolean);
+  const ready = calls.length > 0 || offer || pasted || website.length > 0 || videos.length > 0;
   const readFile = async (file: File | undefined) => {
     if (!file) return;
     if (!TEXT_FILE.test(file.name)) {
@@ -425,6 +430,14 @@ function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookAc
           <span className="min-w-0 break-words">Strategist&apos;s approved offer analysis: {data.readable.offerAnalysis.title}</span>
         </label>
       ) : null}
+      <div className="grid gap-1.5">
+        <Textarea aria-label="Pages of your website" placeholder="Pages of your own website, one per line (up to 4), e.g. yoursite.com/offer" value={pages} rows={2} onChange={(event) => setPages(event.target.value)} />
+        <p className="text-xs text-muted-foreground">Read as a visitor would: public pages only, never behind a login, and only where the site allows it.</p>
+      </div>
+      <div className="grid gap-1.5">
+        <Textarea aria-label="YouTube links" placeholder="Public YouTube links to sales training, one per line (up to 3)" value={links} rows={2} onChange={(event) => setLinks(event.target.value)} />
+        <p className="text-xs text-muted-foreground">Read by Google&apos;s Gemini from the link. The video is never downloaded; only what it says and shows is kept, with each item quoting it.</p>
+      </div>
       <div className="grid gap-2">
         <Input aria-label="What the text is" placeholder="What it is, e.g. Sales script" value={label} maxLength={120} onChange={(event) => setLabel(event.target.value)} />
         <Textarea aria-label="Text to read" placeholder="Paste a sales script, an offer document or a past proposal" value={text} rows={5} maxLength={MAX_FILE_CHARS} onChange={(event) => setText(event.target.value)} />
@@ -438,13 +451,15 @@ function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookAc
           disabled={!ready || sending}
           onClick={async () => {
             setSending(true);
-            const ok = await run(() => actions.study({ transcriptIds: calls, texts: pasted ? [{ label, text }] : [], offerAnalysis: offer }));
+            const ok = await run(() => actions.study({ transcriptIds: calls, texts: pasted ? [{ label, text }] : [], offerAnalysis: offer, website, videos }));
             setSending(false);
             if (ok) {
               setCalls([]);
               setOffer(false);
               setLabel("");
               setText("");
+              setPages("");
+              setLinks("");
             }
           }}
         >
@@ -471,7 +486,19 @@ function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookAc
 }
 
 /** The Playbook with its data handed in, so a story can show it without a server. */
-export function PlaybookView({ data, editor, actions, initialFolder = "offer" }: { data: PlaybookData; editor: boolean; actions: PlaybookActions; initialFolder?: Folder }) {
+export function PlaybookView({
+  data,
+  editor,
+  actions,
+  interview,
+  initialFolder = "offer",
+}: {
+  data: PlaybookData;
+  editor: boolean;
+  actions: PlaybookActions;
+  interview?: { data: InterviewData; actions: InterviewActions } | null;
+  initialFolder?: Folder;
+}) {
   const [open, setOpen] = useState<Folder>(initialFolder);
   const folder = data.folders.find((row) => row.id === open) ?? data.folders[0];
   const canEdit = editor && data.canEdit;
@@ -484,6 +511,7 @@ export function PlaybookView({ data, editor, actions, initialFolder = "offer" }:
         title="How you sell, in one place"
         promise="What Dealmaker knows about your offer, your buyers, the objections you hear and how you close. Every item says where it came from."
       />
+      {interview ? <InterviewPanel data={interview.data} actions={interview.actions} /> : null}
       <NeedsPanel needs={data.needs} />
       {canEdit ? <StudyPanel data={data} actions={actions} /> : null}
       <SegmentedRadioGroup
@@ -503,6 +531,15 @@ export function PlaybookView({ data, editor, actions, initialFolder = "offer" }:
 export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspaces">; editor: boolean }) {
   const { clientId } = useClientScope();
   const data = useQuery(api.playbook.view, { workspaceId, clientId });
+  const interviewData = useQuery(api.playbookInterview.view, { workspaceId, clientId });
+  const answerStages = useMutation(api.playbookInterview.answerStages);
+  const answerQuietDays = useMutation(api.playbookInterview.answerQuietDays);
+  const answerScript = useMutation(api.playbookInterview.answerScript);
+  const answerPackage = useMutation(api.playbookInterview.answerPackage);
+  const answerProof = useMutation(api.playbookInterview.answerProof);
+  const answerVoice = useMutation(api.playbookInterview.answerVoice);
+  const answerConsent = useMutation(api.playbookInterview.answerConsent);
+  const skip = useMutation(api.playbookInterview.skip);
   const addItem = useMutation(api.playbook.addItem);
   const updateItem = useMutation(api.playbook.updateItem);
   const archiveItem = useMutation(api.playbook.archiveItem);
@@ -527,7 +564,19 @@ export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspac
         transcriptIds: request.transcriptIds as Id<"callTranscripts">[],
         texts: request.texts,
         offerAnalysis: request.offerAnalysis,
+        website: request.website,
+        videos: request.videos,
       }),
   };
-  return <PlaybookView data={data} editor={editor} actions={actions} />;
+  const interviewActions: InterviewActions = {
+    stages: (meanings) => answerStages({ workspaceId, clientId, meanings }),
+    quietDays: (days) => answerQuietDays({ workspaceId, clientId, days }),
+    script: (steps) => answerScript({ workspaceId, clientId, steps }),
+    pkg: (input) => answerPackage({ workspaceId, clientId, ...input }),
+    proof: (lines) => answerProof({ workspaceId, clientId, lines }),
+    voice: (input) => answerVoice({ workspaceId, clientId, ...input }),
+    consent: (input) => answerConsent({ workspaceId, clientId, ...input }),
+    skip: (question) => skip({ workspaceId, clientId, question }),
+  };
+  return <PlaybookView data={data} editor={editor} actions={actions} interview={interviewData ? { data: interviewData, actions: interviewActions } : null} />;
 }

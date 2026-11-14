@@ -12,7 +12,7 @@ import { FOLDERS, KINDS, OBJECTION_TAGS, STAGES } from "../../lib/playbook";
 export const SKILL_SLUG = "playbook-study";
 export const AGENT_SLUG = "sales-conversion";
 
-export const PHASE = { gather: "pbsGather", extract: "pbsExtract", check: "pbsCheck", save: "save" } as const;
+export const PHASE = { read: "pbsRead", gather: "pbsGather", extract: "pbsExtract", check: "pbsCheck", save: "save" } as const;
 
 /** What one study may read and file. */
 export const STUDY_LIMITS = {
@@ -22,14 +22,18 @@ export const STUDY_LIMITS = {
   /** Characters of pasted text a person may give in one source. */
   pastedChars: 60_000,
   label: 120,
+  /** Website pages one study reads. */
+  pages: 4,
+  /** Public YouTube videos one study reads. */
+  videos: 3,
   items: 30,
   quote: 400,
 } as const;
 
 /** The kinds of source a study reads, and the Playbook source each becomes. */
-export const STUDY_SOURCE_TYPES = ["transcript", "text", "strategist"] as const;
+export const STUDY_SOURCE_TYPES = ["transcript", "text", "strategist", "website", "video"] as const;
 export type StudySourceType = (typeof STUDY_SOURCE_TYPES)[number];
-export const PLAYBOOK_SOURCE = { transcript: "call", text: "upload", strategist: "strategist" } as const satisfies Record<StudySourceType, string>;
+export const PLAYBOOK_SOURCE = { transcript: "call", text: "upload", strategist: "strategist", website: "website", video: "video" } as const satisfies Record<StudySourceType, string>;
 
 /** One source as the model sees it: an id to cite, what it is, and its text. */
 export type GatheredSource = { id: string; type: StudySourceType; ref: string; label: string; text: string; cut: boolean };

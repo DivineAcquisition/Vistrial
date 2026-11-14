@@ -341,11 +341,41 @@ tests, lint, both typechecks and the build, never deploying Convex:
    analysis. Code gathers them; one model step proposes items; code keeps only items that fit the folders
    and quote their source's own words (checked against the source), drops repeats, and files the rest as an
    **inference** with the source and the quote. It runs as Dealmaker's work, so only once Dealmaker is live.
-   Next, 7c-2: the business's website and YouTube links (public videos with captions only, 0.10 item 7),
-   which need the page reader and a video reader in an action.
+   *7c-2, built (website):* a study may name up to 4 pages of the business's own website. A new action tool,
+   `pbs.read`, reads one page per step through the shared page reader as a plain request (robots.txt
+   honoured, no browser, no screenshots, nothing kept but the text); a page it cannot read is named with the
+   reason. Up to 3 public YouTube links are read by the same step through Gemini from the link (0.10 item 7):
+   never downloaded, only the words kept. The tool is `pbs.read`, one page or video per step.
+   *7d, built:* the guided interview (`convex/lib/interview.ts`, `convex/playbookInterview.ts`). Seven fixed
+   questions, no model: what each CRM stage means (read from the CRM first), the quiet-days setting (7, 14,
+   21 or 30), the script for each call stage still missing, packages with the price a proposal may use,
+   proof it may quote, the voice and sign-off, and the consent tags with the channels it may draft for.
+   Only open questions are asked; one can be skipped. Answers become Playbook items from the interview
+   ("Your data") or the new `dealmakerSettings` row for the organization or client. Step 7 is complete.
 8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
+   *Built (server):* `convex/lib/dealmaker/{roles,autonomy}.ts` and `convex/dealmakerTeam.ts`. Sales roles
+   (setter, closer, sales lead) sit beside the app roles; Owners and Admins give a member a role and link them
+   to a CRM user seen on deals (the CRM gives an id, no name). A home shows every deal to Owners, Admins and
+   sales leads, otherwise only the deals assigned to that CRM user, and says why when it shows none.
+   `decideSend` holds the four hard stops first (a paused lead, a price, a first message; won or lost stays the
+   Owner's), then lets only the low-stakes kinds the Owner chose go without a person. Only the Owner changes
+   that, and only for reminders, confirmations and sending something promised. A person pauses a lead and
+   only a person lifts it. The screens come with the Pipeline tab (step 9).
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.
+   *9a, built (server):* `convex/lib/dealmaker/board.ts` and `convex/pipelineBoard.ts`. On every read, in code:
+   health (active, cooling, quiet, won, lost) against the quiet-days setting; temperature (hot, warm, cold)
+   from replies and shows only; who has the ball (the lead, us, approval); readiness as the five fit fields
+   established (with the evidence kind: recorded event, buyer's words, rep's account, measured result) or
+   unresolved; open commitments; one next move per deal (answer, deliver what was promised, rebook a
+   no-show, ask honestly whether contact is welcome, or the first reply, which waits for a person); source
+   quality and a forecast range only from at least 5 of the business's own closed deals, else "Not enough
+   data"; per rep for Owners and Admins only. The board is filtered to each person's home. New tables
+   `dealFacts` and `dealCommitments` (people write now; call reviews add theirs later).
+   *9b, built (tab):* `src/components/work/pipeline-tab.tsx` behind the work gate; `/dev/pipeline-tab` shows it
+   with sample data. Health counts, deals by stage as colour-coded cards (every colour with an icon and its
+   word), today's moves, forecast, source quality, by person (Owners and Admins), and the team and autonomy
+   panel. Dragging a card to propose a stage move comes with Comms (step 13), through the approvals path.
 10. **Calls tab, before**: Deal Briefing with research, readiness, the setter's hand-off, offer fit and opening line; email and the
     calendar-event link.
     *10a, built:* Deal Briefing on request, server side (`convex/skills/dealBriefing/`, `dbr.read`, `dbr.check`,
@@ -403,8 +433,12 @@ tests, lint, both typechecks and the build, never deploying Convex:
    policy line. *Recommend: off by default, Owner turns it on.*
 6. **DMs through HighLevel**: Instagram and Facebook messages through HighLevel's conversations API are not
    yet tested. *Recommend: prove them on a test sub-account before step 13 promises them.*
-7. **YouTube videos**: only public videos with captions, read through captions, never downloaded.
-   *Recommend: as written.*
+7. **YouTube videos** (owner's choice, 2026-11-14: **read through Gemini**). YouTube's captions download works
+   only for a channel's own videos after it signs in, so captions-only would almost never work. Public
+   YouTube links are read by Gemini from the link, as reference ads are (`references.ts`): the video is
+   never downloaded or stored, and only the words Gemini reports were said and shown are kept, with every
+   Playbook item quoting them and labelled an inference. Without a Gemini key it says "Reading videos is not
+   set up yet."
 
 ---
 

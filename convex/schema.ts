@@ -2546,12 +2546,14 @@ export default defineSchema({
     clientId: v.optional(v.id("clients")),
     sources: v.array(
       v.object({
-        type: v.union(v.literal("transcript"), v.literal("text"), v.literal("strategist")),
-        /** A transcript or asset id; for pasted text, nothing. */
+        type: v.union(v.literal("transcript"), v.literal("text"), v.literal("strategist"), v.literal("website"), v.literal("video")),
+        /** A transcript or asset id, or a website page's or public video's address; for pasted text, nothing. */
         ref: v.optional(v.string()),
         label: v.string(),
-        /** Pasted or uploaded text, for a `text` source. */
+        /** Pasted or uploaded text, or a page's or video's text once read. */
         text: v.optional(v.string()),
+        /** Why a page or video could not be read, in words a person reads. */
+        problem: v.optional(v.string()),
       }),
     ),
     status: v.union(v.literal("running"), v.literal("done"), v.literal("failed")),
@@ -2563,6 +2565,79 @@ export default defineSchema({
     createdAt: v.number(),
     finishedAt: v.optional(v.number()),
   }).index("by_workspace_client", ["workspaceId", "clientId", "createdAt"]),
+
+  /**
+   * Dealmaker's settings for one business (the organization, or one client): what the guided interview
+   * asked that is not a Playbook item. One row per organization or client.
+   */
+  dealmakerSettings: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    /** Days with no activity and no stage change before a deal is quiet. */
+    quietDays: v.optional(v.number()),
+    /** What each CRM stage means, in the business's words. */
+    stageMeanings: v.optional(v.array(v.object({ stageRef: v.string(), name: v.string(), meaning: v.string() }))),
+    /** CRM tags that mean a lead agreed to be contacted. */
+    consentTags: v.optional(v.array(v.string())),
+    /** Channels Dealmaker may draft for. */
+    channels: v.optional(v.array(v.union(v.literal("sms"), v.literal("email"), v.literal("voice"), v.literal("dm")))),
+    /** Interview questions a person chose to skip. */
+    skipped: v.optional(v.array(v.string())),
+    /** Each member's sales role and the CRM user they are, for their home. */
+    team: v.optional(v.array(v.object({ memberId: v.id("members"), salesRole: v.union(v.literal("setter"), v.literal("closer"), v.literal("lead")), crmUserRef: v.optional(v.string()) }))),
+    /** The message kinds the Owner made automatic. Only the low-stakes kinds are ever accepted. */
+    autonomous: v.optional(v.array(v.string())),
+    updatedBy: v.string(),
+    updatedAt: v.number(),
+  }).index("by_workspace_client", ["workspaceId", "clientId"]),
+
+  /**
+   * What is established about one deal's fit (need, budget, who decides, timing, fit), each with the kind of
+   * evidence it rests on (doctrine II). Written by a person now, and by call reviews later. Newest per field wins;
+   * older rows stay as history.
+   */
+  dealFacts: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    dealRef: v.string(),
+    field: v.union(v.literal("need"), v.literal("budget"), v.literal("decider"), v.literal("timing"), v.literal("fit")),
+    value: v.string(),
+    kind: v.union(v.literal("recorded"), v.literal("buyer"), v.literal("rep"), v.literal("measured")),
+    /** Who gave a rep's account, by name; a call review's id for a buyer's words. */
+    author: v.optional(v.string()),
+    sourceRef: v.optional(v.string()),
+    recordedBy: v.string(),
+    recordedAt: v.number(),
+  }).index("by_workspace_deal", ["workspaceId", "dealRef", "recordedAt"]),
+
+  /** A promise to a buyer or a hand-off inside the team: an owner, what done means, and a due date where it has one. */
+  dealCommitments: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    dealRef: v.string(),
+    text: v.string(),
+    /** A member's id, or "lead" when the buyer owns it. */
+    owner: v.string(),
+    due: v.optional(v.number()),
+    doneAt: v.optional(v.number()),
+    doneBy: v.optional(v.string()),
+    sourceRef: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_workspace_deal", ["workspaceId", "dealRef", "createdAt"]),
+
+  /** A lead Dealmaker must not contact: paused after a negative reply, until a person lifts it (0.2). */
+  dealmakerPauses: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    /** The CRM contact's id. */
+    contactRef: v.string(),
+    reason: v.string(),
+    pausedBy: v.string(),
+    pausedAt: v.number(),
+    liftedBy: v.optional(v.string()),
+    liftedAt: v.optional(v.number()),
+  }).index("by_workspace_contact", ["workspaceId", "contactRef", "pausedAt"]),
 
   /** "What I've learned about how you sell": proposed until a person approves it; only approved ones guide drafts. */
   playbookLessons: defineTable({

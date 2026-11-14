@@ -334,6 +334,15 @@ tests, lint, both typechecks and the build, never deploying Convex:
    against a minimum. Owners, Admins and Members edit; Viewers read; a client a member may not see is not
    found. Next: 7b the Playbook tab, 7c reading uploads, transcripts, YouTube links and the website, 7d the
    guided interview.
+   *7b, built:* the Playbook tab (`src/components/work/playbook-tab.tsx`), behind the work gate until go-live;
+   `/dev/playbook-tab` shows it with sample data.
+   *7c-1, built:* reading into the Playbook (`convex/skills/playbookStudy`, `playbook.study`). A person picks
+   calls shared with Dealmaker, pastes text or picks a text file, or includes Strategist's approved offer
+   analysis. Code gathers them; one model step proposes items; code keeps only items that fit the folders
+   and quote their source's own words (checked against the source), drops repeats, and files the rest as an
+   **inference** with the source and the quote. It runs as Dealmaker's work, so only once Dealmaker is live.
+   Next, 7c-2: the business's website and YouTube links (public videos with captions only, 0.10 item 7),
+   which need the page reader and a video reader in an action.
 8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.

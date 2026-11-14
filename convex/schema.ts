@@ -2492,6 +2492,8 @@ export default defineSchema({
     tag: v.optional(objectionTag),
     title: v.string(),
     body: v.string(),
+    /** For an item Dealmaker filed from a source: the source's own words it rests on, checked in code. */
+    quote: v.optional(v.string()),
     source: itemSource,
     basis,
     status: itemStatus,
@@ -2502,6 +2504,30 @@ export default defineSchema({
     archivedBy: v.optional(v.string()),
     archivedAt: v.optional(v.number()),
   }).index("by_workspace_client", ["workspaceId", "clientId", "folder"]),
+
+  /** A person asks Dealmaker to read sources into one Playbook. The run reads `inputRef` = this row's id. */
+  playbookStudies: defineTable({
+    workspaceId: v.id("workspaces"),
+    clientId: v.optional(v.id("clients")),
+    sources: v.array(
+      v.object({
+        type: v.union(v.literal("transcript"), v.literal("text"), v.literal("strategist")),
+        /** A transcript or asset id; for pasted text, nothing. */
+        ref: v.optional(v.string()),
+        label: v.string(),
+        /** Pasted or uploaded text, for a `text` source. */
+        text: v.optional(v.string()),
+      }),
+    ),
+    status: v.union(v.literal("running"), v.literal("done"), v.literal("failed")),
+    runId: v.optional(v.id("agentRuns")),
+    filed: v.optional(v.number()),
+    dropped: v.optional(v.number()),
+    missing: v.optional(v.array(v.string())),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  }).index("by_workspace_client", ["workspaceId", "clientId", "createdAt"]),
 
   /** "What I've learned about how you sell": proposed until a person approves it; only approved ones guide drafts. */
   playbookLessons: defineTable({

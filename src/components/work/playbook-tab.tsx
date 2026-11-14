@@ -4,7 +4,8 @@ import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
 
-import { BookOpen, Check, CheckCircle2, Circle, Lightbulb, ListChecks, PenLine, Plus, Trash2, X } from "@/components/icons";
+import { BookOpen, Check, CheckCircle2, Circle, FileText, Lightbulb, ListChecks, PenLine, Plus, Trash2, X } from "@/components/icons";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useClientScope } from "@/components/shell/shell-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,10 @@ export type PlaybookActions = {
   decideLesson: (lessonId: string, approve: boolean, text?: string) => Promise<unknown>;
   editLesson: (lessonId: string, text: string) => Promise<unknown>;
   removeLesson: (lessonId: string) => Promise<unknown>;
+  study: (request: StudyRequest) => Promise<unknown>;
 };
+
+export type StudyRequest = { transcriptIds: string[]; texts: { label: string; text: string }[]; offerAnalysis: boolean };
 
 const TAG_LABEL: Record<ObjectionTag, string> = { money: "Money", time: "Time", trust: "Trust", fit: "Fit" };
 
@@ -147,6 +151,11 @@ function ItemRow({ item, editor, actions }: { item: Item; editor: boolean; actio
         ) : null}
       </div>
       {item.body ? <p className="text-sm leading-relaxed whitespace-pre-line break-words text-muted-foreground">{item.body}</p> : null}
+      {item.quote ? (
+        <blockquote className="border-l-2 border-border pl-3 text-sm leading-relaxed break-words text-foreground">
+          <span className="sr-only">In the source&apos;s words: </span>“{item.quote}”
+        </blockquote>
+      ) : null}
       <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <BasisBadge basis={item.basis} label={item.basisLabel} />
         <span>
@@ -361,6 +370,106 @@ function LessonsPanel({ lessons, editor, actions }: { lessons: PlaybookData["les
   );
 }
 
+/** Text files are read in the browser; anything else is pasted. */
+const TEXT_FILE = /\.(txt|md|markdown|csv)$/i;
+const MAX_FILE_CHARS = 60_000;
+
+function studyLine(row: PlaybookData["studies"][number]) {
+  const from = row.sources.join(", ");
+  if (row.status === "running") return `Reading ${from}…`;
+  if (row.status === "failed") return `Could not finish reading ${from}.`;
+  const left = row.dropped ? ` ${row.dropped} left out: Dealmaker could not show the words it rested on, or the Playbook already had it.` : "";
+  return `Filed ${row.filed ?? 0} ${row.filed === 1 ? "item" : "items"} from ${from}.${left}`;
+}
+
+function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookActions }) {
+  const [calls, setCalls] = useState<string[]>([]);
+  const [offer, setOffer] = useState(false);
+  const [label, setLabel] = useState("");
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const pasted = label.trim() && text.trim();
+  const ready = calls.length > 0 || offer || pasted;
+  const readFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (!TEXT_FILE.test(file.name)) {
+      showError(new Error("Choose a text file (.txt or .md), or paste the words."));
+      return;
+    }
+    setLabel(file.name.slice(0, 120));
+    setText((await file.text()).slice(0, MAX_FILE_CHARS));
+  };
+  return (
+    <Panel className="grid min-w-0 gap-4 p-4 sm:p-6" data-playbook-study>
+      <SectionTitle icon={FileText}>Read into the Playbook</SectionTitle>
+      <p className="text-sm text-muted-foreground">Dealmaker reads what you choose and files what it finds into the folders. Each item quotes the words it rests on and is marked an inference until someone on your team edits it.</p>
+      {data.readable.transcripts.length ? (
+        <fieldset className="grid gap-2">
+          <legend className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Calls shared with Dealmaker</legend>
+          {data.readable.transcripts.map((row) => (
+            <label key={row.id} className="flex items-center gap-2 text-sm text-foreground">
+              <Checkbox checked={calls.includes(row.id)} onCheckedChange={(checked) => setCalls((now) => (checked ? [...now, row.id] : now.filter((id) => id !== row.id)))} />
+              <span className="min-w-0 break-words">
+                {row.title}
+                {row.callDate ? <span className="text-muted-foreground"> · {row.callDate}</span> : null}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      ) : (
+        <p className="text-sm text-muted-foreground">No calls are shared with Dealmaker yet. Share one from Connections, under call transcripts.</p>
+      )}
+      {data.readable.offerAnalysis ? (
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <Checkbox checked={offer} onCheckedChange={(checked) => setOffer(checked === true)} />
+          <span className="min-w-0 break-words">Strategist&apos;s approved offer analysis: {data.readable.offerAnalysis.title}</span>
+        </label>
+      ) : null}
+      <div className="grid gap-2">
+        <Input aria-label="What the text is" placeholder="What it is, e.g. Sales script" value={label} maxLength={120} onChange={(event) => setLabel(event.target.value)} />
+        <Textarea aria-label="Text to read" placeholder="Paste a sales script, an offer document or a past proposal" value={text} rows={5} maxLength={MAX_FILE_CHARS} onChange={(event) => setText(event.target.value)} />
+        <label className="w-fit text-xs text-muted-foreground">
+          <span className="underline underline-offset-2">Or choose a text file</span>
+          <input type="file" accept=".txt,.md,.markdown,.csv,text/plain,text/markdown" className="sr-only" onChange={(event) => void readFile(event.target.files?.[0])} />
+        </label>
+      </div>
+      <div>
+        <Button
+          disabled={!ready || sending}
+          onClick={async () => {
+            setSending(true);
+            const ok = await run(() => actions.study({ transcriptIds: calls, texts: pasted ? [{ label, text }] : [], offerAnalysis: offer }));
+            setSending(false);
+            if (ok) {
+              setCalls([]);
+              setOffer(false);
+              setLabel("");
+              setText("");
+            }
+          }}
+        >
+          <BookOpen aria-hidden className="size-4" />
+          Read these
+        </Button>
+      </div>
+      {data.studies.length ? (
+        <ul className="grid gap-1.5 border-t border-border pt-3" aria-label="Recent reading">
+          {data.studies.map((row) => (
+            <li key={row.id} className="grid gap-0.5 text-sm">
+              <span className="text-foreground">{studyLine(row)}</span>
+              {row.missing.map((line) => (
+                <span key={line} className="text-xs text-muted-foreground">
+                  {line}
+                </span>
+              ))}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </Panel>
+  );
+}
+
 /** The Playbook with its data handed in, so a story can show it without a server. */
 export function PlaybookView({ data, editor, actions, initialFolder = "offer" }: { data: PlaybookData; editor: boolean; actions: PlaybookActions; initialFolder?: Folder }) {
   const [open, setOpen] = useState<Folder>(initialFolder);
@@ -376,6 +485,7 @@ export function PlaybookView({ data, editor, actions, initialFolder = "offer" }:
         promise="What Dealmaker knows about your offer, your buyers, the objections you hear and how you close. Every item says where it came from."
       />
       <NeedsPanel needs={data.needs} />
+      {canEdit ? <StudyPanel data={data} actions={actions} /> : null}
       <SegmentedRadioGroup
         aria-label="Playbook folder"
         value={open}
@@ -400,6 +510,7 @@ export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspac
   const decideLesson = useMutation(api.playbook.decideLesson);
   const editLesson = useMutation(api.playbook.editLesson);
   const removeLesson = useMutation(api.playbook.removeLesson);
+  const study = useMutation(api.playbook.study);
   if (data === undefined) return <p className="text-sm text-muted-foreground">Opening the Playbook…</p>;
   const actions: PlaybookActions = {
     addItem: (draft) => addItem({ workspaceId, clientId, ...draft }),
@@ -409,6 +520,14 @@ export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspac
     decideLesson: (lessonId, approve, text) => decideLesson({ workspaceId, lessonId: lessonId as Id<"playbookLessons">, approve, text }),
     editLesson: (lessonId, text) => editLesson({ workspaceId, lessonId: lessonId as Id<"playbookLessons">, text }),
     removeLesson: (lessonId) => removeLesson({ workspaceId, lessonId: lessonId as Id<"playbookLessons"> }),
+    study: (request) =>
+      study({
+        workspaceId,
+        clientId,
+        transcriptIds: request.transcriptIds as Id<"callTranscripts">[],
+        texts: request.texts,
+        offerAnalysis: request.offerAnalysis,
+      }),
   };
   return <PlaybookView data={data} editor={editor} actions={actions} />;
 }

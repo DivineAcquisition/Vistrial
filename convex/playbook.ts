@@ -11,7 +11,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { clientForNew, clientHere, type ClientScope } from "./lib/clients";
+import { clientForNew, clientHere, clientOfAsset, type ClientScope } from "./lib/clients";
 import { notFound, userError } from "./lib/errors";
 import { BASIS_LABEL } from "./lib/evidence";
 import {
@@ -36,6 +36,8 @@ import {
   type ItemInput,
 } from "./lib/playbook";
 import { SALES_CONVERSION } from "./catalog";
+import { startRunFor } from "./runs";
+import { SKILL_SLUG as STUDY_SKILL, STUDY_LIMITS } from "./skills/playbookStudy/shapes";
 
 type Ctx = QueryCtx & { workspaceId: Id<"workspaces">; clients: ClientScope };
 
@@ -59,6 +61,27 @@ async function transcriptsShared(ctx: Pick<QueryCtx, "db">, scope: { workspaceId
   return rows.filter((row) => row.clientId === scope.clientId && (row.agents ?? []).includes(SALES_CONVERSION)).length;
 }
 
+/** Calls shared with Dealmaker for this Playbook's business, newest first. */
+async function sharedTranscripts(ctx: Pick<QueryCtx, "db">, scope: { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> }) {
+  const rows = await ctx.db
+    .query("callTranscripts")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", scope.workspaceId))
+    .order("desc")
+    .take(500);
+  return rows.filter((row) => row.clientId === scope.clientId && (row.agents ?? []).includes(SALES_CONVERSION)).slice(0, 30);
+}
+
+/** Strategist's latest approved offer analysis for this Playbook's business, if there is one. */
+async function approvedOfferAnalysis(ctx: QueryCtx, scope: { workspaceId: Id<"workspaces">; clientId?: Id<"clients"> }) {
+  const rows = await ctx.db
+    .query("assets")
+    .withIndex("by_workspace_kind_status", (q) => q.eq("workspaceId", scope.workspaceId).eq("kind", "offerAnalysis").eq("status", "approved"))
+    .order("desc")
+    .take(20);
+  for (const row of rows) if ((await clientOfAsset(ctx, row)) === scope.clientId) return row;
+  return null;
+}
+
 function itemView(row: Doc<"playbookItems">) {
   return {
     id: row._id,
@@ -70,6 +93,7 @@ function itemView(row: Doc<"playbookItems">) {
     tag: row.tag ?? null,
     title: row.title,
     body: row.body,
+    quote: row.quote ?? null,
     source: { type: row.source.type, label: row.source.label ?? null, ref: row.source.ref ?? null, words: SOURCE_LABEL[row.source.type] },
     basis: row.basis,
     basisLabel: BASIS_LABEL[row.basis],
@@ -94,7 +118,17 @@ export const view = workspaceQuery({
   args: { clientId: v.optional(v.id("clients")) },
   handler: async (ctx, args) => {
     const scope = await scopeFor(ctx, args.clientId);
-    const [items, lessons, transcripts] = await Promise.all([itemsOf(ctx, scope), lessonsOf(ctx, scope), transcriptsShared(ctx, scope)]);
+    const [items, lessons, transcripts, studies, offer] = await Promise.all([
+      itemsOf(ctx, scope),
+      lessonsOf(ctx, scope),
+      transcriptsShared(ctx, scope),
+      ctx.db
+        .query("playbookStudies")
+        .withIndex("by_workspace_client", (q) => q.eq("workspaceId", ctx.workspaceId).eq("clientId", scope.clientId))
+        .order("desc")
+        .take(5),
+      approvedOfferAnalysis(ctx, scope),
+    ]);
     const sorted = [...items].sort((a, b) => b.updatedAt - a.updatedAt);
     return {
       clientId: scope.clientId ?? null,
@@ -109,6 +143,20 @@ export const view = workspaceQuery({
         approved: lessons.filter((row) => row.status === "approved").sort((a, b) => b.proposedAt - a.proposedAt).map(lessonView),
       },
       needs: needsFrom(items, transcripts),
+      studies: studies.map((row) => ({
+        id: row._id,
+        status: row.status,
+        sources: row.sources.map((source) => source.label),
+        filed: row.filed ?? null,
+        dropped: row.dropped ?? null,
+        missing: row.missing ?? [],
+        createdAt: row.createdAt,
+      })),
+      /** What a study can read: calls shared with Dealmaker, and Strategist's approved offer analysis. */
+      readable: {
+        transcripts: (await sharedTranscripts(ctx, scope)).map((row) => ({ id: row._id, title: row.title, callDate: row.callDate ?? null })),
+        offerAnalysis: offer ? { id: offer._id, title: offer.title } : null,
+      },
       canEdit: ctx.role !== "viewer",
     };
   },
@@ -277,3 +325,76 @@ export const removeLesson = workspaceMutation({
     return null;
   },
 });
+
+/* ---------------------------------------------------------------------------
+ * Reading sources into the Playbook
+ * ------------------------------------------------------------------------- */
+
+const STUDY_TEXT = {
+  nothing: "Choose a call, paste some text, or include the offer analysis.",
+  tooMany: `A study reads at most ${STUDY_LIMITS.sources} sources at a time.`,
+  notShared: "That call is not shared with Dealmaker.",
+  noOffer: "There is no approved offer analysis to read.",
+  emptyText: "Pasted text needs a name and some words.",
+} as const;
+
+/**
+ * A person asks Dealmaker to read sources into this Playbook: calls shared with Dealmaker, pasted or
+ * uploaded text, and Strategist's approved offer analysis. It runs as Dealmaker's work, so it starts only
+ * once Dealmaker is live and on, with the run's own cost limit.
+ */
+export const study = workspaceMutation({
+  args: {
+    clientId: v.optional(v.id("clients")),
+    transcriptIds: v.optional(v.array(v.id("callTranscripts"))),
+    texts: v.optional(v.array(v.object({ label: v.string(), text: v.string() }))),
+    offerAnalysis: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const forClient = await clientForNew(ctx, args.clientId);
+    const scope = { workspaceId: ctx.workspaceId, ...forClient };
+    const sources: Doc<"playbookStudies">["sources"] = [];
+    const shared = new Map((await sharedTranscripts(ctx, scope)).map((row) => [row._id as string, row]));
+    for (const id of args.transcriptIds ?? []) {
+      const row = shared.get(id);
+      if (!row) throw userError(STUDY_TEXT.notShared);
+      sources.push({ type: "transcript", ref: row._id, label: clean(row.title, STUDY_LIMITS.label) });
+    }
+    for (const row of args.texts ?? []) {
+      const label = clean(row.label, STUDY_LIMITS.label);
+      const text = cleanBodyLong(row.text);
+      if (!label || !text) throw userError(STUDY_TEXT.emptyText);
+      sources.push({ type: "text", label, text });
+    }
+    if (args.offerAnalysis) {
+      const offer = await approvedOfferAnalysis(ctx, scope);
+      if (!offer) throw userError(STUDY_TEXT.noOffer);
+      sources.push({ type: "strategist", ref: offer._id, label: clean(offer.title, STUDY_LIMITS.label) });
+    }
+    if (!sources.length) throw userError(STUDY_TEXT.nothing);
+    if (sources.length > STUDY_LIMITS.sources) throw userError(STUDY_TEXT.tooMany);
+    const studyId = await ctx.db.insert("playbookStudies", { workspaceId: ctx.workspaceId, ...forClient, sources, status: "running", createdBy: ctx.identity.subject, createdAt: Date.now() });
+    const runId = await startRunFor(ctx, {
+      workspaceId: ctx.workspaceId,
+      userId: ctx.identity.subject,
+      role: ctx.member.role,
+      agentSlug: SALES_CONVERSION,
+      skillSlug: STUDY_SKILL,
+      inputRef: studyId,
+      ...forClient,
+    });
+    await ctx.db.patch(studyId, { runId });
+    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "playbook.study_started", subject: studyId });
+    return { studyId, runId };
+  },
+});
+
+/** Pasted text keeps its lines, up to the study's limit. */
+function cleanBodyLong(text: string) {
+  return text
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, STUDY_LIMITS.pastedChars);
+}

@@ -143,7 +143,7 @@ describe("a Playbook study, run end to end", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
-    for (const key of ["__vistrialScriptedModel", "__vistrialScriptedPages", "__vistrialScriptedRenderer"]) delete (globalThis as Record<string, unknown>)[key];
+    for (const key of ["__vistrialScriptedModel", "__vistrialScriptedPages", "__vistrialScriptedRenderer", "__vistrialScriptedGemini"]) delete (globalThis as Record<string, unknown>)[key];
   });
 
   it("reads a call and pasted text, files only what quotes its source, as an inference with its source", async () => {
@@ -196,10 +196,32 @@ describe("a Playbook study, run end to end", () => {
     expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, website: ["not a url"] }))).toBe("That is not a web address.");
   });
 
+  it("reads a public YouTube video through Gemini from its link, keeping only the words, never the video", async () => {
+    const globals = globalThis as Record<string, unknown>;
+    const sent: unknown[] = [];
+    globals.__vistrialScriptedGemini = (body: { input: unknown }) => {
+      sent.push(body.input);
+      return { status: "completed", steps: [{ type: "model_output", content: [{ type: "text", text: JSON.stringify({ text: "Never pitch before you know their numbers. Ask what one new client is worth to them." }) }] }], usage: { total_input_tokens: 4000, total_output_tokens: 300 } };
+    };
+    globals.__vistrialScriptedModel = (() => ({
+      text: JSON.stringify({ items: [item({ folder: "prospect", kind: "question", title: "Ask what one new client is worth", body: "Before pitching.", sourceId: "s1", quote: "Ask what one new client is worth to them" })] }),
+    })) as ScriptedModel;
+    const s = await setup();
+    const { runId } = await s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, videos: ["youtu.be/dQw4w9WgXcQ"] });
+    expect(await finish(s, runId)).toBe("completed");
+    expect(JSON.stringify(sent)).toContain('"uri":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"');
+    expect(JSON.stringify(sent)).not.toContain('"data"');
+    const view = await s.owner.query(api.playbook.view, { workspaceId: s.workspaceId });
+    expect(view.folders[1].items[0]).toMatchObject({ title: "Ask what one new client is worth", basisLabel: "Inference", source: { type: "video", ref: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" } });
+    const stored = await s.t.run((ctx) => ctx.db.system.query("_storage").collect());
+    expect(stored).toHaveLength(0);
+    expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, videos: ["https://vimeo.com/123"] }))).toBe("That is not a YouTube video link.");
+  });
+
   it("refuses a call not shared with Dealmaker, an empty request, and any study while Dealmaker is not live", async () => {
     const s = await setup();
     expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, transcriptIds: [s.strategistOnly] }))).toBe("That call is not shared with Dealmaker.");
-    expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId }))).toBe("Choose a call, paste some text, add a page of your website, or include the offer analysis.");
+    expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId }))).toBe("Choose a call, paste some text, add a page of your website or a YouTube link, or include the offer analysis.");
     expect(await message(s.owner.mutation(api.playbook.study, { workspaceId: s.workspaceId, offerAnalysis: true }))).toBe("There is no approved offer analysis to read.");
 
     const planned = await setup(false);

@@ -1384,10 +1384,10 @@ export const step = internalAction({
     } else if (plan.kind === "action") {
       const began = Date.now();
       try {
-        // Action tools run in Node: the landing page reader, and a Playbook study's website pages.
+        // Action tools run in Node: the landing page reader, and a Playbook study's website pages and videos.
         const done: { resultCode: string; resultId?: string; costCents: number } =
-          plan.toolSlug === "pbs.site"
-            ? await ctx.runAction(internal.playbookStudyActions.readSite, { runId: args.runId })
+          plan.toolSlug === "pbs.read"
+            ? await ctx.runAction(internal.playbookStudyActions.readNext, { runId: args.runId })
             : await ctx.runAction(internal.landingTeardownActions.readNext, { runId: args.runId });
         ({ status } = await ctx.runMutation(internal.runs.commitAction, {
           runId: args.runId,

@@ -47,7 +47,7 @@ export const TOOLS = [
   "pbs.gather",
   "pbs.check",
   "pbs.save",
-  "pbs.site",
+  "pbs.read",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];
@@ -65,7 +65,7 @@ export function isCollectTool(slug: string): slug is CollectTool {
  * Tools that need the network but collect no research source. Each runs as its own action from the step
  * action and reports a result code and what it cost; the runtime records the step and charges the run.
  */
-export const ACTION_TOOLS = ["page.read", "pbs.site"] as const;
+export const ACTION_TOOLS = ["page.read", "pbs.read"] as const;
 
 export type ActionTool = (typeof ACTION_TOOLS)[number];
 

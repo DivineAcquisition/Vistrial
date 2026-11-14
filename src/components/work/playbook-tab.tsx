@@ -40,7 +40,7 @@ export type PlaybookActions = {
   study: (request: StudyRequest) => Promise<unknown>;
 };
 
-export type StudyRequest = { transcriptIds: string[]; texts: { label: string; text: string }[]; offerAnalysis: boolean; website: string[] };
+export type StudyRequest = { transcriptIds: string[]; texts: { label: string; text: string }[]; offerAnalysis: boolean; website: string[]; videos: string[] };
 
 const TAG_LABEL: Record<ObjectionTag, string> = { money: "Money", time: "Time", trust: "Trust", fit: "Fit" };
 
@@ -388,10 +388,12 @@ function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookAc
   const [label, setLabel] = useState("");
   const [text, setText] = useState("");
   const [pages, setPages] = useState("");
+  const [links, setLinks] = useState("");
   const [sending, setSending] = useState(false);
   const pasted = label.trim() && text.trim();
   const website = pages.split(/\s+/).map((row) => row.trim()).filter(Boolean);
-  const ready = calls.length > 0 || offer || pasted || website.length > 0;
+  const videos = links.split(/\s+/).map((row) => row.trim()).filter(Boolean);
+  const ready = calls.length > 0 || offer || pasted || website.length > 0 || videos.length > 0;
   const readFile = async (file: File | undefined) => {
     if (!file) return;
     if (!TEXT_FILE.test(file.name)) {
@@ -431,6 +433,10 @@ function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookAc
         <Textarea aria-label="Pages of your website" placeholder="Pages of your own website, one per line (up to 4), e.g. yoursite.com/offer" value={pages} rows={2} onChange={(event) => setPages(event.target.value)} />
         <p className="text-xs text-muted-foreground">Read as a visitor would: public pages only, never behind a login, and only where the site allows it.</p>
       </div>
+      <div className="grid gap-1.5">
+        <Textarea aria-label="YouTube links" placeholder="Public YouTube links to sales training, one per line (up to 3)" value={links} rows={2} onChange={(event) => setLinks(event.target.value)} />
+        <p className="text-xs text-muted-foreground">Read by Google&apos;s Gemini from the link. The video is never downloaded; only what it says and shows is kept, with each item quoting it.</p>
+      </div>
       <div className="grid gap-2">
         <Input aria-label="What the text is" placeholder="What it is, e.g. Sales script" value={label} maxLength={120} onChange={(event) => setLabel(event.target.value)} />
         <Textarea aria-label="Text to read" placeholder="Paste a sales script, an offer document or a past proposal" value={text} rows={5} maxLength={MAX_FILE_CHARS} onChange={(event) => setText(event.target.value)} />
@@ -444,7 +450,7 @@ function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookAc
           disabled={!ready || sending}
           onClick={async () => {
             setSending(true);
-            const ok = await run(() => actions.study({ transcriptIds: calls, texts: pasted ? [{ label, text }] : [], offerAnalysis: offer, website }));
+            const ok = await run(() => actions.study({ transcriptIds: calls, texts: pasted ? [{ label, text }] : [], offerAnalysis: offer, website, videos }));
             setSending(false);
             if (ok) {
               setCalls([]);
@@ -452,6 +458,7 @@ function StudyPanel({ data, actions }: { data: PlaybookData; actions: PlaybookAc
               setLabel("");
               setText("");
               setPages("");
+              setLinks("");
             }
           }}
         >
@@ -535,6 +542,7 @@ export function PlaybookTab({ workspaceId, editor }: { workspaceId: Id<"workspac
         texts: request.texts,
         offerAnalysis: request.offerAnalysis,
         website: request.website,
+        videos: request.videos,
       }),
   };
   return <PlaybookView data={data} editor={editor} actions={actions} />;

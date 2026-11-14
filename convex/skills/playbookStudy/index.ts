@@ -41,7 +41,7 @@ function input(record: GatherRecord) {
     record.existing.length ? `- Already in the Playbook; do not file these again: ${record.existing.slice(0, 80).join(" | ")}` : "",
     "",
     "Sources:",
-    ...record.sources.map((row) => [`Source ${row.id}: ${row.type === "transcript" ? "a sales call transcript" : row.type === "strategist" ? "Strategist's approved offer analysis" : row.type === "website" ? "a page of the business's own website" : "a document the business gave"}, "${row.label}"${row.cut ? " (cut short)" : ""}.`, wrapUntrusted(row.text)].join("\n")),
+    ...record.sources.map((row) => [`Source ${row.id}: ${row.type === "transcript" ? "a sales call transcript" : row.type === "strategist" ? "Strategist's approved offer analysis" : row.type === "website" ? "a page of the business's own website" : row.type === "video" ? "what is said and shown in a public video, as Gemini read it" : "a document the business gave"}, "${row.label}"${row.cut ? " (cut short)" : ""}.`, wrapUntrusted(row.text)].join("\n")),
   ]
     .filter((line) => line !== "")
     .join("\n");
@@ -57,12 +57,12 @@ export const playbookStudy: SkillModule = {
   agentSlug: AGENT_SLUG,
   name: "Playbook study",
   devOnly: false,
-  tools: ["pbs.site", "pbs.gather", "pbs.check", "pbs.save"],
+  tools: ["pbs.read", "pbs.gather", "pbs.check", "pbs.save"],
   async nextStep({ db, run, steps }) {
-    // The website first: one page per step, in Node, until every page has been tried.
+    // Website pages and videos first: one per step, in Node, until each has been tried.
     const study = await studyOf(db, run);
-    const unread = study?.sources.some((row) => row.type === "website" && row.text === undefined && row.problem === undefined);
-    if (unread && steps.filter((row) => row.phase === PHASE.site).length < STUDY_LIMITS.pages) return tool("pbs.site", PHASE.site);
+    const unread = study?.sources.some((row) => (row.type === "website" || row.type === "video") && row.text === undefined && row.problem === undefined);
+    if (unread && steps.filter((row) => row.phase === PHASE.read).length < STUDY_LIMITS.pages + STUDY_LIMITS.videos) return tool("pbs.read", PHASE.read);
     if (!latest(steps, PHASE.gather)) return tool("pbs.gather", PHASE.gather);
     const record = await gatheredOf(db, run, steps);
     if (!record) return null;

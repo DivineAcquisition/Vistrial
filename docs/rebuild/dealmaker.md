@@ -342,11 +342,10 @@ tests, lint, both typechecks and the build, never deploying Convex:
    and quote their source's own words (checked against the source), drops repeats, and files the rest as an
    **inference** with the source and the quote. It runs as Dealmaker's work, so only once Dealmaker is live.
    *7c-2, built (website):* a study may name up to 4 pages of the business's own website. A new action tool,
-   `pbs.site`, reads one page per step through the shared page reader as a plain request (robots.txt
+   `pbs.read`, reads one page per step through the shared page reader as a plain request (robots.txt
    honoured, no browser, no screenshots, nothing kept but the text); a page it cannot read is named with the
-   reason. YouTube links are held for the owner: YouTube's captions download works only for the channel's
-   own videos after it signs in, so the proposal is Gemini reading the public link (as references.ts does),
-   keeping only extracted text and quotes, never the video.
+   reason. Up to 3 public YouTube links are read by the same step through Gemini from the link (0.10 item 7):
+   never downloaded, only the words kept. The tool is `pbs.read`, one page or video per step.
 8. **Roles and autonomy**: role homes filtered by assignment; per-kind autonomy with the four hard stops.
 9. **Pipeline tab**: live figures and colours on every read, readiness (established and unresolved), commitments, temperature,
    who has the ball, today's moves, the weekly review, per rep, source quality, forecast.
@@ -385,8 +384,12 @@ tests, lint, both typechecks and the build, never deploying Convex:
    policy line. *Recommend: off by default, Owner turns it on.*
 6. **DMs through HighLevel**: Instagram and Facebook messages through HighLevel's conversations API are not
    yet tested. *Recommend: prove them on a test sub-account before step 13 promises them.*
-7. **YouTube videos**: only public videos with captions, read through captions, never downloaded.
-   *Recommend: as written.*
+7. **YouTube videos** (owner's choice, 2026-11-14: **read through Gemini**). YouTube's captions download works
+   only for a channel's own videos after it signs in, so captions-only would almost never work. Public
+   YouTube links are read by Gemini from the link, as reference ads are (`references.ts`): the video is
+   never downloaded or stored, and only the words Gemini reports were said and shown are kept, with every
+   Playbook item quoting them and labelled an inference. Without a Gemini key it says "Reading videos is not
+   set up yet."
 
 ---
 

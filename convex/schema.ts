@@ -2357,6 +2357,8 @@ export default defineSchema({
      */
     crmContactRef: v.optional(v.string()),
     crmDealRef: v.optional(v.string()),
+    /** Where an imported transcript came from ("fireflies:<id>", "highlevel:<message id>"), so it is not imported twice. */
+    sourceRef: v.optional(v.string()),
   }).index("by_workspace", ["workspaceId"]),
 
   /**

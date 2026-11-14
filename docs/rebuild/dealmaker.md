@@ -461,8 +461,19 @@ tests, lint, both typechecks and the build, never deploying Convex:
     the CRM or contacts the lead. **The memo** is the closer's own voice, never the call (the form says so):
     uploaded to Convex storage, transcribed by Deepgram (`nova-3`, `DEEPGRAM_API_KEY`), and the audio deleted
     whatever happens; without the key the notes are kept and the memo says "not set up yet". Conversation
-    Intelligence (step 12) reads the notes and the memo as the closer's account. Next: 11b the business's own
-    note taker and HighLevel recordings; the Zoom and Meet note taker waits for a vendor (0.10 item 1).
+    Intelligence (step 12) reads the notes and the memo as the closer's account.
+    *11b, built (note takers and recordings):* `convex/noteTakers.ts`, `convex/lib/noteTakers.ts`, the "Note
+    takers and recordings" panel on the Calls tab. **Fireflies** connects with the customer's own API key
+    (Fireflies has no sign-in app for other products; integrations-setup.md section 8), checked against
+    Fireflies and kept on the server in `integrationConnections` like a token, never shown again; the panel
+    says the key is not read-only. Recent calls are read live; a person confirms the call was recorded
+    lawfully and brings one in, which goes through `transcripts.add` (its checks, limits and client), then
+    is shared with Dealmaker with `sourceRef` so it is never imported twice. **HighLevel call recordings**
+    of half a minute or more in the last two weeks are listed; with consent, the recording is fetched from
+    HighLevel and sent straight to Deepgram (`DEEPGRAM_API_KEY`, speakers marked), and only the words are
+    added, linked to the lead; the audio is never stored. **Fathom** waits: its sign-in address and token
+    host must be confirmed with Fathom first (integrations-setup.md section 7), and until then a Fathom
+    transcript is copied into Transcripts. The Zoom and Meet note taker waits for a vendor (0.10 item 1).
 12. **Calls tab, after**: Conversation Intelligence with talk time, script coverage, the recap draft, the
     readiness inputs, commitments, owner-only coaching, the live checklist, and the end-of-day reports.
     *12a, built:* Conversation Intelligence on request, server side (`convex/skills/callReview/`, `cr.read`,

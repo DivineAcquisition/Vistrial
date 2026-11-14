@@ -389,7 +389,7 @@ export const AGENTS_SECTION = {
     {
       id: "convert",
       name: "Convert",
-      agents: [{ number: "03", name: "Dealmaker", job: "Qualification, follow-up drafts, and pipeline.", live: false }],
+      agents: [{ number: "03", name: "Dealmaker", job: "Qualification, follow-up drafts, and pipeline.", live: false, page: "/agents/dealmaker" }],
     },
     {
       id: "keep",

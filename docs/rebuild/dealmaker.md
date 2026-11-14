@@ -626,6 +626,50 @@ tests, lint, both typechecks and the build, never deploying Convex:
     its writer's own (`dealmakerChats`).
 19. **Go live** (catalog, landing page, waitlist email), then HubSpot, Salesforce, rep training, WhatsApp,
     Slack and Discord notifications.
+    *19, prepared (nothing flipped):* Usage names Dealmaker's work "Dealmaker · Pipeline review" and so on
+    wherever lists mix agents (`usage.usageSkillLabel`; inside Dealmaker's own row it stays "Pipeline review").
+    The sidebar and `WorkGate` know Dealmaker's six tabs (`DEALMAKER_TABS` in `src/lib/shell/journey.ts`), shown
+    only once it is live. The waitlist email (`agentLaunch.announceLive`, through the Resend path of
+    `emailReminders`) refuses an agent that is not live and tells each person who asked once. Going live is
+    the owner's call; the checklist is below.
+
+#### Launch checklist (the owner decides when)
+
+Before:
+1. **All six skills built and merged.** Objection Playbook (15) and Proposal Architect (16) are lane B's;
+   the catalog says Dealmaker goes live with all six. Every Dealmaker pull request merged, with its dev test
+   done by the coordinator.
+2. **Production settings** (in Convex, never in chat or the repository): `RESEND_API_KEY` (notices and the
+   waitlist email), `DEEPGRAM_API_KEY` (voice memos and call recordings), the Gemini key (YouTube in the
+   Playbook), the HighLevel app keys with the message scopes. `ELEVENLABS_API_KEY` only if voice notes are
+   offered at launch; without it the screens say "Voice notes are not set up yet". Fathom stays off until its
+   sign-in is confirmed with Fathom (integrations-setup.md, section 7).
+3. **Words.** Dealmaker's `job` in `convex/catalog.ts` is future tense ("Will help…"); change it to the
+   present before launch, because the waitlist email quotes it. The landing page (`src/lib/marketing/agent-pages.ts`)
+   moves from "join the waitlist" to "get started".
+4. **Smoke test on production with a test sub-account**, as an Owner and as a Member: connect HighLevel; the
+   Playbook interview; Pipeline (board, moves, proof panel); Calendar (week, automatic briefs left off); a brief
+   on request; Draft follow-ups (drafts only); Comms: send one message to a test lead with SEND and check the
+   send-time checks; a voice note if the key is set; a call review; Chat (a question, then a plan and Start).
+   Usage shows "Dealmaker · …"; the Briefing shows the scorecard the Monday after.
+
+Flip (one pull request, reviewed, then deployed by the coordinator):
+5. In `convex/catalog.ts`: `sales-conversion` `status: "live"`, and the six skill slugs into
+   `AVAILABLE_SKILLS`. Nothing else changes: the tabs, chat, caps (`SKILL_CAPS`, all six present) and crons
+   (weekly scorecard; automatic briefs, which stay off until an Owner or Admin turns them on) are already in.
+
+After:
+6. **Tell the waitlist once**: `npx convex run agentLaunch:announceLive '{"agentSlug":"sales-conversion"}'`
+   on production. It refuses a planned agent, skips people who left or turned emails off, and records each
+   send, so a second run sends nothing new.
+7. **Watch the first week**: Usage per skill against the caps, the scorecard posts, failed sends in Comms
+   (their reasons are in words), and the first automatic briefs where an Owner turned them on.
+8. **To undo**: set `status` back to `"planned"`. The tabs and chat hide (they show only for a live agent),
+   nothing is deleted, and turning it back on brings everything back.
+
+Still open after launch (0.10): the calendar-event link for briefs (a Google write scope), DMs through
+HighLevel (prove on a test sub-account first), the Zoom and Meet note taker (a vendor), and a signature
+provider for proposals.
 
 ### 0.10 Open before the steps that need them
 

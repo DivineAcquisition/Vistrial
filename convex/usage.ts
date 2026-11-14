@@ -201,8 +201,16 @@ async function namesFor(ctx: Ctx, rows: UsageRow[], organizations: Doc<"workspac
 }
 
 const CATALOG_AGENT_NAMES: Record<string, string> = Object.fromEntries(CATALOG.map((row) => [row.slug, row.name]));
-/** A skill is named by its work ("Research"), never by its own name: lib/workWords.ts. */
-const CATALOG_SKILL_NAMES: Record<string, string> = Object.fromEntries(CATALOG.flatMap((row) => row.skills.map((skill) => [skill.slug, workLabel(skill.slug)])));
+/**
+ * A skill is named by its work ("Research"), never by its own name: lib/workWords.ts. Where lists mix agents
+ * (typical use, limits), another agent's work carries its name in the condensed form, "Dealmaker · Pipeline
+ * review" (docs/rebuild/dealmaker.md, 8.4); the Strategist's stays as it always read.
+ */
+export function usageSkillLabel(agentSlug: string, skillSlug: string) {
+  const agent = CATALOG.find((row) => row.slug === agentSlug);
+  return agent && agent.slug !== "growth-architect" ? `${agent.name} · ${workLabel(skillSlug)}` : workLabel(skillSlug);
+}
+const CATALOG_SKILL_NAMES: Record<string, string> = Object.fromEntries(CATALOG.flatMap((row) => row.skills.map((skill) => [skill.slug, usageSkillLabel(row.slug, skill.slug)])));
 
 function pretty(slug: string) {
   const words = slug.replace(/[-_]+/g, " ").trim();
@@ -306,7 +314,8 @@ export const overview = workspaceQuery({
       slice.parts = breakdown(
         filtered.filter((row) => (row.agentSlug ?? NONE) === slice.key),
         "skill",
-      ).map((part) => ({ key: part.key, label: labelFor(names, "skill", part.key), credits: part.credits }));
+      // Inside an agent's own row its work needs no agent name: "Pipeline review", not "Dealmaker · Pipeline review".
+      ).map((part) => ({ key: part.key, label: part.key === NONE ? NONE_WORDS.skill : workLabel(part.key) !== "Work" ? workLabel(part.key) : labelFor(names, "skill", part.key), credits: part.credits }));
     }
     // What each filter can be set to: everything seen in the period with the other filters applied.
     const options = Object.fromEntries(
@@ -350,7 +359,7 @@ async function limitsFor(ctx: Ctx) {
     for (const skill of agent.skills) {
       if (skill.status !== "available") continue;
       const caps = await loadCaps(ctx, ctx.workspaceId, agent.slug, skill.slug);
-      perSkill.push({ skillSlug: skill.slug, agentSlug: agent.slug, label: workLabel(skill.slug), perRun: priceFor(caps.maxCostCentsPerRun), perDay: priceFor(caps.maxCostCentsPerDay) });
+      perSkill.push({ skillSlug: skill.slug, agentSlug: agent.slug, label: usageSkillLabel(agent.slug, skill.slug), perRun: priceFor(caps.maxCostCentsPerRun), perDay: priceFor(caps.maxCostCentsPerDay) });
     }
   }
   return {

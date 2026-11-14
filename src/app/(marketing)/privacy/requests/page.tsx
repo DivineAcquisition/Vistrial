@@ -20,7 +20,7 @@ export default async function DataRequestsPage() {
         <div className={`${marketingLead} mt-4 space-y-3`}>
           <p>Workspace Owners can ask for an export, a correction, or deletion from inside the product, under Help. A person verifies the request. Nothing is deleted or exported on its own.</p>
           <p>Meta ads: disconnecting your Meta ad account in Connections deletes its access token and every saved read straight away, with no request needed. You can also remove Vistrial from your Facebook settings, under Business Integrations.</p>
-          <p>Calendars and call transcripts: disconnecting Google Calendar or Calendly in Connections deletes its access token and every saved count straight away. An Owner or Manager can delete a call transcript in Connections at any time. Neither needs a request.</p>
+          <p>Calendars and call transcripts: disconnecting Google Calendar or Calendly in Connections deletes its access token and every saved count straight away. An Owner, Admin or Member can delete a call transcript in Connections at any time. Neither needs a request.</p>
           <p>If you are a person contacted by one of our customers and want your information changed or removed, contact that business. You can also email {trust.privacyEmail} and we will pass your request to them when we can tell who they are.</p>
           <p>
             The <Link href="/privacy" className="text-brand-300 underline">privacy policy</Link> explains what we keep and how to ask.

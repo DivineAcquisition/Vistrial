@@ -234,7 +234,7 @@ function ConnectTile({ card, onConnect, busy }: { card: ConnectCard; onConnect: 
  * Onboarding: the website, the accounts to connect, then everything found for the person to check before
  * anything runs. Plain data in, so the story page can show every step without a backend.
  */
-export function OnboardingSetup({ data, capture, connect, actions, upload }: { data: SetupData; capture: CaptureData | null; connect: ConnectCard[]; actions: SetupActions; upload?: ReactNode }) {
+export function OnboardingSetup({ data, capture, connect, actions, upload, crm }: { data: SetupData; capture: CaptureData | null; connect: ConnectCard[]; actions: SetupActions; upload?: ReactNode; crm?: ReactNode }) {
   const index = STEPS.findIndex((row) => row.stage === data.stage);
   const [url, setUrl] = useState(data.business.website ? hostOf(data.business.website) : "");
   const [busy, setBusy] = useState(false);
@@ -350,9 +350,16 @@ export function OnboardingSetup({ data, capture, connect, actions, upload }: { d
             <>
               <Question eyebrow="Connect" title="Give Strategist more to work with" detail="Each account adds real numbers to your first research and offer ideas. All are read-only, and every one is optional." />
               <ul className="grid gap-3 sm:grid-cols-2">
-                {connect.map((card) => (
-                  <ConnectTile key={card.key} card={card} busy={busy} onConnect={() => void act(() => actions.connect(card.key), "That could not be connected.")} />
-                ))}
+                {connect.map((card) =>
+                  // HighLevel brings its own card (the HighLevel connection's slot), shown in its place when given.
+                  card.kind === "crm" && crm ? (
+                    <li key={card.key} className="sm:col-span-2">
+                      {crm}
+                    </li>
+                  ) : (
+                    <ConnectTile key={card.key} card={card} busy={busy} onConnect={() => void act(() => actions.connect(card.key), "That could not be connected.")} />
+                  ),
+                )}
               </ul>
               {upload}
             </>

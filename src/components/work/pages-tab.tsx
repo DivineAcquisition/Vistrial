@@ -196,7 +196,6 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose, model }: { m
 
 /** The Pages workspace, drawn from data so the screen and its story are the same component. */
 export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, model, view, page, onSelect, onSelectPage, decisions, tryActions, review, briefJson, initialAsk }: PagesTabProps) {
-  const credits = useCredits();
   const [form, setForm] = useState(Boolean(initialAsk));
   const close = () => {
     setForm(false);
@@ -210,6 +209,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, m
         eyebrow="Landing Page Teardown"
         title="Pages"
         promise="Read landing pages in your industry section by section: which objections each one answers, in what order, what they share, and what yours lacks."
+        working={tab.running.length > 0}
         action={
           editor && !form ? (
             <Button type="button" onClick={() => setForm(true)}>
@@ -236,7 +236,6 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, m
                       {run.words}
                     </span>
                   </span>
-                  <span className="text-xs text-muted-foreground">{credits.words(run.priceCents)} so far</span>
                 </Link>
               </li>
             ))}

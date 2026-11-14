@@ -5,9 +5,9 @@ import { FirstPackageView, type PackageData, type PackagePart } from "@/componen
 import { StoryFrame } from "../work-tabs/story-frame";
 
 const PARTS: Record<PackagePart["key"], Omit<PackagePart, "state" | "phase" | "steps" | "assetId" | "reason">> = {
-  research: { key: "research", title: "Market research", gives: "Who competes for your buyers, what they offer and charge, and where you can stand out." },
-  offers: { key: "offers", title: "Two offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
-  teardown: { key: "teardown", title: "Your pages, torn down", gives: "Up to five of your own pages against the landing page framework, with what to change." },
+  research: { key: "research", title: "Market report", gives: "Who competes for your buyers, what they offer and charge, and where you can stand out." },
+  offers: { key: "offers", title: "Offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
+  teardown: { key: "teardown", title: "Page breakdown", gives: "Up to five of your own pages against the landing page framework, with what to change." },
 };
 const part = (key: PackagePart["key"], rest: Partial<PackagePart>): PackagePart => ({ ...PARTS[key], state: "waiting", phase: null, steps: 0, assetId: null, reason: null, ...rest });
 
@@ -45,7 +45,7 @@ const STATES: Record<string, PackageData> = {
     parts: [
       part("research", { state: "done", assetId: "a1" }),
       part("offers", { state: "done", assetId: "a2" }),
-      { ...part("teardown", { state: "running", phase: "write", steps: 2 }), title: "Your first landing page", gives: "A full page to the landing page framework, selling your offer idea, built from the research and what you told us. On the Pages tab." },
+      { ...part("teardown", { state: "running", phase: "write", steps: 2 }), title: "Landing page", gives: "A full page to the landing page framework, selling your offer idea, built from the research and what you told us. On the Pages tab." },
     ],
   },
   waiting: { status: "waiting", reason: null, emailed: false, dismissed: false, parts: [part("research", {}), part("offers", {}), part("teardown", {})] },

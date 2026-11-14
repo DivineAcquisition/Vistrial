@@ -10,6 +10,7 @@ import {
   Building2,
   FileSpreadsheet,
   Gauge,
+  Kanban,
   Globe,
   Lock,
   MoonIcon,
@@ -23,6 +24,7 @@ import {
   Zap,
 } from "@/components/icons";
 import { MetaLogo } from "@/components/connections/meta-logo";
+import { ToolMark } from "@/components/connectors/tool-mark";
 import {
   CardLink,
   ReadOnlyNote,
@@ -749,6 +751,8 @@ export function AgentsSection({
 
 export type DataData = {
   meta: { status: "none" | "connected" | "reconnect"; account: string | null; user: string | null; usedBy: string[] };
+  /** HighLevel sub-accounts connected across the organization and its clients. Missing hides the card. */
+  crm?: { configured: boolean; connected: number; reconnect: number; names: string[] };
   files: number;
   canManage: boolean;
 };
@@ -777,6 +781,7 @@ export function DataSection({ role, data }: { role: Role; data: DataData }) {
       >
         <MetaLogo className="h-4 w-fit opacity-80" />
       </StatusCard>
+      {data.crm ? <CrmCard crm={data.crm} /> : null}
       <StatusCard
         icon={FileSpreadsheet}
         title="Results files"
@@ -806,6 +811,30 @@ export function DataSection({ role, data }: { role: Role; data: DataData }) {
         footer={<CardLink href="/app/connections/browser">Open</CardLink>}
       />
     </div>
+  );
+}
+
+function CrmCard({ crm }: { crm: NonNullable<DataData["crm"]> }) {
+  const total = crm.connected + crm.reconnect;
+  const status = total === 0 ? (crm.configured ? "Not connected" : "Not set up yet") : crm.reconnect > 0 ? "Reconnect needed" : "Connected";
+  const tone = total === 0 ? "neutral" : crm.reconnect > 0 ? "warning" : "good";
+  const where = crm.names.slice(0, 3).join(", ") + (crm.names.length > 3 ? ` and ${crm.names.length - 3} more` : "");
+  return (
+    <StatusCard
+      icon={Kanban}
+      title="HighLevel"
+      status={status}
+      tone={tone}
+      sentence={
+        total === 0
+          ? "HighLevel: not connected. Connect a sub-account for your organization or each client so Vistrial can read pipelines, won deals, lead sources and lead activity."
+          : `HighLevel: ${total} ${total === 1 ? "sub-account" : "sub-accounts"} connected (${where})${crm.reconnect > 0 ? `, ${crm.reconnect} needing a reconnect` : ""}.`
+      }
+      affects="An Owner connects and disconnects. Read-only: nothing in HighLevel is changed and no lead is contacted."
+      footer={<CardLink href="/app/connections/highlevel">{total === 0 ? "Connect" : "Manage"}</CardLink>}
+    >
+      <ToolMark id="gohighlevel" size={20} className="opacity-90" />
+    </StatusCard>
   );
 }
 

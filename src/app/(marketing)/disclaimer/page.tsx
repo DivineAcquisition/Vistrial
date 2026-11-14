@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
+
+import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 
 import { MarketingShell } from "@/components/marketing/chrome";
 import { COMPANY_ADDRESS, CONTACT_EMAIL, LEGAL_ENTITY } from "@/lib/constants";
 import { marketingHeroTitle, marketingSubhead } from "@/lib/marketing/ui";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Disclaimer",
   description: "What the Vistrial site and its examples do and do not promise.",
-  alternates: { canonical: "/disclaimer" },
-  robots: { index: true, follow: true },
-};
+  path: "/disclaimer",
+});
 
 export default function DisclaimerPage() {
   return (

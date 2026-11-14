@@ -288,7 +288,7 @@ export const advance = internalMutation({
         kind: "finished",
         agentSlug: GROWTH_ARCHITECT,
         title: "Your first package is ready",
-        body: pkg.pagePart === "landingPage" ? "Market research, two offer ideas and your first landing page, from Strategist. On Vistrial: it used none of your credits." : "Market research, two offer ideas and a teardown of your own pages, from Strategist. On Vistrial: it used none of your credits.",
+        body: pkg.pagePart === "landingPage" ? "A market report, two offer ideas and your first landing page, from Strategist. On Vistrial: it used none of your credits." : "A market report, two offer ideas and a page breakdown of your own pages, from Strategist. On Vistrial: it used none of your credits.",
         ref: { table: "firstPackages", id: pkg._id },
         key: `first-package:${pkg._id}`,
       });
@@ -326,11 +326,11 @@ export const startWaiting = internalMutation({
 // ------------------------------------------------------------------------------------------- reading
 
 const PART_WORDS: Record<PartKey, { title: string; gives: string }> = {
-  research: { title: "Market research", gives: "Who competes for your buyers, what they offer and charge, and where you can stand out." },
-  offers: { title: "Two offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
-  teardown: { title: "Your pages, torn down", gives: "Up to five of your own pages against the landing page framework, with what to change." },
+  research: { title: "Market report", gives: "Who competes for your buyers, what they offer and charge, and where you can stand out." },
+  offers: { title: "Offer ideas", gives: "One to win customers and one to keep them, built from your offers and prices." },
+  teardown: { title: "Page breakdown", gives: "Up to five of your own pages against the landing page framework, with what to change." },
 };
-const LANDING_PAGE_WORDS = { title: "Your first landing page", gives: "A full page to the landing page framework, selling your offer idea, built from the research and what you told us. On the Pages tab." };
+const LANDING_PAGE_WORDS = { title: "Landing page", gives: "A full page to the landing page framework, selling your offer idea, built from the research and what you told us. On the Pages tab." };
 
 export const REASON_WORDS: Record<string, string> = {
   no_pages: "No pages of your own were chosen, so there was nothing to tear down.",

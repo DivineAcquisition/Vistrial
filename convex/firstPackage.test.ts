@@ -177,7 +177,7 @@ describe("the first package", () => {
       ["offers", "done"],
       ["teardown", "done"],
     ]);
-    expect(shown?.parts[2].title).toBe("Your first landing page");
+    expect(shown?.parts[2].title).toBe("Landing page");
   });
 
   it("leaves research that failed its checks for review, writes no offer ideas on it, and still emails", async () => {

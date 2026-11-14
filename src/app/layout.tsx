@@ -6,9 +6,9 @@ import { ThemeSync } from "@/components/app/theme-toggle";
 import { AppProviders } from "@/components/providers/app-providers";
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
+import { APP_NAME, LEGAL_ENTITY, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
 import { geistMono, interDisplay } from "@/lib/fonts";
-import { SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
+import { HERO, SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
 import { isClerkHost } from "@/lib/marketing/hosts";
 import { THEME_COLOR, THEME_SCRIPT } from "@/lib/theme";
 
@@ -25,26 +25,29 @@ export const metadata: Metadata = {
     title: APP_NAME,
   },
   formatDetection: { telephone: false },
-  icons: {
-    icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-  },
+  // Icons come from Next's file conventions: app/favicon.ico, app/icon1.png, app/icon2.png and
+  // app/apple-icon.png, drawn by scripts/generate-icons.mjs.
   title: {
     default: APP_NAME,
     template: `%s · ${APP_NAME}`,
   },
   description: SITE_DESCRIPTION,
+  authors: [{ name: LEGAL_ENTITY }],
+  publisher: LEGAL_ENTITY,
+  // Public pages are indexable unless they say otherwise; the app, sign-in and drafts say otherwise.
+  robots: { index: true, follow: true },
   openGraph: {
     siteName: APP_NAME,
     locale: "en_US",
     type: "website",
+    title: HERO.headline,
+    description: SITE_DESCRIPTION,
     images: [SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
+    title: HERO.headline,
+    description: SITE_DESCRIPTION,
     images: [SOCIAL_IMAGE.url],
   },
 };

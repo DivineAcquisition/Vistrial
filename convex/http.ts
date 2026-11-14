@@ -3,6 +3,8 @@ import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { addIntegrationRoutes } from "./integrationHttp";
+import { completeConnect as completeHighLevel } from "./highLevel";
+import { HL_CALLBACK_PATH, HL_WEBHOOK_PATH, isHlId, parseTime, verifyWebhook } from "./lib/highLevel";
 import { redirectUri } from "./metaAds";
 import { graphVersion } from "./lib/metaGraph";
 
@@ -72,6 +74,49 @@ http.route({
       calls,
     });
     return back(state.returnOrigin, "connected", state.returnPath);
+  }),
+});
+
+/**
+ * HighLevel's install page comes back here. The state is checked and used once; the code becomes a
+ * sub-account token saved on the server and never sent to the browser. The path avoids the word
+ * "highlevel", which HighLevel refuses in a redirect address.
+ */
+http.route({
+  path: HL_CALLBACK_PATH,
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const result = await completeHighLevel(ctx, new URL(request.url));
+    const base = result.returnOrigin ?? process.env.SITE_URL ?? "https://app.vistrial.io";
+    const target = result.returnPath ?? "/app/connections/highlevel";
+    const join = target.includes("?") ? "&" : "?";
+    return new Response(null, {
+      status: 302,
+      headers: { Location: `${base.replace(/\/$/, "")}${target}${join}highlevel=${encodeURIComponent(result.outcome)}`, "Cache-Control": "no-store" },
+    });
+  }),
+});
+
+/**
+ * HighLevel's app webhook. Only UNINSTALL is acted on: every connection to that sub-account is removed with
+ * its data. A delivery whose Ed25519 signature does not verify is refused, and every refusal looks the same.
+ */
+http.route({
+  path: HL_WEBHOOK_PATH,
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const raw = await request.text();
+    if (raw.length > 64_000 || !(await verifyWebhook(raw, request.headers.get("x-ghl-signature")))) return new Response(null, { status: 401 });
+    let event: Record<string, unknown> | null = null;
+    try {
+      event = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return new Response(null, { status: 400 });
+    }
+    if (event?.type === "UNINSTALL" && isHlId(event.locationId)) {
+      await ctx.runMutation(internal.highLevel.uninstalled, { locationId: event.locationId, at: parseTime(event.timestamp) ?? undefined });
+    }
+    return new Response(null, { status: 200 });
   }),
 });
 

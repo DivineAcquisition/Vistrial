@@ -191,7 +191,7 @@ describe("adding an organization", () => {
     process.env.BILLING_EXTRA_ORGS = "on";
     expect((await owner.query(api.organizations.mine, {})).accounts[0]).toMatchObject({ canAdd: true, addClosedReason: null });
     expect(await message(owner.mutation(api.organizations.create, { accountId, name: "Free" }))).toContain("from Billing");
-    expect(await message(owner.action(api.billingActions.addOrganization, { workspaceId: growth, name: "Third", confirmedCents: 9_900 }))).toContain("Start the Growth plan");
+    expect(await message(owner.action(api.billingActions.addOrganization, { workspaceId: growth, name: "Third", confirmedCents: 9_900 }))).toContain("Start the Private Access plan");
     expect((await owner.query(api.organizations.mine, {})).organizations).toHaveLength(2);
 
     // The Owner confirmed and went to pay: the name is held, and nothing exists yet.

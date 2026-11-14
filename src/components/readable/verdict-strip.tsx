@@ -3,14 +3,12 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 import { EvidenceLabel } from "./evidence-label";
-import type { ModelMarkData } from "@/components/models/model-mark";
 
-import { ModelMark } from "./model-mark";
 
 export type Count = { value: string; words: string; hint?: string };
 
-/** A result's title line: what it is, when, its review status, and the slot for the model that ran. */
-export function ResultHeader({ title, meta, status, model, level = 2 }: { title: string; meta?: ReactNode; status?: ReactNode; model?: ModelMarkData | null; level?: 2 | 3 }) {
+/** A result's title line: what it is, when, and its review status. Which model ran is on the usage page, not here. */
+export function ResultHeader({ title, meta, status, level = 2 }: { title: string; meta?: ReactNode; status?: ReactNode; level?: 2 | 3 }) {
   const Heading = level === 2 ? "h2" : "h3";
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -18,7 +16,6 @@ export function ResultHeader({ title, meta, status, model, level = 2 }: { title:
         <Heading className="font-heading text-lg break-words text-card-foreground">{title}</Heading>
         <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           {meta}
-          <ModelMark model={model} />
         </p>
       </div>
       {status}

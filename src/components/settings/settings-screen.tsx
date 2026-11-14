@@ -69,6 +69,7 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
   const defaults = useQuery(api.settings.agentDefaults, staffView && section === "agents" ? { workspaceId } : "skip");
   const controls = useQuery(api.controls.get, staffView && section === "agents" ? { workspaceId, agentSlug: AGENT } : "skip");
   const meta = useQuery(api.metaAds.status, staffView && section === "data" ? { workspaceId } : "skip");
+  const crm = useQuery(api.highLevel.overview, staffView && section === "data" ? { workspaceId } : "skip");
   const uploads = useQuery(api.resultUploads.list, staffView && section === "data" ? { workspaceId } : "skip");
 
   const rememberMe = useMutation(api.settings.rememberMe);
@@ -199,6 +200,14 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
       <DataSection
         role={shell.role}
         data={{
+          crm: crm
+            ? {
+                configured: crm.configured,
+                connected: crm.connections.filter((row) => row.status === "connected").length,
+                reconnect: crm.connections.filter((row) => row.status !== "connected").length,
+                names: crm.connections.map((row) => row.clientName ?? "your organization"),
+              }
+            : undefined,
           canManage: meta.canManage,
           files: uploads.filter((row) => row.status === "ready").length,
           meta: {

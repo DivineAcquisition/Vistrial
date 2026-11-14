@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { OnboardingSetup, type SetupStage } from "@/components/onboarding/setup";
-import { connectCards, HIGHLEVEL_KEY } from "@/lib/onboarding/connect";
+import { connectCards } from "@/lib/onboarding/connect";
 
 import { STORY_CAPTURES } from "../settings-brand/story";
 import { StoryTheme } from "../story-theme";
@@ -28,9 +28,9 @@ export function OnboardingStory({ step, site }: { step: string; site: string }) 
     providers: [
       { key: "google_calendar", readiness: "ready", connection: null },
       { key: "calendly", readiness: "ready", connection: { status: "connected", accountLabel: "dana@brightline-media.example.com" } },
-      { key: HIGHLEVEL_KEY, readiness: "not_built", connection: null },
     ],
     uploads: 0,
+    highLevel: { configured: true, connected: false, label: null },
   });
   const noop = async () => undefined;
   return (

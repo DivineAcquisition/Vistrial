@@ -134,7 +134,7 @@ export function StudioLayout({
               <>
                 <StageProgress steps={steps} open={open} />
                 <p className="text-sm text-muted-foreground">
-                  Spent {credits.cost(studio.run.costCents)} of {credits.cost(capCents)}.
+                  Budget {credits.cost(capCents)}.
                 </p>
               </>
             ) : (
@@ -177,7 +177,6 @@ export function StudioLayout({
                 status={runStatus}
                 startedAt={studio.run?.startedAt ?? null}
                 finishedAt={studio.run?.finishedAt ?? null}
-                costCents={studio.run?.costCents ?? 0}
               />
               {researchSlot}
             </>

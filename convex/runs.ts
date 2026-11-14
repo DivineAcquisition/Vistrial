@@ -662,11 +662,11 @@ async function recordFailure(
  * Adds what a model call was billed to the run and to today's counter, and returns the new totals.
  * The counter is the skill's own when the skill has its own caps, otherwise the agent's.
  */
-async function charge(ctx: MutationCtx, run: Doc<"agentRuns">, spent: Spend) {
+async function charge(ctx: MutationCtx, run: Doc<"agentRuns">, spent: Spend, model?: string) {
   // The first package is our cost: it does not use up the organization's own day caps.
   const dayCost = run.packageId ? 0 : await addDaySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey(), spent.costCents);
   // The free session is on Vistrial: its cost is kept on the run and the day's counter, never charged as credits.
-  if (!run.free) await chargeUsage(ctx, { workspaceId: run.workspaceId, costCents: spent.costCents, source: "run", ref: run._id });
+  if (!run.free) await chargeUsage(ctx, { workspaceId: run.workspaceId, costCents: spent.costCents, source: "run", ref: run._id, model });
   const runCost = run.costCents + spent.costCents;
   await ctx.db.patch(run._id, {
     costCents: runCost,
@@ -930,7 +930,7 @@ export const commitModel = internalMutation({
       inputTokens: args.inputTokens,
       outputTokens: args.outputTokens,
       costCents: args.costCents,
-    });
+    }, args.model);
     // Which model made this run's work, kept as it runs: the one that wrote, else the first one that ran.
     if (args.workKind === "write" || !run.madeWith) await ctx.db.patch(run._id, { madeWith: { provider: args.provider, model: args.model } });
     const stepId = await ctx.db.insert("runSteps", {

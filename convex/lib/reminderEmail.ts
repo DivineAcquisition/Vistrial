@@ -160,13 +160,13 @@ export function firstPackageEmail(input: {
     ...(findings.length ? findings.map((row, index) => `Finding ${index + 1}: ${row}`) : []),
     ...(ideas.length ? ideas : ["The two offer ideas were not written this time. You can ask Strategist for them from the research."]),
     ...(input.pagePart === "landingPage"
-      ? [input.teardown === "ready" ? "Your first landing page: ready on Strategist's Pages tab." : input.teardown === "running" ? "Your first landing page: being written now, from the research and the offer idea to win customers. It will be on the Pages tab shortly." : ""]
-      : [input.teardown === "ready" ? "Your pages, torn down: ready in the app." : input.teardown === "running" ? "Your pages, torn down: still being written. It will be on Home shortly." : ""]),
+      ? [input.teardown === "ready" ? "Landing page: ready on Strategist's Pages tab." : input.teardown === "running" ? "Landing page: being written now, from the market report and the offer idea to win customers. It will be on the Pages tab shortly." : ""]
+      : [input.teardown === "ready" ? "Page breakdown: ready in the app." : input.teardown === "running" ? "Page breakdown: still being written. It will be on Home shortly." : ""]),
   ].filter(Boolean);
   const body = layout({
     lines,
     list,
-    button: { label: "Open the full report", url: `${base}/app/assets/${input.reportAssetId}` },
+    button: { label: "Open the full market report", url: `${base}/app/assets/${input.reportAssetId}` },
     why: `You got this because you are an Owner or Admin of ${workspace} on Vistrial and have "Report ready" emails on.`,
     settingsUrl: settingsUrl(input.appUrl),
   });

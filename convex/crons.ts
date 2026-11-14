@@ -34,6 +34,9 @@ crons.interval("fill default model routes", { hours: 1 }, internal.platform.ensu
 /** Keeps connected Meta ad accounts' results fresh (read-only). */
 crons.interval("refresh Meta ad results", { hours: 3 }, internal.metaAds.syncAll, {});
 
+/** Keeps connected HighLevel sub-accounts fresh (read-only), and removes connections signed out for 30 days. */
+crons.interval("refresh CRM data", { hours: 6 }, internal.highLevel.syncAll, {});
+
 /** Resends any credit charge Autumn did not take the first time. Does nothing while billing is off. */
 crons.interval("retry billing sync", { hours: 1 }, internal.billingActions.retryUnsynced, {});
 

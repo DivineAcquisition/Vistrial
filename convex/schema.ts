@@ -2511,12 +2511,14 @@ export default defineSchema({
     clientId: v.optional(v.id("clients")),
     sources: v.array(
       v.object({
-        type: v.union(v.literal("transcript"), v.literal("text"), v.literal("strategist")),
-        /** A transcript or asset id; for pasted text, nothing. */
+        type: v.union(v.literal("transcript"), v.literal("text"), v.literal("strategist"), v.literal("website"), v.literal("video")),
+        /** A transcript or asset id, or a website page's or public video's address; for pasted text, nothing. */
         ref: v.optional(v.string()),
         label: v.string(),
-        /** Pasted or uploaded text, for a `text` source. */
+        /** Pasted or uploaded text, or a page's or video's text once read. */
         text: v.optional(v.string()),
+        /** Why a page or video could not be read, in words a person reads. */
+        problem: v.optional(v.string()),
       }),
     ),
     status: v.union(v.literal("running"), v.literal("done"), v.literal("failed")),

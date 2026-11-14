@@ -36,6 +36,8 @@ import {
   type ItemInput,
 } from "./lib/playbook";
 import { SALES_CONVERSION } from "./catalog";
+import { canonicalUrl } from "./lib/sourceRefs";
+import { youtubeId } from "./adapters/links";
 import { startRunFor } from "./runs";
 import { SKILL_SLUG as STUDY_SKILL, STUDY_LIMITS } from "./skills/playbookStudy/shapes";
 
@@ -331,7 +333,11 @@ export const removeLesson = workspaceMutation({
  * ------------------------------------------------------------------------- */
 
 const STUDY_TEXT = {
-  nothing: "Choose a call, paste some text, or include the offer analysis.",
+  nothing: "Choose a call, paste some text, add a page of your website or a YouTube link, or include the offer analysis.",
+  tooManyPages: `A study reads at most ${STUDY_LIMITS.pages} pages of your website at a time.`,
+  badPage: "That is not a web address.",
+  tooManyVideos: `A study reads at most ${STUDY_LIMITS.videos} videos at a time.`,
+  badVideo: "That is not a YouTube video link.",
   tooMany: `A study reads at most ${STUDY_LIMITS.sources} sources at a time.`,
   notShared: "That call is not shared with Dealmaker.",
   noOffer: "There is no approved offer analysis to read.",
@@ -349,6 +355,10 @@ export const study = workspaceMutation({
     transcriptIds: v.optional(v.array(v.id("callTranscripts"))),
     texts: v.optional(v.array(v.object({ label: v.string(), text: v.string() }))),
     offerAnalysis: v.optional(v.boolean()),
+    /** Public pages of the business's own website, by address. */
+    website: v.optional(v.array(v.string())),
+    /** Public YouTube videos, by link: read by Gemini from the link, never downloaded. */
+    videos: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const forClient = await clientForNew(ctx, args.clientId);
@@ -370,6 +380,20 @@ export const study = workspaceMutation({
       const offer = await approvedOfferAnalysis(ctx, scope);
       if (!offer) throw userError(STUDY_TEXT.noOffer);
       sources.push({ type: "strategist", ref: offer._id, label: clean(offer.title, STUDY_LIMITS.label) });
+    }
+    const pages = [...new Set((args.website ?? []).map((row) => row.trim()).filter(Boolean))];
+    if (pages.length > STUDY_LIMITS.pages) throw userError(STUDY_TEXT.tooManyPages);
+    for (const page of pages) {
+      const url = /^https?:\/\//i.test(page) ? page : `https://${page}`;
+      if (!canonicalUrl(url)) throw userError(STUDY_TEXT.badPage);
+      sources.push({ type: "website", ref: url, label: clean(url.replace(/^https?:\/\//i, ""), STUDY_LIMITS.label) });
+    }
+    const videos = [...new Set((args.videos ?? []).map((row) => row.trim()).filter(Boolean))];
+    if (videos.length > STUDY_LIMITS.videos) throw userError(STUDY_TEXT.tooManyVideos);
+    for (const video of videos) {
+      const id = youtubeId(/^https?:\/\//i.test(video) ? video : `https://${video}`);
+      if (!id) throw userError(STUDY_TEXT.badVideo);
+      sources.push({ type: "video", ref: `https://www.youtube.com/watch?v=${id}`, label: `YouTube video ${id}` });
     }
     if (!sources.length) throw userError(STUDY_TEXT.nothing);
     if (sources.length > STUDY_LIMITS.sources) throw userError(STUDY_TEXT.tooMany);

@@ -44,6 +44,7 @@ import type * as creativeImages from "../creativeImages.js";
 import type * as creativeTests from "../creativeTests.js";
 import type * as crmActions from "../crmActions.js";
 import type * as crons from "../crons.js";
+import type * as dealFollowUps from "../dealFollowUps.js";
 import type * as dealmakerTeam from "../dealmakerTeam.js";
 import type * as decisions from "../decisions.js";
 import type * as devResearch from "../devResearch.js";
@@ -216,6 +217,9 @@ import type * as skills_dealBriefing_render from "../skills/dealBriefing/render.
 import type * as skills_dealBriefing_shapes from "../skills/dealBriefing/shapes.js";
 import type * as skills_dealBriefing_tools from "../skills/dealBriefing/tools.js";
 import type * as skills_dealmaker_doctrine from "../skills/dealmaker/doctrine.js";
+import type * as skills_followUpEngine_index from "../skills/followUpEngine/index.js";
+import type * as skills_followUpEngine_shapes from "../skills/followUpEngine/shapes.js";
+import type * as skills_followUpEngine_tools from "../skills/followUpEngine/tools.js";
 import type * as skills_pipelineForensics_checks from "../skills/pipelineForensics/checks.js";
 import type * as skills_pipelineForensics_compute from "../skills/pipelineForensics/compute.js";
 import type * as skills_pipelineForensics_index from "../skills/pipelineForensics/index.js";
@@ -326,6 +330,7 @@ declare const fullApi: ApiFromModules<{
   creativeTests: typeof creativeTests;
   crmActions: typeof crmActions;
   crons: typeof crons;
+  dealFollowUps: typeof dealFollowUps;
   dealmakerTeam: typeof dealmakerTeam;
   decisions: typeof decisions;
   devResearch: typeof devResearch;
@@ -498,6 +503,9 @@ declare const fullApi: ApiFromModules<{
   "skills/dealBriefing/shapes": typeof skills_dealBriefing_shapes;
   "skills/dealBriefing/tools": typeof skills_dealBriefing_tools;
   "skills/dealmaker/doctrine": typeof skills_dealmaker_doctrine;
+  "skills/followUpEngine/index": typeof skills_followUpEngine_index;
+  "skills/followUpEngine/shapes": typeof skills_followUpEngine_shapes;
+  "skills/followUpEngine/tools": typeof skills_followUpEngine_tools;
   "skills/pipelineForensics/checks": typeof skills_pipelineForensics_checks;
   "skills/pipelineForensics/compute": typeof skills_pipelineForensics_compute;
   "skills/pipelineForensics/index": typeof skills_pipelineForensics_index;

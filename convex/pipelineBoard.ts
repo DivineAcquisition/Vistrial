@@ -14,7 +14,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { clientForNew, clientHere, type ClientScope } from "./lib/clients";
 import { crmFor } from "./lib/crm/read";
 import { notFound, userError } from "./lib/errors";
-import { BALL_LABEL, DAY, FIT_FIELDS, FIT_LABEL, HEALTH_LABEL, TEMPERATURE_BASIS, TEMPERATURE_LABEL, buildBoard, type Commitment, type Fact } from "./lib/dealmaker/board";
+import { BALL_LABEL, DAY, FIT_FIELDS, FIT_LABEL, HEALTH_LABEL, TEMPERATURE_BASIS, TEMPERATURE_LABEL, buildBoard, type BoardInput, type Commitment, type Fact } from "./lib/dealmaker/board";
 import { crmUserNames, dealScope, inScope, type TeamRow } from "./lib/dealmaker/roles";
 import { DEFAULT_QUIET_DAYS } from "./lib/interview";
 import { settingsOf } from "./playbookInterview";
@@ -37,6 +37,50 @@ async function readScope(ctx: Ctx, clientId: Id<"clients"> | undefined): Promise
   return { workspaceId: ctx.workspaceId, clientId: client._id };
 }
 
+/**
+ * Everything the board is worked out from, for one organization or client: the CRM read through the shared
+ * layer and Dealmaker's own records. Shared by the board and the Follow-up Engine, so they agree.
+ */
+export async function boardInputFor(ctx: Pick<QueryCtx, "db">, scope: Scope, crm: NonNullable<Awaited<ReturnType<typeof crmFor>>>, now: number): Promise<BoardInput> {
+  const settings = await settingsOf(ctx, scope);
+  const [pipelines, deals, activities, appointments, waiting, paused, facts, commitments] = await Promise.all([
+    crm.pipelines(),
+    crm.deals(),
+    crm.activities({ since: now - 90 * DAY }),
+    crm.appointments({ from: now - 30 * DAY, to: now + 30 * DAY }),
+    ctx.db
+      .query("crmActions")
+      .withIndex("by_connection_state", (q) => q.eq("connectionId", crm.connection.id as Id<"crmConnections">).eq("state", "proposed"))
+      .take(500),
+    ctx.db
+      .query("dealmakerPauses")
+      .withIndex("by_workspace_contact", (q) => q.eq("workspaceId", scope.workspaceId))
+      .take(1000),
+    ctx.db
+      .query("dealFacts")
+      .withIndex("by_workspace_deal", (q) => q.eq("workspaceId", scope.workspaceId))
+      .take(5000),
+    ctx.db
+      .query("dealCommitments")
+      .withIndex("by_workspace_deal", (q) => q.eq("workspaceId", scope.workspaceId))
+      .take(5000),
+  ]);
+  const mine = (r: { clientId?: Id<"clients"> }) => r.clientId === scope.clientId;
+  return {
+    now,
+    quietDays: settings?.quietDays ?? DEFAULT_QUIET_DAYS,
+    currency: crm.connection.currency,
+    pipeline: pipelines[0] ?? null,
+    deals,
+    activities,
+    appointments,
+    waitingContacts: new Set(waiting.flatMap((r) => (r.contactId ? [r.contactId] : []))),
+    pausedContacts: new Set(paused.filter((r) => mine(r) && r.liftedAt === undefined).map((r) => r.contactRef)),
+    facts: facts.filter(mine).map((r): Fact => ({ dealRef: r.dealRef, field: r.field, value: r.value, kind: r.kind, author: r.author ?? null, at: r.recordedAt })),
+    commitments: commitments.filter(mine).map((r): Commitment => ({ id: r._id, dealRef: r.dealRef, text: r.text, owner: r.owner, due: r.due ?? null, done: r.doneAt !== undefined })),
+  };
+}
+
 /** The board for the organization or a client, as the caller's home shows it. */
 export const board = workspaceQuery({
   args: { clientId: v.optional(v.id("clients")) },
@@ -46,45 +90,10 @@ export const board = workspaceQuery({
     if (!crm) return { connected: false as const };
     const now = Date.now();
     const settings = await settingsOf(ctx, scope);
-    const [pipelines, deals, activities, appointments, waiting, paused, facts, commitments] = await Promise.all([
-      crm.pipelines(),
-      crm.deals(),
-      crm.activities({ since: now - 90 * DAY }),
-      crm.appointments({ from: now - 30 * DAY, to: now + 30 * DAY }),
-      ctx.db
-        .query("crmActions")
-        .withIndex("by_connection_state", (q) => q.eq("connectionId", crm.connection.id as Id<"crmConnections">).eq("state", "proposed"))
-        .take(500),
-      ctx.db
-        .query("dealmakerPauses")
-        .withIndex("by_workspace_contact", (q) => q.eq("workspaceId", ctx.workspaceId))
-        .take(1000),
-      ctx.db
-        .query("dealFacts")
-        .withIndex("by_workspace_deal", (q) => q.eq("workspaceId", ctx.workspaceId))
-        .take(5000),
-      ctx.db
-        .query("dealCommitments")
-        .withIndex("by_workspace_deal", (q) => q.eq("workspaceId", ctx.workspaceId))
-        .take(5000),
-    ]);
     const row = (settings?.team ?? []).find((item) => item.memberId === ctx.member._id) as TeamRow | undefined;
     const home = dealScope(ctx.member.role, row);
-    const visible = inScope(home, deals);
-    const mine = (r: { clientId?: Id<"clients"> }) => r.clientId === scope.clientId;
-    const result = buildBoard({
-      now,
-      quietDays: settings?.quietDays ?? DEFAULT_QUIET_DAYS,
-      currency: crm.connection.currency,
-      pipeline: pipelines[0] ?? null,
-      deals: visible,
-      activities,
-      appointments,
-      waitingContacts: new Set(waiting.flatMap((r) => (r.contactId ? [r.contactId] : []))),
-      pausedContacts: new Set(paused.filter((r) => mine(r) && r.liftedAt === undefined).map((r) => r.contactRef)),
-      facts: facts.filter(mine).map((r): Fact => ({ dealRef: r.dealRef, field: r.field, value: r.value, kind: r.kind, author: r.author ?? null, at: r.recordedAt })),
-      commitments: commitments.filter(mine).map((r): Commitment => ({ id: r._id, dealRef: r.dealRef, text: r.text, owner: r.owner, due: r.due ?? null, done: r.doneAt !== undefined })),
-    });
+    const input = await boardInputFor(ctx, scope, crm, now);
+    const result = buildBoard({ ...input, deals: inScope(home, input.deals) });
     const seesAll = ctx.role === "owner" || ctx.role === "admin";
     const members = seesAll
       ? await ctx.db

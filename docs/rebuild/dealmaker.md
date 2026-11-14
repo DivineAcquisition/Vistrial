@@ -459,8 +459,17 @@ tests, lint, both typechecks and the build, never deploying Convex:
     only, and only for a draft Dealmaker wrote itself (created by the internal drafting path, its kind from the trigger) that no person has edited; a message a person wrote or edited always needs the typed SEND. `crmActions.approveByStandingSwitch` approves such a message as `owner-switch:<kind>`, recorded on
     the approval and in the audit log. Every send-time check still runs: messaging on, Do Not Disturb or
     opted out, quiet hours, one message a day, Dealmaker pauses, and consent tags (now also checked in
-    `claim`). Everything else still needs the typed SEND. Next, 13b: the Follow-up Engine's triggers and
-    drafting; 13c: the Comms tab.
+    `claim`). Everything else still needs the typed SEND.
+    *13b, built (server):* the Follow-up Engine (`convex/skills/followUpEngine`, started by
+    `dealFollowUps.draft`). Code reads the same board the Pipeline tab shows (`pipelineBoard.boardInputFor`)
+    and takes each deal's next move as its trigger: the lead wrote last (answer), something promised is due
+    (deliver what was promised), a missed call (offer a new time), a quiet deal (ask honestly whether more
+    contact is welcome), or a new lead (first message). The trigger sets the message kind, never the model.
+    Paused, won and lost deals, leads with a message already open in Comms, and leads no allowed channel
+    reaches are skipped; with nothing due no model is called. One model step writes up to ten messages in
+    the Playbook's voice; code drops any that names a price, invents urgency, runs too long or has no email
+    subject; what passes is filed through `fileAgentDraft` as Dealmaker's own draft, and nothing is sent.
+    Next, 13c: the Comms tab.
 14. **Voice notes**: the owner's voice clone (ElevenLabs) with recorded consent, sent as an audio
     attachment only.
 15. **Objection Playbook**, in the Objections folder, with what worked and talk tracks.

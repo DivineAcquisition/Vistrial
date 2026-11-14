@@ -9,7 +9,7 @@ import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 
-const ENV = ["HIGHLEVEL_CLIENT_ID", "HIGHLEVEL_CLIENT_SECRET", "HIGHLEVEL_CALL_GAP_MS", "CONVEX_SITE_URL", "SITE_URL"];
+const ENV = ["HIGHLEVEL_CLIENT_ID", "HIGHLEVEL_CLIENT_SECRET", "HIGHLEVEL_CALL_GAP_MS", "CONVEX_SITE_URL", "SITE_URL", "HIGHLEVEL_VERSION_ID"];
 const DAY = 86_400_000;
 const LOCATION = "locAAAA1111";
 
@@ -293,6 +293,64 @@ describe("HighLevel connection", () => {
     const { state } = await connectThroughCallback(s);
     const again = await s.t.fetch(`/crm/hl/callback?code=x&state=${state}`, { method: "GET" });
     expect(again.headers.get("location")).toContain("highlevel=expired");
+  });
+
+  it("keeps a marketplace install without a state until an Owner claims it for a client", async () => {
+    const s = await setup();
+    vi.stubGlobal("fetch", fakeHighLevel().fake);
+    const response = await s.t.fetch("/crm/hl/callback?code=the-code", { method: "GET" });
+    const location = new URL(response.headers.get("location")!);
+    expect(location.origin + location.pathname).toBe("https://app.vistrial.io/app/connections/highlevel");
+    expect(location.searchParams.get("highlevel")).toBe("choose");
+    const code = location.searchParams.get("install")!;
+    expect(code).toMatch(/^[0-9a-f]{48}$/);
+    expect((await allCrmRows(s.t)).connections).toHaveLength(0);
+
+    // Its name only, and only to members of a workspace; never a token.
+    const pending = await s.admin.query(api.highLevel.pendingInstall, { workspaceId: s.workspaceId, code });
+    expect(pending).toMatchObject({ accountName: "Northlight Cleaning", canClaim: false });
+    expect(JSON.stringify(pending)).not.toMatch(/ACCESS-TOKEN|REFRESH-TOKEN/);
+    expect(await s.owner.query(api.highLevel.pendingInstall, { workspaceId: s.workspaceId, code: "b".repeat(48) })).toBeNull();
+
+    await expect(s.admin.mutation(api.highLevel.claimInstall, { workspaceId: s.workspaceId, code, clientId: s.acme })).rejects.toThrow();
+    expect(await s.owner.mutation(api.highLevel.claimInstall, { workspaceId: s.workspaceId, code, clientId: s.acme })).toEqual({ clientId: s.acme });
+    await settle(s.t);
+    const status = await s.owner.query(api.highLevel.status, { workspaceId: s.workspaceId, clientId: s.acme });
+    expect(status.connection).toMatchObject({ accountName: "Northlight Cleaning", status: "connected", lastSyncCode: "ok" });
+    expect((await allCrmRows(s.t)).connections[0]).toMatchObject({ clientId: s.acme, connectedBy: "user_owner", refreshToken: "REFRESH-TOKEN-1" });
+
+    // The code works once.
+    await expect(s.owner.mutation(api.highLevel.claimInstall, { workspaceId: s.workspaceId, code })).rejects.toThrow(/expired/);
+    expect(await s.t.run((ctx) => ctx.db.query("crmPendingInstalls").collect())).toHaveLength(0);
+  });
+
+  it("drops an unclaimed marketplace install after an hour, and on uninstall", async () => {
+    const s = await setup();
+    vi.stubGlobal("fetch", fakeHighLevel().fake);
+    const first = new URL((await s.t.fetch("/crm/hl/callback?code=one", { method: "GET" })).headers.get("location")!).searchParams.get("install")!;
+    await s.t.mutation(internal.highLevel.uninstalled, { locationId: LOCATION });
+    expect(await s.owner.query(api.highLevel.pendingInstall, { workspaceId: s.workspaceId, code: first })).toBeNull();
+
+    const second = new URL((await s.t.fetch("/crm/hl/callback?code=two", { method: "GET" })).headers.get("location")!).searchParams.get("install")!;
+    await settle(s.t);
+    expect(await s.t.run((ctx) => ctx.db.query("crmPendingInstalls").collect())).toHaveLength(0);
+    await expect(s.owner.mutation(api.highLevel.claimInstall, { workspaceId: s.workspaceId, code: second })).rejects.toThrow(/expired/);
+    expect((await allCrmRows(s.t)).connections).toHaveLength(0);
+  });
+
+  it("sends a marketplace install HighLevel refuses back with the reason, keeping nothing", async () => {
+    const s = await setup();
+    vi.stubGlobal("fetch", fakeHighLevel({ userType: "Company" }).fake);
+    const response = await s.t.fetch("/crm/hl/callback?code=x", { method: "GET" });
+    expect(response.headers.get("location")).toBe("https://app.vistrial.io/app/connections/highlevel?highlevel=agency_install");
+    expect(await s.t.run((ctx) => ctx.db.query("crmPendingInstalls").collect())).toHaveLength(0);
+  });
+
+  it("names the app version in the install address when one is set", async () => {
+    const s = await setup();
+    process.env.HIGHLEVEL_VERSION_ID = "6650aa11bb22cc33dd44ee55";
+    const { url } = await s.owner.mutation(api.highLevel.startConnect, { workspaceId: s.workspaceId });
+    expect(new URL(url).searchParams.get("version_id")).toBe("6650aa11bb22cc33dd44ee55");
   });
 
   it("keeps a client's CRM data from a member who may not see that client", async () => {

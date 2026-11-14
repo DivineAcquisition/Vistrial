@@ -1768,6 +1768,29 @@ export default defineSchema({
     .index("by_account", ["provider", "accountId"]),
 
   /** One CRM sign-in attempt: bound to a workspace, a client and an Owner, used once, ten minutes. */
+  /**
+   * A HighLevel install that began on HighLevel's marketplace rather than from Vistrial, so it carries no
+   * workspace. It waits here, token included, until an Owner signed in to Vistrial claims it with the
+   * one-time code in the address they were sent to, or for an hour, when it is deleted.
+   */
+  crmPendingInstalls: defineTable({
+    provider: v.literal("highlevel"),
+    claimCode: v.string(),
+    accessToken: v.string(),
+    refreshToken: v.string(),
+    tokenExpiresAt: v.number(),
+    scopes: v.array(v.string()),
+    accountId: v.string(),
+    accountName: v.string(),
+    companyId: v.optional(v.string()),
+    currency: v.string(),
+    timezone: v.optional(v.string()),
+    calls: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_code", ["claimCode"])
+    .index("by_account", ["provider", "accountId"]),
+
   crmOauthStates: defineTable({
     workspaceId: v.id("workspaces"),
     clientId: v.optional(v.id("clients")),

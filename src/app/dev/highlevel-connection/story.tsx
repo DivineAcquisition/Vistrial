@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import type { SyncRun } from "@/components/connections/meta-effort";
 import { HighLevelActionsView, type HighLevelActionsData } from "@/components/connections/highlevel-actions-view";
+import { HighLevelClaimView } from "@/components/connections/highlevel-claim-view";
 import { HighLevelView, type HighLevelStatus } from "@/components/connections/highlevel-view";
 import { summarize, type Activity, type Contact, type Deal } from "../../../../convex/lib/highLevel";
 
@@ -146,6 +147,7 @@ export function HighLevelConnectionStory({ state }: { state: string }) {
   const [now] = useState(() => Date.now());
   const slot = state.startsWith("slot");
   const acting = state.startsWith("acting");
+  const claim = state.startsWith("claim");
   const view = (
     <HighLevelView
       status={statusFor(state === "slot-connected" || acting ? (state === "acting-admin" ? "admin" : "connected") : state, now)}
@@ -160,9 +162,19 @@ export function HighLevelConnectionStory({ state }: { state: string }) {
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <div className={slot ? "mx-auto grid max-w-xl gap-4" : "mx-auto grid max-w-6xl gap-4"}>
         <p className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">
-          HighLevel connection story. Made-up fixtures. States: none, notsetup, admin, connected, reading, reconnect, ratelimited, slot, slot-connected, acting-off, acting, acting-admin.
+          HighLevel connection story. Made-up fixtures. States: none, notsetup, admin, connected, reading, reconnect, ratelimited, slot, slot-connected, acting-off, acting, acting-admin, claim, claim-admin, claim-expired.
         </p>
-        {acting ? (
+        {claim ? (
+          <>
+            <HighLevelClaimView
+              pending={state === "claim-expired" ? null : { accountName: "Brightside Home Services", canClaim: state === "claim" }}
+              workspaceName="Northwind Agency"
+              choices={[{ id: "own", name: "Your organization" }, { id: "c1", name: "Brightside Home Services" }, { id: "c2", name: "Harbor Dental" }]}
+              claim={async (choice) => (await wait(400), choice === "c2" ? "This HighLevel sub-account is already connected to another client here. Disconnect it there first." : null)}
+            />
+            <HighLevelView status={statusFor("none", now)} returned={null} forName={null} actions={{ connect: async () => wait(300), sync: async () => (await wait(300), { code: "ok" }), disconnect: async () => wait(300) }} />
+          </>
+        ) : acting ? (
           <HighLevelActionsView
             data={actingFor(state, now)}
             handlers={{ setActing: async () => wait(300), setMessaging: async () => (await wait(300), null), setOrganization: async () => wait(300), propose: async () => (await wait(300), null), decide: async () => (await wait(300), null), undo: async () => (await wait(300), null) }}

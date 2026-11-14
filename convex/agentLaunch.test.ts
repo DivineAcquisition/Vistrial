@@ -2,10 +2,10 @@
  * @vitest-environment edge-runtime
  *
  * Go-live prep for Dealmaker: its work named "Dealmaker · …" where Usage mixes agents, and the waitlist email,
- * which refuses an agent still planned and tells each person who asked once.
+ * which refuses an agent still planned and tells each person who asked for Dealmaker once.
  */
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
 import { agentLiveEmail } from "./lib/reminderEmail";
@@ -36,27 +36,39 @@ describe("go-live prep", () => {
     expect(email.text).toContain("You got this because you asked to be told when Dealmaker is live, in Northlight on Vistrial.");
   });
 
-  it("refuses to announce an agent still planned, and finds each person who asked once, with an address and emails on", async () => {
+  it("refuses to announce an agent still planned, and tells each person who asked for Dealmaker once, with an address and emails on", async () => {
     const t = convexTest(schema, modules);
     const owner = t.withIdentity(person("nora"));
     const workspaceId = await owner.mutation(api.workspace.create, { name: "Northlight" });
     const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: "milo@example.com", role: "member" });
     const member = t.withIdentity(person("milo"));
     await member.mutation(api.workspace.acceptInvite, { token: invite.token });
-    await owner.mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "sales-conversion" });
-    await member.mutation(api.agentWaitlist.toggle, { workspaceId, agentSlug: "sales-conversion" });
-    // Milo turned emails off.
+    // Both asked while Dealmaker was planned; Milo turned emails off.
     await t.run(async (ctx) => {
+      for (const userId of ["nora", "milo"]) await ctx.db.insert("agentWaitlist", { workspaceId, agentSlug: "sales-conversion", userId, at: 1 });
       await ctx.db.insert("memberPreferences", { workspaceId, userId: "milo", notifyByEmail: false, updatedAt: Date.now() });
     });
 
-    await expect(t.action(internal.agentLaunch.announceLive, { agentSlug: "sales-conversion" })).rejects.toThrow(/not live yet/);
-    let waiting = await t.query(internal.agentLaunch.waiting, { agentSlug: "sales-conversion" });
+    await expect(t.action(internal.agentLaunch.announceLive, { agentSlug: "retention" })).rejects.toThrow(/not live yet/);
+    const waiting = await t.query(internal.agentLaunch.waiting, { agentSlug: "sales-conversion" });
     expect(waiting.map((row) => row.userId)).toEqual(["nora"]);
     expect(waiting[0]).toMatchObject({ email: "nora@example.com", workspaceName: "Northlight" });
 
-    await t.mutation(internal.agentLaunch.record, { agentSlug: "sales-conversion", sends: [{ workspaceId, userId: "nora", sent: true }] });
-    waiting = await t.query(internal.agentLaunch.waiting, { agentSlug: "sales-conversion" });
-    expect(waiting).toEqual([]);
+    vi.stubEnv("RESEND_API_KEY", "re_test");
+    const sent: string[] = [];
+    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+      sent.push(JSON.parse(String(init.body)).to[0]);
+      return new Response(JSON.stringify({ id: "email1" }), { status: 200 });
+    });
+    try {
+      expect(await t.action(internal.agentLaunch.announceLive, { agentSlug: "sales-conversion" })).toEqual({ sent: 1, skipped: 0 });
+      expect(sent).toEqual(["nora@example.com"]);
+      // A second run sends nothing new.
+      expect(await t.action(internal.agentLaunch.announceLive, { agentSlug: "sales-conversion" })).toEqual({ sent: 0, skipped: 0 });
+      expect(await t.query(internal.agentLaunch.waiting, { agentSlug: "sales-conversion" })).toEqual([]);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -664,6 +664,12 @@ tests, lint, both typechecks and the build, never deploying Convex:
     `emailReminders`) refuses an agent that is not live and tells each person who asked once. Going live is
     the owner's call; the checklist is below.
 
+*19, live (owner's go, 2026-11-14):* `sales-conversion` is `status: "live"` with all six skills in
+`AVAILABLE_SKILLS`; its `job` is in the present tense and its promise is "Dealmaker never sends a message,
+sets a price or marks a deal won or lost on its own. A person approves each one." The public pages say it
+is live (`/agents/dealmaker` asks for access instead of a waitlist; the homepage card is live). The owner
+adds the production settings below, and runs the waitlist email (step 6) once Resend is verified.
+
 #### Launch checklist (the owner decides when)
 
 Before:

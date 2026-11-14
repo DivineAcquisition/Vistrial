@@ -77,6 +77,12 @@ export const SOURCES = {
   ],
 } as const;
 
+/** What each live agent's card on the homepage shows it doing, in sample terms. */
+export const LIVE_STATUSES: Record<string, readonly string[]> = {
+  Strategist: ["Reading competitor offer pages", "Reading the links you pasted", "Sorting what was seen from what is inferred", "Drafting the report"],
+  Dealmaker: ["Reading the pipeline", "Preparing the brief for a booked call", "Reviewing yesterday's call notes", "Drafting a follow-up for approval"],
+};
+
 /** The strip under the hero: sources flow into the agent, and the agent hands back a draft. */
 export const AGENT_FLOW = {
   agent: "Strategist",
@@ -376,7 +382,7 @@ export const EVIDENCE = {
 export const AGENTS_SECTION = {
   id: "agents",
   headline: "Seven specialists across the customer journey.",
-  lead: "Vistrial groups its agents by where they help: Attract, Convert, Keep. Strategist is live today. The others are planned and do not run yet.",
+  lead: "Vistrial groups its agents by where they help: Attract, Convert, Keep. Strategist and Dealmaker are live today. The others are planned and do not run yet.",
   departments: [
     {
       id: "attract",
@@ -389,7 +395,7 @@ export const AGENTS_SECTION = {
     {
       id: "convert",
       name: "Convert",
-      agents: [{ number: "03", name: "Dealmaker", job: "Qualification, follow-up drafts, and pipeline.", live: false, page: "/agents/dealmaker" }],
+      agents: [{ number: "03", name: "Dealmaker", job: "Pipeline, call briefs and reviews, follow-up drafts, and proposals.", live: true, page: "/agents/dealmaker" }],
     },
     {
       id: "keep",
@@ -703,12 +709,12 @@ export const EMAIL_DEFAULTS = {
  */
 export const CLAIMS: Array<{ statement: string; support: string }> = [
   {
-    statement: "Strategist is the one agent that runs today. The other six are planned.",
-    support: "convex/catalog.ts: Strategist has status live. The six other agents have status planned and the promise \"It does not run yet.\"",
+    statement: "Strategist and Dealmaker run today. The other five agents are planned.",
+    support: "convex/catalog.ts: Strategist and Dealmaker have status live. The five other agents have status planned and the promise \"It does not run yet.\"",
   },
   {
     statement: "Five Strategist skills are available: Market Intelligence, Offer Intelligence, Growth Diagnostics, Creative Production, and Landing Page Teardown. Campaign Strategy and Funnel Architect are coming soon.",
-    support: "convex/catalog.ts AVAILABLE_SKILLS lists those five slugs. Every other skill in the catalog is comingSoon. content.test.ts compares this page with that list.",
+    support: "convex/catalog.ts AVAILABLE_SKILLS lists those five Strategist slugs, with Dealmaker's six. Every other skill in the catalog is comingSoon. content.test.ts compares this page with that list.",
   },
   {
     statement: "Creative Production hands back a brief, four copy variations, a video script, and captions for one brand, with designed ads on request.",

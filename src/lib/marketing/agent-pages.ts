@@ -46,7 +46,6 @@ export const DEALMAKER_PAGE: AgentPage = {
   headline: "Clarity precedes progress.",
   supporting:
     "Dealmaker brings discipline to selling on calls. It studies what happened, keeps evidence apart from interpretation, shows what is still unresolved, and helps the right person own the next action.",
-  notYet: "Dealmaker is in development and does not run yet. Strategist is live today.",
   doctrine: {
     title: DOCTRINE_NAME,
     lead: "A sales opportunity advances when the people involved understand the situation, resolve uncertainty, and keep the commitments a decision needs.",
@@ -150,8 +149,8 @@ export const DEALMAKER_PAGE: AgentPage = {
     items: THE_STANDARD,
   },
   cta: {
-    headline: "Be first when Dealmaker is ready.",
-    body: "Request Private Access and start with Strategist today. Dealmaker joins your workspace when it goes live.",
+    headline: "Start with Dealmaker.",
+    body: "Request Private Access. Dealmaker and Strategist are live today, and connect to your HighLevel account in a few minutes.",
     label: "Request access",
     href: "/request?from=dealmaker",
   },
@@ -272,7 +271,7 @@ export const STRATEGIST_PAGE: AgentPage = {
   },
   cta: {
     headline: "Start with Strategist.",
-    body: "Request Private Access. Strategist is live today, and the agents after it join your workspace as they go live.",
+    body: "Request Private Access. Strategist and Dealmaker are live today, and the agents after them join your workspace as they go live.",
     label: "Request access",
     href: "/request?from=strategist",
   },

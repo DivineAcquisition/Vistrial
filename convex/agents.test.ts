@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { CATALOG, GROWTH_ARCHITECT } from "./catalog";
+import { CATALOG, GROWTH_ARCHITECT, SALES_CONVERSION } from "./catalog";
 import { NOT_FOUND } from "./lib/errors";
 import schema from "./schema";
 
@@ -35,7 +35,7 @@ describe("the seven-agent workforce", () => {
     delete process.env.ALLOW_DEV_SKILLS;
   });
 
-  it("seeds four departments and seven agents, with only Strategist live", async () => {
+  it("seeds four departments and seven agents, with Strategist and Dealmaker live", async () => {
     const t = convexTest(schema, modules);
     const owner = t.withIdentity(person("owner"));
     const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
@@ -49,8 +49,11 @@ describe("the seven-agent workforce", () => {
     expect(shell.agents.map((agent) => [agent.number, agent.slug, agent.status])).toEqual(
       CATALOG.map((agent) => [agent.number, agent.slug, agent.status]),
     );
-    expect(shell.agents.filter((agent) => agent.status === "live").map((agent) => agent.slug)).toEqual([GROWTH_ARCHITECT]);
+    expect(shell.agents.filter((agent) => agent.status === "live").map((agent) => agent.slug)).toEqual([GROWTH_ARCHITECT, SALES_CONVERSION]);
     expect(shell.agents.find((agent) => agent.slug === GROWTH_ARCHITECT)?.skills).toHaveLength(7);
+    const dealmaker = shell.agents.find((agent) => agent.slug === SALES_CONVERSION)?.skills ?? [];
+    expect(dealmaker).toHaveLength(6);
+    expect(dealmaker.every((skill) => skill.status === "available")).toBe(true);
   });
 
   it("does not let a planned agent be turned on or start a run", async () => {

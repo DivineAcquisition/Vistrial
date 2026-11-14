@@ -1,5 +1,5 @@
 /**
- * The agentic workforce: four departments, seven agents. Only Strategist is live in V1.
+ * The agentic workforce: four departments, seven agents. Strategist and Dealmaker are live.
  * These are seed rows. The rail, the agent pages and `runs.start` read the tables, not this file.
  */
 
@@ -68,7 +68,20 @@ export function currentAgentSlug(slug: string) {
 const PLANNED_PROMISE = "It does not run yet.";
 
 /** Skills that are built and may run for customers. Everything else in the catalog is coming soon. */
-const AVAILABLE_SKILLS = new Set(["market-intelligence", "offer-intelligence", "growth-diagnostics", "creative-production", "landing-page-teardown"]);
+const AVAILABLE_SKILLS = new Set([
+  "market-intelligence",
+  "offer-intelligence",
+  "growth-diagnostics",
+  "creative-production",
+  "landing-page-teardown",
+  // Dealmaker, live with all six.
+  "pipeline-forensics",
+  "conversation-intelligence",
+  "deal-briefing",
+  "follow-up-engine",
+  "objection-playbook",
+  "proposal-architect",
+]);
 
 /**
  * How the app words each skill's work, without naming the skill: a label and what it hands back. Every
@@ -134,13 +147,13 @@ export const CATALOG: CatalogAgent[] = [
     number: 3,
     name: "Dealmaker",
     department: "sales",
-    status: "planned",
+    status: "live",
     lifecycle: "Convert",
-    job: "Will help turn leads into customers: follow-ups, calls and pipeline.",
-    promise: PLANNED_PROMISE,
+    job: "Helps turn leads into customers: reads your pipeline, prepares and reviews sales calls, and drafts follow-ups and proposals for a person to approve.",
+    promise: "Dealmaker never sends a message, sets a price or marks a deal won or lost on its own. A person approves each one.",
     sort: 2,
-    // Designed in docs/rebuild/dealmaker.md, section 4. Coming soon until each is built; the agent goes live
-    // with all six. Every one reads and acts in a CRM only through convex/lib/crm.
+    // Designed in docs/rebuild/dealmaker.md, section 4; live with all six. Every one reads and acts in a CRM
+    // only through convex/lib/crm.
     skills: [
       skill("pipeline-forensics", "Pipeline Forensics", "Where deals stall, from your CRM's own figures, with a short plan.", "It reads your CRM. It changes nothing in it.", 0),
       skill("conversation-intelligence", "Conversation Intelligence", "What happened on one sales call: what the lead said, what was promised, the next step and the CRM updates to make.", "It reads a transcript you add. Every CRM update waits for a person's approval.", 1),

@@ -1,7 +1,7 @@
 /**
  * Dealmaker's skeleton (docs/rebuild/dealmaker.md, step 5): its six skills are in the catalog under their
- * public names, worded for the app by the agent and what it produced, each with its own caps. The agent stays
- * planned and every skill coming soon until it is built, so nothing can run, chat or take a task yet.
+ * public names, worded for the app by the agent and what it produced, each with its own caps. Live with all six
+ * available; its chat and tabs are its own (convex/dealmakerChat.ts, DEALMAKER_TABS), never the Strategist's.
  */
 import { describe, expect, it } from "vitest";
 
@@ -22,7 +22,7 @@ const SKILLS = [
 
 describe("Dealmaker's skeleton", () => {
   it("lists the six skills the owner chose, in order, under their public names", () => {
-    expect(DEALMAKER).toMatchObject({ name: "Dealmaker", department: "sales", lifecycle: "Convert", status: "planned" });
+    expect(DEALMAKER).toMatchObject({ name: "Dealmaker", department: "sales", lifecycle: "Convert", status: "live" });
     expect(DEALMAKER.skills.map((skill) => [skill.slug, skill.name])).toEqual(SKILLS.map(([slug, name]) => [slug, name]));
   });
 
@@ -43,8 +43,11 @@ describe("Dealmaker's skeleton", () => {
     }
   });
 
-  it("runs nothing yet: every skill coming soon, no chat, no work tabs", () => {
-    expect(DEALMAKER.skills.every((skill) => skill.status === "comingSoon")).toBe(true);
+  it("is live with every skill available, its own chat and tabs, and none of its work routed by the Strategist's chat", () => {
+    expect(DEALMAKER.skills.every((skill) => skill.status === "available")).toBe(true);
+    expect(DEALMAKER.job).not.toMatch(/^Will /);
+    expect(DEALMAKER.promise).toBe("Dealmaker never sends a message, sets a price or marks a deal won or lost on its own. A person approves each one.");
+    // The Strategist's shared chat and work tabs are not Dealmaker's: it has its own chat and six tabs.
     expect(hasChat("sales-conversion")).toBe(false);
     expect(hasWorkTabs("sales-conversion")).toBe(false);
     for (const [slug] of SKILLS) expect(chatAgentOf(slug)).toBeNull();

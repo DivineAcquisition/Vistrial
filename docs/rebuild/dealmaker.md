@@ -707,6 +707,9 @@ Convex. The coordinator verifies each; the owner merges.
    appointment suggestion.
 5. **Dealmaker skeleton.** The six catalog skills (all `comingSoon`, agent still `planned`), `SKILL_CAPS`,
    tool slugs, work tabs behind the dev flag, empty states, stories.
+   *Built:* the six skills in `convex/catalog.ts` (coming soon, agent planned), their work words and their
+   `SKILL_CAPS`. Tool slugs and the work tabs come with the first skill that uses them (step 6), so no slug
+   or tab exists without code behind it.
 6. **Pipeline Forensics, server.** Read, compute, write, checks, save, evidence; tests against a fake CRM.
 7. **Pipeline Forensics, screen** and its Briefing post; the task proposer reads its approved steps.
 8. **Conversation Intelligence**, server and screen, with CRM update proposals.

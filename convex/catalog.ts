@@ -80,6 +80,13 @@ const WORK_WORDS: Record<string, { work: string; output: string }> = {
   "funnel-architect": { work: "Funnel plan", output: "a funnel plan" },
   "growth-diagnostics": { work: "Growth diagnosis", output: "a growth diagnosis" },
   "landing-page-teardown": { work: "Page breakdown", output: "a page breakdown" },
+  // Dealmaker (docs/rebuild/dealmaker.md, answer 12.2): "Dealmaker · Pipeline review" inside the app.
+  "pipeline-forensics": { work: "Pipeline review", output: "a pipeline review" },
+  "conversation-intelligence": { work: "Call review", output: "a call review" },
+  "deal-briefing": { work: "Pre-call brief", output: "a pre-call brief" },
+  "follow-up-engine": { work: "Follow-ups", output: "a follow-up list" },
+  "objection-playbook": { work: "Objection playbook", output: "an objection playbook" },
+  "proposal-architect": { work: "Proposal", output: "a proposal" },
 };
 
 function skill(slug: string, name: string, handsBack: string, promise: string, sort: number): AgentSkill {
@@ -130,7 +137,16 @@ export const CATALOG: CatalogAgent[] = [
     job: "Will help turn leads into customers: follow-ups, calls and pipeline.",
     promise: PLANNED_PROMISE,
     sort: 2,
-    skills: [],
+    // Designed in docs/rebuild/dealmaker.md, section 4. Coming soon until each is built; the agent goes live
+    // with all six. Every one reads and acts in a CRM only through convex/lib/crm.
+    skills: [
+      skill("pipeline-forensics", "Pipeline Forensics", "Where deals stall, from your CRM's own figures, with a short plan.", "It reads your CRM. It changes nothing in it.", 0),
+      skill("conversation-intelligence", "Conversation Intelligence", "What happened on one sales call: what the lead said, what was promised, the next step and the CRM updates to make.", "It reads a transcript you add. Every CRM update waits for a person's approval.", 1),
+      skill("deal-briefing", "Deal Briefing", "One page on a lead before a booked call: who they are, what has happened so far, what to cover.", "It reads your CRM and your calls. It contacts nobody.", 2),
+      skill("follow-up-engine", "Follow-up Engine", "The deals that went quiet, who to chase first, a drafted message and the CRM steps for each.", "It never sends a message or changes your CRM on its own. A person approves each one.", 3),
+      skill("objection-playbook", "Objection Playbook", "The objections your leads actually raise, counted across calls, with answers built on your approved offer.", "It reads calls you add. It does not change your offer.", 4),
+      skill("proposal-architect", "Proposal Architect", "A proposal after a good call, from what the lead said and your approved offer.", "It never sets or changes a price. A person approves the proposal before it goes out.", 5),
+    ],
   },
   {
     slug: "activation",

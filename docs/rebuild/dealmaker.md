@@ -692,6 +692,46 @@ Still open after launch (0.10): the calendar-event link for briefs (a Google wri
 HighLevel (prove on a test sub-account first), the Zoom and Meet note taker (a vendor), and a signature
 provider for proposals.
 
+#### Go-live setup (production)
+
+Everything Dealmaker needs on production, with where it is set and how to check it. Keys go in the
+production Convex deployment's environment variables (Dashboard, Settings, Environment Variables) unless a
+row says Vercel; never in chat or the repository. `<site>` below is the production Convex site URL
+(`CONVEX_SITE_URL`, ending `.convex.site`), or `INTEGRATIONS_CALLBACK_ORIGIN` where that is set for Google.
+
+**Required for launch**
+
+| What | Where it is set | How to check |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` and/or `OPENROUTER_API_KEY`: the model routes every Dealmaker skill uses (briefs, reviews, follow-up drafts, the Playbook interview, chat). | Convex env. The route per kind of work is in `modelRoutes`. | Ask for one brief on a test call; it finishes and Usage shows "Dealmaker · Pre-call brief". |
+| HighLevel app: `HIGHLEVEL_CLIENT_ID`, `HIGHLEVEL_CLIENT_SECRET`. Optional `HIGHLEVEL_INSTALL_HOST` (`marketplace.gohighlevel.com`, the default, or `marketplace.leadconnectorhq.com`). | Convex env. The client id and secret come from the HighLevel Marketplace app (Settings, Auth). | Connections, HighLevel says ready to connect; connecting a test sub-account comes back connected with its name and time zone. |
+| HighLevel app, redirect URL: `<site>/crm/hl/callback`. | HighLevel Marketplace app, Settings, Auth, Redirect URL. HighLevel refuses a URL with "highlevel" in it, hence "hl". | The connect flow returns to Connections without a "redirect mismatch" page. |
+| HighLevel app, scopes: `locations.readonly`, `opportunities.readonly`, `contacts.readonly`, `conversations.readonly`, `conversations/message.readonly`, `calendars.readonly`, `calendars/events.readonly`, `opportunities.write`, `contacts.write`, `conversations/message.write` (`HL_SCOPES` in `convex/lib/highLevel.ts`). | HighLevel Marketplace app, Settings, Auth, Scopes. Every one, at sub-account level. | After connecting, Pipeline shows deals, Calendar shows booked calls, and Comms can send one message to a test lead. |
+| HighLevel app, webhook URL: `<site>/crm/hl/webhook`, with the **UNINSTALL** event. Signed by HighLevel's key, checked in code. | HighLevel Marketplace app, Settings, Advanced, Webhooks. | Uninstall the app from the test sub-account: Connections shows it disconnected within a minute. |
+| HighLevel app, distribution: sub-account, listed or private as the owner decides; `NEXT_PUBLIC_GHL_MARKETPLACE_URL` is the app's listing link. | HighLevel Marketplace app; the URL in **Vercel** env (Production). | The marketing site's HighLevel link opens the listing (`src/lib/marketing/config.ts`). |
+| `RESEND_API_KEY`: notices, the waitlist email, reminder emails. Sender `forms@mail.vistrial.io`. | Convex env. The domain `mail.vistrial.io` verified in Resend (SPF, DKIM records in DNS). | Resend, Domains shows mail.vistrial.io verified. A test reminder arrives and is not in spam. |
+| `SITE_URL`: the app's address in emails and Briefing links (defaults to `https://app.vistrial.io`). | Convex env. | A link in a test email opens the production app. |
+| `DEEPGRAM_API_KEY`: voice memos after calls and HighLevel call recordings (audio is never stored). | Convex env. | Add call notes with a short memo: its words appear. In Calls, "Transcribe a recording" is offered. |
+
+**Optional at launch (each screen says "not set up yet" without it)**
+
+| What | Where it is set | How to check |
+| --- | --- | --- |
+| `ELEVENLABS_API_KEY`: voice notes (a cloned voice, by text or email attachment only). | Convex env. | Comms, Voice: recording the consent statement makes a voice; a test voice note plays. |
+| `GEMINI_API_KEY`: YouTube links in the Playbook interview. | Convex env. | Add a public YouTube link to the Playbook; it reads it and quotes what was said. |
+| Google Calendar, brief links on events: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`. | Convex env, from the Google Cloud project's OAuth client (Web application). | Connections, Google Calendar is ready to connect. |
+| Google OAuth client, redirect URI: `<site>/integrations/google/callback` (or the same path on `INTEGRATIONS_CALLBACK_ORIGIN`, a domain the owner has verified, which forwards to the Convex site). | Google Cloud Console, APIs and Services, Credentials, the OAuth client. | Connecting Google Calendar returns to Connections without "redirect_uri_mismatch". |
+| Google OAuth consent screen: scopes `openid`, `email`, `calendar.events.owned.readonly` (counts), plus `calendar.events.owned` only when an Owner turns brief links on. The write scope is sensitive: the app needs Google's verification, and the privacy policy needs a line about adding the brief link to events. | Google Cloud Console, OAuth consent screen: published, the scopes added, app domain and privacy policy URL filled in. | Until verified, Google shows "unverified app" to other users; after it, an Owner can allow brief links and a test event gets the link. |
+| Calendly (booked calls where the business books through Calendly): `CALENDLY_CLIENT_ID`, `CALENDLY_CLIENT_SECRET`, `CALENDLY_WEBHOOK_SIGNING_KEY`; redirect URI `<site>/integrations/calendly/callback`. | Convex env, from the Calendly developer app. | Connections, Calendly connects and a test booking appears. |
+| Fireflies: nothing on our side. Each business pastes its own Fireflies API key in Calls (Admin only); it is saved on the server and never shown again. | In the app. | Calls, Note takers lists Fireflies calls; importing one with consent confirmed adds the transcript. |
+
+**Not used at launch.** Fathom (`FATHOM_CLIENT_ID`, `FATHOM_CLIENT_SECRET`) stays off until its sign-in
+is confirmed with Fathom. Instagram and Facebook DMs need no setting of their own; they wait on 0.10 item 6.
+
+**Nothing to set.** Dealmaker's crons (weekly scorecard, objection playbook, proposal follow-ups,
+automatic briefs, end-of-day reports) deploy with the code. Automatic briefs stay off until an Owner or
+Admin turns them on; automatic briefs and the end-of-day post do nothing while Dealmaker is not live and on.
+
 ### 0.10 Open before the steps that need them
 
 1. **The Zoom and Meet note taker.** A note taker that joins calls is usually bought from a vendor (Recall.ai

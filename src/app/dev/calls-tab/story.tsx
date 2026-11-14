@@ -187,9 +187,10 @@ export function CallsTabStory({ state, theme }: { state: string; theme: string }
       ) : (
         <CallsView
           data={calls(state)}
-          actions={{ request: noop, saveNote: noop, requestReview: noop }}
+          actions={{ request: noop, saveNote: noop, requestReview: noop, setLinks: noop, allowLinks: noop }}
           notes={state === "viewer" ? { ...notes, canWrite: false } : notes}
           reviews={state === "viewer" ? { ...reviews, canRequest: false } : reviews}
+          links={state === "viewer" ? null : { state: state === "nocrm" ? "notSetUp" : state === "linksOn" ? "on" : "needsPermission", words: state === "linksOn" ? "On. Each brief's link is added to its call's event in Google Calendar." : "Google Calendar is connected for counts only. Allow brief links to let Vistrial add the link to events.", canChange: true } as never}
           open={open ? brief(state) : null}
           onOpen={setOpen}
           openReview={state === "review" || state === "reviewMember" ? review(state === "review") : null}

@@ -288,6 +288,8 @@ async function publicRead(ctx: MutationCtx, run: Doc<"agentRuns">, steps: Step[]
 /** Tells the closer their brief is ready, when the closer is not the person who asked for it. */
 async function announce(ctx: MutationCtx, briefingId: Id<"dealBriefings">) {
   await ctx.scheduler.runAfter(0, internal.briefEmail.sendBriefReady, { briefingId });
+  // When the Owner turned it on, the brief's link goes on the call's calendar event too.
+  await ctx.scheduler.runAfter(0, internal.briefCalendar.addLink, { briefingId });
 }
 
 const save: MutationTool = async (ctx, run, steps) => {

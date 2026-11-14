@@ -240,7 +240,11 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "If an Owner allows it, Vistrial may also act in the connected sub-account: move a deal to another stage, mark a deal won, lost or abandoned, add or remove a tag on a lead, add a note to a lead, or create a task. An agent or a person on the team proposes each change, and nothing changes in HighLevel until an Owner or Admin approves that one change; marking a deal won, lost or abandoned needs an Owner. Each change is recorded with who proposed it, who approved it and when, and what HighLevel answered. An Owner can turn this off at any time, which cancels everything still waiting. Vistrial never deletes anything in HighLevel and does not message, call or email the business's leads. A change can start an automation the business set up in HighLevel, which may contact the lead; that automation is the business's own.",
+          text: "If an Owner allows it, Vistrial may also act in the connected sub-account: move a deal to another stage, mark a deal won, lost or abandoned, add or remove a tag on a lead, add a note to a lead, or create a task. An agent or a person on the team proposes each change, and nothing changes in HighLevel until an Owner or Admin approves that one change; marking a deal won, lost or abandoned needs an Owner. Each change is recorded with who proposed it, who approved it and when, and what HighLevel answered. An Owner can turn this off for one account or for the whole organization at any time, which cancels everything still waiting. Vistrial never deletes anything in HighLevel. A change can start an automation the business set up in HighLevel, which may contact the lead; that automation is the business's own.",
+        },
+        {
+          kind: "p",
+          text: "Messaging leads is separate and off unless an Owner turns it on, confirming that the business has its leads' consent to be texted and emailed. The business is responsible for that consent and for honouring opt-outs, as laws such as the US Telephone Consumer Protection Act and CAN-SPAM require. Each text or email is approved by an Owner before it is sent. Just before sending, Vistrial reads the lead again from HighLevel and does not send if the lead has opted out or is on Do Not Disturb, if it is between 8 pm and 8 am in the lead's time zone or that time zone is unknown, or if Vistrial messaged the lead in the last day. Vistrial keeps the message it sent, who approved it, and what those checks found, while the account stays connected. If you are a lead and do not want messages, reply STOP or ask the business to stop contacting you.",
         },
         {
           kind: "p",
@@ -248,7 +252,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Vistrial keeps this information to show the workspace how its sales process is doing, so an agent can help the business convert more of its leads, and to propose the changes described above. A note or task Vistrial adds is kept in its record of that change while the account stays connected. It is stored for that workspace only. If the connection is for a client, only the people in the workspace who may see that client can see it. Vistrial handles this information on the business's behalf, as Section 13 describes; the business is responsible for having collected it lawfully.",
+          text: "Vistrial keeps this information to show the workspace how its sales process is doing, so an agent can help the business convert more of its leads, and to propose the changes described above. A note, task or message Vistrial adds is kept in its record of that change while the account stays connected. It is stored for that workspace only. If the connection is for a client, only the people in the workspace who may see that client can see it. Vistrial handles this information on the business's behalf, as Section 13 describes; the business is responsible for having collected it lawfully.",
         },
         {
           kind: "p",

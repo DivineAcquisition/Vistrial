@@ -414,6 +414,43 @@ metrics, calls, direction requests, website clicks), and one monthly search-keyw
 Only read requests are made. Until approval Google refuses with 403 or a zero quota (429); the card then says
 "Waiting for Google's approval" and nothing else changes.
 
+## 4b. Google Drive (files the customer picks)
+
+**Vistrial will read:** only the files a person picks in Google's file picker, and from each only its text:
+Google Docs and Slides as plain text, a Google Sheet's first sheet as CSV, and plain text, Markdown or CSV
+files up to 2 MB. **Vistrial will never:** see any other file or folder, list the Drive, change, move,
+share or delete a file, or keep the file itself.
+
+- **Scope `drive.file`**, not `drive.readonly`. `drive.readonly` is a restricted scope that needs a yearly
+  security assessment (CASA); `drive.file` is not restricted and reaches only files the person opens with
+  Vistrial or picks in the Google Picker.
+- **The picker runs in the browser with its own short token.** The Picker needs an OAuth token in the page.
+  Vistrial never sends its stored token to the browser, so the Drive card asks Google's sign-in script for a
+  short-lived `drive.file` token for the same Google app and the connected person's email, only to open the
+  Picker. The picked file ids go to the server, which reads them with the connection's own token: `drive.file`
+  grants belong to the app and the person, so the server's token can open exactly what was picked. A file
+  picked with a different Google account than the connection's is refused when the server cannot open it.
+- **Settings (Vercel, public by design):** `NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID` (the same client id as
+  `GOOGLE_OAUTH_CLIENT_ID`), `NEXT_PUBLIC_GOOGLE_PICKER_API_KEY` (a browser API key restricted to the Google
+  Picker API and to Vistrial's own web addresses), `NEXT_PUBLIC_GOOGLE_CLOUD_PROJECT_NUMBER` (the Picker's
+  app id). Without them the card says picking is not set up yet. In the Cloud project, enable the
+  **Google Drive API** and the **Google Picker API**. The page's security policy allows Google's sign-in
+  script (`accounts.google.com`).
+- **What is kept:** per file, its name, kind, Google's modified time, who added it, and its text, capped at
+  200,000 characters. Refresh reads each file's text again. Removing a file deletes its row; disconnecting
+  Drive deletes every picked file's row and the token.
+- **Who uses it:** each file is granted to agents like transcripts are (Strategist and Dealmaker by default).
+  A granted file is cited in research as "Your file: …" (`customerData`, its opening lines). Agents also get
+  two read tools during work that already uses tools: `list_picked_files` (names, kinds, sizes) and
+  `read_picked_file` (one file's text, in pieces), both limited to files granted to that agent. A file can
+  also be read into Dealmaker's Playbook (as a study source) or added as a call transcript (with the same
+  recording-consent confirmation as an upload).
+- **Approval:** `drive.file` is a non-sensitive scope per Google's list, so no extra verification is
+  expected beyond the app's (**not verified** on the Data Access page yet).
+
+**Customer side:** any Google account. **Status:** built (`convex/googleDrive.ts`,
+`convex/lib/integrations/google/drive.ts`, `src/components/connections/drive-files.tsx`).
+
 ## 5. Google Calendar
 
 **Vistrial will read:** events on the connected person's own calendar for the last 90 days and next 30,
@@ -725,6 +762,9 @@ setting it needs is present.
 | `GOOGLE_OAUTH_CLIENT_ID` | The Google sign-in app's public id | All Google products and Google Calendar |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | The Google sign-in app's secret | Same |
 | `INTEGRATIONS_CALLBACK_ORIGIN` | Optional. Your own domain for callbacks, once decided | Google verification |
+| `NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID` | In Vercel. The same client id as `GOOGLE_OAUTH_CLIENT_ID`, for the Drive picker | Google Drive |
+| `NEXT_PUBLIC_GOOGLE_PICKER_API_KEY` | In Vercel. A browser API key restricted to the Google Picker API and Vistrial's own addresses | Google Drive |
+| `NEXT_PUBLIC_GOOGLE_CLOUD_PROJECT_NUMBER` | In Vercel. The Cloud project's number, the picker's app id | Google Drive |
 | `GOOGLE_ADS_API_VERSION` | Optional. The Google Ads API version in the address, such as `v22` | Google Ads, when Google retires the default |
 | `CALENDLY_CLIENT_ID` | The Calendly app's public id | Calendly |
 | `CALENDLY_CLIENT_SECRET` | The Calendly app's secret | Calendly |

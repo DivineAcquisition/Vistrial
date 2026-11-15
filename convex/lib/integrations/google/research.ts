@@ -186,3 +186,67 @@ export async function saveGoogleSourcesFor(
   }
   return known;
 }
+
+/** Where a picked file opens in Google: the source link a report cites. */
+export function driveFileUrl(file: Pick<Doc<"driveFiles">, "fileId" | "kind">) {
+  const path = file.kind === "doc" ? "document" : file.kind === "sheet" ? "spreadsheets" : file.kind === "slides" ? "presentation" : null;
+  return path ? `https://docs.google.com/${path}/d/${file.fileId}` : `https://drive.google.com/file/d/${file.fileId}/view`;
+}
+
+/** Most picked files cited in one piece of work, newest first. */
+const DRIVE_SOURCES = 5;
+
+/** Saves the files picked in Google Drive and granted to this agent as "Your file" sources on the project. */
+export async function saveDriveSourcesFor(
+  ctx: MutationCtx,
+  args: { workspaceId: Id<"workspaces">; project: Doc<"researchProjects">; runId: Id<"agentRuns">; agentSlug: string },
+): Promise<GoogleKnown[]> {
+  if (args.project.clientId) return [];
+  const connection = await ctx.db
+    .query("integrationConnections")
+    .withIndex("by_workspace_provider", (q) => q.eq("workspaceId", args.workspaceId).eq("provider", "google_drive"))
+    .unique();
+  if (!connection) return [];
+  const files = (
+    await ctx.db
+      .query("driveFiles")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .order("desc")
+      .take(50)
+  )
+    .filter((row) => (row.agents ?? [GROWTH_ARCHITECT, "sales-conversion"]).includes(args.agentSlug))
+    .slice(0, DRIVE_SOURCES);
+  const known: GoogleKnown[] = [];
+  for (const file of files) {
+    const url = driveFileUrl(file);
+    const canonical = canonicalUrl(url) ?? url;
+    const existing = await ctx.db
+      .query("sourceRefs")
+      .withIndex("by_workspace_project_canonical", (q) => q.eq("workspaceId", args.workspaceId).eq("projectId", args.project._id).eq("canonicalUrl", canonical))
+      .unique();
+    const excerpt = file.text.replace(/\s+/g, " ").slice(0, 300);
+    const fields = {
+      title: `Your file: ${file.name}`.slice(0, 200),
+      excerpt,
+      publisher: "Your business",
+      observedAt: file.readAt,
+      runId: args.runId,
+      limitation: "A document the business picked from its own Google Drive. Its claims are the business's own, not checked by Vistrial.",
+    };
+    if (existing) await ctx.db.patch(existing._id, fields);
+    else
+      await ctx.db.insert("sourceRefs", {
+        workspaceId: args.workspaceId,
+        projectId: args.project._id,
+        origin: "supplied",
+        platform: "customerData",
+        kind: "dataset",
+        url,
+        canonicalUrl: canonical,
+        availability: "available",
+        ...fields,
+      });
+    known.push({ key: `drive:${file._id}`, label: `Your file: ${file.name}`, value: excerpt, recordedAt: file.readAt });
+  }
+  return known;
+}

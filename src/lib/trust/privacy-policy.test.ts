@@ -70,6 +70,8 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("It never reads individual visitors, and it never changes a property");
     expect(text).toContain("Disconnecting in Connections deletes the token, the chosen property, site, account or location and every saved total straight away");
     expect(text).toContain("It never edits the listing, publishes posts, or replies to reviews");
+    expect(text).toContain("Vistrial asks only for access to files you pick with it, not to your whole Drive");
+    expect(text).toContain("disconnecting Drive deletes every picked file's text and the token");
     expect(text).toContain("It never creates, edits, pauses or pays for ads, never changes budgets or bids, and never adds or removes users");
     expect(text).toContain("It never submits sitemaps, requests removals, or changes a site or its users");
   });

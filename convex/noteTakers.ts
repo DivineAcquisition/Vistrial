@@ -33,6 +33,7 @@ import {
   type NoteTakerCall,
 } from "./lib/noteTakers";
 import { isAdmin } from "./lib/roles";
+import { openSecret } from "./lib/secrets";
 
 const DAY = 86_400_000;
 /** How far back HighLevel call recordings are offered, and the shortest call worth transcribing. */
@@ -150,7 +151,7 @@ export const firefliesKey = internalQuery({
       .query("integrationConnections")
       .withIndex("by_workspace_provider", (q) => q.eq("workspaceId", args.workspaceId).eq("provider", "fireflies"))
       .first();
-    return row?.status === "connected" ? row.accessToken : null;
+    return row?.status === "connected" ? openSecret(row.accessToken) : null;
   },
 });
 

@@ -30,6 +30,7 @@ import {
   type ProviderKey,
 } from "./lib/integrations/providers";
 import { safeReturnOrigin, safeReturnPath } from "./lib/metaGraph";
+import { SECRET_FIELDS, openOptional, openRow, openSecret, sealOptional, sealSecret } from "./lib/secrets";
 
 const STATE_MS = 10 * 60 * 1000;
 /** A renewal that has not finished in this long is taken to have died, and another may start. */
@@ -140,7 +141,7 @@ export const startConnect = adminMutation({
       userId: ctx.identity.subject,
       provider: row.key,
       nonce,
-      codeVerifier: verifier,
+      codeVerifier: await sealOptional(verifier),
       returnOrigin: safeReturnOrigin(args.returnOrigin) ?? undefined,
       returnPath: safeReturnPath(args.returnPath) ?? undefined,
       ...(extraScopes.length ? { extraScopes } : {}),
@@ -182,7 +183,7 @@ export const consumeState = internalMutation({
       workspaceId: row.workspaceId,
       userId: row.userId,
       provider: row.provider,
-      codeVerifier: row.codeVerifier ?? null,
+      codeVerifier: (await openOptional(row.codeVerifier)) ?? null,
       returnOrigin: row.returnOrigin ?? null,
       returnPath: row.returnPath ?? null,
     };
@@ -204,14 +205,14 @@ export const saveConnection = internalMutation({
   handler: async (ctx, args) => {
     provider(args.provider);
     const existing = await connectionOf(ctx, args.workspaceId, args.provider);
-    const fields = { ...args, status: "connected" as const, connectedAt: Date.now(), refreshingSince: undefined };
+    const fields = { ...args, accessToken: await sealSecret(args.accessToken), refreshToken: await sealOptional(args.refreshToken), status: "connected" as const, connectedAt: Date.now(), refreshingSince: undefined };
     if (existing) {
       // A different account's reads do not belong beside this one's.
       if (existing.accountId !== args.accountId) await deleteReads(ctx, args.workspaceId, args.provider);
       await ctx.db.patch(existing._id, {
         ...fields,
         // A provider that sends no new renewal token on a reconnect keeps the one it gave before.
-        refreshToken: args.refreshToken ?? (existing.accountId === args.accountId ? existing.refreshToken : undefined),
+        refreshToken: fields.refreshToken ?? (existing.accountId === args.accountId ? existing.refreshToken : undefined),
         ...(existing.accountId === args.accountId ? {} : { lastSyncAt: undefined, lastSyncCode: undefined, selected: undefined }),
       });
     } else {
@@ -254,7 +255,11 @@ export const setAgentAccess = adminMutation({
 /** The whole connection, tokens included. Internal: only actions that call the provider read this. */
 export const connectionFor = internalQuery({
   args: { workspaceId: v.id("workspaces"), provider: v.string() },
-  handler: async (ctx, args) => connectionOf(ctx, args.workspaceId, args.provider),
+  handler: async (ctx, args) => {
+    const row = await connectionOf(ctx, args.workspaceId, args.provider);
+    // Decrypted here, for the action that uses it; no public function returns these fields.
+    return row ? openRow(row, SECRET_FIELDS.integrationConnections) : null;
+  },
 });
 
 export const roleOf = internalQuery({
@@ -280,7 +285,7 @@ export const claimRefresh = internalMutation({
     if (!row.refreshToken) return { state: "no_refresh_token" };
     if (row.refreshingSince && Date.now() - row.refreshingSince < REFRESH_LOCK_MS) return { state: "busy" };
     await ctx.db.patch(row._id, { refreshingSince: Date.now() });
-    return { state: "claimed", refreshToken: row.refreshToken };
+    return { state: "claimed", refreshToken: await openSecret(row.refreshToken) };
   },
 });
 
@@ -295,10 +300,10 @@ export const saveTokens = internalMutation({
     const row = await ctx.db.get(args.connectionId);
     if (!row) return null;
     await ctx.db.patch(row._id, {
-      accessToken: args.accessToken,
+      accessToken: await sealSecret(args.accessToken),
       tokenExpiresAt: args.tokenExpiresAt,
       // A rotated renewal token replaces the old one; a provider that sends none keeps it.
-      ...(args.refreshToken ? { refreshToken: args.refreshToken } : {}),
+      ...(args.refreshToken ? { refreshToken: await sealSecret(args.refreshToken) } : {}),
       refreshingSince: undefined,
     });
     return null;
@@ -384,7 +389,7 @@ export const removeConnection = internalMutation({
     const done = await deleteReads(ctx, args.workspaceId, args.provider);
     if (!done) await ctx.scheduler.runAfter(0, internal.integrations.sweepReads, { workspaceId: args.workspaceId, provider: args.provider });
     await writeAudit(ctx, { workspaceId: args.workspaceId, actorType: "user", actorId: args.userId, action: "integration.disconnected", subject: args.provider });
-    return { removed: true, token: connection.refreshToken ?? connection.accessToken };
+    return { removed: true, token: await openSecret(connection.refreshToken ?? connection.accessToken) };
   },
 });
 
@@ -412,7 +417,7 @@ export const hookTarget = internalQuery({
       .withIndex("by_hook", (q) => q.eq("hookId", args.hookId))
       .unique();
     if (!row) return null;
-    return { workspaceId: row.workspaceId, provider: row.provider, hookSecret: row.hookSecret ?? null };
+    return { workspaceId: row.workspaceId, provider: row.provider, hookSecret: (await openOptional(row.hookSecret)) ?? null };
   },
 });
 

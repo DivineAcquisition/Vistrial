@@ -49,6 +49,7 @@ import {
 } from "./lib/highLevel";
 import { isAllowedWrite } from "./lib/crmActions";
 import { isAdmin, isOwner } from "./lib/roles";
+import { SECRET_FIELDS, openRow, openSecret, sealSecret } from "./lib/secrets";
 
 const STATE_MS = 10 * 60 * 1000;
 const DAY = 86_400_000;
@@ -286,6 +287,8 @@ async function saveConnectionRow(ctx: MutationCtx, args: ConnectionFields): Prom
     const { calls, ...fields } = args;
     const row = {
       ...fields,
+      accessToken: await sealSecret(args.accessToken),
+      refreshToken: await sealSecret(args.refreshToken),
       provider: "highlevel" as const,
       status: "connected" as const,
       connectedAt: Date.now(),
@@ -406,7 +409,7 @@ export const savePending = internalMutation({
       .take(20);
     for (const row of earlier) await ctx.db.delete(row._id);
     const claimCode = randomHex(24);
-    const id = await ctx.db.insert("crmPendingInstalls", { ...args, provider: "highlevel", claimCode, createdAt: Date.now() });
+    const id = await ctx.db.insert("crmPendingInstalls", { ...args, accessToken: await sealSecret(args.accessToken), refreshToken: await sealSecret(args.refreshToken), provider: "highlevel", claimCode, createdAt: Date.now() });
     await ctx.scheduler.runAfter(PENDING_MS, internal.highLevel.dropPending, { id });
     return claimCode;
   },
@@ -445,6 +448,7 @@ export const claimInstall = ownerMutation({
     const row = await pendingByCode(ctx, args.code);
     if (!row) throw userError("That HighLevel install has expired. Install the app again, or press Connect HighLevel here.");
     await requireClient(ctx, ctx.workspaceId, args.clientId);
+    // The tokens move as they are stored: a sealed value is not sealed again.
     const saved = await saveConnectionRow(ctx, {
       accessToken: row.accessToken,
       refreshToken: row.refreshToken,
@@ -496,7 +500,11 @@ async function tokenRequest(fields: Record<string, string>): Promise<{ ok: true;
 
 export const connectionById = internalQuery({
   args: { connectionId: v.id("crmConnections") },
-  handler: async (ctx, args) => ctx.db.get(args.connectionId),
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.connectionId);
+    // Decrypted here, for the action that uses it; no public function returns these fields.
+    return row ? openRow(row, SECRET_FIELDS.crmConnections) : null;
+  },
 });
 
 export const claimRefresh = internalMutation({
@@ -506,7 +514,7 @@ export const claimRefresh = internalMutation({
     if (!row || row.status !== "connected") return { state: "gone" };
     if (row.refreshingSince && Date.now() - row.refreshingSince < REFRESH_LOCK_MS) return { state: "busy" };
     await ctx.db.patch(row._id, { refreshingSince: Date.now() });
-    return { state: "claimed", refreshToken: row.refreshToken };
+    return { state: "claimed", refreshToken: await openSecret(row.refreshToken) };
   },
 });
 
@@ -516,7 +524,7 @@ export const saveTokens = internalMutation({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.connectionId);
     if (!row) return null;
-    await ctx.db.patch(row._id, { accessToken: args.accessToken, refreshToken: args.refreshToken, tokenExpiresAt: args.tokenExpiresAt, refreshingSince: undefined });
+    await ctx.db.patch(row._id, { accessToken: await sealSecret(args.accessToken), refreshToken: await sealSecret(args.refreshToken), tokenExpiresAt: args.tokenExpiresAt, refreshingSince: undefined });
     return null;
   },
 });

@@ -65,10 +65,11 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Uploaded results files are deleted as soon as they are read");
   });
 
-  it("says what is read from Google Analytics, that it is totals only, and how it is deleted", () => {
+  it("says what is read from Google Analytics and Search Console, that it is totals only, and how it is deleted", () => {
     expect(text).toContain("M. Connected Google data");
     expect(text).toContain("It never reads individual visitors, and it never changes a property");
-    expect(text).toContain("Disconnecting in Connections deletes the token, the chosen property and every saved total straight away");
+    expect(text).toContain("Disconnecting in Connections deletes the token, the chosen property or site and every saved total straight away");
+    expect(text).toContain("It never submits sitemaps, requests removals, or changes a site or its users");
   });
 
   it("says what is read from HighLevel, what about leads is kept, and how it is deleted", () => {
@@ -113,7 +114,7 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("A connected calendar's access and saved counts are deleted as soon as the calendar is disconnected");
     expect(text).toContain("A call transcript you add is kept until someone in the workspace deletes it");
     // Not built yet, so not promised.
-    expect(text).not.toMatch(/Google Ads account|Search Console|Fathom|Fireflies/);
+    expect(text).not.toMatch(/Google Ads account|Fathom|Fireflies/);
   });
 
   it("shows Not in effect while the policy is switched off", () => {

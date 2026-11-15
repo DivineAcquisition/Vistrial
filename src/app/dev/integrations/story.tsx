@@ -20,6 +20,7 @@ const CONNECTED: Record<string, IntegrationView["connection"]> = {
   // A marketing agency's owner, connected to both calendars; Google has signed Vistrial out of Calendar.
   calendly: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 9), lastSyncAt: Date.UTC(2026, 10, 11, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   google_analytics: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
+  search_console: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   google_calendar: { status: "needsReconnect", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 2), lastSyncAt: Date.UTC(2026, 10, 9, 9), lastSyncCode: "token_rejected", agents: ["growth-architect"] },
 };
 
@@ -54,6 +55,33 @@ const ANALYTICS: GoogleDataView = {
       events: [
         { name: "book_call", count: 41 },
         { name: "form_submit", count: 22 },
+      ],
+    },
+  },
+};
+
+// The agency's site in Google Search, 28 days ending three days ago. Sample figures.
+const SEARCH: GoogleDataView = {
+  noun: "site",
+  canChoose: true,
+  selected: { id: "sc-domain:northpeak.agency", label: "northpeak.agency" },
+  choices: [{ id: "sc-domain:northpeak.agency", label: "northpeak.agency" }],
+  summary: {
+    syncedAt: Date.UTC(2026, 10, 14, 9),
+    data: {
+      selectedId: "sc-domain:northpeak.agency",
+      from: "2026-10-15",
+      to: "2026-11-11",
+      totals: { clicks: 1284, impressions: 41230, ctr: 0.0311, position: 14.2 },
+      days: [],
+      queries: [
+        { name: "marketing agency for dentists", clicks: 212, impressions: 3120, ctr: 0.068, position: 4.1 },
+        { name: "northpeak agency", clicks: 188, impressions: 402, ctr: 0.4677, position: 1.2 },
+        { name: "dental practice facebook ads", clicks: 96, impressions: 5410, ctr: 0.0177, position: 11.8 },
+      ],
+      pages: [
+        { name: "https://northpeak.agency/", clicks: 540, impressions: 12020, ctr: 0.0449, position: 9.4 },
+        { name: "https://northpeak.agency/case-studies/dental-group-retainers", clicks: 301, impressions: 8800, ctr: 0.0342, position: 12.6 },
       ],
     },
   },
@@ -137,7 +165,10 @@ export function IntegrationsStory({ state, role, theme }: { state: string; role:
             setProviders((rows) => rows.map((row) => (row.key === key && row.connection ? { ...row, connection: { ...row.connection, lastSyncAt: Date.UTC(2026, 10, 11, 10, 30), lastSyncCode: "ok" } } : row))),
         }}
         extra={{
-          card: (key) => (key === "google_analytics" ? <GoogleDataPanel provider={key} view={role === "owner" ? ANALYTICS : { ...ANALYTICS, canChoose: false }} onChoose={async () => undefined} /> : null),
+          card: (key) => {
+            const view = key === "google_analytics" ? ANALYTICS : key === "search_console" ? SEARCH : null;
+            return view ? <GoogleDataPanel provider={key} view={role === "owner" ? view : { ...view, canChoose: false }} onChoose={async () => undefined} /> : null;
+          },
           group: {
             notes: (
               <TranscriptsView

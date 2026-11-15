@@ -173,7 +173,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "The business profile: what the business sells, where, to whom, its offers, and its competitors.",
             "Research assignments: the questions, markets, keywords, competitors, and links the team asks Strategist to look at.",
             "Files the team uploads, such as the business's own ad or sales results. A results file is read once and deleted; only totals by date and by campaign or channel are kept. Columns that name a person or how to reach them, such as names, email addresses, phone numbers and street addresses, are skipped without being read.",
-            "Results from accounts the team connects, such as Meta ad results, booked-call counts from a calendar, and sales pipeline and lead information from HighLevel, described in parts I, J and L below.",
+            "Results from accounts the team connects, such as Meta ad results, booked-call counts from a calendar, sales pipeline and lead information from HighLevel, and totals from Google Analytics and Search Console, described in parts I, J, L and M below.",
             "Call transcripts the team uploads or pastes, described in part K below.",
             "Decisions about recommendations: which recommendations the team chose to try, when to check back, what the team says happened, and the business's own figures before and after.",
             "Lead lists the team imports, such as names, email addresses, phone numbers, and activity dates, and notes the team adds.",
@@ -281,7 +281,11 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "These totals are shown to the workspace that connected them and, when an Owner grants the connection to an agent, cited in that workspace's reports as the business's own data. The access token is kept on our servers and is never shown in the app. Disconnecting in Connections deletes the token, the chosen property and every saved total straight away, and asks Google to cancel the token. Vistrial's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements. It is not sold and not used for advertising.",
+          text: "Search Console. With read-only access to Search Console, Vistrial lists the sites the connected person can open, and for the chosen site reads search performance only, for 28 days: clicks, impressions, click rate and average position by day, and the top search queries and pages with those figures, as Google reports them. It never submits sitemaps, requests removals, or changes a site or its users.",
+        },
+        {
+          kind: "p",
+          text: "These totals are shown to the workspace that connected them and, when an Owner grants the connection to an agent, cited in that workspace's reports as the business's own data. The access token is kept on our servers and is never shown in the app. Disconnecting in Connections deletes the token, the chosen property or site and every saved total straight away, and asks Google to cancel the token. Vistrial's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements. It is not sold and not used for advertising.",
         },
       ],
     },

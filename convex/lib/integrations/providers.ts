@@ -131,7 +131,7 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     oauth: { app: "google", scopes: ["https://www.googleapis.com/auth/webmasters.readonly"] },
     extraEnv: [],
     webhook: null,
-    stage: "designed",
+    stage: "connect",
   },
   business_profile: {
     key: "business_profile",

@@ -362,8 +362,12 @@ choice, the totals and the token. Shared by the Google products that follow: eac
 - Limits: 1,200 queries a minute per site ([limits](https://developers.google.com/webmaster-tools/limits)).
 - No approval beyond sensitive-scope verification.
 
-**Customer side:** the site must be a verified property the person can open. **Status:** designed, not
-built.
+**Customer side:** the site must be a verified property the person can open. **Status:** built
+(`convex/lib/integrations/google/searchConsole.ts`, a reader in `convex/googleData.ts`). Sites come from
+`sites.list`, unverified ones left out; one is chosen for the person, several are chosen on the card. For
+the chosen site Vistrial runs three Search Analytics queries (by date, top 10 queries, top 10 pages) for 28
+days ending three days ago, keeps clicks, impressions, click rate and impression-weighted average position,
+and cites them in research as "Your data" when granted. Nothing else in Search Console is called.
 
 ## 4. Google Business Profile
 

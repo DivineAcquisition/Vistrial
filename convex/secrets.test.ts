@@ -119,6 +119,8 @@ describe("every connection type, with the key set", () => {
     // Google Calendar, Calendly and Fireflies (its pasted API key) share integrationConnections.
     await s.t.mutation(internal.integrations.saveConnection, { workspaceId: s.workspaceId, provider: "google_calendar", accessToken: "google-access", refreshToken: "google-refresh", tokenExpiresAt: NOW + DAY, scopes: [], accountId: "g1", accountLabel: "dana@example.com", connectedBy: "dana" });
     await s.t.mutation(internal.integrations.saveConnection, { workspaceId: s.workspaceId, provider: "calendly", accessToken: "calendly-access", refreshToken: "calendly-refresh", tokenExpiresAt: NOW + DAY, scopes: [], accountId: "c1", accountLabel: "Dana", connectedBy: "dana" });
+    // Google Analytics (GA4, #360) reads through the same connection row and liveToken.
+    await s.t.mutation(internal.integrations.saveConnection, { workspaceId: s.workspaceId, provider: "google_analytics", accessToken: "ga-access", refreshToken: "ga-refresh", tokenExpiresAt: NOW + DAY, scopes: [], accountId: "g1", accountLabel: "dana@example.com", connectedBy: "dana" });
     await s.t.mutation(internal.integrations.saveConnection, { workspaceId: s.workspaceId, provider: "fireflies", accessToken: "fireflies-api-key-0123456789", scopes: [], accountId: "f1", accountLabel: "Dana", connectedBy: "dana" });
     // HighLevel and Meta.
     const hl = await s.t.mutation(internal.highLevel.saveConnection, { workspaceId: s.workspaceId, accessToken: "hl-access", refreshToken: "hl-refresh", tokenExpiresAt: NOW + DAY, scopes: [], accountId: "loc1", accountName: "Aster", currency: "USD", connectedBy: "dana", calls: 0 });
@@ -148,6 +150,8 @@ describe("every connection type, with the key set", () => {
         "integrationConnections.accessToken",
         "integrationConnections.accessToken",
         "integrationConnections.accessToken",
+        "integrationConnections.accessToken",
+        "integrationConnections.refreshToken",
         "integrationConnections.refreshToken",
         "integrationConnections.refreshToken",
         "integrationOauthStates.codeVerifier",
@@ -159,6 +163,7 @@ describe("every connection type, with the key set", () => {
     // Each read path hands the action the real value.
     const google = await s.t.query(internal.integrations.connectionFor, { workspaceId: s.workspaceId, provider: "google_calendar" });
     expect(google).toMatchObject({ accessToken: "google-access", refreshToken: "google-refresh" });
+    expect(await s.t.query(internal.integrations.connectionFor, { workspaceId: s.workspaceId, provider: "google_analytics" })).toMatchObject({ accessToken: "ga-access", refreshToken: "ga-refresh" });
     expect(await s.t.query(internal.noteTakers.firefliesKey, { workspaceId: s.workspaceId })).toBe("fireflies-api-key-0123456789");
     expect(await s.t.mutation(internal.integrations.claimRefresh, { connectionId: google!._id })).toEqual({ state: "claimed", refreshToken: "google-refresh" });
     if (!hl.ok) throw new Error("HighLevel connection was not saved");
@@ -193,7 +198,7 @@ describe("every connection type, with the key set", () => {
       await s.owner.query(api.metaAds.status, { workspaceId: s.workspaceId }),
       await s.owner.query(api.noteTakers.status, { workspaceId: s.workspaceId }),
     ]);
-    for (const value of ["google-access", "google-refresh", "hl-access", "hl-refresh", "meta-access", "fireflies-api-key", "whsec_signing", SEALED_PREFIX]) expect(shown).not.toContain(value);
+    for (const value of ["google-access", "google-refresh", "ga-access", "ga-refresh", "hl-access", "hl-refresh", "meta-access", "fireflies-api-key", "whsec_signing", SEALED_PREFIX]) expect(shown).not.toContain(value);
   });
 });
 

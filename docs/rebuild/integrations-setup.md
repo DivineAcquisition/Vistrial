@@ -324,7 +324,14 @@ What the application form asks is **not verified**. That the API is free is **no
 published; nothing indicates a charge).
 
 **Customer side:** any Google Ads account the person can sign in to. No plan needed.
-**Status:** designed, not built. It needs the sign-in app (G3) and Explorer access, then code.
+**Status:** built (`convex/lib/integrations/google/googleAds.ts`, a reader in `convex/googleData.ts`); it
+needs Explorer access on the project to reach real accounts. Accounts come from
+`customers:listAccessibleCustomers`, each named with one small GAQL read; manager accounts and accounts the
+person cannot read are left out. For the chosen account one GAQL search (`FROM campaign`, last 30 days, by
+day, at most 5 pages) gives campaign name, status and type with spend, impressions, clicks, conversions and
+value. Only `listAccessibleCustomers` and `googleAds:search` are ever called; never a mutate method. The API
+version in the address defaults to `v22` and can be moved with `GOOGLE_ADS_API_VERSION`; that `v22` is
+current is **not verified** (the first live test checks it).
 
 ## 2. Google Analytics 4
 
@@ -712,6 +719,7 @@ setting it needs is present.
 | `GOOGLE_OAUTH_CLIENT_ID` | The Google sign-in app's public id | All Google products and Google Calendar |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | The Google sign-in app's secret | Same |
 | `INTEGRATIONS_CALLBACK_ORIGIN` | Optional. Your own domain for callbacks, once decided | Google verification |
+| `GOOGLE_ADS_API_VERSION` | Optional. The Google Ads API version in the address, such as `v22` | Google Ads, when Google retires the default |
 | `CALENDLY_CLIENT_ID` | The Calendly app's public id | Calendly |
 | `CALENDLY_CLIENT_SECRET` | The Calendly app's secret | Calendly |
 | `CALENDLY_WEBHOOK_SIGNING_KEY` | Checks that a notification came from Calendly | Calendly |

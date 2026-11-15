@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { analyticsChoices, analyticsLine, summarizeAnalytics } from "./lib/integrations/google/analytics";
+import { accountChoice, adsLine, customerIds, summarizeAds } from "./lib/integrations/google/googleAds";
 import { saveGoogleSourcesFor } from "./lib/integrations/google/research";
 import { searchChoices, searchLine, searchRequests, summarizeSearch } from "./lib/integrations/google/searchConsole";
 import schema from "./schema";
@@ -300,6 +301,87 @@ describe("Search Console", () => {
         return saveGoogleSourcesFor(ctx, { workspaceId, project: (await ctx.db.get(projectId))!, runId, agentSlug: "growth-architect" });
       });
       expect(known.map((row) => row.label)).toEqual(["Your Google Search results: northpeak.agency"]);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("Google Ads", () => {
+  const LIST = { resourceNames: ["customers/1234567890", "customers/2223334444", "customers/9998887777", "bad"] };
+  const NAMES: Record<string, unknown> = {
+    "1234567890": { results: [{ customer: { id: "1234567890", descriptiveName: "Northpeak Agency", manager: false, currencyCode: "USD" } }] },
+    "2223334444": { results: [{ customer: { id: "2223334444", descriptiveName: "Northpeak MCC", manager: true } }] },
+  };
+  const result = (id: string, name: string, status: string, date: string, costMicros: string, clicks: string, conversions: number, value: number) => ({
+    customer: { currencyCode: "USD" },
+    campaign: { id, name, status, advertisingChannelType: "SEARCH" },
+    segments: { date },
+    metrics: { costMicros, impressions: "1000", clicks, conversions, conversionsValue: value },
+  });
+  const PAGE1 = {
+    results: [result("1", "Dentists, search", "ENABLED", "2026-11-12", "125500000", "40", 3, 900), result("2", "Brand", "PAUSED", "2026-11-12", "10000000", "12", 1, 300)],
+    nextPageToken: "p2",
+  };
+  const PAGE2 = { results: [result("1", "Dentists, search", "ENABLED", "2026-11-13", "74500000", "30", 2, 600)] };
+
+  it("names accounts but leaves managers out, and adds up campaigns by spend and by day", () => {
+    expect(customerIds(LIST)).toEqual(["1234567890", "2223334444", "9998887777"]);
+    expect(accountChoice("1234567890", NAMES["1234567890"])).toEqual({ id: "1234567890", label: "Northpeak Agency (123-456-7890)" });
+    expect(accountChoice("2223334444", NAMES["2223334444"])).toBeNull();
+    const snapshot = summarizeAds([...PAGE1.results, ...PAGE2.results], false);
+    expect(snapshot.totals).toEqual({ spend: 210, impressions: 3000, clicks: 82, conversions: 6, value: 1800, campaigns: 2, active: 1 });
+    expect(snapshot.campaigns[0]).toMatchObject({ name: "Dentists, search", spend: 200, status: "enabled", type: "search" });
+    expect(snapshot.days).toEqual([
+      { date: "2026-11-12", spend: 135.5, clicks: 52, conversions: 4 },
+      { date: "2026-11-13", spend: 74.5, clicks: 30, conversions: 2 },
+    ]);
+    expect(adsLine(snapshot)).toBe(
+      "$210.00 spent, 82 clicks and 6 conversions (value $1,800) from 2026-11-12 to 2026-11-13, across 2 campaigns; most spend on Dentists, search ($200.00). As reported by Google Ads.",
+    );
+  });
+
+  it("only ever calls the two read methods, follows pages, and skips an account it cannot read", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    vi.stubEnv("GOOGLE_OAUTH_CLIENT_ID", "client-id");
+    vi.stubEnv("GOOGLE_OAUTH_CLIENT_SECRET", "client-secret");
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
+      urls.push(input);
+      if (input.endsWith("/customers:listAccessibleCustomers")) return Response.json(LIST);
+      const id = /customers\/(\d+)\/googleAds:search$/.exec(input)?.[1] ?? "";
+      const body = JSON.parse(String(init!.body)) as { query: string; pageToken?: string };
+      if (body.query.includes("FROM customer")) return NAMES[id] ? Response.json(NAMES[id]) : new Response("{}", { status: 403 });
+      return Response.json(body.pageToken === "p2" ? PAGE2 : PAGE1);
+    });
+    try {
+      const t = convexTest(schema, modules);
+      const owner = t.withIdentity(person("dana"));
+      const workspaceId = await owner.mutation(api.workspace.create, { name: "Northpeak" });
+      await t.run((ctx) =>
+        ctx.db.insert("integrationConnections", {
+          workspaceId,
+          provider: "google_ads",
+          status: "connected",
+          accessToken: "ads-token",
+          tokenExpiresAt: NOW + DAY,
+          scopes: ["https://www.googleapis.com/auth/adwords"],
+          accountId: "sub-1",
+          accountLabel: "dana@example.com",
+          connectedBy: "dana",
+          connectedAt: NOW,
+        }),
+      );
+      expect(await t.action(internal.googleData.syncOne, { workspaceId, provider: "google_ads" })).toEqual({ code: "ok" });
+      const view = await owner.query(api.googleData.view, { workspaceId, provider: "google_ads" });
+      expect(view?.choices).toEqual([{ id: "1234567890", label: "Northpeak Agency (123-456-7890)" }]);
+      expect(view?.summary?.data).toMatchObject({ totals: { spend: 210, conversions: 6 } });
+      expect(urls.every((url) => url.endsWith("/customers:listAccessibleCustomers") || url.endsWith("/googleAds:search"))).toBe(true);
+      expect(urls.some((url) => /mutate/i.test(url))).toBe(false);
+      expect(urls.filter((url) => url === "https://googleads.googleapis.com/v22/customers/1234567890/googleAds:search")).toHaveLength(3);
     } finally {
       vi.useRealTimers();
       vi.unstubAllEnvs();

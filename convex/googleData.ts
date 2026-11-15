@@ -5,7 +5,7 @@
  * totals for that one, saves them as the connection's summary, and refreshes them on a schedule. Nothing is
  * ever changed at Google. Disconnecting deletes the choice, the summary and the token (integrations.ts).
  *
- * Built so far: Google Analytics 4 and Search Console. Each further product adds one entry to READERS.
+ * Built so far: Google Analytics 4, Search Console and Google Ads. Each further product adds one entry to READERS.
  */
 
 import { v } from "convex/values";
@@ -17,6 +17,7 @@ import { liveToken } from "./integrationActions";
 import { adminMutation, memberAction, workspaceQuery } from "./lib/builders";
 import { notAllowed, userError } from "./lib/errors";
 import { ANALYTICS, analyticsChoices, analyticsRequests, summarizeAnalytics, type Choice } from "./lib/integrations/google/analytics";
+import { ACCOUNT_QUERY, ADS, CAMPAIGN_QUERY, accountChoice, customerIds, isCustomerId, searchPage, summarizeAds } from "./lib/integrations/google/googleAds";
 import { SEARCH, isSiteId, searchChoices, searchRequests, summarizeSearch } from "./lib/integrations/google/searchConsole";
 import { isAdmin } from "./lib/roles";
 
@@ -87,6 +88,42 @@ export const READERS: Record<string, Reader> = {
         answers[key] = got.body;
       }
       return { ok: true, summary: summarizeSearch(answers as Parameters<typeof summarizeSearch>[0], requests.days) };
+    },
+  },
+  google_ads: {
+    noun: "account",
+    // Read methods only: listAccessibleCustomers and googleAds:search. Never a mutate.
+    choices: async (token) => {
+      const listed = await googleCall(ADS.customers(), token);
+      if (!listed.ok) return listed;
+      const choices: Choice[] = [];
+      for (const id of customerIds(listed.body)) {
+        const named = await googleCall(ADS.search(id), token, { query: ACCOUNT_QUERY });
+        // An account this person can list but not read (cancelled, or reached only through a manager) is left out.
+        if (!named.ok) {
+          if (named.code === "token_rejected") return named;
+          continue;
+        }
+        const choice = accountChoice(id, named.body);
+        if (choice) choices.push(choice);
+      }
+      return { ok: true, choices };
+    },
+    read: async (token, customerId) => {
+      if (!isCustomerId(customerId)) return { ok: false, code: "read_failed" };
+      const rows: Parameters<typeof summarizeAds>[0] = [];
+      let pageToken: string | null = null;
+      let truncated = false;
+      for (let page = 0; page < ADS.pages; page++) {
+        const got = await googleCall(ADS.search(customerId), token, { query: CAMPAIGN_QUERY, ...(pageToken ? { pageToken } : {}) });
+        if (!got.ok) return got;
+        const parsed = searchPage(got.body);
+        rows.push(...parsed.rows);
+        pageToken = parsed.next;
+        if (!pageToken) break;
+        if (page === ADS.pages - 1) truncated = true;
+      }
+      return { ok: true, summary: summarizeAds(rows, truncated) };
     },
   },
 };

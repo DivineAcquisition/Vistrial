@@ -10,6 +10,7 @@ import type { MutationCtx } from "../../../_generated/server";
 import { GROWTH_ARCHITECT } from "../../../catalog";
 import { canonicalUrl } from "../../sourceRefs";
 import { analyticsLine, type AnalyticsSnapshot } from "./analytics";
+import { adsLine, fmtMoney, type AdsSnapshot } from "./googleAds";
 import { pct, searchLine, type SearchSnapshot } from "./searchConsole";
 
 export type GoogleKnown = { key: string; label: string; value: string; recordedAt: number };
@@ -86,10 +87,25 @@ function rowsFor(provider: string, connection: Doc<"integrationConnections">, da
         : []),
     ];
   }
+  if (provider === "google_ads") {
+    const snapshot = data as AdsSnapshot;
+    const base = `https://ads.google.com/aw/campaigns?vistrial=ads&account=${selected.id}`;
+    return [
+      { url: base, title: `Your Google Ads: ${selected.label} (last 30 days)`, excerpt: adsLine(snapshot) },
+      ...snapshot.campaigns
+        .filter((row) => row.spend > 0)
+        .slice(0, 5)
+        .map((row) => ({
+          url: `${base}&campaign=${encodeURIComponent(row.id)}`,
+          title: `Your Google Ads campaign: ${row.name}`,
+          excerpt: `${fmtMoney(row.spend, snapshot.currency)} spent, ${n(row.impressions)} impressions, ${n(row.clicks)} clicks, ${n(row.conversions)} conversions (value ${fmtMoney(row.value, snapshot.currency)}), ${row.type} campaign, ${row.status}. As reported by Google Ads.`,
+        })),
+    ];
+  }
   return [];
 }
 
-const LABEL: Record<string, string> = { google_analytics: "Your Google Analytics", search_console: "Your Google Search results" };
+const LABEL: Record<string, string> = { google_analytics: "Your Google Analytics", search_console: "Your Google Search results", google_ads: "Your Google Ads" };
 
 /** Saves (or refreshes) each granted Google data connection's totals as sources on the project. */
 export async function saveGoogleSourcesFor(

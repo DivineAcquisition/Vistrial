@@ -117,7 +117,7 @@ describe("connections: what screens read", () => {
     const result = await owner.query(api.integrations.list, { workspaceId });
     expect(result).toMatchObject({ canManage: true, canRefresh: true });
     const state = Object.fromEntries(result.providers.map((row) => [row.key, row.readiness]));
-    expect(state).toMatchObject({ google_calendar: "ready", google_ads: "not_built", google_analytics: "ready", search_console: "ready", calendly: "not_set_up" });
+    expect(state).toMatchObject({ google_calendar: "ready", google_ads: "ready", google_analytics: "ready", search_console: "ready", calendly: "not_set_up" });
     const text = JSON.stringify(result);
     expect(text).not.toContain("GOOGLE-APP-SECRET");
     expect(text).not.toContain("GOOGLE_OAUTH_CLIENT");
@@ -147,7 +147,7 @@ describe("connections: sign-in", () => {
     await expect(viewer.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(member.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(stranger.mutation(api.integrations.startConnect, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
-    await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "google_ads" })).rejects.toThrow(/cannot be connected yet/);
+    await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "business_profile" })).rejects.toThrow(/cannot be connected yet/);
     await expect(owner.mutation(api.integrations.startConnect, { workspaceId, provider: "nope" })).rejects.toThrow(/does not exist/);
   });
 

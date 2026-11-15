@@ -21,6 +21,7 @@ const CONNECTED: Record<string, IntegrationView["connection"]> = {
   calendly: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 9), lastSyncAt: Date.UTC(2026, 10, 11, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   google_analytics: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   search_console: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
+  google_ads: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   google_calendar: { status: "needsReconnect", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 2), lastSyncAt: Date.UTC(2026, 10, 9, 9), lastSyncCode: "token_rejected", agents: ["growth-architect"] },
 };
 
@@ -83,6 +84,31 @@ const SEARCH: GoogleDataView = {
         { name: "https://northpeak.agency/", clicks: 540, impressions: 12020, ctr: 0.0449, position: 9.4 },
         { name: "https://northpeak.agency/case-studies/dental-group-retainers", clicks: 301, impressions: 8800, ctr: 0.0342, position: 12.6 },
       ],
+    },
+  },
+};
+
+// The agency's own Google Ads, last 30 days. Sample figures.
+const ADS: GoogleDataView = {
+  noun: "account",
+  canChoose: true,
+  selected: { id: "1234567890", label: "Northpeak Agency (123-456-7890)" },
+  choices: [{ id: "1234567890", label: "Northpeak Agency (123-456-7890)" }],
+  summary: {
+    syncedAt: Date.UTC(2026, 10, 14, 9),
+    data: {
+      selectedId: "1234567890",
+      currency: "USD",
+      from: "2026-10-15",
+      to: "2026-11-13",
+      totals: { spend: 3842.5, impressions: 61200, clicks: 1904, conversions: 47, value: 28200, campaigns: 4, active: 3 },
+      days: [],
+      campaigns: [
+        { id: "1", name: "Dentists, search, US", status: "enabled", type: "search", spend: 2210, impressions: 30100, clicks: 1180, conversions: 31, value: 18600 },
+        { id: "2", name: "Brand terms", status: "enabled", type: "search", spend: 640.5, impressions: 9800, clicks: 512, conversions: 12, value: 7200 },
+        { id: "3", name: "Retargeting, display", status: "paused", type: "display", spend: 992, impressions: 21300, clicks: 212, conversions: 4, value: 2400 },
+      ],
+      truncated: false,
     },
   },
 };
@@ -166,7 +192,7 @@ export function IntegrationsStory({ state, role, theme }: { state: string; role:
         }}
         extra={{
           card: (key) => {
-            const view = key === "google_analytics" ? ANALYTICS : key === "search_console" ? SEARCH : null;
+            const view = key === "google_analytics" ? ANALYTICS : key === "search_console" ? SEARCH : key === "google_ads" ? ADS : null;
             return view ? <GoogleDataPanel provider={key} view={role === "owner" ? view : { ...view, canChoose: false }} onChoose={async () => undefined} /> : null;
           },
           group: {

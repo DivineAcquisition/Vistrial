@@ -3,6 +3,7 @@
 import { canWork } from "@/lib/roles";
 import { useState } from "react";
 
+import { GOOGLE_DATA, GoogleDataPanel, type GoogleDataView } from "@/components/connections/google-data";
 import { CALENDAR_NOTES, CALENDARS } from "@/components/connections/integrations";
 import { IntegrationsView, type IntegrationView } from "@/components/connections/integrations-view";
 import { TranscriptsView, type TranscriptRow } from "@/components/connections/transcripts-view";
@@ -18,7 +19,44 @@ const SETTINGS: Record<string, Record<string, string>> = {
 const CONNECTED: Record<string, IntegrationView["connection"]> = {
   // A marketing agency's owner, connected to both calendars; Google has signed Vistrial out of Calendar.
   calendly: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 9), lastSyncAt: Date.UTC(2026, 10, 11, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
+  google_analytics: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   google_calendar: { status: "needsReconnect", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 2), lastSyncAt: Date.UTC(2026, 10, 9, 9), lastSyncCode: "token_rejected", agents: ["growth-architect"] },
+};
+
+// The agency's own site in Google Analytics, last 28 days. Sample figures.
+const ANALYTICS: GoogleDataView = {
+  noun: "property",
+  canChoose: true,
+  selected: { id: "properties/111", label: "Northpeak · northpeak.agency" },
+  choices: [
+    { id: "properties/111", label: "Northpeak · northpeak.agency" },
+    { id: "properties/222", label: "Northpeak · Northpeak blog" },
+  ],
+  summary: {
+    syncedAt: Date.UTC(2026, 10, 14, 9),
+    data: {
+      selectedId: "properties/111",
+      from: "2026-10-17",
+      to: "2026-11-13",
+      totals: { sessions: 4812, users: 3940, keyEvents: 63 },
+      days: [{ date: "2026-11-13", sessions: 180, users: 150, keyEvents: 3 }],
+      sources: [
+        { name: "google / organic", sessions: 2104, keyEvents: 31 },
+        { name: "(direct) / (none)", sessions: 1188, keyEvents: 14 },
+        { name: "facebook / paid", sessions: 902, keyEvents: 11 },
+        { name: "linkedin.com / referral", sessions: 311, keyEvents: 5 },
+      ],
+      pages: [
+        { path: "/", sessions: 1990, keyEvents: 12 },
+        { path: "/case-studies/dental-group-retainers", sessions: 720, keyEvents: 19 },
+        { path: "/pricing", sessions: 610, keyEvents: 22 },
+      ],
+      events: [
+        { name: "book_call", count: 41 },
+        { name: "form_submit", count: 22 },
+      ],
+    },
+  },
 };
 
 // Calls a marketing agency recorded with prospects and clients.
@@ -82,7 +120,7 @@ export function IntegrationsStory({ state, role, theme }: { state: string; role:
         providers={providers}
         canManage={role === "owner"}
         canRefresh={canEdit}
-        refreshable={CALENDARS}
+        refreshable={[...CALENDARS, ...GOOGLE_DATA]}
         notes={CALENDAR_NOTES}
         returned={state === "returned" ? { provider: "calendly", outcome: "connected" } : state === "cancelled" ? { provider: "google_calendar", outcome: "cancelled" } : null}
         actions={{
@@ -99,6 +137,7 @@ export function IntegrationsStory({ state, role, theme }: { state: string; role:
             setProviders((rows) => rows.map((row) => (row.key === key && row.connection ? { ...row, connection: { ...row.connection, lastSyncAt: Date.UTC(2026, 10, 11, 10, 30), lastSyncCode: "ok" } } : row))),
         }}
         extra={{
+          card: (key) => (key === "google_analytics" ? <GoogleDataPanel provider={key} view={role === "owner" ? ANALYTICS : { ...ANALYTICS, canChoose: false }} onChoose={async () => undefined} /> : null),
           group: {
             notes: (
               <TranscriptsView

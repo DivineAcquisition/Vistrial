@@ -119,7 +119,7 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     oauth: { app: "google", scopes: ["https://www.googleapis.com/auth/analytics.readonly"] },
     extraEnv: [],
     webhook: null,
-    stage: "designed",
+    stage: "connect",
   },
   search_console: {
     key: "search_console",

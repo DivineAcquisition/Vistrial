@@ -1,0 +1,143 @@
+"use client";
+
+import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { showError } from "@/lib/errors/show-error";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import type { AnalyticsSnapshot } from "../../../convex/lib/integrations/google/analytics";
+
+export type GoogleDataView = NonNullable<FunctionReturnType<typeof api.googleData.view>>;
+
+/** The Google data connections read here, with a chooser and totals on their cards. */
+export const GOOGLE_DATA = ["google_analytics"];
+
+const n = (value: number) => value.toLocaleString("en-US");
+
+function Figure({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="grid gap-0.5 rounded-lg border border-border bg-background/60 p-2.5">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="font-heading text-base text-foreground tabular-nums">{value}</span>
+      {note ? <span className="text-[10px] text-muted-foreground">{note}</span> : null}
+    </div>
+  );
+}
+
+function AnalyticsTotals({ data }: { data: AnalyticsSnapshot }) {
+  if (!data.days.length) return <p className="text-sm text-muted-foreground">No visits recorded in the last 28 days.</p>;
+  return (
+    <div className="grid gap-3">
+      <p className="text-xs text-muted-foreground">
+        {data.from} to {data.to}, as Google Analytics reports it.
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        <Figure label="Sessions" value={n(data.totals.sessions)} />
+        <Figure label="Users" value={n(data.totals.users)} note="daily users added up" />
+        <Figure label="Key events" value={n(data.totals.keyEvents)} />
+      </div>
+      {data.sources.length ? (
+        <div className="grid gap-1">
+          <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Top sources</h4>
+          <ul className="grid gap-0.5 text-sm">
+            {data.sources.slice(0, 5).map((row) => (
+              <li key={row.name} className="flex min-w-0 justify-between gap-3">
+                <span className="truncate text-foreground">{row.name}</span>
+                <span className="shrink-0 text-muted-foreground tabular-nums">{n(row.sessions)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {data.pages.length ? (
+        <div className="grid gap-1">
+          <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Top landing pages</h4>
+          <ul className="grid gap-0.5 text-sm">
+            {data.pages.slice(0, 5).map((row) => (
+              <li key={row.path} className="flex min-w-0 justify-between gap-3">
+                <span className="truncate text-foreground">{row.path}</span>
+                <span className="shrink-0 text-muted-foreground tabular-nums">{n(row.sessions)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {data.events.length ? (
+        <p className="text-xs text-muted-foreground">
+          Key events:{" "}
+          {data.events
+            .slice(0, 5)
+            .map((row) => `${row.name} (${n(row.count)})`)
+            .join(", ")}
+          .
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** The chooser and the last totals for one Google data connection. */
+export function GoogleDataPanel({ provider, view, onChoose }: { provider: string; view: GoogleDataView; onChoose: (choiceId: string) => Promise<unknown> }) {
+  const [pick, setPick] = useState(view.selected?.id ?? "");
+  const [busy, setBusy] = useState(false);
+  const changing = !view.selected || pick !== view.selected.id;
+  return (
+    <div className="grid gap-3 rounded-xl border border-border/70 bg-muted/30 p-3 text-sm" data-google-data={provider}>
+      {view.choices.length === 0 ? (
+        <p className="text-muted-foreground">No {view.noun} found for this Google account yet. Refresh after you are given access to one.</p>
+      ) : view.canChoose ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="grid min-w-0 flex-1 gap-1">
+            <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Reads this {view.noun}</span>
+            <select value={pick} onChange={(event) => setPick(event.target.value)} className="h-9 min-w-0 rounded-lg border border-border bg-background px-2 text-sm text-foreground">
+              {!view.selected ? <option value="">Choose a {view.noun}</option> : null}
+              {view.choices.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {changing && pick ? (
+            <Button
+              type="button"
+              size="sm"
+              className="self-end"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  await onChoose(pick);
+                } catch (error) {
+                  showError(error);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Use this {view.noun}
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-muted-foreground">{view.selected ? `Reads ${view.selected.label}.` : `An Owner or Admin chooses which ${view.noun} it reads.`}</p>
+      )}
+      {view.summary && provider === "google_analytics" ? (
+        <AnalyticsTotals data={view.summary.data as AnalyticsSnapshot} />
+      ) : view.selected ? (
+        <p className="text-muted-foreground">Reading the totals now.</p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Feeds one card's panel from Convex. */
+export function GoogleDataCard({ workspaceId, provider }: { workspaceId: Id<"workspaces">; provider: string }) {
+  const view = useQuery(api.googleData.view, { workspaceId, provider });
+  const choose = useMutation(api.googleData.choose);
+  if (!view) return null;
+  return <GoogleDataPanel provider={provider} view={view} onChoose={(choiceId) => choose({ workspaceId, provider, choiceId })} />;
+}

@@ -10,8 +10,8 @@ describe("privacy policy stays inside verified behavior", () => {
   it("names the operator and the Lanham address", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Effective: November 14, 2026");
-    expect(text).toContain("Last updated: November 14, 2026");
+    expect(text).toContain("Effective: November 15, 2026");
+    expect(text).toContain("Last updated: November 15, 2026");
   });
 
   it("says plainly where GPT, Gemini and image work goes, and what may be kept", () => {
@@ -63,6 +63,12 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Disconnecting the account in Connections deletes the token and every saved read straight away");
     expect(text).toContain("Only Vistrial uses it; it is never shown to other customers");
     expect(text).toContain("Uploaded results files are deleted as soon as they are read");
+  });
+
+  it("says what is read from Google Analytics, that it is totals only, and how it is deleted", () => {
+    expect(text).toContain("M. Connected Google data");
+    expect(text).toContain("It never reads individual visitors, and it never changes a property");
+    expect(text).toContain("Disconnecting in Connections deletes the token, the chosen property and every saved total straight away");
   });
 
   it("says what is read from HighLevel, what about leads is kept, and how it is deleted", () => {
@@ -123,7 +129,7 @@ describe("privacy policy stays inside verified behavior", () => {
     });
     expect(on).toMatch(/not used to train/i);
     expect(on).toMatch(/encrypted at rest/i);
-    expect(on).toContain("Effective: November 14, 2026");
+    expect(on).toContain("Effective: November 15, 2026");
     expect(on).toContain("Registered agent, Maryland");
   });
 });

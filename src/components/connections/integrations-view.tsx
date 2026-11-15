@@ -89,6 +89,8 @@ export const SYNC_WORDS: Record<string, string> = {
   rate_limited: "asked Vistrial to slow down",
   provider_down: "was not answering",
   connection_failed: "could not be reached",
+  choose: "is waiting for you to choose what it reads",
+  nothing_to_read: "has nothing this account can open",
 };
 
 function ProviderCard({
@@ -97,6 +99,7 @@ function ProviderCard({
   canRefresh,
   note,
   actions,
+  body,
 }: {
   provider: IntegrationView;
   canManage: boolean;
@@ -105,6 +108,8 @@ function ProviderCard({
   /** One short line shown while connected. */
   note?: string;
   actions: IntegrationsActions;
+  /** What a connected card shows above its footer, such as a chooser and totals. */
+  body?: React.ReactNode;
 }) {
   const [busy, setBusy] = useState<"connect" | "refresh" | "disconnect" | null>(null);
   const status = badge(provider);
@@ -132,6 +137,8 @@ function ProviderCard({
       </header>
 
       <p className="text-sm text-muted-foreground">{provider.reads}</p>
+
+      {connection && body ? body : null}
 
       <footer className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-3 text-sm">
         {connection ? (
@@ -217,8 +224,8 @@ export function IntegrationsView({
   /** What a sign-in came back with: the provider and the outcome. */
   returned?: { provider: string | null; outcome: string } | null;
   actions: IntegrationsActions;
-  /** More to show after a group's cards, by group. */
-  extra?: { group?: Partial<Record<IntegrationView["group"], React.ReactNode>> };
+  /** More to show after a group's cards, by group; and inside a connected provider's card, by key. */
+  extra?: { group?: Partial<Record<IntegrationView["group"], React.ReactNode>>; card?: (key: string) => React.ReactNode };
 }) {
   const outcome = returned ? OUTCOME_WORDS[returned.outcome] : null;
   const returnedName = providers.find((row) => row.key === returned?.provider)?.name ?? "That account";
@@ -246,7 +253,7 @@ export function IntegrationsView({
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {rows.map((row) => (
-                <ProviderCard key={row.key} provider={row} canManage={canManage} canRefresh={canRefresh && refreshable.includes(row.key)} note={notes[row.key]} actions={actions} />
+                <ProviderCard key={row.key} provider={row} canManage={canManage} canRefresh={canRefresh && refreshable.includes(row.key)} note={notes[row.key]} actions={actions} body={row.connection?.status === "connected" ? extra?.card?.(row.key) : null} />
               ))}
             </div>
             {extra?.group?.[group.key]}

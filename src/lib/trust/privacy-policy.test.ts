@@ -68,7 +68,8 @@ describe("privacy policy stays inside verified behavior", () => {
   it("says what is read from Google Analytics and Search Console, that it is totals only, and how it is deleted", () => {
     expect(text).toContain("M. Connected Google data");
     expect(text).toContain("It never reads individual visitors, and it never changes a property");
-    expect(text).toContain("Disconnecting in Connections deletes the token, the chosen property, site or account and every saved total straight away");
+    expect(text).toContain("Disconnecting in Connections deletes the token, the chosen property, site, account or location and every saved total straight away");
+    expect(text).toContain("It never edits the listing, publishes posts, or replies to reviews");
     expect(text).toContain("It never creates, edits, pauses or pays for ads, never changes budgets or bids, and never adds or removes users");
     expect(text).toContain("It never submits sitemaps, requests removals, or changes a site or its users");
   });

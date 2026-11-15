@@ -10,6 +10,7 @@ import type { MutationCtx } from "../../../_generated/server";
 import { GROWTH_ARCHITECT } from "../../../catalog";
 import { canonicalUrl } from "../../sourceRefs";
 import { analyticsLine, type AnalyticsSnapshot } from "./analytics";
+import { profileLine, type ProfileSnapshot } from "./businessProfile";
 import { adsLine, fmtMoney, type AdsSnapshot } from "./googleAds";
 import { pct, searchLine, type SearchSnapshot } from "./searchConsole";
 
@@ -102,10 +103,35 @@ function rowsFor(provider: string, connection: Doc<"integrationConnections">, da
         })),
     ];
   }
+  if (provider === "business_profile") {
+    const snapshot = data as ProfileSnapshot;
+    const base = `https://business.google.com/?vistrial=profile&location=${encodeURIComponent(selected.id)}`;
+    return [
+      { url: base, title: `Your Google Business Profile: ${selected.label} (28 days)`, excerpt: profileLine(snapshot) },
+      ...(snapshot.keywords.length
+        ? [
+            {
+              url: `${base}&view=keywords`,
+              title: `Searches that showed your listing: ${selected.label} (${snapshot.month})`,
+              excerpt:
+                snapshot.keywords
+                  .slice(0, 8)
+                  .map((row) => `"${row.term}" ${row.count !== null ? n(row.count) : `fewer than ${row.fewerThan ?? "a few"}`}`)
+                  .join("; ") + ". As reported by Google Business Profile.",
+            },
+          ]
+        : []),
+    ];
+  }
   return [];
 }
 
-const LABEL: Record<string, string> = { google_analytics: "Your Google Analytics", search_console: "Your Google Search results", google_ads: "Your Google Ads" };
+const LABEL: Record<string, string> = {
+  google_analytics: "Your Google Analytics",
+  search_console: "Your Google Search results",
+  google_ads: "Your Google Ads",
+  business_profile: "Your Google Business Profile",
+};
 
 /** Saves (or refreshes) each granted Google data connection's totals as sources on the project. */
 export async function saveGoogleSourcesFor(

@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { analyticsChoices, analyticsLine, summarizeAnalytics } from "./lib/integrations/google/analytics";
+import { accountNames, locationChoices, profileLine, profileQueries, summarizeProfile } from "./lib/integrations/google/businessProfile";
 import { accountChoice, adsLine, customerIds, summarizeAds } from "./lib/integrations/google/googleAds";
 import { saveGoogleSourcesFor } from "./lib/integrations/google/research";
 import { searchChoices, searchLine, searchRequests, summarizeSearch } from "./lib/integrations/google/searchConsole";
@@ -387,5 +388,122 @@ describe("Google Ads", () => {
       vi.unstubAllEnvs();
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("Google Business Profile", () => {
+  const ACCOUNTS = { accounts: [{ name: "accounts/1" }, { name: "bad" }] };
+  const LOCATIONS = { locations: [{ name: "locations/77", title: "Northpeak Agency", storefrontAddress: { locality: "Denver" } }] };
+  const series = (dailyMetric: string, values: [number, number, number, string][]) => ({
+    dailyMetric,
+    timeSeries: { datedValues: values.map(([year, month, day, value]) => ({ date: { year, month, day }, value })) },
+  });
+  const DAILY = {
+    multiDailyMetricTimeSeries: [
+      {
+        dailyMetricTimeSeries: [
+          series("BUSINESS_IMPRESSIONS_MOBILE_SEARCH", [[2026, 11, 13, "40"]]),
+          series("BUSINESS_IMPRESSIONS_DESKTOP_MAPS", [
+            [2026, 11, 13, "10"],
+            [2026, 11, 12, "5"],
+          ]),
+          series("CALL_CLICKS", [[2026, 11, 13, "3"]]),
+          series("BUSINESS_DIRECTION_REQUESTS", [[2026, 11, 12, "2"]]),
+          series("WEBSITE_CLICKS", [[2026, 11, 13, "7"]]),
+        ],
+      },
+    ],
+  };
+  const KEYWORDS = {
+    searchKeywordsCounts: [
+      { searchKeyword: "marketing agency denver", insightsValue: { value: "120" } },
+      { searchKeyword: "northpeak", insightsValue: { threshold: "15" } },
+    ],
+  };
+
+  it("names locations by title and town, and adds views, calls, directions and clicks, with last month's search terms", () => {
+    expect(accountNames(ACCOUNTS)).toEqual(["accounts/1"]);
+    expect(locationChoices(LOCATIONS)).toEqual([{ id: "locations/77", label: "Northpeak Agency, Denver" }]);
+    const query = profileQueries(NOW);
+    expect(query).toMatchObject({ from: "2026-10-17", to: "2026-11-13", month: "2026-10" });
+    expect(query.daily).toContain("dailyMetrics=CALL_CLICKS");
+    const snapshot = summarizeProfile(DAILY, KEYWORDS, query);
+    expect(snapshot.totals).toEqual({ views: 55, searchViews: 40, mapsViews: 15, calls: 3, directions: 2, websiteClicks: 7 });
+    expect(snapshot.days).toEqual([
+      { date: "2026-11-12", views: 5, actions: 2 },
+      { date: "2026-11-13", views: 50, actions: 10 },
+    ]);
+    expect(snapshot.keywords).toEqual([
+      { term: "marketing agency denver", count: 120, fewerThan: null },
+      { term: "northpeak", count: null, fewerThan: 15 },
+    ]);
+    expect(profileLine(snapshot)).toContain("55 views (40 on Search, 15 on Maps), 3 calls, 2 direction requests and 7 website clicks");
+  });
+
+  async function connected() {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity(person("dana"));
+    const workspaceId = await owner.mutation(api.workspace.create, { name: "Northpeak" });
+    await t.run((ctx) =>
+      ctx.db.insert("integrationConnections", {
+        workspaceId,
+        provider: "business_profile",
+        status: "connected",
+        accessToken: "gbp-token",
+        tokenExpiresAt: NOW + DAY,
+        scopes: ["https://www.googleapis.com/auth/business.manage"],
+        accountId: "sub-1",
+        accountLabel: "dana@example.com",
+        connectedBy: "dana",
+        connectedAt: NOW,
+      }),
+    );
+    return { t, owner, workspaceId };
+  }
+
+  function stub(answer: (url: URL) => Response) {
+    const methods: string[] = [];
+    vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
+      methods.push(init?.method ?? "GET");
+      return answer(new URL(input));
+    });
+    return methods;
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    vi.stubEnv("GOOGLE_OAUTH_CLIENT_ID", "client-id");
+    vi.stubEnv("GOOGLE_OAUTH_CLIENT_SECRET", "client-secret");
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("says it is waiting for Google's approval while the APIs refuse, whether by 403 or a zero quota", async () => {
+    for (const status of [403, 429]) {
+      const { t, owner, workspaceId } = await connected();
+      stub(() => new Response("{}", { status }));
+      expect(await t.action(internal.googleData.syncOne, { workspaceId, provider: "business_profile" })).toEqual({ code: "awaiting_approval" });
+      expect(await owner.query(api.googleData.view, { workspaceId, provider: "business_profile" })).toMatchObject({ lastSyncCode: "awaiting_approval", summary: null });
+    }
+  });
+
+  it("once approved, reads the chosen location with GET requests only", async () => {
+    const { t, owner, workspaceId } = await connected();
+    const methods = stub((url) => {
+      if (url.hostname === "mybusinessaccountmanagement.googleapis.com") return Response.json(ACCOUNTS);
+      if (url.hostname === "mybusinessbusinessinformation.googleapis.com") return Response.json(LOCATIONS);
+      if (url.pathname.endsWith(":fetchMultiDailyMetricsTimeSeries"))
+        return url.pathname === "/v1/locations/77:fetchMultiDailyMetricsTimeSeries" ? Response.json(DAILY) : new Response("{}", { status: 404 });
+      return Response.json(KEYWORDS);
+    });
+    expect(await t.action(internal.googleData.syncOne, { workspaceId, provider: "business_profile" })).toEqual({ code: "ok" });
+    const view = await owner.query(api.googleData.view, { workspaceId, provider: "business_profile" });
+    expect(view).toMatchObject({ noun: "location", selected: { id: "locations/77", label: "Northpeak Agency, Denver" } });
+    expect(view!.summary!.data).toMatchObject({ totals: { views: 55, calls: 3 } });
+    expect(methods.every((method) => method === "GET")).toBe(true);
   });
 });

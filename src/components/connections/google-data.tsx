@@ -9,13 +9,14 @@ import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { AnalyticsSnapshot } from "../../../convex/lib/integrations/google/analytics";
+import type { ProfileSnapshot } from "../../../convex/lib/integrations/google/businessProfile";
 import { fmtMoney, type AdsSnapshot } from "../../../convex/lib/integrations/google/googleAds";
 import type { SearchRow, SearchSnapshot } from "../../../convex/lib/integrations/google/searchConsole";
 
 export type GoogleDataView = NonNullable<FunctionReturnType<typeof api.googleData.view>>;
 
 /** The Google data connections read here, with a chooser and totals on their cards. */
-export const GOOGLE_DATA = ["google_analytics", "search_console", "google_ads"];
+export const GOOGLE_DATA = ["google_analytics", "search_console", "google_ads", "business_profile"];
 
 const n = (value: number) => value.toLocaleString("en-US");
 
@@ -159,6 +160,37 @@ function AdsTotals({ data }: { data: AdsSnapshot }) {
   );
 }
 
+function ProfileTotals({ data }: { data: ProfileSnapshot }) {
+  const t = data.totals;
+  return (
+    <div className="grid gap-3">
+      <p className="text-xs text-muted-foreground">
+        {data.from} to {data.to}, as Google Business Profile reports it.
+      </p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Figure label="Views" value={n(t.views)} note={`${n(t.searchViews)} Search · ${n(t.mapsViews)} Maps`} />
+        <Figure label="Calls" value={n(t.calls)} />
+        <Figure label="Directions" value={n(t.directions)} />
+        <Figure label="Website clicks" value={n(t.websiteClicks)} />
+      </div>
+      {data.keywords.length ? (
+        <p className="text-xs text-muted-foreground">
+          Searches that showed the listing in {data.month}:{" "}
+          {data.keywords
+            .slice(0, 6)
+            .map((row) => `"${row.term}" (${row.count !== null ? n(row.count) : `under ${row.fewerThan ?? "a few"}`})`)
+            .join(", ")}
+          .
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Words for a connection Google has not opened yet. */
+export const AWAITING_APPROVAL =
+  "Waiting for Google's approval. Google Business Profile's data opens only after Google approves Vistrial's access. There is nothing for you to do; this card fills once it does.";
+
 /** The chooser and the last totals for one Google data connection. */
 export function GoogleDataPanel({ provider, view, onChoose }: { provider: string; view: GoogleDataView; onChoose: (choiceId: string) => Promise<unknown> }) {
   const [pick, setPick] = useState(view.selected?.id ?? "");
@@ -166,7 +198,9 @@ export function GoogleDataPanel({ provider, view, onChoose }: { provider: string
   const changing = !view.selected || pick !== view.selected.id;
   return (
     <div className="grid gap-3 rounded-xl border border-border/70 bg-muted/30 p-3 text-sm" data-google-data={provider}>
-      {view.choices.length === 0 ? (
+      {view.lastSyncCode === "awaiting_approval" && !view.summary ? (
+        <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-foreground">{AWAITING_APPROVAL}</p>
+      ) : view.choices.length === 0 ? (
         <p className="text-muted-foreground">No {view.noun} found for this Google account yet. Refresh after you are given access to one.</p>
       ) : view.canChoose ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -211,7 +245,9 @@ export function GoogleDataPanel({ provider, view, onChoose }: { provider: string
         <SearchTotals data={view.summary.data as SearchSnapshot} />
       ) : view.summary && provider === "google_ads" ? (
         <AdsTotals data={view.summary.data as AdsSnapshot} />
-      ) : view.selected ? (
+      ) : view.summary && provider === "business_profile" ? (
+        <ProfileTotals data={view.summary.data as ProfileSnapshot} />
+      ) : view.selected && view.lastSyncCode !== "awaiting_approval" ? (
         <p className="text-muted-foreground">Reading the totals now.</p>
       ) : null}
     </div>

@@ -91,6 +91,7 @@ export const SYNC_WORDS: Record<string, string> = {
   connection_failed: "could not be reached",
   choose: "is waiting for you to choose what it reads",
   nothing_to_read: "has nothing this account can open",
+  awaiting_approval: "is waiting for Google's approval",
 };
 
 function ProviderCard({

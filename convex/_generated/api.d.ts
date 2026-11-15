@@ -139,6 +139,7 @@ import type * as lib_imageModels from "../lib/imageModels.js";
 import type * as lib_intake from "../lib/intake.js";
 import type * as lib_integrations_bookings from "../lib/integrations/bookings.js";
 import type * as lib_integrations_google_analytics from "../lib/integrations/google/analytics.js";
+import type * as lib_integrations_google_businessProfile from "../lib/integrations/google/businessProfile.js";
 import type * as lib_integrations_google_googleAds from "../lib/integrations/google/googleAds.js";
 import type * as lib_integrations_google_research from "../lib/integrations/google/research.js";
 import type * as lib_integrations_google_searchConsole from "../lib/integrations/google/searchConsole.js";
@@ -474,6 +475,7 @@ declare const fullApi: ApiFromModules<{
   "lib/intake": typeof lib_intake;
   "lib/integrations/bookings": typeof lib_integrations_bookings;
   "lib/integrations/google/analytics": typeof lib_integrations_google_analytics;
+  "lib/integrations/google/businessProfile": typeof lib_integrations_google_businessProfile;
   "lib/integrations/google/googleAds": typeof lib_integrations_google_googleAds;
   "lib/integrations/google/research": typeof lib_integrations_google_research;
   "lib/integrations/google/searchConsole": typeof lib_integrations_google_searchConsole;

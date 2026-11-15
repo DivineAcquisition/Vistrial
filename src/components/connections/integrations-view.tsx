@@ -35,7 +35,7 @@ export type IntegrationsActions = {
 };
 
 const GROUPS: { key: IntegrationView["group"]; title: string; words: string }[] = [
-  { key: "google", title: "Google", words: "Your ads, site traffic, search results and business listing." },
+  { key: "google", title: "Google", words: "Your ads, site traffic, search results, business listing and the files you pick." },
   { key: "calendar", title: "Calendar", words: "Booked calls, and who cancelled or did not show where the calendar records it." },
   { key: "notes", title: "AI note takers", words: "Call transcripts and summaries from the tool that records your calls." },
 ];
@@ -44,6 +44,7 @@ const LOGO: Record<string, string> = {
   google_ads: "google-ads",
   google_analytics: "google-analytics",
   google_calendar: "google-calendar",
+  google_drive: "google-drive",
   fathom: "fathom",
   fireflies: "fireflies",
   calendly: "calendly",
@@ -91,6 +92,7 @@ export const SYNC_WORDS: Record<string, string> = {
   connection_failed: "could not be reached",
   choose: "is waiting for you to choose what it reads",
   nothing_to_read: "has nothing this account can open",
+  awaiting_approval: "is waiting for Google's approval",
 };
 
 function ProviderCard({

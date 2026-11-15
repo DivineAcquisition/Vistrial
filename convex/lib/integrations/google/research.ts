@@ -10,6 +10,9 @@ import type { MutationCtx } from "../../../_generated/server";
 import { GROWTH_ARCHITECT } from "../../../catalog";
 import { canonicalUrl } from "../../sourceRefs";
 import { analyticsLine, type AnalyticsSnapshot } from "./analytics";
+import { profileLine, type ProfileSnapshot } from "./businessProfile";
+import { adsLine, fmtMoney, type AdsSnapshot } from "./googleAds";
+import { pct, searchLine, type SearchSnapshot } from "./searchConsole";
 
 export type GoogleKnown = { key: string; label: string; value: string; recordedAt: number };
 
@@ -52,10 +55,83 @@ function rowsFor(provider: string, connection: Doc<"integrationConnections">, da
         : []),
     ];
   }
+  if (provider === "search_console") {
+    const snapshot = data as SearchSnapshot;
+    const base = `https://search.google.com/search-console/performance/search-analytics?resource_id=${encodeURIComponent(selected.id)}`;
+    return [
+      { url: base, title: `Your Google Search results: ${selected.label} (28 days)`, excerpt: searchLine(snapshot) },
+      ...(snapshot.queries.length
+        ? [
+            {
+              url: `${base}&vistrial=queries`,
+              title: `Your top search queries: ${selected.label}`,
+              excerpt:
+                snapshot.queries
+                  .slice(0, 5)
+                  .map((row) => `"${row.name}": ${n(row.clicks)} clicks, ${n(row.impressions)} impressions, click rate ${pct(row.ctr)}, position ${row.position ?? "n/a"}`)
+                  .join("; ") + ". As reported by Search Console.",
+            },
+          ]
+        : []),
+      ...(snapshot.pages.length
+        ? [
+            {
+              url: `${base}&vistrial=pages`,
+              title: `Your top pages in search: ${selected.label}`,
+              excerpt:
+                snapshot.pages
+                  .slice(0, 5)
+                  .map((row) => `${row.name}: ${n(row.clicks)} clicks, ${n(row.impressions)} impressions`)
+                  .join("; ") + ". As reported by Search Console.",
+            },
+          ]
+        : []),
+    ];
+  }
+  if (provider === "google_ads") {
+    const snapshot = data as AdsSnapshot;
+    const base = `https://ads.google.com/aw/campaigns?vistrial=ads&account=${selected.id}`;
+    return [
+      { url: base, title: `Your Google Ads: ${selected.label} (last 30 days)`, excerpt: adsLine(snapshot) },
+      ...snapshot.campaigns
+        .filter((row) => row.spend > 0)
+        .slice(0, 5)
+        .map((row) => ({
+          url: `${base}&campaign=${encodeURIComponent(row.id)}`,
+          title: `Your Google Ads campaign: ${row.name}`,
+          excerpt: `${fmtMoney(row.spend, snapshot.currency)} spent, ${n(row.impressions)} impressions, ${n(row.clicks)} clicks, ${n(row.conversions)} conversions (value ${fmtMoney(row.value, snapshot.currency)}), ${row.type} campaign, ${row.status}. As reported by Google Ads.`,
+        })),
+    ];
+  }
+  if (provider === "business_profile") {
+    const snapshot = data as ProfileSnapshot;
+    const base = `https://business.google.com/?vistrial=profile&location=${encodeURIComponent(selected.id)}`;
+    return [
+      { url: base, title: `Your Google Business Profile: ${selected.label} (28 days)`, excerpt: profileLine(snapshot) },
+      ...(snapshot.keywords.length
+        ? [
+            {
+              url: `${base}&view=keywords`,
+              title: `Searches that showed your listing: ${selected.label} (${snapshot.month})`,
+              excerpt:
+                snapshot.keywords
+                  .slice(0, 8)
+                  .map((row) => `"${row.term}" ${row.count !== null ? n(row.count) : `fewer than ${row.fewerThan ?? "a few"}`}`)
+                  .join("; ") + ". As reported by Google Business Profile.",
+            },
+          ]
+        : []),
+    ];
+  }
   return [];
 }
 
-const LABEL: Record<string, string> = { google_analytics: "Your Google Analytics" };
+const LABEL: Record<string, string> = {
+  google_analytics: "Your Google Analytics",
+  search_console: "Your Google Search results",
+  google_ads: "Your Google Ads",
+  business_profile: "Your Google Business Profile",
+};
 
 /** Saves (or refreshes) each granted Google data connection's totals as sources on the project. */
 export async function saveGoogleSourcesFor(
@@ -107,6 +183,70 @@ export async function saveGoogleSourcesFor(
     }
     if (rows.length)
       known.push({ key: `connection:${connection.provider}`, label: `${LABEL[connection.provider]}: ${connection.selected.label}`, value: rows[0].excerpt, recordedAt: summary.syncedAt });
+  }
+  return known;
+}
+
+/** Where a picked file opens in Google: the source link a report cites. */
+export function driveFileUrl(file: Pick<Doc<"driveFiles">, "fileId" | "kind">) {
+  const path = file.kind === "doc" ? "document" : file.kind === "sheet" ? "spreadsheets" : file.kind === "slides" ? "presentation" : null;
+  return path ? `https://docs.google.com/${path}/d/${file.fileId}` : `https://drive.google.com/file/d/${file.fileId}/view`;
+}
+
+/** Most picked files cited in one piece of work, newest first. */
+const DRIVE_SOURCES = 5;
+
+/** Saves the files picked in Google Drive and granted to this agent as "Your file" sources on the project. */
+export async function saveDriveSourcesFor(
+  ctx: MutationCtx,
+  args: { workspaceId: Id<"workspaces">; project: Doc<"researchProjects">; runId: Id<"agentRuns">; agentSlug: string },
+): Promise<GoogleKnown[]> {
+  if (args.project.clientId) return [];
+  const connection = await ctx.db
+    .query("integrationConnections")
+    .withIndex("by_workspace_provider", (q) => q.eq("workspaceId", args.workspaceId).eq("provider", "google_drive"))
+    .unique();
+  if (!connection) return [];
+  const files = (
+    await ctx.db
+      .query("driveFiles")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .order("desc")
+      .take(50)
+  )
+    .filter((row) => (row.agents ?? [GROWTH_ARCHITECT, "sales-conversion"]).includes(args.agentSlug))
+    .slice(0, DRIVE_SOURCES);
+  const known: GoogleKnown[] = [];
+  for (const file of files) {
+    const url = driveFileUrl(file);
+    const canonical = canonicalUrl(url) ?? url;
+    const existing = await ctx.db
+      .query("sourceRefs")
+      .withIndex("by_workspace_project_canonical", (q) => q.eq("workspaceId", args.workspaceId).eq("projectId", args.project._id).eq("canonicalUrl", canonical))
+      .unique();
+    const excerpt = file.text.replace(/\s+/g, " ").slice(0, 300);
+    const fields = {
+      title: `Your file: ${file.name}`.slice(0, 200),
+      excerpt,
+      publisher: "Your business",
+      observedAt: file.readAt,
+      runId: args.runId,
+      limitation: "A document the business picked from its own Google Drive. Its claims are the business's own, not checked by Vistrial.",
+    };
+    if (existing) await ctx.db.patch(existing._id, fields);
+    else
+      await ctx.db.insert("sourceRefs", {
+        workspaceId: args.workspaceId,
+        projectId: args.project._id,
+        origin: "supplied",
+        platform: "customerData",
+        kind: "dataset",
+        url,
+        canonicalUrl: canonical,
+        availability: "available",
+        ...fields,
+      });
+    known.push({ key: `drive:${file._id}`, label: `Your file: ${file.name}`, value: excerpt, recordedAt: file.readAt });
   }
   return known;
 }

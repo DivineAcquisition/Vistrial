@@ -363,7 +363,16 @@ async function deleteReads(ctx: MutationCtx, workspaceId: Id<"workspaces">, key:
     .withIndex("by_workspace_provider", (q) => q.eq("workspaceId", workspaceId).eq("provider", key))
     .take(DELETE_BATCH);
   for (const row of events) await ctx.db.delete(row._id);
-  return snapshots.length < DELETE_BATCH && events.length < DELETE_BATCH;
+  // Files picked through Google Drive: their names and text go with the connection.
+  const files =
+    key === "google_drive"
+      ? await ctx.db
+          .query("driveFiles")
+          .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+          .take(DELETE_BATCH)
+      : [];
+  for (const row of files) await ctx.db.delete(row._id);
+  return snapshots.length < DELETE_BATCH && events.length < DELETE_BATCH && files.length < DELETE_BATCH;
 }
 
 /**

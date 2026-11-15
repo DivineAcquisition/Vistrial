@@ -5,7 +5,7 @@
  * totals for that one, saves them as the connection's summary, and refreshes them on a schedule. Nothing is
  * ever changed at Google. Disconnecting deletes the choice, the summary and the token (integrations.ts).
  *
- * Built so far: Google Analytics 4. Each further product adds one entry to READERS.
+ * Built: Google Analytics 4, Search Console, Google Ads and Business Profile, one entry each in READERS.
  */
 
 import { v } from "convex/values";
@@ -17,6 +17,9 @@ import { liveToken } from "./integrationActions";
 import { adminMutation, memberAction, workspaceQuery } from "./lib/builders";
 import { notAllowed, userError } from "./lib/errors";
 import { ANALYTICS, analyticsChoices, analyticsRequests, summarizeAnalytics, type Choice } from "./lib/integrations/google/analytics";
+import { PROFILE, accountNames, isLocationName, locationChoices, profileQueries, summarizeProfile } from "./lib/integrations/google/businessProfile";
+import { ACCOUNT_QUERY, ADS, CAMPAIGN_QUERY, accountChoice, customerIds, isCustomerId, searchPage, summarizeAds } from "./lib/integrations/google/googleAds";
+import { SEARCH, isSiteId, searchChoices, searchRequests, summarizeSearch } from "./lib/integrations/google/searchConsole";
 import { isAdmin } from "./lib/roles";
 
 const TIMEOUT_MS = 20_000;
@@ -48,7 +51,7 @@ type Reader = {
   /** What the person chooses, in words: "property", "site", "account", "location". */
   noun: string;
   choices: (token: string) => Promise<{ ok: true; choices: Choice[] } | { ok: false; code: string }>;
-  read: (token: string, selectedId: string) => Promise<{ ok: true; summary: unknown } | { ok: false; code: string }>;
+  read: (token: string, selectedId: string, now: number) => Promise<{ ok: true; summary: unknown } | { ok: false; code: string }>;
 };
 
 export const READERS: Record<string, Reader> = {
@@ -70,7 +73,90 @@ export const READERS: Record<string, Reader> = {
       return { ok: true, summary: summarizeAnalytics(answers as Parameters<typeof summarizeAnalytics>[0]) };
     },
   },
+  search_console: {
+    noun: "site",
+    choices: async (token) => {
+      const got = await googleCall(SEARCH.sites, token);
+      return got.ok ? { ok: true, choices: searchChoices(got.body) } : got;
+    },
+    read: async (token, site, now) => {
+      if (!isSiteId(site)) return { ok: false, code: "read_failed" };
+      const requests = searchRequests(now);
+      const answers: Record<string, unknown> = {};
+      for (const [key, body] of Object.entries(requests)) {
+        const got = await googleCall(SEARCH.query(site), token, body);
+        if (!got.ok) return got;
+        answers[key] = got.body;
+      }
+      return { ok: true, summary: summarizeSearch(answers as Parameters<typeof summarizeSearch>[0], requests.days) };
+    },
+  },
+  google_ads: {
+    noun: "account",
+    // Read methods only: listAccessibleCustomers and googleAds:search. Never a mutate.
+    choices: async (token) => {
+      const listed = await googleCall(ADS.customers(), token);
+      if (!listed.ok) return listed;
+      const choices: Choice[] = [];
+      for (const id of customerIds(listed.body)) {
+        const named = await googleCall(ADS.search(id), token, { query: ACCOUNT_QUERY });
+        // An account this person can list but not read (cancelled, or reached only through a manager) is left out.
+        if (!named.ok) {
+          if (named.code === "token_rejected") return named;
+          continue;
+        }
+        const choice = accountChoice(id, named.body);
+        if (choice) choices.push(choice);
+      }
+      return { ok: true, choices };
+    },
+    read: async (token, customerId) => {
+      if (!isCustomerId(customerId)) return { ok: false, code: "read_failed" };
+      const rows: Parameters<typeof summarizeAds>[0] = [];
+      let pageToken: string | null = null;
+      let truncated = false;
+      for (let page = 0; page < ADS.pages; page++) {
+        const got = await googleCall(ADS.search(customerId), token, { query: CAMPAIGN_QUERY, ...(pageToken ? { pageToken } : {}) });
+        if (!got.ok) return got;
+        const parsed = searchPage(got.body);
+        rows.push(...parsed.rows);
+        pageToken = parsed.next;
+        if (!pageToken) break;
+        if (page === ADS.pages - 1) truncated = true;
+      }
+      return { ok: true, summary: summarizeAds(rows, truncated) };
+    },
+  },
+  business_profile: {
+    noun: "location",
+    // Read requests only. Until Google approves the project's access these APIs refuse every call.
+    choices: async (token) => {
+      const accounts = await googleCall(PROFILE.accounts, token);
+      if (!accounts.ok) return awaitingApproval(accounts);
+      const choices: Choice[] = [];
+      for (const account of accountNames(accounts.body)) {
+        const got = await googleCall(PROFILE.locations(account), token);
+        if (!got.ok) return awaitingApproval(got);
+        choices.push(...locationChoices(got.body));
+      }
+      return { ok: true, choices: choices.slice(0, 200) };
+    },
+    read: async (token, location, now) => {
+      if (!isLocationName(location)) return { ok: false, code: "read_failed" };
+      const query = profileQueries(now);
+      const daily = await googleCall(PROFILE.daily(location, query.daily), token);
+      if (!daily.ok) return awaitingApproval(daily);
+      // Search keywords are monthly and may be empty for a small listing; a refusal here keeps the daily figures.
+      const keywords = await googleCall(PROFILE.keywords(location, query.keywords), token);
+      return { ok: true, summary: summarizeProfile(daily.body, keywords.ok ? keywords.body : null, query) };
+    },
+  },
 };
+
+/** Business Profile's APIs refuse (403) or allow no requests (429) until Google approves access: that is what the card says. */
+function awaitingApproval(result: { ok: false; code: string }) {
+  return result.code === "permission_missing" || result.code === "rate_limited" ? { ok: false as const, code: "awaiting_approval" } : result;
+}
 
 export function isGoogleDataProvider(key: string | null | undefined): key is keyof typeof READERS {
   return !!key && Object.hasOwn(READERS, key);
@@ -145,7 +231,7 @@ async function sync(ctx: ActionCtx, workspaceId: Id<"workspaces">, provider: str
     await ctx.runMutation(internal.integrations.recordSync, { connectionId: live.connection._id, code });
     return { code };
   }
-  const read = await reader.read(live.token, selected.id);
+  const read = await reader.read(live.token, selected.id, Date.now());
   if (read.ok) await ctx.runMutation(internal.integrations.saveSnapshot, { workspaceId, provider, kind: "summary", data: { selectedId: selected.id, ...(read.summary as object) } });
   const code = read.ok ? "ok" : read.code;
   await ctx.runMutation(internal.integrations.recordSync, { connectionId: live.connection._id, code });
@@ -222,6 +308,7 @@ export const view = workspaceQuery({
       noun: READERS[args.provider].noun,
       canChoose: isAdmin(ctx.member.role),
       selected: connection.selected ?? null,
+      lastSyncCode: connection.lastSyncCode ?? null,
       choices: (choices?.data as Choice[] | undefined) ?? [],
       summary: current ? { syncedAt: current.syncedAt, data: current.data as unknown } : null,
     };

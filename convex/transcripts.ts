@@ -69,36 +69,48 @@ export const add = workspaceMutation({
   handler: async (ctx, args) => {
     requireEditor(ctx.member.role);
     const forClient = await clientForNew(ctx, args.clientId);
-    if (!args.consentConfirmed) throw userError("Confirm that the call was recorded lawfully before adding its transcript.");
-    const title = clip(args.title, MAX_TITLE);
-    if (!title) throw userError("Give the call a title.");
-    if (args.callDate !== undefined && (!/^\d{4}-\d{2}-\d{2}$/.test(args.callDate) || Number.isNaN(Date.parse(`${args.callDate}T00:00:00Z`)))) {
-      throw userError("The call date is not a date.");
-    }
-    const cleaned = cleanTranscript(args.text);
-    if (!cleaned.ok) throw userError(TRANSCRIPT_REFUSAL_WORDS[cleaned.code], cleaned.code === "too_large" ? "limit" : "invalid");
-    const existing = await ctx.db
-      .query("callTranscripts")
-      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
-      .take(MAX_PER_WORKSPACE);
-    if (existing.length >= MAX_PER_WORKSPACE) throw userError(`An organization keeps up to ${MAX_PER_WORKSPACE} transcripts. Delete one you no longer need.`, "limit");
-    const id = await ctx.db.insert("callTranscripts", {
-      workspaceId: ctx.workspaceId,
-      ...forClient,
-      title,
-      tool: clip(args.tool, MAX_TOOL) || "Other",
-      callDate: args.callDate,
-      text: cleaned.text,
-      words: cleaned.words,
-      addedBy: ctx.identity.subject,
-      createdAt: Date.now(),
-      consentConfirmedAt: Date.now(),
-    });
-    // The audit row holds the id only, never the title or the text.
-    await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "transcript.added", subject: id });
-    return id;
+    return addTranscriptFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, forClient, ...args });
   },
 });
+
+/**
+ * Adds a transcript after the caller has checked the person may. Shared by the upload and paste form and by
+ * a file picked in Google Drive, so both keep the same consent, size and count rules.
+ */
+export async function addTranscriptFor(
+  ctx: MutationCtx,
+  args: { workspaceId: Id<"workspaces">; userId: string; forClient: { clientId?: Id<"clients"> }; title: string; tool: string; callDate?: string; text: string; consentConfirmed: boolean },
+) {
+  const forClient = args.forClient;
+  if (!args.consentConfirmed) throw userError("Confirm that the call was recorded lawfully before adding its transcript.");
+  const title = clip(args.title, MAX_TITLE);
+  if (!title) throw userError("Give the call a title.");
+  if (args.callDate !== undefined && (!/^\d{4}-\d{2}-\d{2}$/.test(args.callDate) || Number.isNaN(Date.parse(`${args.callDate}T00:00:00Z`)))) {
+    throw userError("The call date is not a date.");
+  }
+  const cleaned = cleanTranscript(args.text);
+  if (!cleaned.ok) throw userError(TRANSCRIPT_REFUSAL_WORDS[cleaned.code], cleaned.code === "too_large" ? "limit" : "invalid");
+  const existing = await ctx.db
+    .query("callTranscripts")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+    .take(MAX_PER_WORKSPACE);
+  if (existing.length >= MAX_PER_WORKSPACE) throw userError(`An organization keeps up to ${MAX_PER_WORKSPACE} transcripts. Delete one you no longer need.`, "limit");
+  const id = await ctx.db.insert("callTranscripts", {
+    workspaceId: args.workspaceId,
+    ...forClient,
+    title,
+    tool: clip(args.tool, MAX_TOOL) || "Other",
+    callDate: args.callDate,
+    text: cleaned.text,
+    words: cleaned.words,
+    addedBy: args.userId,
+    createdAt: Date.now(),
+    consentConfirmedAt: Date.now(),
+  });
+  // The audit row holds the id only, never the title or the text.
+  await writeAudit(ctx, { workspaceId: args.workspaceId, actorType: "user", actorId: args.userId, action: "transcript.added", subject: id });
+  return id;
+}
 
 export type TranscriptView = {
   id: Id<"callTranscripts">;

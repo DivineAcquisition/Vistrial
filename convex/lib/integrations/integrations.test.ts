@@ -86,7 +86,7 @@ describe("providers", () => {
   it("offers Connect only for a provider that is both set up and built", () => {
     const google = { GOOGLE_OAUTH_CLIENT_ID: "id", GOOGLE_OAUTH_CLIENT_SECRET: "s" };
     expect(readiness(PROVIDERS.google_calendar, google)).toBe("ready");
-    expect(readiness(PROVIDERS.google_ads, google)).toBe("not_built");
+    expect(readiness(PROVIDERS.fireflies, google)).toBe("not_built");
     expect(readiness(PROVIDERS.calendly, google)).toBe("not_set_up");
     expect(missingEnv(PROVIDERS.calendly, { CALENDLY_CLIENT_ID: "id" })).toEqual(["CALENDLY_CLIENT_SECRET"]);
   });

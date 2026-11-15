@@ -2,6 +2,7 @@
 
 import { useAction, useMutation, useQuery } from "convex/react";
 
+import { DriveFilesCard } from "@/components/connections/drive-files";
 import { GOOGLE_DATA, GoogleDataCard } from "@/components/connections/google-data";
 import { IntegrationsView } from "@/components/connections/integrations-view";
 import { TranscriptLead } from "@/components/connections/transcript-lead";
@@ -67,7 +68,7 @@ export function Integrations({
         refresh: (provider) => attempt(() => (GOOGLE_DATA.includes(provider) ? syncGoogle({ workspaceId, provider }) : syncNow({ workspaceId, provider }))),
       }}
       extra={{
-        card: (key) => (GOOGLE_DATA.includes(key) ? <GoogleDataCard workspaceId={workspaceId} provider={key} /> : null),
+        card: (key) => (GOOGLE_DATA.includes(key) ? <GoogleDataCard workspaceId={workspaceId} provider={key} /> : key === "google_drive" ? <DriveFilesCard workspaceId={workspaceId} /> : null),
         group: {
           notes: transcripts ? (
             <TranscriptsView

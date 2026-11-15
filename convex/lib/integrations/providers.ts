@@ -13,6 +13,7 @@ export const PROVIDER_KEYS = [
   "google_analytics",
   "search_console",
   "business_profile",
+  "google_drive",
   "google_calendar",
   "calendly",
   "fathom",
@@ -25,7 +26,7 @@ export function isProviderKey(value: string): value is ProviderKey {
 }
 
 export const GROUPS = {
-  google: { title: "Google", words: "Your ads, site traffic, search results and business listing." },
+  google: { title: "Google", words: "Your ads, site traffic, search results, business listing and the files you pick." },
   calendar: { title: "Calendar", words: "Booked calls, and who cancelled or did not show where the calendar records it." },
   notes: { title: "AI note takers", words: "Call transcripts and summaries from the tool that records your calls." },
 } as const;
@@ -141,6 +142,19 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     reads: "Views, calls, direction requests, website clicks and search terms for your listing.",
     never: "Edit the listing, post, or reply to reviews. Google offers no read-only permission, so Vistrial only makes read requests.",
     oauth: { app: "google", scopes: ["https://www.googleapis.com/auth/business.manage"] },
+    extraEnv: [],
+    webhook: null,
+    stage: "connect",
+  },
+  google_drive: {
+    key: "google_drive",
+    group: "google",
+    name: "Google Drive",
+    kind: "Files you pick",
+    reads: "The text of the files you pick: sales docs, scripts and call notes. Nothing else in your Drive.",
+    never: "See other files, list your Drive, or change, share or delete a file.",
+    // drive.file reaches only files a person picks with Vistrial; drive.readonly is restricted and is not asked for.
+    oauth: { app: "google", scopes: ["https://www.googleapis.com/auth/drive.file"] },
     extraEnv: [],
     webhook: null,
     stage: "connect",

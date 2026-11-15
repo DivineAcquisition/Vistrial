@@ -36,6 +36,7 @@ import {
   type ItemInput,
 } from "./lib/playbook";
 import { SALES_CONVERSION } from "./catalog";
+import { fileAgents } from "./googleDrive";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { youtubeId } from "./adapters/links";
 import { startRunFor } from "./runs";
@@ -340,6 +341,7 @@ const STUDY_TEXT = {
   badVideo: "That is not a YouTube video link.",
   tooMany: `A study reads at most ${STUDY_LIMITS.sources} sources at a time.`,
   notShared: "That call is not shared with Dealmaker.",
+  notSharedFile: "That Drive file is not shared with Dealmaker.",
   noOffer: "There is no approved offer analysis to read.",
   emptyText: "Pasted text needs a name and some words.",
 } as const;
@@ -359,6 +361,8 @@ export const study = workspaceMutation({
     website: v.optional(v.array(v.string())),
     /** Public YouTube videos, by link: read by Gemini from the link, never downloaded. */
     videos: v.optional(v.array(v.string())),
+    /** Files the business picked from its Google Drive and granted to Dealmaker, read as text. */
+    driveFileIds: v.optional(v.array(v.id("driveFiles"))),
   },
   handler: async (ctx, args) => {
     const forClient = await clientForNew(ctx, args.clientId);
@@ -373,6 +377,14 @@ export const study = workspaceMutation({
     for (const row of args.texts ?? []) {
       const label = clean(row.label, STUDY_LIMITS.label);
       const text = cleanBodyLong(row.text);
+      if (!label || !text) throw userError(STUDY_TEXT.emptyText);
+      sources.push({ type: "text", label, text });
+    }
+    for (const id of args.driveFileIds ?? []) {
+      const file = await ctx.db.get(id);
+      if (!file || file.workspaceId !== ctx.workspaceId || !fileAgents(file).includes(SALES_CONVERSION)) throw userError(STUDY_TEXT.notSharedFile);
+      const label = clean(file.name, STUDY_LIMITS.label);
+      const text = cleanBodyLong(file.text);
       if (!label || !text) throw userError(STUDY_TEXT.emptyText);
       sources.push({ type: "text", label, text });
     }

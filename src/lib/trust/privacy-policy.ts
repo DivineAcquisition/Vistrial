@@ -173,7 +173,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "The business profile: what the business sells, where, to whom, its offers, and its competitors.",
             "Research assignments: the questions, markets, keywords, competitors, and links the team asks Strategist to look at.",
             "Files the team uploads, such as the business's own ad or sales results. A results file is read once and deleted; only totals by date and by campaign or channel are kept. Columns that name a person or how to reach them, such as names, email addresses, phone numbers and street addresses, are skipped without being read.",
-            "Results from accounts the team connects, such as Meta ad results, booked-call counts from a calendar, sales pipeline and lead information from HighLevel, and totals from Google Analytics, Search Console, Google Ads and Google Business Profile, described in parts I, J, L and M below.",
+            "Results from accounts the team connects, such as Meta ad results, booked-call counts from a calendar, sales pipeline and lead information from HighLevel, totals from Google Analytics, Search Console, Google Ads and Google Business Profile, and the text of files picked from Google Drive, described in parts I, J, L and M below.",
             "Call transcripts the team uploads or pastes, described in part K below.",
             "Decisions about recommendations: which recommendations the team chose to try, when to check back, what the team says happened, and the business's own figures before and after.",
             "Lead lists the team imports, such as names, email addresses, phone numbers, and activity dates, and notes the team adds.",
@@ -290,6 +290,10 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "p",
           text: "Google Business Profile. Google offers no read-only permission for Business Profile either, so Vistrial only makes read requests. It lists the business locations the connected person manages, and for the chosen location reads daily views on Google Search and Maps, calls, direction requests and website clicks for 28 days, and last month's search terms that showed the listing, with their counts as Google reports them. It never edits the listing, publishes posts, or replies to reviews.",
+        },
+        {
+          kind: "p",
+          text: "Google Drive. Vistrial asks only for access to files you pick with it, not to your whole Drive. An Owner or Admin picks files in Google's own file picker, which opens with its own short-lived permission in their browser; Vistrial receives only which files were picked. From each picked Google Doc, Sheet, Slides or plain text file Vistrial keeps its name, its kind and its text, up to a limit, and never the file itself. It cannot see, list or open any other file, and it never changes, moves, shares or deletes a file. The text is shown to the workspace, read by the agents the Owner allows (Strategist and Dealmaker unless narrowed) and cited in their work as the business's own document, and, when someone chooses, read into Dealmaker's Playbook or added as a call transcript. Removing a file deletes its text; disconnecting Drive deletes every picked file's text and the token.",
         },
         {
           kind: "p",

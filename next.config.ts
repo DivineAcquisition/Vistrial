@@ -2,9 +2,10 @@ import type { NextConfig } from "next";
 
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  // apis.google.com and gstatic: Google's folder picker, used only on the Drive connection card.
+  // apis.google.com and gstatic: Google's file picker; accounts.google.com: Google's sign-in script, which gives
+  // the picker its own short token. Both used only on the Google Drive connection card.
   // clerk.vistrial.io: production sign-in. *.clerk.accounts.dev: the development instance.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://*.protect.clerk.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com https://www.gstatic.com https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://*.protect.clerk.com",
   "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
@@ -12,7 +13,7 @@ const ContentSecurityPolicy = [
   // data: react-pdf loads its layout engine (WebAssembly) from an inline data URL, to draw PDFs in the browser.
   "connect-src 'self' data: https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://clerk-telemetry.com https://*.clerk-telemetry.com https://*.protect.clerk.com https://*.protect.clerk.com:* https://*.client.protect.clerk.com https://*.client.protect.clerk.com:*",
   // youtube-nocookie, tiktok and instagram: official embeds on the Research Board, loaded only when a person clicks.
-  "frame-src 'self' https://www.youtube-nocookie.com https://www.tiktok.com https://www.instagram.com https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://challenges.cloudflare.com https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev https://*.protect.clerk.com",
+  "frame-src 'self' https://www.youtube-nocookie.com https://www.tiktok.com https://www.instagram.com https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://accounts.google.com https://challenges.cloudflare.com https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev https://*.protect.clerk.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self' https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev",

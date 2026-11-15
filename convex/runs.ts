@@ -15,6 +15,7 @@ import { currentAgentSlug, isAgentLive } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type Spend } from "./lib/modelRouter";
+import { driveTools } from "./lib/integrations/google/driveTools";
 import { completeWithTools } from "./lib/toolRouter";
 import { capsFor, choiceFor, resolveRoute, runnableChoice, skillNeeds } from "./lib/modelChoice";
 import { markOf, parseModelRoute } from "./lib/models";
@@ -631,6 +632,9 @@ export const prepare = internalMutation({
               ...(next.outputSchema ? { outputSchema: next.outputSchema } : {}),
             }
           : null,
+      // A step that reads the web may also read the files the business picked in Google Drive and granted to
+      // this agent (googleDrive.ts), through two read tools. Organization work only: the files are not a client's.
+      files: (next.webSearch || next.webFetch) && !run.clientId ? { workspaceId: run.workspaceId, agentSlug: run.agentSlug } : null,
     };
   },
 });
@@ -1315,12 +1319,15 @@ export const step = internalAction({
       const began = Date.now();
       try {
         if (plan.tools) {
+          const files = plan.files ? await ctx.runQuery(internal.googleDrive.forAgent, plan.files) : [];
+          const clientTools = driveTools(files);
           const answer = await completeWithTools(plan.route, plan.workKind, {
             input: plan.modelInput,
             system: plan.tools.system,
             webSearch: plan.tools.webSearch,
             webFetch: plan.tools.webFetch,
             outputSchema: plan.tools.outputSchema,
+            ...(clientTools.length ? { clientTools } : {}),
           });
           result = { ...answer, text: answer.output === null ? answer.text : JSON.stringify(answer.output) };
           web = {

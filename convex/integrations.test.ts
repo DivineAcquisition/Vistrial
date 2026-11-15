@@ -100,6 +100,7 @@ describe("connections: what screens read", () => {
       "google_analytics",
       "search_console",
       "business_profile",
+      "google_drive",
       "google_calendar",
       "calendly",
       "fathom",

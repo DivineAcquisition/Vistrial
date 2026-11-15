@@ -2346,6 +2346,30 @@ export default defineSchema({
   }).index("by_nonce", ["nonce"]),
 
   /** What was last read through a connection, already reduced to what Vistrial keeps. Deleted on disconnect. */
+  /**
+   * A file a person picked in Google's Picker through the Google Drive connection (drive.file): its name, kind
+   * and text only, never the file. Deleted when removed or when Drive is disconnected.
+   */
+  driveFiles: defineTable({
+    workspaceId: v.id("workspaces"),
+    /** Google's file id. */
+    fileId: v.string(),
+    name: v.string(),
+    /** doc, sheet, slides or text. */
+    kind: v.string(),
+    text: v.string(),
+    words: v.number(),
+    /** Google's last change to the file when Vistrial read it. */
+    modifiedAt: v.optional(v.number()),
+    /** Agents granted use of this file. Missing means Strategist and Dealmaker. */
+    agents: v.optional(v.array(v.string())),
+    addedBy: v.string(),
+    addedAt: v.number(),
+    readAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId", "addedAt"])
+    .index("by_workspace_file", ["workspaceId", "fileId"]),
+
   integrationSnapshots: defineTable({
     workspaceId: v.id("workspaces"),
     provider: v.string(),

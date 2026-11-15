@@ -3,6 +3,7 @@
 import { canWork } from "@/lib/roles";
 import { useState } from "react";
 
+import { DriveFilesPanel, type DriveFilesData } from "@/components/connections/drive-files";
 import { GOOGLE_DATA, GoogleDataPanel, type GoogleDataView } from "@/components/connections/google-data";
 import { CALENDAR_NOTES, CALENDARS } from "@/components/connections/integrations";
 import { IntegrationsView, type IntegrationView } from "@/components/connections/integrations-view";
@@ -23,6 +24,7 @@ const CONNECTED: Record<string, IntegrationView["connection"]> = {
   search_console: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   google_ads: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   business_profile: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "awaiting_approval", agents: ["growth-architect"] },
+  google_drive: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 13), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   google_calendar: { status: "needsReconnect", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 2), lastSyncAt: Date.UTC(2026, 10, 9, 9), lastSyncCode: "token_rejected", agents: ["growth-architect"] },
 };
 
@@ -120,6 +122,17 @@ const ADS: GoogleDataView = {
 // Business Profile before Google approves access: the card says so.
 const PROFILE: GoogleDataView = { noun: "location", canChoose: true, lastSyncCode: "awaiting_approval", selected: null, choices: [], summary: null };
 
+// Files the agency picked from its Drive. Sample names and openings.
+const DRIVE_FILES: DriveFilesData = {
+  canPick: true,
+  canEdit: true,
+  accountEmail: "dana@northpeak.agency",
+  files: [
+    { id: "d1" as never, name: "Discovery call script v3", kind: "doc", kindWord: "Google Doc", words: 1840, opening: "Open: confirm the time they have. Then: what made you book now, and what would a full calendar be worth?", agents: ["growth-architect", "sales-conversion"], readAt: Date.UTC(2026, 10, 14, 9) },
+    { id: "d2" as never, name: "Retainer pricing 2026", kind: "sheet", kindWord: "Google Sheet", words: 312, opening: "Package,Monthly,Includes Starter,2500,Meta ads management and one landing page", agents: ["sales-conversion"], readAt: Date.UTC(2026, 10, 13, 16) },
+  ],
+};
+
 // Calls a marketing agency recorded with prospects and clients.
 const TRANSCRIPTS: TranscriptRow[] = [
   {
@@ -200,6 +213,10 @@ export function IntegrationsStory({ state, role, theme }: { state: string; role:
         extra={{
           card: (key) => {
             const view = key === "google_analytics" ? ANALYTICS : key === "search_console" ? SEARCH : key === "google_ads" ? ADS : key === "business_profile" ? PROFILE : null;
+            if (key === "google_drive") {
+              const noop = async () => undefined;
+              return <DriveFilesPanel data={role === "owner" ? DRIVE_FILES : { ...DRIVE_FILES, canPick: false }} pickerReady actions={{ pick: noop, refresh: noop, remove: noop, grant: noop, asTranscript: noop, toPlaybook: noop }} />;
+            }
             return view ? <GoogleDataPanel provider={key} view={role === "owner" ? view : { ...view, canChoose: false }} onChoose={async () => undefined} /> : null;
           },
           group: {

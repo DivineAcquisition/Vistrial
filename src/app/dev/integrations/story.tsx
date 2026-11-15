@@ -22,6 +22,7 @@ const CONNECTED: Record<string, IntegrationView["connection"]> = {
   google_analytics: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   search_console: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
   google_ads: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "ok", agents: ["growth-architect"] },
+  business_profile: { status: "connected", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 12), lastSyncAt: Date.UTC(2026, 10, 14, 9), lastSyncCode: "awaiting_approval", agents: ["growth-architect"] },
   google_calendar: { status: "needsReconnect", accountLabel: "dana@northpeak.agency", connectedAt: Date.UTC(2026, 10, 2), lastSyncAt: Date.UTC(2026, 10, 9, 9), lastSyncCode: "token_rejected", agents: ["growth-architect"] },
 };
 
@@ -29,6 +30,7 @@ const CONNECTED: Record<string, IntegrationView["connection"]> = {
 const ANALYTICS: GoogleDataView = {
   noun: "property",
   canChoose: true,
+  lastSyncCode: "ok",
   selected: { id: "properties/111", label: "Northpeak · northpeak.agency" },
   choices: [
     { id: "properties/111", label: "Northpeak · northpeak.agency" },
@@ -65,6 +67,7 @@ const ANALYTICS: GoogleDataView = {
 const SEARCH: GoogleDataView = {
   noun: "site",
   canChoose: true,
+  lastSyncCode: "ok",
   selected: { id: "sc-domain:northpeak.agency", label: "northpeak.agency" },
   choices: [{ id: "sc-domain:northpeak.agency", label: "northpeak.agency" }],
   summary: {
@@ -92,6 +95,7 @@ const SEARCH: GoogleDataView = {
 const ADS: GoogleDataView = {
   noun: "account",
   canChoose: true,
+  lastSyncCode: "ok",
   selected: { id: "1234567890", label: "Northpeak Agency (123-456-7890)" },
   choices: [{ id: "1234567890", label: "Northpeak Agency (123-456-7890)" }],
   summary: {
@@ -112,6 +116,9 @@ const ADS: GoogleDataView = {
     },
   },
 };
+
+// Business Profile before Google approves access: the card says so.
+const PROFILE: GoogleDataView = { noun: "location", canChoose: true, lastSyncCode: "awaiting_approval", selected: null, choices: [], summary: null };
 
 // Calls a marketing agency recorded with prospects and clients.
 const TRANSCRIPTS: TranscriptRow[] = [
@@ -192,7 +199,7 @@ export function IntegrationsStory({ state, role, theme }: { state: string; role:
         }}
         extra={{
           card: (key) => {
-            const view = key === "google_analytics" ? ANALYTICS : key === "search_console" ? SEARCH : key === "google_ads" ? ADS : null;
+            const view = key === "google_analytics" ? ANALYTICS : key === "search_console" ? SEARCH : key === "google_ads" ? ADS : key === "business_profile" ? PROFILE : null;
             return view ? <GoogleDataPanel provider={key} view={role === "owner" ? view : { ...view, canChoose: false }} onChoose={async () => undefined} /> : null;
           },
           group: {

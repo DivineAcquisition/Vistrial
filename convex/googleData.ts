@@ -5,7 +5,7 @@
  * totals for that one, saves them as the connection's summary, and refreshes them on a schedule. Nothing is
  * ever changed at Google. Disconnecting deletes the choice, the summary and the token (integrations.ts).
  *
- * Built so far: Google Analytics 4, Search Console and Google Ads. Each further product adds one entry to READERS.
+ * Built: Google Analytics 4, Search Console, Google Ads and Business Profile, one entry each in READERS.
  */
 
 import { v } from "convex/values";
@@ -17,6 +17,7 @@ import { liveToken } from "./integrationActions";
 import { adminMutation, memberAction, workspaceQuery } from "./lib/builders";
 import { notAllowed, userError } from "./lib/errors";
 import { ANALYTICS, analyticsChoices, analyticsRequests, summarizeAnalytics, type Choice } from "./lib/integrations/google/analytics";
+import { PROFILE, accountNames, isLocationName, locationChoices, profileQueries, summarizeProfile } from "./lib/integrations/google/businessProfile";
 import { ACCOUNT_QUERY, ADS, CAMPAIGN_QUERY, accountChoice, customerIds, isCustomerId, searchPage, summarizeAds } from "./lib/integrations/google/googleAds";
 import { SEARCH, isSiteId, searchChoices, searchRequests, summarizeSearch } from "./lib/integrations/google/searchConsole";
 import { isAdmin } from "./lib/roles";
@@ -126,7 +127,36 @@ export const READERS: Record<string, Reader> = {
       return { ok: true, summary: summarizeAds(rows, truncated) };
     },
   },
+  business_profile: {
+    noun: "location",
+    // Read requests only. Until Google approves the project's access these APIs refuse every call.
+    choices: async (token) => {
+      const accounts = await googleCall(PROFILE.accounts, token);
+      if (!accounts.ok) return awaitingApproval(accounts);
+      const choices: Choice[] = [];
+      for (const account of accountNames(accounts.body)) {
+        const got = await googleCall(PROFILE.locations(account), token);
+        if (!got.ok) return awaitingApproval(got);
+        choices.push(...locationChoices(got.body));
+      }
+      return { ok: true, choices: choices.slice(0, 200) };
+    },
+    read: async (token, location, now) => {
+      if (!isLocationName(location)) return { ok: false, code: "read_failed" };
+      const query = profileQueries(now);
+      const daily = await googleCall(PROFILE.daily(location, query.daily), token);
+      if (!daily.ok) return awaitingApproval(daily);
+      // Search keywords are monthly and may be empty for a small listing; a refusal here keeps the daily figures.
+      const keywords = await googleCall(PROFILE.keywords(location, query.keywords), token);
+      return { ok: true, summary: summarizeProfile(daily.body, keywords.ok ? keywords.body : null, query) };
+    },
+  },
 };
+
+/** Business Profile's APIs refuse (403) or allow no requests (429) until Google approves access: that is what the card says. */
+function awaitingApproval(result: { ok: false; code: string }) {
+  return result.code === "permission_missing" || result.code === "rate_limited" ? { ok: false as const, code: "awaiting_approval" } : result;
+}
 
 export function isGoogleDataProvider(key: string | null | undefined): key is keyof typeof READERS {
   return !!key && Object.hasOwn(READERS, key);
@@ -278,6 +308,7 @@ export const view = workspaceQuery({
       noun: READERS[args.provider].noun,
       canChoose: isAdmin(ctx.member.role),
       selected: connection.selected ?? null,
+      lastSyncCode: connection.lastSyncCode ?? null,
       choices: (choices?.data as Choice[] | undefined) ?? [],
       summary: current ? { syncedAt: current.syncedAt, data: current.data as unknown } : null,
     };

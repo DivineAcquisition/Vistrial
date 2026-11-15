@@ -405,8 +405,14 @@ Text for the form's "how will you use the API" box:
 > performance data for the locations the signed-in owner manages. It does not edit listings, publish posts
 > or reply to reviews, and does not combine data across businesses.
 
-**Customer side:** owner or manager of a verified profile. **Status:** designed, not built; blocked on
-approval.
+**Customer side:** owner or manager of a verified profile. **Status:** built
+(`convex/lib/integrations/google/businessProfile.ts`, a reader in `convex/googleData.ts`); it works only once
+Google approves the access application above. Locations come from the Account Management API's accounts
+(at most 10) and each account's locations (Business Information API, read mask name, title and town). For the
+chosen location: one `fetchMultiDailyMetricsTimeSeries` call for 28 days ending yesterday (the four view
+metrics, calls, direction requests, website clicks), and one monthly search-keywords call for last month.
+Only read requests are made. Until approval Google refuses with 403 or a zero quota (429); the card then says
+"Waiting for Google's approval" and nothing else changes.
 
 ## 5. Google Calendar
 
